@@ -4,6 +4,14 @@ import Layout from './components/Layout'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Placeholder from './pages/Placeholder'
+import PurchasingLayout from './pages/purchasing/PurchasingLayout'
+import PRList from './pages/purchasing/PRList'
+import PRForm from './pages/purchasing/PRForm'
+import PRDetail from './pages/purchasing/PRDetail'
+import POList from './pages/purchasing/POList'
+import POForm from './pages/purchasing/POForm'
+import PODetail from './pages/purchasing/PODetail'
+import Vendors from './pages/purchasing/Vendors'
 import ProjectList from './pages/projects/ProjectList'
 import ProjectForm from './pages/projects/ProjectForm'
 import ProjectDetail from './pages/projects/ProjectDetail'
@@ -28,7 +36,15 @@ export default function App() {
         <Route path="projects/new" element={<ProtectedRoute roles={['admin', 'management']}><ProjectForm /></ProtectedRoute>} />
         <Route path="projects/:id" element={guard('/projects', <ProjectDetail />)} />
         <Route path="projects/:id/edit" element={<ProtectedRoute roles={['admin', 'management']}><ProjectForm /></ProtectedRoute>} />
-        <Route path="purchasing" element={guarded('/purchasing', 'จัดซื้อ', '3')} />
+        <Route path="purchasing" element={guard('/purchasing', <PurchasingLayout />)}>
+          <Route index element={<PRList />} />
+          <Route path="pr/new" element={<PRForm />} />
+          <Route path="pr/:id" element={<PRDetail />} />
+          <Route path="po" element={<POList />} />
+          <Route path="po/new" element={<POForm />} />
+          <Route path="po/:id" element={<PODetail />} />
+          <Route path="vendors" element={<Vendors />} />
+        </Route>
         <Route path="store" element={guarded('/store', 'สโตร์', '4')} />
         <Route path="accounting" element={guarded('/accounting', 'บัญชี', '5')} />
         <Route path="hr" element={guarded('/hr', 'บุคลากร', '6')} />
