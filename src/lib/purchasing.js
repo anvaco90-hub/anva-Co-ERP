@@ -19,3 +19,7 @@ export const itemsValid = (items) =>
   items.length > 0 && items.every((i) => i.item_name.trim() && Number(i.quantity) > 0)
 export const itemsTotal = (items) =>
   items.reduce((s, i) => s + (Number(i.quantity) || 0) * (Number(i.price) || 0), 0)
+
+// แสดงวันเวลาแบบไทย เช่น 11 พ.ย. 2569 14:30
+export const fmtDateTime = (ts) =>
+  ts ? new Date(ts).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' }) : '-'

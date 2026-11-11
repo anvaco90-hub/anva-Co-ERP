@@ -1,91 +1,103 @@
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
-import { useAuth } from '../../context/AuthContext'
 import { baht } from '../../lib/projects'
-import { canIssueStock } from '../../lib/store'
 
+// สต็อกหลัก: ยอดรวมต่อวัสดุ + กดแถวเพื่อดูว่าของที่เหลือมาจากโครงการต้นทางไหนบ้าง
 export default function StockList() {
-  const { profile } = useAuth()
-  const canEdit = canIssueStock(profile.role)
-  const [rows, setRows] = useState(null)
-  const [projects, setProjects] = useState([])
-  const [projectId, setProjectId] = useState('')
+  const [items, setItems] = useState(null)
+  const [lots, setLots] = useState([])
+  const [cats, setCats] = useState([])
+  const [cat, setCat] = useState('')
   const [search, setSearch] = useState('')
+  const [onlyLow, setOnlyLow] = useState(false)
+  const [open, setOpen] = useState(null)
   const [error, setError] = useState('')
 
   useEffect(() => {
-    supabase.from('projects').select('id, project_code, project_name').order('project_code')
-      .then(({ data }) => setProjects(data ?? []))
-    supabase.from('inventory_stock')
-      .select('id, project_id, qty_on_hand, avg_unit_cost, inventory_items(id, item_code, item_name, unit, reorder_point), projects(project_code, project_name)')
-      .then(({ data, error }) => {
-        if (error) return setError('โหลดสต็อกไม่สำเร็จ')
-        setRows((data ?? []).sort((a, b) =>
-          (a.projects?.project_code ?? '').localeCompare(b.projects?.project_code ?? '') ||
-          (a.inventory_items?.item_name ?? '').localeCompare(b.inventory_items?.item_name ?? '')))
-      })
+    Promise.all([
+      supabase.from('inventory_items')
+        .select('id, item_code, item_name, unit, qty_on_hand, avg_unit_cost, reorder_point, category_id, item_categories(name)').order('item_name'),
+      supabase.from('stock_lots').select('item_id, source_project_id, qty_remaining, projects(project_code, project_name)').gt('qty_remaining', 0),
+      supabase.from('item_categories').select('id, name').order('sort_order'),
+    ]).then(([a, b, c]) => {
+      if (a.error) return setError('โหลดสต็อกไม่สำเร็จ')
+      setItems(a.data); setLots(b.data ?? []); setCats(c.data ?? [])
+    })
   }, [])
 
-  // จุดสั่งซื้อซ้ำเป็นของสินค้า (ใช้ร่วมทุกโครงการ)
-  async function saveReorder(itemId, value) {
-    setError('')
-    const v = Number(value) || 0
-    const { error } = await supabase.from('inventory_items').update({ reorder_point: v }).eq('id', itemId)
-    if (error) return setError('บันทึกจุดสั่งซื้อซ้ำไม่สำเร็จ')
-    setRows((rs) => rs.map((r) => (r.inventory_items.id === itemId ? { ...r, inventory_items: { ...r.inventory_items, reorder_point: v } } : r)))
-  }
+  if (!items) return <p className="text-steel-500">{error || 'กำลังโหลด...'}</p>
 
-  if (!rows) return <p className="text-steel-500">{error || 'กำลังโหลด...'}</p>
-
+  const isLow = (i) => Number(i.reorder_point) > 0 && Number(i.qty_on_hand) <= Number(i.reorder_point)
   const q = search.trim().toLowerCase()
-  const shown = rows.filter((r) =>
-    (!projectId || r.project_id === projectId) &&
-    (!q || `${r.inventory_items?.item_name} ${r.inventory_items?.item_code}`.toLowerCase().includes(q)))
-  const totalValue = shown.reduce((s, r) => s + Number(r.qty_on_hand) * Number(r.avg_unit_cost), 0)
+  const shown = items.filter((i) =>
+    (!cat || i.category_id === cat) && (!onlyLow || isLow(i)) &&
+    (!q || `${i.item_name} ${i.item_code}`.toLowerCase().includes(q)))
+  const totalValue = shown.reduce((s, i) => s + Number(i.qty_on_hand) * Number(i.avg_unit_cost), 0)
+  const lowCount = items.filter(isLow).length
+
+  // รวมล็อตตามโครงการต้นทางของวัสดุที่เปิดดู
+  const origins = (itemId) => {
+    const m = new Map()
+    lots.filter((l) => l.item_id === itemId).forEach((l) => {
+      const k = l.source_project_id ?? 'none'
+      const cur = m.get(k) ?? { name: l.projects ? `${l.projects.project_code} ${l.projects.project_name}` : 'ไม่ระบุ / ของกลาง', qty: 0 }
+      cur.qty += Number(l.qty_remaining); m.set(k, cur)
+    })
+    return [...m.values()]
+  }
 
   return (
     <div>
+      {lowCount > 0 && (
+        <div className="mb-4 rounded-lg border-l-4 border-red-500 bg-red-50 p-3 text-sm text-red-800">
+          มีวัสดุใกล้หมด <b>{lowCount}</b> รายการ
+          <button className="ml-3 underline" onClick={() => setOnlyLow(!onlyLow)}>{onlyLow ? 'แสดงทั้งหมด' : 'แสดงเฉพาะที่ใกล้หมด'}</button>
+        </div>
+      )}
       <div className="flex flex-wrap gap-2">
-        <select className="input max-w-xs" value={projectId} onChange={(e) => setProjectId(e.target.value)}>
-          <option value="">ทุกโครงการ</option>
-          {projects.map((p) => <option key={p.id} value={p.id}>{p.project_code} {p.project_name}</option>)}
+        <select className="input max-w-xs" value={cat} onChange={(e) => setCat(e.target.value)}>
+          <option value="">ทุกหมวด</option>
+          {cats.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
         <input className="input max-w-xs" placeholder="ค้นหารหัส / ชื่อวัสดุ" value={search} onChange={(e) => setSearch(e.target.value)} />
       </div>
-      {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
-      <p className="mt-3 text-sm">มูลค่าสต็อกรวม (ที่แสดง) <b>{baht(totalValue)}</b> บาท</p>
+      <p className="mt-3 text-sm">มูลค่าสินค้าคงเหลือรวม (ที่แสดง) <b>{baht(totalValue)}</b> บาท · {shown.length} รายการ</p>
 
       {shown.length === 0 ? (
-        <p className="mt-3 rounded-lg bg-white p-5 text-steel-500">ไม่พบสต็อก — สต็อกจะเพิ่มเมื่อรับของจากใบสั่งซื้อ</p>
+        <p className="mt-3 rounded-lg bg-white p-5 text-steel-500">ไม่พบวัสดุ — วัสดุจะเข้าสโตร์เมื่อรับของจากใบสั่งซื้อ</p>
       ) : (
         <div className="mt-3 overflow-x-auto rounded-lg bg-white p-4">
           <table className="w-full text-sm">
             <thead><tr className="border-b text-left text-steel-500">
-              <th className="py-2">โครงการ</th><th>วัสดุ</th><th className="text-right">คงเหลือ</th><th>หน่วย</th>
-              <th className="text-right">ต้นทุนเฉลี่ย</th><th className="text-right">มูลค่า</th><th className="text-right">จุดสั่งซื้อซ้ำ</th>
+              <th className="py-2">วัสดุ</th><th>หมวด</th><th className="text-right">คงเหลือ</th><th>หน่วย</th>
+              <th className="text-right">ราคา/หน่วย (เฉลี่ย)</th><th className="text-right">มูลค่า</th><th className="text-right">เตือนเมื่อ ≤</th>
             </tr></thead>
-            <tbody>{shown.map((r) => {
-              const it = r.inventory_items
-              const low = Number(it.reorder_point) > 0 && Number(r.qty_on_hand) <= Number(it.reorder_point)
-              return (
-                <tr key={r.id} className="border-b last:border-0">
-                  <td className="py-2">{r.projects?.project_code}</td>
-                  <td>{it.item_name} <span className="text-xs text-steel-500">{it.item_code}</span></td>
-                  <td className={`text-right font-semibold ${low ? 'text-red-600' : ''}`}>
-                    {r.qty_on_hand} {low && <span className="ml-1 rounded bg-red-100 px-1.5 text-xs">ใกล้หมด</span>}
+            <tbody>{shown.map((i) => (
+              <Fragment key={i.id}>
+                <tr className="cursor-pointer border-b hover:bg-steel-50" onClick={() => setOpen(open === i.id ? null : i.id)}>
+                  <td className="py-2">{open === i.id ? '▾' : '▸'} {i.item_name} <span className="text-xs text-steel-500">{i.item_code}</span></td>
+                  <td>{i.item_categories?.name ?? '-'}</td>
+                  <td className={`text-right font-semibold ${isLow(i) ? 'text-red-600' : ''}`}>
+                    {i.qty_on_hand} {isLow(i) && <span className="ml-1 rounded bg-red-100 px-1.5 text-xs">ใกล้หมด</span>}
                   </td>
-                  <td className="pl-2">{it.unit}</td>
-                  <td className="text-right">{baht(r.avg_unit_cost)}</td>
-                  <td className="text-right">{baht(Number(r.qty_on_hand) * Number(r.avg_unit_cost))}</td>
-                  <td className="text-right">
-                    {canEdit ? (
-                      <input className="input ml-auto w-20 text-right" type="number" min="0" step="0.01"
-                        defaultValue={it.reorder_point} onBlur={(e) => Number(e.target.value) !== Number(it.reorder_point) && saveReorder(it.id, e.target.value)} />
-                    ) : it.reorder_point}
-                  </td>
+                  <td className="pl-2">{i.unit}</td>
+                  <td className="text-right">{baht(i.avg_unit_cost)}</td>
+                  <td className="text-right">{baht(Number(i.qty_on_hand) * Number(i.avg_unit_cost))}</td>
+                  <td className="text-right">{i.reorder_point || '-'}</td>
                 </tr>
-              )
-            })}</tbody>
+                {open === i.id && (
+                  <tr className="border-b bg-steel-50">
+                    <td colSpan={7} className="px-4 py-2">
+                      <div className="text-xs text-steel-500">ของที่เหลืออยู่ แยกตามโครงการต้นทาง</div>
+                      {origins(i.id).length === 0 ? <div className="text-sm">ไม่มีของคงเหลือ</div> : origins(i.id).map((o) => (
+                        <div key={o.name} className="flex justify-between text-sm"><span>{o.name}</span>
+                          <span>{o.qty} {i.unit} · {baht(o.qty * Number(i.avg_unit_cost))} บาท</span></div>
+                      ))}
+                    </td>
+                  </tr>
+                )}
+              </Fragment>
+            ))}</tbody>
           </table>
         </div>
       )}
