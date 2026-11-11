@@ -12,6 +12,10 @@ import POList from './pages/purchasing/POList'
 import POForm from './pages/purchasing/POForm'
 import PODetail from './pages/purchasing/PODetail'
 import Vendors from './pages/purchasing/Vendors'
+import StoreLayout from './pages/store/StoreLayout'
+import StockList from './pages/store/StockList'
+import IssueForm from './pages/store/IssueForm'
+import IssueList from './pages/store/IssueList'
 import ProjectList from './pages/projects/ProjectList'
 import ProjectForm from './pages/projects/ProjectForm'
 import ProjectDetail from './pages/projects/ProjectDetail'
@@ -45,7 +49,11 @@ export default function App() {
           <Route path="po/:id" element={<PODetail />} />
           <Route path="vendors" element={<Vendors />} />
         </Route>
-        <Route path="store" element={guarded('/store', 'สโตร์', '4')} />
+        <Route path="store" element={guard('/store', <StoreLayout />)}>
+          <Route index element={<StockList />} />
+          <Route path="issue/new" element={<ProtectedRoute roles={['store', 'admin']}><IssueForm /></ProtectedRoute>} />
+          <Route path="issues" element={<IssueList />} />
+        </Route>
         <Route path="accounting" element={guarded('/accounting', 'บัญชี', '5')} />
         <Route path="hr" element={guarded('/hr', 'บุคลากร', '6')} />
       </Route>
