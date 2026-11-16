@@ -1,29 +1,172 @@
+import { useEffect, useState } from 'react'
+import { supabase } from '../../lib/supabase'
 import { EMPTY_ITEM, itemsTotal } from '../../lib/purchasing'
 import { baht } from '../../lib/projects'
+import { FieldError, fieldErrorClass } from '../../components/FieldError'
 
 // ตารางแก้รายการวัสดุ ใช้ร่วมกันทั้งใบขอซื้อและใบสั่งซื้อ
-// รายการที่รับของแล้ว (received > 0) แก้ได้เฉพาะจำนวน (ห้ามต่ำกว่าที่รับแล้ว) และลบไม่ได้
-export default function ItemsEditor({ items, onChange, priceLabel }) {
-  const upd = (i, k, v) => onChange(items.map((it, idx) => (idx === i ? { ...it, [k]: v } : it)))
+// มีระบบ Auto-suggest ดึงวัสดุเก่าจากระบบ + เติมหน่วยเลขอัตโนมัติ
+export default function ItemsEditor({ items, onChange, priceLabel, showErrors = false }) {
+  const [catalog, setCatalog] = useState([])
+
+  useEffect(() => {
+    supabase
+      .from('inventory_items')
+      .select('id, item_code, item_name, unit, avg_unit_cost')
+      .order('item_name')
+      .then(({ data }) => setCatalog(data ?? []))
+  }, [])
+
+  const upd = (i, k, v) => {
+    const updated = items.map((it, idx) => {
+      if (idx !== i) return it
+      const next = { ...it, [k]: v }
+      // ถ้าเลือกหรือพิมพ์ชื่อที่ตรงกับ catalog ให้ช่วยดึงหน่วยและราคาเฉลี่ยมาอัตโนมัติ
+      if (k === 'item_name') {
+        const found = catalog.find((c) => c.item_name.toLowerCase() === String(v || '').trim().toLowerCase())
+        if (found) {
+          if (!next.unit && found.unit) next.unit = found.unit
+          if (!next.price && found.avg_unit_cost) next.price = String(found.avg_unit_cost)
+        }
+      }
+      return next
+    })
+    onChange(updated)
+  }
+
+  const handleSelectCatalogItem = (index, catalogItem) => {
+    const updated = items.map((it, idx) => {
+      if (idx !== index) return it
+      return {
+        ...it,
+        item_name: catalogItem.item_name,
+        unit: catalogItem.unit || it.unit || '',
+        price: catalogItem.avg_unit_cost ? String(catalogItem.avg_unit_cost) : it.price || '',
+      }
+    })
+    onChange(updated)
+  }
+
   return (
     <div className="space-y-2">
+      {/* Datalist แนะนำชื่อวัสดุที่มีอยู่ในระบบ */}
+      <datalist id="catalog-items-list">
+        {catalog.map((c) => (
+          <option key={c.id} value={c.item_name}>
+            [{c.item_code}] {c.unit ? `(${c.unit})` : ''}
+          </option>
+        ))}
+      </datalist>
+
       {items.map((it, i) => {
         const locked = Number(it.received) > 0
+        const matched = catalog.find((c) => c.item_name.toLowerCase() === String(it.item_name || '').trim().toLowerCase())
+        const nameEmpty = showErrors && !String(it.item_name || '').trim()
+        const qtyEmpty = showErrors && (!it.quantity || Number(it.quantity) <= 0)
+        const priceEmpty = showErrors && (it.price === '' || isNaN(Number(it.price)))
+
         return (
-          <div key={i} className="grid grid-cols-2 gap-2 rounded-md border border-steel-100 p-2 md:grid-cols-[1fr_6rem_6rem_9rem_auto]">
-            <input className="input col-span-2 md:col-span-1" placeholder="ชื่อวัสดุ" disabled={locked} value={it.item_name} onChange={(e) => upd(i, 'item_name', e.target.value)} />
-            <input className="input" type="number" min={locked ? it.received : 0} step="0.01" placeholder="จำนวน" value={it.quantity} onChange={(e) => upd(i, 'quantity', e.target.value)} />
-            <input className="input" placeholder="หน่วย" disabled={locked} value={it.unit} onChange={(e) => upd(i, 'unit', e.target.value)} />
-            <input className="input" type="number" min="0" step="0.01" placeholder={priceLabel} disabled={locked} value={it.price} onChange={(e) => upd(i, 'price', e.target.value)} />
-            {locked
-              ? <span className="text-xs text-steel-500">รับแล้ว {it.received}</span>
-              : <button type="button" className="text-sm text-red-700 underline" onClick={() => onChange(items.filter((_, idx) => idx !== i))}>ลบ</button>}
+          <div key={i} className={`rounded-md border p-2.5 shadow-sm transition ${
+            nameEmpty || qtyEmpty || priceEmpty ? 'border-rose-300 bg-rose-50/20' : 'border-steel-200 bg-white'
+          }`}>
+            <div className="grid grid-cols-2 gap-2 md:grid-cols-[1fr_6rem_6rem_9rem_auto] items-start">
+              {/* ช่องชื่อวัสดุ */}
+              <div className="col-span-2 md:col-span-1 relative">
+                <input
+                  list="catalog-items-list"
+                  className={fieldErrorClass(nameEmpty, 'input w-full')}
+                  placeholder="พิมพ์หรือเลือกชื่อวัสดุในระบบ..."
+                  disabled={locked}
+                  value={it.item_name}
+                  onChange={(e) => upd(i, 'item_name', e.target.value)}
+                />
+                {matched && (
+                  <span className="absolute right-2 top-2 rounded bg-sky-100 px-1.5 py-0.5 text-[10px] font-mono text-sky-800">
+                    {matched.item_code}
+                  </span>
+                )}
+                {nameEmpty && <FieldError error="ช่องนี้ยังไม่กรอก ช่องว่างนะ (ระบุชื่อวัสดุ)" />}
+              </div>
+
+              {/* ช่องจำนวน */}
+              <div>
+                <input
+                  className={fieldErrorClass(qtyEmpty, 'input w-full')}
+                  type="number"
+                  min={locked ? it.received : 0}
+                  step="0.01"
+                  placeholder="จำนวน"
+                  value={it.quantity}
+                  onChange={(e) => upd(i, 'quantity', e.target.value)}
+                />
+                {qtyEmpty && <FieldError error="ช่องว่างนะ (จำนวน > 0)" />}
+              </div>
+
+              {/* ช่องหน่วย */}
+              <div>
+                <input
+                  className="input w-full"
+                  placeholder="หน่วย"
+                  disabled={locked}
+                  value={it.unit}
+                  onChange={(e) => upd(i, 'unit', e.target.value)}
+                />
+              </div>
+
+              {/* ช่องราคา */}
+              <div>
+                <input
+                  className={fieldErrorClass(priceEmpty, 'input w-full')}
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder={priceLabel}
+                  disabled={locked}
+                  value={it.price}
+                  onChange={(e) => upd(i, 'price', e.target.value)}
+                />
+                {priceEmpty && <FieldError error="ช่องว่างนะ (ระบุราคา)" />}
+              </div>
+
+              {/* ปุ่มลบ */}
+              <div className="pt-2">
+                {locked ? (
+                  <span className="text-xs text-steel-500 whitespace-nowrap">รับแล้ว {it.received}</span>
+                ) : (
+                  <button
+                    type="button"
+                    className="text-sm text-red-600 hover:text-red-800 underline px-1"
+                    onClick={() => onChange(items.filter((_, idx) => idx !== i))}
+                    disabled={items.length === 1}
+                  >
+                    ลบ
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* แถบแจ้งเตือนเมื่อวัสดุมีอยู่ในระบบ */}
+            {matched && (
+              <div className="mt-1 flex items-center gap-2 text-[11px] text-steel-500">
+                <span className="font-semibold text-emerald-700">✓ วัสดุตรงกับรหัส {matched.item_code}</span>
+                {matched.avg_unit_cost ? <span>· ราคาเฉลี่ยเดิม {baht(matched.avg_unit_cost)} บาท</span> : null}
+              </div>
+            )}
           </div>
         )
       })}
-      <div className="flex items-center justify-between">
-        <button type="button" className="btn-ghost" onClick={() => onChange([...items, { ...EMPTY_ITEM }])}>+ เพิ่มรายการ</button>
-        <span className="text-sm">รวม <b>{baht(itemsTotal(items))}</b> บาท</span>
+
+      <div className="flex items-center justify-between pt-1">
+        <button
+          type="button"
+          className="btn-ghost !py-1 text-xs"
+          onClick={() => onChange([...items, { ...EMPTY_ITEM }])}
+        >
+          + เพิ่มรายการวัสดุ
+        </button>
+        <span className="text-sm">
+          มูลค่ารวม: <b className="text-ink">{baht(itemsTotal(items))}</b> บาท
+        </span>
       </div>
     </div>
   )

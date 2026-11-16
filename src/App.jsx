@@ -5,6 +5,7 @@ import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Placeholder from './pages/Placeholder'
 import PurchasingLayout from './pages/purchasing/PurchasingLayout'
+import PurchasingHub from './pages/purchasing/PurchasingHub'
 import PRList from './pages/purchasing/PRList'
 import PRForm from './pages/purchasing/PRForm'
 import PRDetail from './pages/purchasing/PRDetail'
@@ -22,9 +23,30 @@ import ItemsMaster from './pages/store/ItemsMaster'
 import ProjectList from './pages/projects/ProjectList'
 import ProjectForm from './pages/projects/ProjectForm'
 import ProjectDetail from './pages/projects/ProjectDetail'
+import QuotationList from './pages/quotations/QuotationList'
+import QuotationForm from './pages/quotations/QuotationForm'
+import QuotationDetail from './pages/quotations/QuotationDetail'
+import AccountingDashboard from './pages/accounting/AccountingDashboard'
+import AccountingLayout from './pages/accounting/AccountingLayout'
+import JournalEntriesPage from './pages/accounting/JournalEntriesPage'
+import ArAgingPage from './pages/accounting/ArAgingPage'
+import ApAgingPage from './pages/accounting/ApAgingPage'
+import ExpensesPage from './pages/accounting/ExpensesPage'
+import TaxReportsPage from './pages/accounting/TaxReportsPage'
+import ChartOfAccountsPage from './pages/accounting/ChartOfAccountsPage'
+import HRDashboard from './pages/hr/HRDashboard'
 import { NAV_ITEMS } from './lib/roles'
 
-const rolesOf = (path) => NAV_ITEMS.find((i) => i.path === path).roles
+const rolesOf = (path) => {
+  for (const item of NAV_ITEMS) {
+    if (item.path === path) return item.roles
+    if (item.children) {
+      const child = item.children.find((c) => c.path === path)
+      if (child) return child.roles || item.roles
+    }
+  }
+  return ['admin', 'accounting', 'management']
+}
 const guard = (path, el) => <ProtectedRoute roles={rolesOf(path)}>{el}</ProtectedRoute>
 const guarded = (path, title, step) => (
   <ProtectedRoute roles={rolesOf(path)}>
@@ -43,15 +65,19 @@ export default function App() {
         <Route path="projects/new" element={<ProtectedRoute roles={['admin', 'management']}><ProjectForm /></ProtectedRoute>} />
         <Route path="projects/:id" element={guard('/projects', <ProjectDetail />)} />
         <Route path="projects/:id/edit" element={<ProtectedRoute roles={['admin', 'management']}><ProjectForm /></ProtectedRoute>} />
+        <Route path="quotations" element={guard('/quotations', <QuotationList />)} />
+        <Route path="quotations/new" element={guard('/quotations', <QuotationForm />)} />
+        <Route path="quotations/:id" element={guard('/quotations', <QuotationDetail />)} />
+        <Route path="quotations/:id/edit" element={guard('/quotations', <QuotationForm />)} />
         <Route path="purchasing" element={guard('/purchasing', <PurchasingLayout />)}>
-          <Route index element={<PRList />} />
+          <Route index element={<PurchasingHub />} />
           <Route path="pr/new" element={<PRForm />} />
           <Route path="pr/:id" element={<PRDetail />} />
-          <Route path="pr/:id/edit" element={<ProtectedRoute roles={['purchasing', 'admin']}><PRForm /></ProtectedRoute>} />
-          <Route path="po" element={<POList />} />
+          <Route path="pr/:id/edit" element={<ProtectedRoute roles={['purchasing', 'store', 'admin']}><PRForm /></ProtectedRoute>} />
+          <Route path="po" element={<Navigate to="/purchasing?tab=po" replace />} />
           <Route path="po/new" element={<POForm />} />
           <Route path="po/:id" element={<PODetail />} />
-          <Route path="po/:id/edit" element={<ProtectedRoute roles={['purchasing', 'admin']}><POForm /></ProtectedRoute>} />
+          <Route path="po/:id/edit" element={<ProtectedRoute roles={['purchasing', 'store', 'admin']}><POForm /></ProtectedRoute>} />
           <Route path="vendors" element={<Vendors />} />
         </Route>
         <Route path="store" element={guard('/store', <StoreLayout />)}>
@@ -62,8 +88,17 @@ export default function App() {
           <Route path="adjust" element={<ProtectedRoute roles={['store', 'admin']}><AdjustStock /></ProtectedRoute>} />
           <Route path="items" element={<ItemsMaster />} />
         </Route>
-        <Route path="accounting" element={guarded('/accounting', 'บัญชี', '5')} />
-        <Route path="hr" element={guarded('/hr', 'บุคลากร', '6')} />
+        <Route path="accounting" element={guard('/accounting', <AccountingLayout />)}>
+          <Route index element={<Navigate to="/accounting/journals" replace />} />
+          <Route path="journals" element={<JournalEntriesPage />} />
+          <Route path="ar-aging" element={<ArAgingPage />} />
+          <Route path="ap-aging" element={<ApAgingPage />} />
+          <Route path="expenses" element={<ExpensesPage />} />
+          <Route path="tax-reports" element={<TaxReportsPage />} />
+          <Route path="chart-of-accounts" element={<ChartOfAccountsPage />} />
+          <Route path="dashboard" element={<AccountingDashboard />} />
+        </Route>
+        <Route path="hr" element={guard('/hr', <HRDashboard />)} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
