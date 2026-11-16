@@ -1,17 +1,16 @@
 export const PR_STATUS = {
-  pending: { label: 'รอสั่งซื้อ', cls: 'bg-steel-100 text-steel-700' },
-  ordered: { label: 'สั่งซื้อแล้ว', cls: 'bg-green-100 text-green-800' },
-  cancelled: { label: 'ยกเลิก', cls: 'bg-red-100 text-red-800' },
+  pending: { label: '⏳ รอสั่งซื้อ', cls: 'bg-amber-100 text-amber-900 border border-amber-300' },
+  ordered: { label: '✅ สั่งซื้อแล้ว', cls: 'bg-emerald-100 text-emerald-900 border border-emerald-300' },
+  cancelled: { label: '❌ ยกเลิก', cls: 'bg-rose-100 text-rose-800 border border-rose-300' },
 }
 export const PO_STATUS = {
-  open: { label: 'รอรับของ', cls: 'bg-steel-100 text-steel-700' },
-  partial: { label: 'รับบางส่วน', cls: 'bg-hivis/30 text-ink' },
-  received: { label: 'รับครบ', cls: 'bg-green-100 text-green-800' },
-  cancelled: { label: 'ยกเลิก', cls: 'bg-red-100 text-red-800' },
+  open: { label: '📦 รอรับของ', cls: 'bg-sky-100 text-sky-900 border border-sky-300' },
+  partial: { label: '⚡ รับบางส่วน', cls: 'bg-amber-100 text-amber-900 border border-amber-300' },
+  received: { label: '✅ รับครบ', cls: 'bg-emerald-100 text-emerald-900 border border-emerald-300' },
+  cancelled: { label: '❌ ยกเลิก', cls: 'bg-rose-100 text-rose-800 border border-rose-300' },
 }
 
-// ต้องตรงกับสิทธิ์ในฟังก์ชัน SQL (003)
-export const canCreatePurchasing = (role) => ['purchasing', 'admin'].includes(role)
+export const canCreatePurchasing = (role) => ['purchasing', 'store', 'admin'].includes(role)
 export const canReceiveGoods = (role) => ['purchasing', 'store', 'admin'].includes(role)
 
 export const EMPTY_ITEM = { item_name: '', quantity: '', unit: '', price: '' }
@@ -20,6 +19,5 @@ export const itemsValid = (items) =>
 export const itemsTotal = (items) =>
   items.reduce((s, i) => s + (Number(i.quantity) || 0) * (Number(i.price) || 0), 0)
 
-// แสดงวันเวลาแบบไทย เช่น 11 พ.ย. 2569 14:30
 export const fmtDateTime = (ts) =>
   ts ? new Date(ts).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' }) : '-'

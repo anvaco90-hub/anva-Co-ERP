@@ -1,7 +1,6 @@
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
-// บังคับล็อกอิน และ (ถ้ากำหนด roles) ต้องมี role ที่อนุญาต
 export default function ProtectedRoute({ roles, children }) {
   const { session, profile, loading } = useAuth()
 

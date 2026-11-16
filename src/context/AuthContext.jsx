@@ -9,7 +9,6 @@ export function AuthProvider({ children }) {
   const [profile, setProfile] = useState(null) // { id, full_name, role, is_active }
   const [loading, setLoading] = useState(true)
 
-  // โหลด profile (มี role) ของผู้ใช้ที่ล็อกอินอยู่
   async function loadProfile(userId) {
     const { data, error } = await supabase
       .from('profiles')
@@ -27,7 +26,6 @@ export function AuthProvider({ children }) {
     })
     const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
       setSession(s)
-      // เลื่อนไปรอบถัดไปเพื่อเลี่ยงเรียก supabase ใน callback ตรง ๆ (deadlock)
       setTimeout(() => (s ? loadProfile(s.user.id) : setProfile(null)), 0)
     })
     return () => sub.subscription.unsubscribe()

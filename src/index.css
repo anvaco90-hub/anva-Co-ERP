@@ -9,5 +9,40 @@ body { @apply bg-steel-50 text-ink font-sans antialiased; }
   .btn { @apply inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-semibold transition-colors disabled:opacity-50; }
   .btn-primary { @apply btn bg-hivis text-ink hover:bg-hivis-dark; }
   .btn-ghost { @apply btn bg-white text-steel-700 border border-steel-300 hover:bg-steel-100; }
-  .input { @apply w-full rounded-md border border-steel-300 bg-white px-3 py-2 text-sm; }
+  .input { @apply w-full rounded-md border border-steel-300 bg-white px-3 py-2 text-sm text-ink placeholder:text-steel-400 focus:border-hivis focus:ring-1 focus:ring-hivis; }
+}
+
+/* Ensure all inputs, selects, and textareas have clear dark text on white backgrounds */
+input:not([type="checkbox"]):not([type="radio"]), select, textarea {
+  color: #1B2430;
+}
+input::placeholder, textarea::placeholder {
+  color: #94A3B8;
+}
+
+@media print {
+  /* ซ่อนทุกองค์ประกอบหน้าจอยกเว้นส่วนที่กำหนดให้ออกรายงาน PDF */
+  body * {
+    visibility: hidden !important;
+  }
+  #printable-report, #printable-report * {
+    visibility: visible !important;
+  }
+  #printable-report {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  @page {
+    size: A4;
+    margin: 10mm 12mm 12mm 12mm;
+  }
 }

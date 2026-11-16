@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import { STATUS_LABELS } from "../../lib/projects";
+import { FieldError, fieldErrorClass } from "../../components/FieldError";
 
 const EMPTY = {
   project_code: "",
@@ -33,6 +34,7 @@ export default function ProjectForm() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [form, setForm] = useState(EMPTY);
+  const [errors, setErrors] = useState({});
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [updatedAt, setUpdatedAt] = useState(null);
@@ -56,11 +58,31 @@ export default function ProjectForm() {
       });
   }, [id]);
 
-  const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
+  const set = (k) => (e) => {
+    setForm({ ...form, [k]: e.target.value });
+    if (errors[k]) {
+      setErrors((prev) => ({ ...prev, [k]: "" }));
+    }
+  };
 
   async function save() {
-    setBusy(true);
     setError("");
+    const newErrors = {};
+
+    if (!form.project_code.trim()) {
+      newErrors.project_code = "ช่องนี้ยังไม่กรอก ช่องว่างนะ (กรุณาระบุรหัสโครงการ)";
+    }
+    if (!form.project_name.trim()) {
+      newErrors.project_name = "ช่องนี้ยังไม่กรอก ช่องว่างนะ (กรุณาระบุชื่อโครงการ)";
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      setError("⚠️ ไม่สามารถบันทึกได้: มีช่องที่ยังไม่ได้กรอก (กรุณาตรวจสอบช่องที่มีข้อความเตือนสีแดง)");
+      return;
+    }
+
+    setBusy(true);
     const payload = {
       ...form,
       project_code: form.project_code.trim(),
@@ -111,33 +133,38 @@ export default function ProjectForm() {
       </div>
       <div className="mt-5 grid gap-4 rounded-lg bg-white p-5 md:grid-cols-2">
         <label className="text-sm">
-          รหัสโครงการ *
+          <span className="font-semibold text-steel-800">รหัสโครงการ *</span>
           <input
-            className="input mt-1"
+            className={fieldErrorClass(errors.project_code, "input mt-1 w-full")}
+            placeholder="เช่น PRJ-2026-001"
             value={form.project_code}
             onChange={set("project_code")}
           />
+          <FieldError error={errors.project_code} />
         </label>
         <label className="text-sm">
-          ชื่อโครงการ *
+          <span className="font-semibold text-steel-800">ชื่อโครงการ *</span>
           <input
-            className="input mt-1"
+            className={fieldErrorClass(errors.project_name, "input mt-1 w-full")}
+            placeholder="เช่น โครงการก่อสร้างอาคารสำนักงาน"
             value={form.project_name}
             onChange={set("project_name")}
           />
+          <FieldError error={errors.project_name} />
         </label>
         <label className="text-sm">
-          ชื่อลูกค้า
+          <span className="font-semibold text-steel-800">ชื่อลูกค้า</span>
           <input
-            className="input mt-1"
+            className="input mt-1 w-full"
+            placeholder="ชื่อบริษัทหรือผู้ว่าจ้าง"
             value={form.client_name ?? ""}
             onChange={set("client_name")}
           />
         </label>
         <label className="text-sm">
-          งบประมาณรวม (บาท)
+          <span className="font-semibold text-steel-800">งบประมาณรวม (บาท)</span>
           <input
-            className="input mt-1"
+            className="input mt-1 w-full"
             type="number"
             min="0"
             step="0.01"
@@ -152,36 +179,36 @@ export default function ProjectForm() {
           )}
         </label>
         <label className="text-sm md:col-span-2">
-          ที่อยู่หน้างาน
+          <span className="font-semibold text-steel-800">ที่อยู่หน้างาน</span>
           <textarea
-            className="input mt-1"
+            className="input mt-1 w-full"
             rows={2}
             value={form.site_address ?? ""}
             onChange={set("site_address")}
           />
         </label>
         <label className="text-sm">
-          วันเริ่มงาน
+          <span className="font-semibold text-steel-800">วันเริ่มงาน</span>
           <input
-            className="input mt-1"
+            className="input mt-1 w-full"
             type="date"
             value={form.start_date}
             onChange={set("start_date")}
           />
         </label>
         <label className="text-sm">
-          วันสิ้นสุด
+          <span className="font-semibold text-steel-800">วันสิ้นสุด</span>
           <input
-            className="input mt-1"
+            className="input mt-1 w-full"
             type="date"
             value={form.end_date}
             onChange={set("end_date")}
           />
         </label>
         <label className="text-sm">
-          สถานะ
+          <span className="font-semibold text-steel-800">สถานะ</span>
           <select
-            className="input mt-1"
+            className="input mt-1 w-full"
             value={form.status}
             onChange={set("status")}
           >
@@ -193,14 +220,19 @@ export default function ProjectForm() {
           </select>
         </label>
       </div>
-      {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+      {error && (
+        <div className="mt-3 rounded-xl bg-rose-50 border border-rose-200 p-3 text-xs sm:text-sm font-semibold text-rose-800 flex items-center gap-2">
+          <span>⚠️</span>
+          <span>{error}</span>
+        </div>
+      )}
       <div className="mt-4 flex gap-2">
         <button
           className="btn-primary"
           onClick={save}
-          disabled={busy || !valid}
+          disabled={busy}
         >
-          {busy ? "กำลังบันทึก..." : "บันทึก"}
+          {busy ? "กำลังบันทึก..." : "บันทึกโครงการ"}
         </button>
         <Link to={id ? `/projects/${id}` : "/projects"} className="btn-ghost">
           ยกเลิก

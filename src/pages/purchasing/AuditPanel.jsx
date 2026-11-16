@@ -20,7 +20,7 @@ function diffLines(o, n) {
   return lines
 }
 
-// แสดงผู้สร้าง/ผู้แก้ไขล่าสุด และประวัติการแก้ไขของเอกสาร (row ต้องมี creator, updater, created_at, updated_at)
+// แสดงผู้สร้าง/ผู้แก้ไขล่าสุด และประวัติการแก้ไขของเอกสาร
 export default function AuditPanel({ docId, row }) {
   const [logs, setLogs] = useState([])
 
