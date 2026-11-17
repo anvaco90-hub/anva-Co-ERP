@@ -61,6 +61,10 @@ export default function POForm() {
   const [whtRate, setWhtRate] = useState('0') // '0' | '1' | '2' | '3' | '5'
   const [vendorTaxInvoiceNo, setVendorTaxInvoiceNo] = useState('')
   const [taxInvoiceDate, setTaxInvoiceDate] = useState('')
+  const [expectedDeliveryDate, setExpectedDeliveryDate] = useState('')
+  const [deliveryAddress, setDeliveryAddress] = useState('')
+  const [notes, setNotes] = useState('')
+  const [duplicateBanner, setDuplicateBanner] = useState(false)
   const [projects, setProjects] = useState([])
   const [projectId, setProjectId] = useState('')
 
@@ -76,7 +80,61 @@ export default function POForm() {
         .order('request_date', { ascending: false })
         .then(({ data }) => setPendingPrs(data ?? []))
     }
-  }, [id])
+
+    // โหลดรายการกรณีสร้างซ้ำ (Duplicate PO)
+    const dupId = params.get('duplicate_from')
+    if (dupId && !id) {
+      Promise.all([
+        supabase.from('purchase_orders').select('*, projects(id, project_code, project_name)').eq('id', dupId).single(),
+        supabase.from('purchase_order_items').select('*').eq('po_id', dupId).order('item_name'),
+      ]).then(([dupRes, itemsRes]) => {
+        if (dupRes.data) {
+          setDuplicateBanner(true)
+          if (dupRes.data.project_id) setProjectId(dupRes.data.project_id)
+          if (dupRes.data.vendor_id) setVendorId(dupRes.data.vendor_id)
+          if (dupRes.data.pr_id) setSelectedPrId(dupRes.data.pr_id)
+          setPaymentType(dupRes.data.payment_type || 'credit_30')
+          setTaxType(dupRes.data.tax_type || 'vat_included')
+          setWhtRate(String(dupRes.data.wht_rate || '0'))
+          setDeliveryAddress(dupRes.data.delivery_address || '')
+          setNotes(dupRes.data.notes ? `[สำเนาจาก ${dupRes.data.po_no}] ${dupRes.data.notes}` : `[สำเนาจาก ${dupRes.data.po_no}]`)
+        }
+        if (itemsRes.data && itemsRes.data.length > 0) {
+          setItems(itemsRes.data.map((i) => ({
+            item_name: i.item_name,
+            quantity: String(i.quantity || 1),
+            unit: i.unit || 'ชุด',
+            price: String(i.unit_price || ''),
+            received: 0,
+          })))
+        }
+      })
+    }
+
+    // โหลดรายการจากใบเสนอราคา (กรณีส่งต่อจากฝ่ายขาย Quotation -> PO)
+    const qId = params.get('quotation_id')
+    if (qId && !id) {
+      Promise.all([
+        supabase.from('quotations').select('*, projects(id, project_code, project_name)').eq('id', qId).single(),
+        supabase.from('quotation_items').select('*').eq('quotation_id', qId),
+      ]).then(([qRes, itemsRes]) => {
+        if (qRes.data) {
+          if (qRes.data.project_id) setProjectId(qRes.data.project_id)
+          setQuotationNo(qRes.data.quotation_no || '')
+          setQuotationDate(qRes.data.issue_date || '')
+        }
+        if (itemsRes.data && itemsRes.data.length > 0) {
+          setItems(itemsRes.data.map((i) => ({
+            item_name: i.item_name,
+            quantity: String(i.quantity || 1),
+            unit: i.unit || 'ชุด',
+            price: String(i.unit_price || ''),
+            received: 0,
+          })))
+        }
+      })
+    }
+  }, [id, params])
 
   // โหลดข้อมูลเมื่อเป็นโหมดแก้ไข (id)
   useEffect(() => {
@@ -102,6 +160,9 @@ export default function POForm() {
       setWhtRate(String(a.data.wht_rate || '0'))
       setVendorTaxInvoiceNo(a.data.vendor_tax_invoice_no || '')
       setTaxInvoiceDate(a.data.tax_invoice_date || '')
+      setExpectedDeliveryDate(a.data.expected_delivery_date || '')
+      setDeliveryAddress(a.data.delivery_address || '')
+      setNotes(a.data.notes || '')
       setItems((b.data ?? []).map((i) => ({
         id: i.id,
         item_name: i.item_name,
@@ -289,6 +350,9 @@ export default function POForm() {
       net_amount: netAmount,
       vendor_tax_invoice_no: vendorTaxInvoiceNo || null,
       tax_invoice_date: taxInvoiceDate || null,
+      expected_delivery_date: expectedDeliveryDate || null,
+      delivery_address: deliveryAddress || null,
+      notes: notes || null,
       project_id: projectId || pr?.project_id || null,
     }
 
@@ -328,11 +392,30 @@ export default function POForm() {
 
   return (
     <div className="max-w-4xl space-y-4">
+      {duplicateBanner && (
+        <div className="rounded-xl border border-blue-200 bg-blue-50 p-3.5 text-xs text-blue-900 flex items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">📋</span>
+            <div>
+              <b>สร้างซ้ำจากใบสั่งซื้อเดิมเรียบร้อย!</b>
+              <p className="text-blue-700 text-[11px]">ระบบคัดลอกข้อมูลร้านค้า โครงการ เงื่อนไข และรายการสินค้าเดิมมาให้แล้ว คุณสามารถปรับแก้จำนวน ราคา หรือเลือก PR ใหม่ได้</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setDuplicateBanner(false)}
+            className="text-xs text-blue-700 hover:text-blue-900 underline font-semibold cursor-pointer"
+          >
+            ปิด
+          </button>
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold">
-          {id ? `แก้ไขใบสั่งซื้อ ${po?.po_no ?? ''}` : 'สร้างใบสั่งซื้อ (PO) จากใบขอซื้อ'}
+          {id ? `แก้ไขใบสั่งซื้อ ${po?.po_no ?? ''}` : params.get('duplicate_from') ? 'สร้างซ้ำใบสั่งซื้อ (Duplicate PO)' : 'สร้างใบสั่งซื้อ (PO)'}
         </h2>
-        <Link to="/purchasing" className="text-xs text-steel-500 hover:underline">← กลับไปศูนย์จัดซื้อ</Link>
+        <Link to="/purchasing?tab=po" className="text-xs text-steel-500 hover:underline">← กลับไปรายการใบสั่งซื้อ</Link>
       </div>
 
       <div className="space-y-4 rounded-lg bg-white p-5 shadow-sm">
@@ -715,6 +798,82 @@ export default function POForm() {
               </div>
             </div>
           )}
+        </div>
+
+        {/* กำหนดส่งมอบและสถานที่ส่งมอบ (Due Date & Delivery Information) */}
+        <div className="rounded-xl border border-steel-200 bg-white p-4 shadow-xs space-y-3">
+          <div className="flex items-center justify-between border-b border-steel-100 pb-2">
+            <h4 className="font-bold text-xs uppercase tracking-wider text-steel-800 flex items-center gap-1.5">
+              <span>🚚</span>
+              <span>กำหนดส่งมอบและสถานที่จัดส่ง (Delivery & Due Date)</span>
+            </h4>
+            <span className="text-[11px] text-steel-500">สำหรับระบบติดตามวันครบกำหนด</span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-steel-800 mb-1">
+                📅 วันที่กำหนดส่งมอบ / ครบกำหนด (Due Date)
+              </label>
+              <input
+                type="date"
+                className="input text-xs"
+                value={expectedDeliveryDate}
+                onChange={(e) => setExpectedDeliveryDate(e.target.value)}
+              />
+              <div className="mt-1.5 flex flex-wrap gap-1">
+                <span className="text-[10px] text-steel-500 mr-1 self-center">ปุ่มลัด:</span>
+                {[
+                  { label: '+3 วัน', days: 3 },
+                  { label: '+7 วัน (1 สัปดาห์)', days: 7 },
+                  { label: '+15 วัน', days: 15 },
+                  { label: '+30 วัน (1 เดือน)', days: 30 },
+                ].map((s) => (
+                  <button
+                    key={s.days}
+                    type="button"
+                    onClick={() => {
+                      const d = new Date()
+                      d.setDate(d.getDate() + s.days)
+                      setExpectedDeliveryDate(d.toISOString().split('T')[0])
+                    }}
+                    className="rounded bg-steel-100 hover:bg-steel-200 px-2 py-0.5 text-[10px] font-semibold text-steel-700 transition cursor-pointer"
+                  >
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-steel-800 mb-1">
+                📍 สถานที่ส่งมอบสินค้า / ที่อยู่จัดส่งหน้างาน
+              </label>
+              <input
+                type="text"
+                placeholder="เช่น สโตร์หลักสำนักงานใหญ่ หรือ ไซต์งานโครงการตามที่ระบุ"
+                className="input text-xs"
+                value={deliveryAddress}
+                onChange={(e) => setDeliveryAddress(e.target.value)}
+              />
+              <span className="text-[10px] text-steel-500 mt-1 block">
+                จะนำไปแสดงในใบสั่งซื้อและป้ายจ่าหน้าซองพัสดุ
+              </span>
+            </div>
+
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-bold text-steel-800 mb-1">
+                📝 ข้อตกลงและหมายเหตุเพิ่มเติมสำหรับผู้ขาย
+              </label>
+              <textarea
+                rows={2}
+                placeholder="เช่น ส่งของช่วงเวลา 09:00 - 16:00 น., กรุณาติดต่อหัวหน้าช่างก่อนเข้าส่ง 1 วัน"
+                className="input text-xs leading-relaxed"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+              />
+            </div>
+          </div>
         </div>
 
         {/* รายการสั่งซื้อ */}

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams, Link } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams, Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { EMPTY_ITEM, itemsValid } from '../../lib/purchasing'
 import ItemsEditor from './ItemsEditor'
@@ -8,6 +8,7 @@ import { FieldError } from '../../components/FieldError'
 // สร้าง (/purchasing/pr/new) และแก้ไข (/purchasing/pr/:id/edit) ใบขอซื้อ
 export default function PRForm() {
   const { id } = useParams()
+  const [params] = useSearchParams()
   const navigate = useNavigate()
   const [projects, setProjects] = useState([])
   const [projectId, setProjectId] = useState('')
@@ -20,6 +21,26 @@ export default function PRForm() {
 
   useEffect(() => {
     supabase.from('projects').select('id, project_code, project_name').order('project_code').then(({ data }) => setProjects(data ?? []))
+
+    // โหลดรายการจากใบเสนอราคาถ้ามีการส่งต่อมา (Quotation -> PR)
+    const qId = params.get('quotation_id')
+    if (qId && !id) {
+      Promise.all([
+        supabase.from('quotations').select('project_id').eq('id', qId).single(),
+        supabase.from('quotation_items').select('*').eq('quotation_id', qId),
+      ]).then(([qRes, itemsRes]) => {
+        if (qRes.data?.project_id) setProjectId(qRes.data.project_id)
+        if (itemsRes.data && itemsRes.data.length > 0) {
+          setItems(itemsRes.data.map((i) => ({
+            item_name: i.item_name,
+            quantity: String(i.quantity || 1),
+            unit: i.unit || 'ชุด',
+            price: String(i.unit_price || ''),
+          })))
+        }
+      })
+    }
+
     if (!id) return
     Promise.all([
       supabase.from('purchase_requisitions').select('*').eq('id', id).single(),
@@ -29,7 +50,7 @@ export default function PRForm() {
       setProjectId(a.data.project_id || ''); setStatus(a.data.status)
       setItems((b.data ?? []).map((i) => ({ item_name: i.item_name, quantity: String(i.quantity), unit: i.unit ?? '', price: String(i.estimated_price ?? '') })))
     })
-  }, [id])
+  }, [id, params])
 
   async function save() {
     setError('')

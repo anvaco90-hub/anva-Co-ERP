@@ -88,6 +88,9 @@ export default function PODocumentModal({ po, items, onClose }) {
                 <div className="mt-2 text-xs space-y-0.5">
                   <div>เลขที่: <b className="font-mono text-sm">{po.po_no}</b></div>
                   <div>วันที่: <b>{orderDate}</b></div>
+                  {po.expected_delivery_date && (
+                    <div className="text-emerald-800">กำหนดส่งมอบ: <b>{po.expected_delivery_date}</b></div>
+                  )}
                   {po.pr?.pr_no && <div>อ้างอิง PR: <b className="font-mono">{po.pr.pr_no}</b></div>}
                   {po.quotation_no && <div>ใบเสนอราคา: <b>{po.quotation_no}</b></div>}
                 </div>
@@ -110,7 +113,7 @@ export default function PODocumentModal({ po, items, onClose }) {
                 <div className="font-bold text-sm">
                   {po.projects ? `${po.projects.project_code} ${po.projects.project_name}` : '🏢 ของกลางบริษัท / สต็อกส่วนกลาง'}
                 </div>
-                <div className="text-neutral-600">สถานที่ส่งมอบ: สโตร์หลัก / หน้างานโครงการ</div>
+                <div className="text-neutral-600">สถานที่ส่งมอบ: {po.delivery_address || 'สโตร์หลัก / หน้างานโครงการ'}</div>
                 <div className="mt-2 text-neutral-700">
                   ผู้สั่งซื้อ: <b>{po.buyer_name || po.creator?.full_name || 'เจ้าหน้าที่จัดซื้อ'}</b>
                 </div>
@@ -154,6 +157,7 @@ export default function PODocumentModal({ po, items, onClose }) {
                     <p>1. ชำระเงิน: <b>{paymentLabel}</b></p>
                     {po.quotation_no && <p>2. ตามใบเสนอราคาเลขที่: <b>{po.quotation_no}</b> {po.quotation_date ? `ลงวันที่ ${po.quotation_date}` : ''}</p>}
                     <p>3. กรุณาแนบสำเนาใบสั่งซื้อนี้มาพร้อมกับใบส่งสินค้า / ใบแจ้งหนี้ทุกครั้ง</p>
+                    {po.notes && <p>4. หมายเหตุ: <span className="font-semibold text-black">{po.notes}</span></p>}
                   </td>
                   <td className="py-1.5 px-3 text-right font-medium">มูลค่าสินค้าก่อนภาษี:</td>
                   <td className="py-1.5 px-3 text-right font-semibold">{baht(amountBeforeVat)}</td>

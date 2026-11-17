@@ -8,8 +8,11 @@ import Badge from './Badge'
 import AuditPanel from './AuditPanel'
 import ItemProjectUsageModal from '../../components/ItemProjectUsageModal'
 import PODocumentModal from '../../components/reports/PODocumentModal'
+import EnvelopePrintModal from '../../components/reports/EnvelopePrintModal'
+import POShareModal from '../../components/purchasing/POShareModal'
 import PaymentActionModal from '../../components/PaymentActionModal'
 import { PAYMENT_TYPES } from './POForm'
+import { getPoDueStatus, formatThaiDate } from '../../lib/poDueStatus'
 
 export default function PODetail() {
   const { id } = useParams()
@@ -21,6 +24,8 @@ export default function PODetail() {
   const [qty, setQty] = useState({}) // po_item_id -> จำนวนที่รับครั้งนี้
   const [selectedUsageItem, setSelectedUsageItem] = useState(null)
   const [showPoPdf, setShowPoPdf] = useState(false)
+  const [showEnvelope, setShowEnvelope] = useState(false)
+  const [showShare, setShowShare] = useState(false)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [vendorInvoiceNo, setVendorInvoiceNo] = useState('')
   const [busy, setBusy] = useState(false)
@@ -30,7 +35,7 @@ export default function PODetail() {
   const load = useCallback(async () => {
     const [a, b, c] = await Promise.all([
       supabase.from('purchase_orders')
-        .select('*, vendors(vendor_name, tax_id), projects(project_code, project_name), creator:profiles!created_by(full_name), updater:profiles!updated_by(full_name)')
+        .select('*, vendors(vendor_name, tax_id, contact_person, phone, address), projects(project_code, project_name), creator:profiles!created_by(full_name), updater:profiles!updated_by(full_name)')
         .eq('id', id).single(),
       supabase.from('purchase_order_items').select('*').eq('po_id', id).order('item_name'),
       supabase.from('goods_receipts').select('id, grn_no, received_date').eq('po_id', id).order('received_date', { ascending: false }),
@@ -127,37 +132,142 @@ export default function PODetail() {
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-1.5">
           {/* ปุ่มจ่ายชำระเงิน (Disburse Payment - PAY) */}
           {po.status !== 'cancelled' && (
             <button
               type="button"
               onClick={() => setShowPaymentModal(true)}
-              className="inline-flex items-center gap-1.5 rounded-md bg-sky-700 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-sky-800 transition"
+              className="inline-flex items-center gap-1 rounded-lg bg-sky-700 hover:bg-sky-800 px-3 py-1.5 text-xs font-bold text-white shadow-xs transition cursor-pointer"
             >
               <span>💸</span>
               <span>จ่ายชำระเงิน (PAY)</span>
             </button>
           )}
 
+          {/* 1. พิมพ์ใบสั่งซื้อ (PDF) */}
           <button
             type="button"
             onClick={() => setShowPoPdf(true)}
-            className="inline-flex items-center gap-1.5 rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-emerald-700 transition"
+            className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 px-3 py-1.5 text-xs font-bold text-white shadow-xs transition cursor-pointer"
+            title="พิมพ์เอกสารใบสั่งซื้อขนาด A4 หรือบันทึก PDF"
           >
             <span>🖨️</span>
-            <span>พิมพ์ใบสั่งซื้อ (PDF)</span>
+            <span>พิมพ์ / PDF</span>
           </button>
 
+          {/* 2. พิมพ์หน้าจ่าซอง */}
+          <button
+            type="button"
+            onClick={() => setShowEnvelope(true)}
+            className="inline-flex items-center gap-1 rounded-lg border border-steel-300 bg-white hover:bg-steel-50 px-3 py-1.5 text-xs font-semibold text-steel-700 transition shadow-xs cursor-pointer"
+            title="พิมพ์หน้าจ่าซองจดหมายส่งเอกสารหรือเช็คถึงผู้ขาย"
+          >
+            <span>✉️</span>
+            <span>พิมพ์หน้าจ่าซอง</span>
+          </button>
+
+          {/* 3. แชร์ */}
+          <button
+            type="button"
+            onClick={() => setShowShare(true)}
+            className="inline-flex items-center gap-1 rounded-lg border border-steel-300 bg-white hover:bg-steel-50 px-2.5 py-1.5 text-xs font-semibold text-steel-700 transition shadow-xs cursor-pointer"
+            title="แชร์ลิงก์หรือข้อความสรุปทาง LINE/Email"
+          >
+            <span>🔗</span>
+            <span>แชร์</span>
+          </button>
+
+          {/* 4. สร้างซ้ำ (Duplicate) */}
+          {canEdit && (
+            <button
+              type="button"
+              onClick={() => navigate(`/purchasing/po/new?duplicate_from=${po.id}`)}
+              className="inline-flex items-center gap-1 rounded-lg border border-steel-300 bg-white hover:bg-steel-50 px-2.5 py-1.5 text-xs font-semibold text-steel-700 transition shadow-xs cursor-pointer"
+              title="คัดลอกข้อมูลและรายการสินค้าเพื่อสร้างใบสั่งซื้อใหม่"
+            >
+              <span>📋</span>
+              <span>สร้างซ้ำ</span>
+            </button>
+          )}
+
+          {/* 5. แก้ไข */}
+          {canEdit && po.status !== 'cancelled' && (
+            <Link
+              to={`/purchasing/po/${po.id}/edit`}
+              className="inline-flex items-center gap-1 rounded-lg border border-steel-300 bg-white hover:bg-steel-50 px-2.5 py-1.5 text-xs font-semibold text-steel-700 transition shadow-xs"
+              title="แก้ไขใบสั่งซื้อ"
+            >
+              <span>✏️</span>
+              <span>แก้ไข</span>
+            </Link>
+          )}
+
+          {/* 6. ยกเลิก / ลบ */}
           {canEdit && (
             <>
-              {po.status !== 'cancelled' && <Link to={`/purchasing/po/${po.id}/edit`} className="btn-ghost !py-1 text-xs">แก้ไข</Link>}
-              {po.status !== 'cancelled' && <button className="btn-ghost !py-1 text-xs" onClick={cancelPo}>ยกเลิกใบสั่งซื้อ</button>}
-              {grns.length === 0 && <button className="btn-ghost !py-1 text-xs text-red-700" onClick={removePo}>ลบ</button>}
+              {po.status !== 'cancelled' && (
+                <button
+                  type="button"
+                  className="rounded-lg border border-steel-200 bg-white px-2.5 py-1.5 text-xs font-medium text-steel-600 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-300 transition cursor-pointer"
+                  onClick={cancelPo}
+                >
+                  ยกเลิก PO
+                </button>
+              )}
+              {grns.length === 0 && (
+                <button
+                  type="button"
+                  className="rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-xs font-bold text-rose-700 hover:bg-rose-100 transition cursor-pointer"
+                  onClick={removePo}
+                  title="ลบใบสั่งซื้อ"
+                >
+                  ลบ
+                </button>
+              )}
             </>
           )}
         </div>
       </div>
+
+      {/* Due Date & Delivery Tracking Banner */}
+      {(() => {
+        const dueStatus = getPoDueStatus(po)
+        if (!dueStatus) return null
+        return (
+          <div className={`rounded-xl border p-3.5 flex flex-wrap items-center justify-between gap-3 shadow-xs ${
+            dueStatus.code === 'overdue'
+              ? 'bg-rose-50 border-rose-300 text-rose-900'
+              : dueStatus.code === 'today'
+              ? 'bg-amber-50 border-amber-300 text-amber-900'
+              : dueStatus.code === 'completed'
+              ? 'bg-emerald-50 border-emerald-300 text-emerald-900'
+              : 'bg-white border-steel-200 text-steel-800'
+          }`}>
+            <div className="flex items-center gap-2.5">
+              <span className="text-xl">{dueStatus.icon}</span>
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-bold text-xs uppercase tracking-wider text-steel-700">กำหนดส่งมอบสินค้า (Due Date):</span>
+                  <span className="font-bold font-mono text-sm text-ink">
+                    {po.expected_delivery_date ? formatThaiDate(po.expected_delivery_date, true) : 'ไม่ได้ระบุกำหนดส่ง'}
+                  </span>
+                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${dueStatus.badgeCls}`}>
+                    {dueStatus.label}
+                  </span>
+                </div>
+                <p className="text-[11px] opacity-80 mt-0.5">{dueStatus.description}</p>
+              </div>
+            </div>
+
+            {po.delivery_address && (
+              <div className="text-xs bg-white/70 px-2.5 py-1 rounded-lg border border-steel-200">
+                <span className="text-steel-500">สถานที่ส่งมอบ:</span> <span className="font-semibold text-steel-900">{po.delivery_address}</span>
+              </div>
+            )}
+          </div>
+        )
+      })()}
 
       {/* การ์ดสรุปเงื่อนไขการชำระเงินและมัดจำ (Payment Terms & Deposit Breakdown) */}
       <div className="rounded-xl border border-steel-200 bg-white p-4 shadow-sm">
@@ -369,6 +479,16 @@ export default function PODetail() {
             load()
           }}
         />
+      )}
+
+      {/* โมดัลพิมพ์หน้าจ่าซองส่งเอกสารถึงผู้ขาย */}
+      {showEnvelope && (
+        <EnvelopePrintModal po={po} onClose={() => setShowEnvelope(false)} />
+      )}
+
+      {/* โมดัลแชร์ข้อมูลใบสั่งซื้อ */}
+      {showShare && (
+        <POShareModal po={po} onClose={() => setShowShare(false)} />
       )}
     </div>
   )

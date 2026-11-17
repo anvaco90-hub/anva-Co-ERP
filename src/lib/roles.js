@@ -10,8 +10,29 @@ export const ROLE_LABELS = {
 export const NAV_ITEMS = [
   { path: '/', label: 'แดชบอร์ด', roles: ['admin', 'accounting', 'purchasing', 'store', 'hr', 'management'] },
   { path: '/projects', label: 'โครงการ', roles: ['admin', 'management', 'accounting', 'purchasing', 'store'] },
-  { path: '/quotations', label: 'ใบเสนอราคา', roles: ['admin', 'management', 'accounting', 'purchasing', 'store'] },
-  { path: '/purchasing', label: 'จัดซื้อ', roles: ['admin', 'purchasing', 'store', 'management'] },
+  {
+    path: '/quotations',
+    label: 'งานขายและเสนอราคา',
+    roles: ['admin', 'management', 'accounting', 'purchasing', 'store'],
+    children: [
+      { path: '/quotations?tab=all', label: 'ศูนย์งานขาย & ใบเสนอราคา', roles: ['admin', 'management', 'accounting', 'purchasing', 'store'] },
+      { path: '/quotations?tab=signed', label: 'ลูกค้าเซ็น PO / อนุมัติแล้ว', roles: ['admin', 'management', 'accounting', 'purchasing', 'store'] },
+      { path: '/quotations?tab=pipeline', label: 'ไปป์ไลน์วงจรขาย ➔ จัดซื้อ', roles: ['admin', 'management', 'accounting', 'purchasing', 'store'] },
+      { path: '/boq', label: 'ระบบประมาณราคา (BOQ)', roles: ['admin', 'management', 'accounting', 'purchasing', 'store'] },
+    ],
+  },
+  {
+    path: '/purchasing',
+    label: 'จัดซื้อและพัสดุ',
+    roles: ['admin', 'purchasing', 'store', 'management'],
+    children: [
+      { path: '/purchasing?tab=pipeline', label: 'ศูนย์จัดซื้อ & วงจรเอกสาร', roles: ['admin', 'purchasing', 'store', 'management'] },
+      { path: '/purchasing?tab=pr', label: 'ใบขอซื้อ (PR)', roles: ['admin', 'purchasing', 'store', 'management'] },
+      { path: '/purchasing?tab=po', label: 'ใบสั่งซื้อ (PO)', roles: ['admin', 'purchasing', 'store', 'management'] },
+      { path: '/purchasing?tab=receipts', label: 'ตรวจรับของเข้า (GR)', roles: ['admin', 'purchasing', 'store', 'management'] },
+      { path: '/purchasing/vendors', label: 'ทะเบียนคู่ค้า / ผู้ขาย (Vendors)', roles: ['admin', 'purchasing', 'store', 'management'] },
+    ],
+  },
   { path: '/store', label: 'สโตร์', roles: ['admin', 'store', 'management'] },
   {
     path: '/accounting',
