@@ -92,6 +92,11 @@ export default function QuotationPrintModal({ quotation, items, onClose }) {
                 {quotation.ref_no && <div>เลขที่อ้างอิง: <span className="font-mono font-semibold">{quotation.ref_no}</span></div>}
                 <div>พนักงานขาย: <b>{quotation.sales_person || 'เจ้าหน้าที่ฝ่ายขาย'}</b></div>
                 <div>สกุลเงิน: <b>{currency}</b> · คลังสินค้า: <b>{quotation.warehouse_name || 'สโตร์หลัก'}</b></div>
+                {quotation.customer_po_no && (
+                  <div className="rounded bg-emerald-50 border border-emerald-300 p-1.5 text-emerald-900 text-[11px] font-bold mt-1">
+                    ✅ เลขที่ PO ลูกค้า: <span className="font-mono">{quotation.customer_po_no}</span> {quotation.customer_po_date ? `(ลงวันที่ ${new Date(quotation.customer_po_date).toLocaleDateString('th-TH')})` : ''}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -114,7 +119,11 @@ export default function QuotationPrintModal({ quotation, items, onClose }) {
                     <td className="py-2 px-1 text-center text-neutral-500">{idx + 1}</td>
                     <td className="py-2 px-3">
                       <div className="font-semibold text-neutral-900">{it.item_name}</div>
-                      {it.description && <div className="text-[10px] text-neutral-500 mt-0.5">{it.description}</div>}
+                      {it.description && (
+                        <div className="text-[10px] text-neutral-600 mt-1 whitespace-pre-line leading-relaxed">
+                          {it.description}
+                        </div>
+                      )}
                     </td>
                     <td className="py-2 px-2 text-right font-semibold">{it.quantity}</td>
                     <td className="py-2 px-1 text-center text-neutral-600">{it.unit || '-'}</td>

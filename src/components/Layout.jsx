@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { NAV_ITEMS, ROLE_LABELS } from '../lib/roles'
-import { ChevronDown, ChevronRight, BookOpen, ArrowLeft, Home } from 'lucide-react'
+import { ChevronDown, ChevronRight, BookOpen, ShoppingCart, ArrowLeft, Home, FileText } from 'lucide-react'
 
 export default function Layout() {
   const { profile, signOut } = useAuth()
@@ -14,7 +14,22 @@ export default function Layout() {
   // State to track expanded menu sections (default open if currently on that section)
   const [expandedSections, setExpandedSections] = useState({
     '/accounting': location.pathname.startsWith('/accounting'),
+    '/purchasing': location.pathname.startsWith('/purchasing'),
+    '/quotations': location.pathname.startsWith('/quotations'),
   })
+
+  // Automatically keep section open if user navigates to it
+  useEffect(() => {
+    if (location.pathname.startsWith('/quotations')) {
+      setExpandedSections((prev) => ({ ...prev, '/quotations': true }))
+    }
+    if (location.pathname.startsWith('/purchasing')) {
+      setExpandedSections((prev) => ({ ...prev, '/purchasing': true }))
+    }
+    if (location.pathname.startsWith('/accounting')) {
+      setExpandedSections((prev) => ({ ...prev, '/accounting': true }))
+    }
+  }, [location.pathname])
 
   const toggleSection = (path) => {
     setExpandedSections((prev) => ({
@@ -28,12 +43,31 @@ export default function Layout() {
       isActive ? 'bg-hivis text-ink font-bold shadow-sm' : 'text-steel-100 hover:bg-steel-800'
     }`
 
-  const subLinkCls = ({ isActive }) =>
-    `flex items-center gap-2 rounded-md px-3 py-1.5 text-xs font-medium transition ${
-      isActive
-        ? 'bg-hivis text-ink font-bold shadow-sm'
-        : 'text-steel-300 hover:text-white hover:bg-steel-800/60'
-    }`
+  const isSubActive = (subPath) => {
+    if (subPath.includes('?')) {
+      const [path, search] = subPath.split('?')
+      if (location.pathname !== path) return false
+      const currentParams = new URLSearchParams(location.search)
+      const targetParams = new URLSearchParams(search)
+      const defaultTab = path === '/purchasing' ? 'pipeline' : path === '/quotations' ? 'all' : null
+      const currentTab = currentParams.get('tab') || defaultTab
+      if (targetParams.has('tab')) {
+        return currentTab === targetParams.get('tab')
+      }
+      for (const [key, val] of targetParams.entries()) {
+        if (currentParams.get(key) !== val) return false
+      }
+      return true
+    }
+    // Sub-routes without query strings (e.g. /purchasing/vendors, /accounting/journals)
+    return location.pathname === subPath || location.pathname.startsWith(subPath + '/')
+  }
+
+  const getSectionIcon = (path) => {
+    if (path === '/quotations') return <FileText className="h-4 w-4 text-hivis shrink-0" />
+    if (path === '/purchasing') return <ShoppingCart className="h-4 w-4 text-hivis shrink-0" />
+    return <BookOpen className="h-4 w-4 text-hivis shrink-0" />
+  }
 
   return (
     <div className="min-h-screen md:flex bg-slate-50">
@@ -72,7 +106,7 @@ export default function Layout() {
                     }`}
                   >
                     <span className="flex items-center gap-2">
-                      <BookOpen className="h-4 w-4 text-hivis" />
+                      {getSectionIcon(i.path)}
                       <span>{i.label}</span>
                     </span>
                     {isExpanded ? (
@@ -84,18 +118,25 @@ export default function Layout() {
 
                   {/* Sub-Items */}
                   {isExpanded && (
-                    <div className="pl-4 pr-1 py-1 space-y-0.5 border-l border-steel-700 ml-3">
-                      {i.children.map((sub) => (
-                        <NavLink
-                          key={sub.path}
-                          to={sub.path}
-                          onClick={() => setOpen(false)}
-                          className={subLinkCls}
-                        >
-                          <span className="h-1.5 w-1.5 rounded-full bg-steel-500 shrink-0" />
-                          <span className="truncate">{sub.label}</span>
-                        </NavLink>
-                      ))}
+                    <div className="pl-3 pr-1 py-1 space-y-1 border-l border-steel-700/80 ml-3">
+                      {i.children.map((sub) => {
+                        const active = isSubActive(sub.path)
+                        return (
+                          <NavLink
+                            key={sub.path}
+                            to={sub.path}
+                            onClick={() => setOpen(false)}
+                            className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-xs font-medium transition ${
+                              active
+                                ? 'bg-hivis text-ink font-bold shadow-sm'
+                                : 'text-steel-300 hover:text-white hover:bg-steel-800/60'
+                            }`}
+                          >
+                            <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${active ? 'bg-ink' : 'bg-steel-500'}`} />
+                            <span className="truncate">{sub.label}</span>
+                          </NavLink>
+                        )
+                      })}
                     </div>
                   )}
                 </div>

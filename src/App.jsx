@@ -26,6 +26,9 @@ import ProjectDetail from './pages/projects/ProjectDetail'
 import QuotationList from './pages/quotations/QuotationList'
 import QuotationForm from './pages/quotations/QuotationForm'
 import QuotationDetail from './pages/quotations/QuotationDetail'
+import BOQList from './pages/boq/BOQList'
+import BOQForm from './pages/boq/BOQForm'
+import BOQDetail from './pages/boq/BOQDetail'
 import AccountingDashboard from './pages/accounting/AccountingDashboard'
 import AccountingLayout from './pages/accounting/AccountingLayout'
 import JournalEntriesPage from './pages/accounting/JournalEntriesPage'
@@ -41,7 +44,7 @@ const rolesOf = (path) => {
   for (const item of NAV_ITEMS) {
     if (item.path === path) return item.roles
     if (item.children) {
-      const child = item.children.find((c) => c.path === path)
+      const child = item.children.find((c) => c.path === path || c.path.split('?')[0] === path)
       if (child) return child.roles || item.roles
     }
   }
@@ -69,6 +72,12 @@ export default function App() {
         <Route path="quotations/new" element={guard('/quotations', <QuotationForm />)} />
         <Route path="quotations/:id" element={guard('/quotations', <QuotationDetail />)} />
         <Route path="quotations/:id/edit" element={guard('/quotations', <QuotationForm />)} />
+        
+        {/* ระบบ BOQ (Bill of Quantities) */}
+        <Route path="boq" element={guard('/boq', <BOQList />)} />
+        <Route path="boq/new" element={guard('/boq', <BOQForm />)} />
+        <Route path="boq/:id" element={guard('/boq', <BOQDetail />)} />
+        <Route path="boq/:id/edit" element={guard('/boq', <BOQForm />)} />
         <Route path="purchasing" element={guard('/purchasing', <PurchasingLayout />)}>
           <Route index element={<PurchasingHub />} />
           <Route path="pr/new" element={<PRForm />} />

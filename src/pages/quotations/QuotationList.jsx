@@ -1,107 +1,175 @@
-import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useState, useMemo } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { baht } from '../../lib/projects'
 import QuotationPrintModal from '../../components/reports/QuotationPrintModal'
+import EnvelopePrintModal from '../../components/reports/EnvelopePrintModal'
+import QuotationShareModal from '../../components/quotations/QuotationShareModal'
+import CustomerPoModal from '../../components/quotations/CustomerPoModal'
 import PaymentActionModal from '../../components/PaymentActionModal'
+import {
+  Printer,
+  Mail,
+  Share2,
+  Copy,
+  Edit3,
+  Trash2,
+  MoreVertical,
+  Eye,
+  FileText,
+  DollarSign,
+  Search,
+  Plus,
+  RefreshCw,
+  ShoppingCart,
+  Calendar,
+  X,
+  FileSpreadsheet,
+  CheckCircle2,
+  Clock,
+  ArrowRight,
+  TrendingUp,
+} from 'lucide-react'
 
-const STATUS_MAP = {
-  draft: { label: 'ฉบับร่าง', color: 'bg-steel-100 text-steel-700 border-steel-300' },
-  sent: { label: 'ส่งแล้ว', color: 'bg-sky-100 text-sky-800 border-sky-300' },
-  approved: { label: 'อนุมัติแล้ว', color: 'bg-emerald-100 text-emerald-800 border-emerald-300' },
-  rejected: { label: 'ปฏิเสธ', color: 'bg-rose-100 text-rose-800 border-rose-300' },
-  expired: { label: 'หมดอายุ', color: 'bg-amber-100 text-amber-800 border-amber-300' },
-  partial: { label: 'รับชำระบางส่วน', color: 'bg-blue-100 text-blue-800 border-blue-300' },
+// สถานะการขายแบบเข้าใจง่าย ไม่ซับซ้อน
+const STATUS_CONFIG = {
+  draft: { label: 'ฉบับร่าง', cls: 'bg-slate-100 text-slate-700 border-slate-200' },
+  sent: { label: 'ส่งลูกค้าแล้ว', cls: 'bg-sky-50 text-sky-700 border-sky-200' },
+  approved: { label: 'ลูกค้าเซ็น PO แล้ว', cls: 'bg-emerald-50 text-emerald-800 border-emerald-300 font-bold' },
+  rejected: { label: 'ปฏิเสธ / ยกเลิก', cls: 'bg-rose-50 text-rose-700 border-rose-200' },
+  expired: { label: 'หมดอายุยืนราคา', cls: 'bg-amber-50 text-amber-800 border-amber-200' },
+  partial: { label: 'รับชำระบางส่วน', cls: 'bg-blue-50 text-blue-800 border-blue-200' },
 }
 
-const getAccountingStatus = (q) => {
-  if (q.status === 'rejected') return { label: 'ยกเลิก', color: 'bg-rose-50 text-rose-700 border-rose-300' }
-  if (q.status === 'approved') return { label: 'อนุมัติแล้ว', color: 'bg-emerald-100 text-emerald-800 border-emerald-300' }
-  return { label: 'รอดำเนินการ', color: 'bg-amber-100 text-amber-800 border-amber-300' }
-}
+// คำนวณวันสิ้นสุดยืนราคา
+function getExpiryInfo(q) {
+  const expiry = q.valid_until || q.expiry_date
+  if (!expiry) return null
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const parts = String(expiry).split('T')[0].split('-').map(Number)
+  if (parts.length < 3) return null
+  const expDate = new Date(parts[0], parts[1] - 1, parts[2])
+  const diffDays = Math.round((expDate - today) / (1000 * 60 * 60 * 24))
 
-const SIMULATED_QUOTATIONS_LIST = [
-  {
-    id: 'qt-001',
-    quotation_no: 'QT202610-0001',
-    customer_name: 'บริษัท สยามพาณิชย์ พลังงานสะอาด จำกัด (มหาชน)',
-    customer_address: '252/89 อาคารเมืองไทย-ภัทร คอมเพล็กซ์ ถ.รัชดาภิเษก กรุงเทพฯ',
-    total_amount: 2675000,
-    subtotal: 2500000,
-    vat_amount: 175000,
-    status: 'approved',
-    quotation_date: '2026-10-02',
-    valid_until: '2026-11-02',
-    notes: 'โครงการติดตั้งระบบผลิตไฟฟ้าพลังงานแสงอาทิตย์ Solar Rooftop 150 kWp',
-    created_at: '2026-10-02T10:00:00Z',
-    projects: { project_code: 'PRJ-2026-001', project_name: 'โครงการ Solar Rooftop 150 kWp' },
-  },
-  {
-    id: 'qt-002',
-    quotation_no: 'QT202610-0002',
-    customer_name: 'บริษัท ไทยรุ่งพัฒนา เอ็นจิเนียริ่ง จำกัด',
-    customer_address: '88/12 หมู่ 4 นิคมพัฒนา จ.ระยอง',
-    total_amount: 1926000,
-    subtotal: 1800000,
-    vat_amount: 126000,
-    status: 'approved',
-    quotation_date: '2026-10-10',
-    valid_until: '2026-11-10',
-    notes: 'โครงการก่อสร้างโกดังเก็บสินค้าและสำนักงาน 2 ชั้น (ชลบุรี)',
-    created_at: '2026-10-10T14:30:00Z',
-    projects: { project_code: 'PRJ-2026-002', project_name: 'โครงการก่อสร้างโกดังเก็บสินค้าและสำนักงาน 2 ชั้น' },
-  },
-  {
-    id: 'qt-003',
-    quotation_no: 'QT202611-0001',
-    customer_name: 'บริษัท พัฒนาการ กรีนพาวเวอร์ จำกัด',
-    customer_address: '333/1 ถนนพัฒนาการ สวนหลวง กรุงเทพฯ',
-    total_amount: 856000,
-    subtotal: 800000,
-    vat_amount: 56000,
-    status: 'sent',
-    quotation_date: '2026-11-05',
-    valid_until: '2026-12-05',
-    notes: 'งานติดตั้ง Solar Carport 50 kWp ลานจอดรถ',
-    created_at: '2026-11-05T09:15:00Z',
-    projects: { project_code: 'PRJ-2026-004', project_name: 'โครงการติดตั้งระบบ Solar Carport 50 kWp' },
-  },
-]
+  if (diffDays < 0) {
+    return { text: `หมดอายุ (${Math.abs(diffDays)} วัน)`, cls: 'text-rose-600', dot: 'bg-rose-500' }
+  }
+  if (diffDays <= 7) {
+    return { text: diffDays === 0 ? 'ครบกำหนดวันนี้' : `เหลือ ${diffDays} วัน`, cls: 'text-amber-700 font-semibold', dot: 'bg-amber-500' }
+  }
+  return { text: `เหลือ ${diffDays} วัน`, cls: 'text-emerald-700', dot: 'bg-emerald-500' }
+}
 
 export default function QuotationList() {
+  const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const activeTab = searchParams.get('tab') || 'all' // 'all' | 'signed' | 'pipeline'
+
   const [quotations, setQuotations] = useState([])
+  const [projects, setProjects] = useState([])
   const [loading, setLoading] = useState(true)
+
+  // ตัวกรองแบบกระชับ (Clean Filters)
   const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState('all')
+  const [filterProject, setFilterProject] = useState('')
+  const [filterStatus, setFilterStatus] = useState('all')
 
-  // แท็บสลับมุมมอง: 'business' (เอกสารธุรกิจ) | 'accounting' (เอกสารบัญชี)
-  const [docViewMode, setDocViewMode] = useState('business')
-  const [accountingFilter, setAccountingFilter] = useState('all') // 'all' | 'รอดำเนินการ' | 'อนุมัติแล้ว' | 'ยกเลิก'
+  // ตัวกรองวันที่แบบ Smart Preset (ไม่รกตา)
+  const [datePreset, setDatePreset] = useState('all') // 'all' | 'today' | 'this_week' | 'this_month' | 'next_30' | 'custom'
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
 
-  // State สำหรับ Modal พิมพ์ PDF
+  // โมดัลและเมนู Action
+  const [actionMenuId, setActionMenuId] = useState(null)
   const [printTarget, setPrintTarget] = useState(null)
   const [printItems, setPrintItems] = useState([])
   const [loadingPrint, setLoadingPrint] = useState(false)
-
-  // State สำหรับ Modal รับชำระเงิน (Receive Payment)
+  const [envelopeTarget, setEnvelopeTarget] = useState(null)
+  const [shareTarget, setShareTarget] = useState(null)
+  const [customerPoTarget, setCustomerPoTarget] = useState(null)
   const [paymentTarget, setPaymentTarget] = useState(null)
+
+  // ปิดเมนู action เมื่อคลิกที่อื่น
+  useEffect(() => {
+    const handleOutsideClick = () => setActionMenuId(null)
+    window.addEventListener('click', handleOutsideClick)
+    return () => window.removeEventListener('click', handleOutsideClick)
+  }, [])
+
+  const changeTab = (tab) => {
+    setSearchParams({ tab })
+    setActionMenuId(null)
+  }
+
+  // ปรับเปลี่ยนช่วงเวลาด่วน
+  const handleDatePresetChange = (preset) => {
+    setDatePreset(preset)
+    const now = new Date()
+    const pad = (n) => String(n).padStart(2, '0')
+    const toYMD = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+
+    if (preset === 'all') {
+      setDateFrom('')
+      setDateTo('')
+    } else if (preset === 'today') {
+      const today = toYMD(now)
+      setDateFrom(today)
+      setDateTo(today)
+    } else if (preset === 'this_week') {
+      const start = new Date(now)
+      const day = start.getDay() === 0 ? 7 : start.getDay()
+      start.setDate(start.getDate() - day + 1)
+      const end = new Date(start)
+      end.setDate(end.getDate() + 6)
+      setDateFrom(toYMD(start))
+      setDateTo(toYMD(end))
+    } else if (preset === 'this_month') {
+      const start = new Date(now.getFullYear(), now.getMonth(), 1)
+      const end = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+      setDateFrom(toYMD(start))
+      setDateTo(toYMD(end))
+    } else if (preset === 'next_30') {
+      const start = new Date(now)
+      const end = new Date(now)
+      end.setDate(end.getDate() + 30)
+      setDateFrom(toYMD(start))
+      setDateTo(toYMD(end))
+    }
+  }
+
+  const clearAllFilters = () => {
+    setSearch('')
+    setFilterProject('')
+    setFilterStatus('all')
+    setDatePreset('all')
+    setDateFrom('')
+    setDateTo('')
+  }
+
+  const hasFilter = Boolean(search || filterProject || filterStatus !== 'all' || dateFrom || dateTo)
 
   const fetchQuotations = async () => {
     setLoading(true)
     try {
-      const { data, error } = await supabase
-        .from('quotations')
-        .select('*, projects(project_code, project_name)')
-        .order('created_at', { ascending: false })
+      const [qRes, projRes] = await Promise.all([
+        supabase
+          .from('quotations')
+          .select('*, projects(id, project_code, project_name)')
+          .order('created_at', { ascending: false }),
+        supabase.from('projects').select('id, project_code, project_name').order('project_code'),
+      ])
 
-      if (error || !data || data.length === 0) {
-        setQuotations(SIMULATED_QUOTATIONS_LIST)
+      if (qRes.error) {
+        console.error(qRes.error)
+        setQuotations([])
       } else {
-        setQuotations(data)
+        setQuotations(qRes.data || [])
       }
+      setProjects(projRes.data || [])
     } catch (err) {
       console.error(err)
-      setQuotations(SIMULATED_QUOTATIONS_LIST)
+      setQuotations([])
     } finally {
       setLoading(false)
     }
@@ -122,324 +190,639 @@ export default function QuotationList() {
       setPrintItems(items && items.length > 0 ? items : [
         { item_name: 'แผงโซลาร์เซลล์ JA Solar 550W Mono Half-Cell', quantity: 280, unit: 'แผง', unit_price: 3200, total_amount: 896000 },
         { item_name: 'อินเวอร์เตอร์ Huawei SUN2000-50KTL-M3', quantity: 2, unit: 'เครื่อง', unit_price: 210000, total_amount: 420000 },
-        { item_name: 'งานออกแบบ ติดตั้ง และยื่นขออนุญาตขนานไฟ กฟภ.', quantity: 1, unit: 'ระบบ', unit_price: 1184000, total_amount: 1184000 },
       ])
-    } catch (err) {
+    } catch {
       setPrintTarget(q)
-      setPrintItems([
-        { item_name: 'แผงโซลาร์เซลล์ JA Solar 550W Mono Half-Cell', quantity: 280, unit: 'แผง', unit_price: 3200, total_amount: 896000 },
-        { item_name: 'อินเวอร์เตอร์ Huawei SUN2000-50KTL-M3', quantity: 2, unit: 'เครื่อง', unit_price: 210000, total_amount: 420000 },
-      ])
+      setPrintItems([])
     } finally {
       setLoadingPrint(false)
     }
   }
 
-  // Filtered list
-  const filtered = quotations.filter((q) => {
-    const acc = getAccountingStatus(q)
-    const matchBusiness = statusFilter === 'all' || q.status === statusFilter
-    const matchAccounting = accountingFilter === 'all' || acc.label === accountingFilter
-
-    if (docViewMode === 'accounting' && !matchAccounting) return false
-    if (docViewMode === 'business' && !matchBusiness) return false
-
-    const term = search.toLowerCase().trim()
-    const matchSearch =
-      !term ||
-      q.quotation_no?.toLowerCase().includes(term) ||
-      q.customer_name?.toLowerCase().includes(term) ||
-      q.sales_person?.toLowerCase().includes(term) ||
-      q.projects?.project_name?.toLowerCase().includes(term) ||
-      q.projects?.project_code?.toLowerCase().includes(term)
-
-    return matchSearch
-  })
-
-  // Summary counts
-  const counts = {
-    all: quotations.length,
-    draft: quotations.filter((q) => q.status === 'draft').length,
-    sent: quotations.filter((q) => q.status === 'sent').length,
-    approved: quotations.filter((q) => q.status === 'approved').length,
-    rejected: quotations.filter((q) => q.status === 'rejected').length,
-    accPending: quotations.filter((q) => getAccountingStatus(q).label === 'รอดำเนินการ').length,
-    accApproved: quotations.filter((q) => getAccountingStatus(q).label === 'อนุมัติแล้ว').length,
-    accCancelled: quotations.filter((q) => getAccountingStatus(q).label === 'ยกเลิก').length,
+  const handleDelete = async (qToDelete) => {
+    if (!confirm(`ยืนยันการลบใบเสนอราคา ${qToDelete.quotation_no}? ข้อมูลจะถูกลบออกจากระบบอย่างถาวร`)) return
+    try {
+      const { error } = await supabase.from('quotations').delete().eq('id', qToDelete.id)
+      if (error) throw error
+      setQuotations((prev) => prev.filter((q) => q.id !== qToDelete.id))
+      setActionMenuId(null)
+    } catch (err) {
+      alert('ไม่สามารถลบใบเสนอราคาได้: ' + (err.message || 'โปรดตรวจสอบสิทธิ์'))
+    }
   }
 
+  // คำนวณสรุปสถิติ (KPIs)
+  const stats = useMemo(() => {
+    const totalCount = quotations.length
+    const signedCount = quotations.filter((q) => q.status === 'approved' || q.customer_po_no).length
+    const sentCount = quotations.filter((q) => q.status === 'sent').length
+    const draftCount = quotations.filter((q) => q.status === 'draft').length
+    const totalAmount = quotations
+      .filter((q) => q.status !== 'rejected')
+      .reduce((sum, q) => sum + Number(q.grand_total || q.total_amount || 0), 0)
+    const signedAmount = quotations
+      .filter((q) => q.status === 'approved' || q.customer_po_no)
+      .reduce((sum, q) => sum + Number(q.grand_total || q.total_amount || 0), 0)
+
+    return { totalCount, signedCount, sentCount, draftCount, totalAmount, signedAmount }
+  }, [quotations])
+
+  // รายการที่ผ่านการกรอง (Filtered Data)
+  const filtered = useMemo(() => {
+    return quotations.filter((q) => {
+      // 1. กรองตามแท็บ
+      if (activeTab === 'signed') {
+        const isSigned = q.status === 'approved' || q.customer_po_no
+        if (!isSigned) return false
+      }
+
+      // 2. กรองตามสถานะ
+      if (filterStatus !== 'all' && q.status !== filterStatus) return false
+
+      // 3. กรองตามโครงการ
+      if (filterProject && q.project_id !== filterProject) return false
+
+      // 4. กรองข้อความค้นหา
+      const term = search.toLowerCase().trim()
+      if (term) {
+        const match =
+          q.quotation_no?.toLowerCase().includes(term) ||
+          q.customer_name?.toLowerCase().includes(term) ||
+          q.sales_person?.toLowerCase().includes(term) ||
+          q.projects?.project_name?.toLowerCase().includes(term) ||
+          q.projects?.project_code?.toLowerCase().includes(term) ||
+          q.customer_po_no?.toLowerCase().includes(term) ||
+          q.customer_signer_name?.toLowerCase().includes(term)
+        if (!match) return false
+      }
+
+      // 5. กรองช่วงวันที่ (ดูจากวันที่เสนอราคา)
+      const targetDate = q.quotation_date || q.issue_date
+      if (dateFrom && targetDate && String(targetDate).split('T')[0] < dateFrom) return false
+      if (dateTo && targetDate && String(targetDate).split('T')[0] > dateTo) return false
+
+      return true
+    })
+  }, [quotations, activeTab, filterStatus, filterProject, search, dateFrom, dateTo])
+
   return (
-    <div className="space-y-6">
-      {/* Header & New Button */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="space-y-4">
+      
+      {/* 1. Header & Actions (เรียบหรู สบายตา) */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-ink">การขายและใบเสนอราคา (Sales & Quotations - INV)</h1>
-          <p className="text-sm text-steel-500">
-            ระบบออกใบเสนอราคา/ใบแจ้งหนี้ รันเลขอัตโนมัติ ผูกโครงการ คำนวณ VAT/WHT และเชื่อมโยงสมุดรายวันทั่วไป (General Ledger)
+          <h1 className="text-xl font-bold text-slate-900 tracking-tight">
+            งานขายและใบเสนอราคา (Sales & Quotations)
+          </h1>
+          <p className="text-xs text-slate-500">
+            ระบบจัดการใบเสนอราคา บันทึกการเซ็น PO ของลูกค้า และส่งต่องานเข้าสู่ฝ่ายจัดซื้อ
           </p>
         </div>
-        <Link
-          to="/quotations/new"
-          className="inline-flex items-center justify-center gap-2 rounded-lg bg-hivis px-4 py-2.5 font-bold text-ink shadow hover:bg-yellow-400 transition"
-        >
-          <span>+</span>
-          <span>สร้างใบเสนอราคาใหม่</span>
-        </Link>
-      </div>
 
-      {/* 1. Dual-Status Tab Switch: เอกสารธุรกิจ vs. เอกสารบัญชี */}
-      <div className="flex items-center justify-between border-b border-steel-200 pb-2">
-        <div className="flex gap-2">
-          <button
-            onClick={() => setDocViewMode('business')}
-            className={`px-4 py-2 rounded-lg text-sm font-bold transition flex items-center gap-2 ${
-              docViewMode === 'business'
-                ? 'bg-sky-700 text-white shadow'
-                : 'bg-white text-steel-600 hover:bg-steel-100 border border-steel-200'
-            }`}
+        <div className="flex items-center gap-2">
+          <Link
+            to="/boq"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
           >
-            <span>📁</span>
-            <span>เอกสารธุรกิจ (Sales Documents)</span>
-          </button>
-          <button
-            onClick={() => setDocViewMode('accounting')}
-            className={`px-4 py-2 rounded-lg text-sm font-bold transition flex items-center gap-2 ${
-              docViewMode === 'accounting'
-                ? 'bg-emerald-700 text-white shadow'
-                : 'bg-white text-steel-600 hover:bg-steel-100 border border-steel-200'
-            }`}
+            <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-600" />
+            <span>ระบบ BOQ</span>
+          </Link>
+
+          <Link
+            to="/quotations/new"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 px-3.5 py-1.5 text-xs font-semibold text-white shadow-xs transition"
           >
-            <span>⚖️</span>
-            <span>เอกสารบัญชี (Accounting / General Ledger)</span>
-            <span className="ml-1 px-1.5 py-0.2 rounded-full text-[11px] bg-emerald-200 text-emerald-900 font-bold">
-              Dr/Cr
-            </span>
-          </button>
+            <Plus className="h-3.5 w-3.5 text-amber-400" />
+            <span>+ สร้างใบเสนอราคา</span>
+          </Link>
         </div>
       </div>
 
-      {/* Summary KPI Badges based on active view mode */}
-      {docViewMode === 'business' ? (
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-          <button
-            onClick={() => setStatusFilter('all')}
-            className={`p-3 rounded-lg border text-left transition ${
-              statusFilter === 'all' ? 'bg-steel-800 text-white border-steel-800 shadow' : 'bg-white border-steel-200 text-steel-700 hover:bg-steel-50'
-            }`}
-          >
-            <div className="text-xs uppercase tracking-wider opacity-75">ทั้งหมด</div>
-            <div className="text-xl font-bold mt-1">{counts.all}</div>
-          </button>
-          <button
-            onClick={() => setStatusFilter('draft')}
-            className={`p-3 rounded-lg border text-left transition ${
-              statusFilter === 'draft' ? 'bg-steel-600 text-white border-steel-600 shadow' : 'bg-white border-steel-200 text-steel-700 hover:bg-steel-50'
-            }`}
-          >
-            <div className="text-xs uppercase tracking-wider opacity-75">ฉบับร่าง</div>
-            <div className="text-xl font-bold mt-1">{counts.draft}</div>
-          </button>
-          <button
-            onClick={() => setStatusFilter('sent')}
-            className={`p-3 rounded-lg border text-left transition ${
-              statusFilter === 'sent' ? 'bg-sky-600 text-white border-sky-600 shadow' : 'bg-white border-steel-200 text-steel-700 hover:bg-steel-50'
-            }`}
-          >
-            <div className="text-xs uppercase tracking-wider opacity-75">ส่งลูกค้าแล้ว</div>
-            <div className="text-xl font-bold mt-1">{counts.sent}</div>
-          </button>
-          <button
-            onClick={() => setStatusFilter('approved')}
-            className={`p-3 rounded-lg border text-left transition ${
-              statusFilter === 'approved' ? 'bg-emerald-600 text-white border-emerald-600 shadow' : 'bg-white border-steel-200 text-steel-700 hover:bg-steel-50'
-            }`}
-          >
-            <div className="text-xs uppercase tracking-wider opacity-75">อนุมัติแล้ว</div>
-            <div className="text-xl font-bold mt-1">{counts.approved}</div>
-          </button>
-          <button
-            onClick={() => setStatusFilter('rejected')}
-            className={`p-3 rounded-lg border text-left transition ${
-              statusFilter === 'rejected' ? 'bg-rose-600 text-white border-rose-600 shadow' : 'bg-white border-steel-200 text-steel-700 hover:bg-steel-50'
-            }`}
-          >
-            <div className="text-xs uppercase tracking-wider opacity-75">ปฏิเสธ</div>
-            <div className="text-xl font-bold mt-1">{counts.rejected}</div>
-          </button>
+      {/* 2. Sleek Metric Strip (แถบสรุปตัวเลขแบบมินิมอล ไม่กินพื้นที่หน้าจอ) */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-slate-200 rounded-xl border border-slate-200 bg-white p-1 shadow-2xs">
+        <div className="p-3 text-center sm:text-left">
+          <div className="text-[11px] font-medium text-slate-500">ยอดเสนอราคารวม</div>
+          <div className="mt-0.5 text-lg font-bold text-slate-900 font-mono">
+            {baht(stats.totalAmount)} <span className="text-[10px] font-normal text-slate-500">฿</span>
+          </div>
+          <div className="text-[10px] text-slate-400">{stats.totalCount} ใบเสนอราคา</div>
         </div>
-      ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <button
-            onClick={() => setAccountingFilter('all')}
-            className={`p-3 rounded-lg border text-left transition ${
-              accountingFilter === 'all' ? 'bg-emerald-800 text-white border-emerald-800 shadow' : 'bg-white border-steel-200 text-steel-700 hover:bg-steel-50'
-            }`}
-          >
-            <div className="text-xs uppercase tracking-wider opacity-75">เอกสารบัญชีทั้งหมด</div>
-            <div className="text-xl font-bold mt-1">{counts.all}</div>
-          </button>
-          <button
-            onClick={() => setAccountingFilter('รอดำเนินการ')}
-            className={`p-3 rounded-lg border text-left transition ${
-              accountingFilter === 'รอดำเนินการ' ? 'bg-amber-600 text-white border-amber-600 shadow' : 'bg-white border-steel-200 text-steel-700 hover:bg-steel-50'
-            }`}
-          >
-            <div className="text-xs uppercase tracking-wider opacity-75">⏳ รอดำเนินการ (Draft JV)</div>
-            <div className="text-xl font-bold mt-1">{counts.accPending}</div>
-          </button>
-          <button
-            onClick={() => setAccountingFilter('อนุมัติแล้ว')}
-            className={`p-3 rounded-lg border text-left transition ${
-              accountingFilter === 'อนุมัติแล้ว' ? 'bg-emerald-600 text-white border-emerald-600 shadow' : 'bg-white border-steel-200 text-steel-700 hover:bg-steel-50'
-            }`}
-          >
-            <div className="text-xs uppercase tracking-wider opacity-75">✅ ลงบัญชีแล้ว (Approved JV)</div>
-            <div className="text-xl font-bold mt-1">{counts.accApproved}</div>
-          </button>
-          <button
-            onClick={() => setAccountingFilter('ยกเลิก')}
-            className={`p-3 rounded-lg border text-left transition ${
-              accountingFilter === 'ยกเลิก' ? 'bg-rose-600 text-white border-rose-600 shadow' : 'bg-white border-steel-200 text-steel-700 hover:bg-steel-50'
-            }`}
-          >
-            <div className="text-xs uppercase tracking-wider opacity-75">❌ ยกเลิก / Voided</div>
-            <div className="text-xl font-bold mt-1">{counts.accCancelled}</div>
-          </button>
-        </div>
-      )}
 
-      {/* Filter and Search Bar */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white p-4 rounded-xl border border-steel-200 shadow-sm">
-        <div className="relative w-full sm:w-96">
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="ค้นหาเลขที่, ชื่อลูกค้า, โครงการ, พนักงานขาย..."
-            className="w-full rounded-lg border border-steel-300 pl-10 pr-4 py-2 text-sm focus:border-sky-500 focus:outline-none"
-          />
-          <span className="absolute left-3 top-2.5 text-steel-400">🔍</span>
-          {search && (
+        <div className="p-3 text-center sm:text-left">
+          <div className="text-[11px] font-medium text-emerald-700 flex items-center justify-center sm:justify-start gap-1">
+            <span className="h-2 w-2 rounded-full bg-emerald-500"></span>
+            <span>ลูกค้าเซ็น PO แล้ว</span>
+          </div>
+          <div className="mt-0.5 text-lg font-bold text-emerald-800 font-mono">
+            {baht(stats.signedAmount)} <span className="text-[10px] font-normal text-emerald-600">฿</span>
+          </div>
+          <div className="text-[10px] text-emerald-600 font-medium">{stats.signedCount} ใบ (พร้อมส่งต่อจัดซื้อ)</div>
+        </div>
+
+        <div className="p-3 text-center sm:text-left">
+          <div className="text-[11px] font-medium text-sky-700 flex items-center justify-center sm:justify-start gap-1">
+            <span className="h-2 w-2 rounded-full bg-sky-500"></span>
+            <span>ส่งลูกค้าพิจารณา</span>
+          </div>
+          <div className="mt-0.5 text-lg font-bold text-sky-900 font-mono">
+            {stats.sentCount} <span className="text-xs font-normal text-slate-500">ใบ</span>
+          </div>
+          <div className="text-[10px] text-slate-400">อยู่ระหว่างรอบอร์ดอนุมัติ</div>
+        </div>
+
+        <div className="p-3 text-center sm:text-left">
+          <div className="text-[11px] font-medium text-slate-500 flex items-center justify-center sm:justify-start gap-1">
+            <span className="h-2 w-2 rounded-full bg-slate-400"></span>
+            <span>ฉบับร่าง</span>
+          </div>
+          <div className="mt-0.5 text-lg font-bold text-slate-800 font-mono">
+            {stats.draftCount} <span className="text-xs font-normal text-slate-500">ใบ</span>
+          </div>
+          <div className="text-[10px] text-slate-400">กำลังจัดเตรียมสเปกและราคา</div>
+        </div>
+      </div>
+
+      {/* 3. Unified Clean Toolbar (แถบตัวกรองรวม แถวเดียว สะอาดตา) */}
+      <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-2xs space-y-2.5">
+        
+        {/* Navigation Tabs (แท็บเรียบหรู คมชัด) */}
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
+          <div className="flex gap-1">
             <button
-              onClick={() => setSearch('')}
-              className="absolute right-3 top-2 text-xs text-steel-400 hover:text-steel-600"
+              onClick={() => changeTab('all')}
+              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition cursor-pointer ${
+                activeTab === 'all'
+                  ? 'bg-slate-900 text-white shadow-xs'
+                  : 'text-slate-600 hover:bg-slate-100'
+              }`}
             >
-              ✕
+              📑 ทั้งหมด ({stats.totalCount})
+            </button>
+
+            <button
+              onClick={() => changeTab('signed')}
+              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 ${
+                activeTab === 'signed'
+                  ? 'bg-emerald-800 text-white shadow-xs'
+                  : 'text-emerald-800 hover:bg-emerald-50'
+              }`}
+            >
+              <span>✍️ ลูกค้าเซ็น PO</span>
+              <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${activeTab === 'signed' ? 'bg-emerald-950 text-white' : 'bg-emerald-100 text-emerald-900 font-bold'}`}>
+                {stats.signedCount}
+              </span>
+            </button>
+
+            <button
+              onClick={() => changeTab('pipeline')}
+              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition cursor-pointer ${
+                activeTab === 'pipeline'
+                  ? 'bg-slate-900 text-white shadow-xs'
+                  : 'text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              🔄 ไปป์ไลน์วงจรขาย (Pipeline)
+            </button>
+          </div>
+
+          <div className="text-xs text-slate-400">
+            แสดง <strong className="text-slate-800">{filtered.length}</strong> จาก {quotations.length} รายการ
+          </div>
+        </div>
+
+        {/* Filter Controls Row (ค้นหา, โครงการ, สถานะ, วันที่ อยู่ในแถวเดียว) */}
+        <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+          
+          <div className="flex flex-wrap items-center gap-2 flex-1">
+            {/* Search Box */}
+            <div className="relative min-w-[200px] max-w-xs flex-1">
+              <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-slate-400" />
+              <input
+                type="text"
+                placeholder="ค้นหาเลขที่, ลูกค้า, โครงการ..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full rounded-lg border border-slate-300 bg-slate-50/50 pl-8 pr-3 py-1.5 text-xs text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:border-slate-800"
+              />
+            </div>
+
+            {/* Project Filter */}
+            <select
+              value={filterProject}
+              onChange={(e) => setFilterProject(e.target.value)}
+              className="rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs text-slate-700 focus:outline-none focus:border-slate-800"
+            >
+              <option value="">ทุกโครงการ</option>
+              {projects.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.project_code} {p.project_name}
+                </option>
+              ))}
+            </select>
+
+            {/* Status Filter */}
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs text-slate-700 focus:outline-none focus:border-slate-800"
+            >
+              <option value="all">ทุกสถานะ</option>
+              <option value="draft">ฉบับร่าง</option>
+              <option value="sent">ส่งลูกค้าแล้ว</option>
+              <option value="approved">ลูกค้าอนุมัติ (PO Signed)</option>
+              <option value="rejected">ปฏิเสธ / ยกเลิก</option>
+              <option value="expired">หมดอายุยืนราคา</option>
+            </select>
+
+            {/* Compact Date Preset Dropdown */}
+            <div className="flex items-center gap-1 bg-slate-50 border border-slate-300 rounded-lg px-2 py-1">
+              <Calendar className="h-3.5 w-3.5 text-slate-500" />
+              <select
+                value={datePreset}
+                onChange={(e) => handleDatePresetChange(e.target.value)}
+                className="bg-transparent text-xs text-slate-700 font-medium focus:outline-none cursor-pointer"
+              >
+                <option value="all">ทุกช่วงเวลา</option>
+                <option value="today">วันนี้</option>
+                <option value="this_week">สัปดาห์นี้</option>
+                <option value="this_month">เดือนนี้</option>
+                <option value="next_30">30 วันข้างหน้า</option>
+                <option value="custom">กำหนดช่วงวันเอง...</option>
+              </select>
+            </div>
+
+            {/* Custom Date Inputs (แสดงเฉพาะเมื่อเลือก custom) */}
+            {datePreset === 'custom' && (
+              <div className="flex items-center gap-1 bg-white border border-slate-300 rounded-lg px-2 py-0.5 animate-in fade-in">
+                <input
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                  className="text-xs border-0 p-0 text-slate-800 focus:outline-none"
+                />
+                <span className="text-slate-400">―</span>
+                <input
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                  className="text-xs border-0 p-0 text-slate-800 focus:outline-none"
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Clear Filters Button */}
+          {hasFilter && (
+            <button
+              type="button"
+              onClick={clearAllFilters}
+              className="text-xs text-rose-600 hover:underline font-semibold cursor-pointer whitespace-nowrap"
+            >
+              ✕ ล้างตัวกรอง
             </button>
           )}
         </div>
-
-        <div className="text-xs text-steel-500">
-          แสดง <b className="text-ink">{filtered.length}</b> จาก {quotations.length} รายการ
-        </div>
       </div>
 
-      {/* Table list */}
+      {/* 4. Table Views (สะอาดตา โปร่ง สบายตา อ่านง่าย) */}
       {loading ? (
-        <div className="rounded-xl border border-steel-200 bg-white p-12 text-center text-steel-500">
-          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-steel-300 border-t-sky-600 mb-3" />
-          <p>กำลังโหลดรายการ...</p>
+        <div className="rounded-xl border border-slate-200 bg-white p-12 text-center text-slate-400">
+          <RefreshCw className="mx-auto h-5 w-5 animate-spin mb-2" />
+          <p className="text-xs">กำลังโหลดรายการใบเสนอราคา...</p>
         </div>
-      ) : filtered.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-steel-300 bg-white p-12 text-center text-steel-500">
-          <div className="text-4xl mb-3">📑</div>
-          <p className="font-semibold text-ink text-base">ไม่พบข้อมูลตามเงื่อนไขที่เลือก</p>
-          <p className="text-sm text-steel-400 mt-1">
-            {search ? 'ลองเปลี่ยนคำค้นหา หรือเปลี่ยนตัวกรอง' : 'ยังไม่มีรายการในระบบ เริ่มต้นสร้างรายการแรกได้เลย'}
-          </p>
-        </div>
-      ) : (
-        <div className="overflow-x-auto rounded-xl border border-steel-200 bg-white shadow-sm">
-          <table className="w-full text-left text-sm text-steel-600">
-            <thead className="bg-steel-50 text-xs font-semibold uppercase text-steel-700 border-b border-steel-200">
-              <tr>
-                <th className="px-4 py-3">เลขที่เอกสาร</th>
-                <th className="px-4 py-3">ลูกค้า / โครงการ</th>
-                <th className="px-4 py-3">วันที่</th>
-                <th className="px-4 py-3 text-right">ยอดสุทธิ (บาท)</th>
-                <th className="px-4 py-3 text-center">สถานะธุรกิจ</th>
-                <th className="px-4 py-3 text-center">สถานะบัญชี (GL)</th>
-                <th className="px-4 py-3 text-center">จัดการ</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-steel-100">
-              {filtered.map((q) => {
-                const bStatus = STATUS_MAP[q.status] || STATUS_MAP.draft
-                const aStatus = getAccountingStatus(q)
+      ) : activeTab === 'pipeline' ? (
+        
+        /* TAB 3: ไปป์ไลน์วงจรขาย ➔ จัดซื้อ (Pipeline Step View) */
+        <div className="space-y-3">
+          {/* Step Banner */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+            <div className="rounded-xl border border-slate-200 bg-white p-3">
+              <div className="text-[11px] font-semibold text-slate-500">ขั้นที่ 1: เสนอราคา (Draft)</div>
+              <div className="text-lg font-bold text-slate-800 mt-0.5">{stats.draftCount} ใบ</div>
+              <div className="text-[10px] text-slate-400">จัดทำสเปกและต้นทุน</div>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-white p-3">
+              <div className="text-[11px] font-semibold text-sky-700">ขั้นที่ 2: ส่งลูกค้า (Sent)</div>
+              <div className="text-lg font-bold text-sky-900 mt-0.5">{stats.sentCount} ใบ</div>
+              <div className="text-[10px] text-slate-400">อยู่ระหว่างรอบอร์ดอนุมัติ</div>
+            </div>
+            <div className="rounded-xl border border-emerald-300 bg-emerald-50/50 p-3">
+              <div className="text-[11px] font-bold text-emerald-800">ขั้นที่ 3: ลูกค้าเซ็น PO</div>
+              <div className="text-lg font-bold text-emerald-900 mt-0.5">{stats.signedCount} ใบ</div>
+              <div className="text-[10px] text-emerald-700">อนุมัติเป็นทางการแล้ว</div>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-white p-3">
+              <div className="text-[11px] font-semibold text-slate-500">ขั้นที่ 4: ส่งต่อจัดซื้อ (PO)</div>
+              <div className="text-lg font-bold text-slate-900 mt-0.5 font-mono">{baht(stats.signedAmount)} ฿</div>
+              <div className="text-[10px] text-slate-400">มูลค่าพร้อมสั่งของ</div>
+            </div>
+          </div>
 
-                return (
-                  <tr key={q.id} className="hover:bg-steel-50/75 transition">
-                    <td className="px-4 py-3 font-mono font-bold text-sky-800">
-                      <Link to={`/quotations/${q.id}`} className="hover:underline">
-                        {q.quotation_no}
-                      </Link>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="font-semibold text-ink">{q.customer_name}</div>
-                      <div className="text-xs text-steel-400">
-                        {q.projects ? `${q.projects.project_code} - ${q.projects.project_name}` : 'ของกลาง / ทั่วไป'}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-xs text-steel-500">{q.issue_date}</td>
-                    <td className="px-4 py-3 text-right font-mono font-bold text-ink">
-                      {baht(q.net_amount || q.total_amount)}
-                    </td>
-
-                    {/* Badge 1: Business Status */}
-                    <td className="px-4 py-3 text-center">
-                      <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-medium border ${bStatus.color}`}>
-                        {bStatus.label}
-                      </span>
-                    </td>
-
-                    {/* Badge 2: Accounting Status */}
-                    <td className="px-4 py-3 text-center">
-                      <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold border ${aStatus.color}`}>
-                        {aStatus.label}
-                      </span>
-                    </td>
-
-                    {/* Actions */}
-                    <td className="px-4 py-3 text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        {/* ปุ่มรับชำระเงินสำหรับเอกสารที่อนุมัติแล้ว */}
-                        {q.status === 'approved' && (
+          {/* Pipeline Linkage Table */}
+          <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-2xs">
+            <table className="w-full text-left text-xs divide-y divide-slate-200">
+              <thead className="bg-slate-50 text-slate-600 font-semibold uppercase text-[11px]">
+                <tr>
+                  <th className="py-2.5 px-3.5">ใบเสนอราคา (QT)</th>
+                  <th className="py-2.5 px-3.5">ลูกค้า</th>
+                  <th className="py-2.5 px-3.5">สถานะลูกค้าเซ็น PO</th>
+                  <th className="py-2.5 px-3.5 text-right">ยอดรวมสุทธิ</th>
+                  <th className="py-2.5 px-3.5 text-right">ส่งต่อฝ่ายจัดซื้อ</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 bg-white">
+                {quotations.map((q) => {
+                  const hasPo = Boolean(q.customer_po_no)
+                  return (
+                    <tr key={q.id} className="hover:bg-slate-50/70 transition">
+                      <td className="py-2.5 px-3.5">
+                        <Link to={`/quotations/${q.id}`} className="font-semibold text-sky-800 hover:underline">
+                          {q.quotation_no}
+                        </Link>
+                        <div className="text-[10px] text-slate-400">วันที่: {q.quotation_date || q.issue_date}</div>
+                      </td>
+                      <td className="py-2.5 px-3.5">
+                        <div className="font-medium text-slate-900 truncate max-w-[220px]">{q.customer_name}</div>
+                        <div className="text-[11px] text-slate-500 truncate max-w-[220px]">{q.projects?.project_name || 'ทั่วไป'}</div>
+                      </td>
+                      <td className="py-2.5 px-3.5">
+                        {hasPo ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800 border border-emerald-200">
+                            <span>✓</span>
+                            <span>PO: {q.customer_po_no}</span>
+                          </span>
+                        ) : (
+                          <span className="text-slate-400 text-[11px]">รอลูกค้าเซ็น PO</span>
+                        )}
+                      </td>
+                      <td className="py-2.5 px-3.5 text-right font-bold text-slate-900 font-mono">
+                        {baht(q.grand_total || q.total_amount)}
+                      </td>
+                      <td className="py-2.5 px-3.5 text-right">
+                        {hasPo ? (
+                          <Link
+                            to={`/purchasing/po/new?quotation_id=${q.id}`}
+                            className="inline-flex items-center gap-1 rounded-lg bg-slate-900 hover:bg-slate-800 px-2.5 py-1 text-xs font-semibold text-white shadow-2xs"
+                          >
+                            <ShoppingCart className="h-3 w-3 text-amber-400" />
+                            <span>เปิด PO จัดซื้อ</span>
+                          </Link>
+                        ) : (
                           <button
                             type="button"
-                            onClick={() => setPaymentTarget(q)}
-                            className="inline-flex items-center gap-1 rounded bg-emerald-50 px-2 py-1 text-xs font-bold text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition"
-                            title="บันทึกรับชำระเงิน (RC)"
+                            onClick={() => setCustomerPoTarget(q)}
+                            className="text-xs text-sky-700 hover:underline font-medium cursor-pointer"
                           >
-                            <span>💰</span>
-                            <span>รับชำระ</span>
+                            + บันทึก PO ก่อน
                           </button>
                         )}
-                        <button
-                          type="button"
-                          onClick={() => handleOpenPrint(q)}
-                          disabled={loadingPrint}
-                          className="text-xs text-steel-500 hover:text-steel-800 p-1 rounded hover:bg-steel-100"
-                          title="พิมพ์เอกสาร PDF"
-                        >
-                          🖨️
-                        </button>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      ) : (
+
+        /* TAB 1 & 2: ตารางหลัก (High-Legibility Table - สบายตา ไม่ซับซ้อน) */
+        <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-2xs">
+          <table className="w-full text-left text-xs divide-y divide-slate-200">
+            <thead className="bg-slate-50 text-slate-600 font-semibold uppercase text-[11px] tracking-wider">
+              <tr>
+                <th className="py-3 px-3.5 w-40">เลขที่เอกสาร</th>
+                <th className="py-3 px-3.5 min-w-[220px]">ลูกค้า / โครงการ</th>
+                <th className="py-3 px-3.5 w-32 text-right">ยอดสุทธิ (บาท)</th>
+                <th className="py-3 px-3.5 w-36">กำหนดยืนราคา</th>
+                <th className="py-3 px-3 text-center w-36">สถานะ</th>
+                <th className="py-3 px-3.5 w-28 text-right">จัดการ</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 bg-white">
+              {filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-12 text-center text-slate-400">
+                    <div className="text-2xl mb-1">📑</div>
+                    <div className="font-medium text-slate-600">ไม่พบใบเสนอราคาตามเงื่อนไขที่เลือก</div>
+                    <p className="text-[11px] text-slate-400 mt-0.5">ลองเปลี่ยนคำค้นหา หรือกด "ล้างตัวกรอง"</p>
+                  </td>
+                </tr>
+              ) : (
+                filtered.map((q) => {
+                  const status = STATUS_CONFIG[q.status] || STATUS_CONFIG.draft
+                  const expInfo = getExpiryInfo(q)
+                  const isMenuOpen = actionMenuId === q.id
+                  const hasCustomerPo = Boolean(q.customer_po_no)
+
+                  return (
+                    <tr key={q.id} className="hover:bg-slate-50/80 transition-colors">
+                      {/* 1. เลขที่ QT + วันที่ */}
+                      <td className="py-3 px-3.5 align-top whitespace-nowrap">
                         <Link
                           to={`/quotations/${q.id}`}
-                          className="text-xs text-sky-700 hover:underline font-semibold"
+                          className="font-bold text-sky-800 hover:underline font-mono text-xs"
                         >
-                          ดูรายละเอียด
+                          {q.quotation_no}
                         </Link>
-                      </div>
-                    </td>
-                  </tr>
-                )
-              })}
+                        <div className="text-[11px] text-slate-400 mt-0.5">
+                          {q.quotation_date || q.issue_date}
+                        </div>
+                        {hasCustomerPo && (
+                          <div className="mt-1">
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                              <span>✓</span> PO: {q.customer_po_no}
+                            </span>
+                          </div>
+                        )}
+                      </td>
+
+                      {/* 2. ลูกค้า / โครงการ (ลำดับชั้นข้อความชัดเจน) */}
+                      <td className="py-3 px-3.5 align-top">
+                        <div className="font-semibold text-slate-900 truncate max-w-[240px]" title={q.customer_name}>
+                          {q.customer_name || '-'}
+                        </div>
+                        <div className="text-[11px] text-slate-500 truncate max-w-[240px] mt-0.5">
+                          {q.projects ? `${q.projects.project_code} • ${q.projects.project_name}` : (q.ref_no || 'โครงการทั่วไป')}
+                        </div>
+                      </td>
+
+                      {/* 3. ยอดสุทธิ */}
+                      <td className="py-3 px-3.5 align-top text-right whitespace-nowrap font-mono">
+                        <div className="font-bold text-slate-900 text-xs">
+                          {baht(q.grand_total || q.total_amount || q.net_amount)}
+                        </div>
+                        <div className="text-[10px] text-slate-400 font-sans">รวม VAT 7%</div>
+                      </td>
+
+                      {/* 4. วันสิ้นสุดยืนราคา */}
+                      <td className="py-3 px-3.5 align-top whitespace-nowrap">
+                        <div className="text-slate-700 font-mono text-xs">
+                          {q.valid_until || q.expiry_date || '-'}
+                        </div>
+                        {expInfo && (
+                          <div className="flex items-center gap-1.5 mt-0.5 text-[11px]">
+                            <span className={`h-1.5 w-1.5 rounded-full ${expInfo.dot}`}></span>
+                            <span className={expInfo.cls}>{expInfo.text}</span>
+                          </div>
+                        )}
+                      </td>
+
+                      {/* 5. สถานะ (Single Status Badge สะอาดตา) */}
+                      <td className="py-3 px-3 align-top text-center">
+                        <span className={`inline-block px-2.5 py-0.5 rounded-full text-[11px] border ${status.cls}`}>
+                          {status.label}
+                        </span>
+                      </td>
+
+                      {/* 6. การจัดการ (Action Menu กะทัดรัด) */}
+                      <td className="py-3 px-3.5 align-top text-right whitespace-nowrap">
+                        <div className="flex items-center justify-end gap-1">
+                          
+                          {/* Quick Link to Details */}
+                          <Link
+                            to={`/quotations/${q.id}`}
+                            className="rounded px-2 py-1 text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition"
+                          >
+                            ดูเอกสาร
+                          </Link>
+
+                          {/* Action Popover Menu (⋯) */}
+                          <div className="relative inline-block text-left" onClick={(e) => e.stopPropagation()}>
+                            <button
+                              type="button"
+                              onClick={() => setActionMenuId(isMenuOpen ? null : q.id)}
+                              className={`p-1 rounded-md border transition cursor-pointer ${
+                                isMenuOpen
+                                  ? 'bg-slate-900 text-white border-slate-900'
+                                  : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-100'
+                              }`}
+                              title="ตัวเลือกเพิ่มเติม"
+                            >
+                              <MoreVertical className="h-3.5 w-3.5" />
+                            </button>
+
+                            {isMenuOpen && (
+                              <div className="absolute right-0 top-full mt-1 w-52 rounded-xl border border-slate-200 bg-white p-1 shadow-lg z-50 text-left text-xs animate-in fade-in zoom-in-95 duration-100">
+                                
+                                <Link
+                                  to={`/quotations/${q.id}/edit`}
+                                  className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-slate-700 hover:bg-slate-50 font-medium"
+                                >
+                                  <Edit3 className="h-3.5 w-3.5 text-slate-500" />
+                                  <span>แก้ไขใบเสนอราคา</span>
+                                </Link>
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setCustomerPoTarget(q)
+                                    setActionMenuId(null)
+                                  }}
+                                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-emerald-800 hover:bg-emerald-50 font-semibold cursor-pointer"
+                                >
+                                  <span>✍️</span>
+                                  <span>{hasCustomerPo ? 'แก้ไขข้อมูล PO ลูกค้า' : 'บันทึก PO ลูกค้า'}</span>
+                                </button>
+
+                                {hasCustomerPo && (
+                                  <Link
+                                    to={`/purchasing/po/new?quotation_id=${q.id}`}
+                                    className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-amber-900 hover:bg-amber-50 font-semibold"
+                                  >
+                                    <ShoppingCart className="h-3.5 w-3.5 text-amber-600" />
+                                    <span>ส่งต่อฝ่ายจัดซื้อ (เปิด PO)</span>
+                                  </Link>
+                                )}
+
+                                <div className="my-1 border-t border-slate-100" />
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    handleOpenPrint(q)
+                                    setActionMenuId(null)
+                                  }}
+                                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-slate-700 hover:bg-slate-50 font-medium cursor-pointer"
+                                >
+                                  <Printer className="h-3.5 w-3.5 text-slate-500" />
+                                  <span>พิมพ์ A4 / ดาวน์โหลด PDF</span>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setEnvelopeTarget(q)
+                                    setActionMenuId(null)
+                                  }}
+                                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-slate-700 hover:bg-slate-50 font-medium cursor-pointer"
+                                >
+                                  <Mail className="h-3.5 w-3.5 text-indigo-500" />
+                                  <span>พิมพ์หน้าจ่าซองส่งลูกค้า</span>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setShareTarget(q)
+                                    setActionMenuId(null)
+                                  }}
+                                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-slate-700 hover:bg-slate-50 font-medium cursor-pointer"
+                                >
+                                  <Share2 className="h-3.5 w-3.5 text-emerald-600" />
+                                  <span>แชร์ลิงก์ & LINE</span>
+                                </button>
+
+                                <Link
+                                  to={`/quotations/new?duplicate_from=${q.id}`}
+                                  className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-slate-700 hover:bg-slate-50 font-medium"
+                                >
+                                  <Copy className="h-3.5 w-3.5 text-blue-500" />
+                                  <span>ทำซ้ำใบเสนอราคา (Duplicate)</span>
+                                </Link>
+
+                                {q.status === 'approved' && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setPaymentTarget(q)
+                                      setActionMenuId(null)
+                                    }}
+                                    className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-emerald-700 hover:bg-emerald-50 font-semibold cursor-pointer"
+                                  >
+                                    <DollarSign className="h-3.5 w-3.5 text-emerald-600" />
+                                    <span>บันทึกรับชำระเงิน</span>
+                                  </button>
+                                )}
+
+                                <div className="my-1 border-t border-slate-100" />
+
+                                <button
+                                  type="button"
+                                  onClick={() => handleDelete(q)}
+                                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-rose-600 hover:bg-rose-50 font-medium cursor-pointer"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5 text-rose-500" />
+                                  <span>ลบใบเสนอราคานี้</span>
+                                </button>
+
+                              </div>
+                            )}
+                          </div>
+
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })
+              )}
             </tbody>
           </table>
         </div>
       )}
 
-      {/* Modal พิมพ์ PDF */}
+      {/* โมดัลพิมพ์ PDF A4 */}
       {printTarget && (
         <QuotationPrintModal
           quotation={printTarget}
@@ -448,7 +831,32 @@ export default function QuotationList() {
         />
       )}
 
-      {/* Modal รับชำระเงิน (Receive Payment - RC) */}
+      {/* โมดัลพิมพ์จ่าหน้าซอง */}
+      {envelopeTarget && (
+        <EnvelopePrintModal
+          quotation={envelopeTarget}
+          onClose={() => setEnvelopeTarget(null)}
+        />
+      )}
+
+      {/* โมดัลแชร์เว็บลิงก์ & LINE */}
+      {shareTarget && (
+        <QuotationShareModal
+          quotation={shareTarget}
+          onClose={() => setShareTarget(null)}
+        />
+      )}
+
+      {/* โมดัลบันทึกการเซ็น PO ของลูกค้า */}
+      {customerPoTarget && (
+        <CustomerPoModal
+          quotation={customerPoTarget}
+          onClose={() => setCustomerPoTarget(null)}
+          onSuccess={() => fetchQuotations()}
+        />
+      )}
+
+      {/* โมดัลบันทึกรับชำระเงิน */}
       {paymentTarget && (
         <PaymentActionModal
           isOpen={true}
@@ -457,16 +865,15 @@ export default function QuotationList() {
           docId={paymentTarget.id}
           docNo={paymentTarget.quotation_no}
           contactName={paymentTarget.customer_name}
-          totalAmount={paymentTarget.net_amount || paymentTarget.total_amount}
-          alreadyPaid={paymentTarget.status === 'partial' ? (paymentTarget.net_amount || paymentTarget.total_amount) / 2 : 0}
+          totalAmount={paymentTarget.grand_total || paymentTarget.net_amount || paymentTarget.total_amount}
+          alreadyPaid={0}
           projectId={paymentTarget.project_id}
           projectName={paymentTarget.projects?.project_name}
           onClose={() => setPaymentTarget(null)}
-          onSuccess={() => {
-            fetchQuotations()
-          }}
+          onSuccess={() => fetchQuotations()}
         />
       )}
+
     </div>
   )
 }

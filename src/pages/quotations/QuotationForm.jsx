@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
-import { useNavigate, useParams, Link } from 'react-router-dom'
+import { useNavigate, useParams, Link, useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
 import { baht } from '../../lib/projects'
@@ -29,6 +29,9 @@ export default function QuotationForm() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { profile } = useAuth()
+  const [searchParams] = useSearchParams()
+  const duplicateFromId = searchParams.get('duplicate_from')
+  const [duplicatedFromNo, setDuplicatedFromNo] = useState('')
 
   // 1. ส่วนหัวเอกสารและข้อมูลอ้างอิง
   const [quotationNo, setQuotationNo] = useState('')
@@ -96,6 +99,43 @@ export default function QuotationForm() {
       const ym = new Date().toISOString().slice(0, 7).replace('-', '')
       const rand = String(Math.floor(Math.random() * 9000) + 1000)
       setQuotationNo(`QT${ym}${rand}`)
+
+      if (duplicateFromId) {
+        Promise.all([
+          supabase.from('quotations').select('*').eq('id', duplicateFromId).single(),
+          supabase.from('quotation_items').select('*').eq('quotation_id', duplicateFromId),
+        ]).then(([qRes, itRes]) => {
+          if (!qRes.error && qRes.data) {
+            const q = qRes.data
+            setDuplicatedFromNo(q.quotation_no)
+            setCustomerName(q.customer_name || '')
+            setCustomerAddress(q.customer_address || '')
+            setCustomerPostalCode(q.customer_postal_code || '')
+            setCustomerTaxId(q.customer_tax_id || '')
+            setCustomerBranch(q.customer_branch || 'สำนักงานใหญ่')
+            setProjectId(q.project_id || '')
+            setRefNo(q.ref_no || '')
+            setWarehouseName(q.warehouse_name || WAREHOUSES[0])
+            setCustomerNotes(q.customer_notes || '')
+            setInternalNotes(q.internal_notes || '')
+            setTaxType(q.vat_rate === 0 ? 'vat_exempt' : 'vat_excluded')
+            setWhtRate(String(q.wht_rate || '0'))
+
+            if (itRes.data && itRes.data.length > 0) {
+              setItems(
+                itRes.data.map((i) => ({
+                  item_name: i.item_name,
+                  description: i.description || '',
+                  quantity: String(i.quantity),
+                  unit: i.unit || '',
+                  unit_price: String(i.unit_price),
+                  discount_percent: String(i.discount_percent || 0),
+                }))
+              )
+            }
+          }
+        })
+      }
     } else {
       // โหมดแก้ไข
       Promise.all([
@@ -351,6 +391,18 @@ export default function QuotationForm() {
         </Link>
       </div>
 
+      {duplicatedFromNo && (
+        <div className="rounded-xl border border-sky-300 bg-sky-50 p-3.5 text-xs text-sky-900 flex items-center justify-between shadow-xs">
+          <span className="flex items-center gap-2">
+            <span className="text-base">📋</span>
+            <span>กำลังสร้างใบเสนอราคาใหม่โดยคัดลอกข้อมูลจาก: <strong>{duplicatedFromNo}</strong></span>
+          </span>
+          <span className="text-[11px] text-sky-800 font-bold bg-sky-200/70 px-2.5 py-0.5 rounded-full">
+            สำเนาฉบับร่างใหม่
+          </span>
+        </div>
+      )}
+
       {error && <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</div>}
 
       <div className="rounded-xl border border-steel-200 bg-white p-6 shadow-sm space-y-6">
@@ -572,17 +624,16 @@ export default function QuotationForm() {
             ))}
           </datalist>
 
-          <div className="space-y-2">
-            <div className="hidden md:grid md:grid-cols-[2.5rem_1.5fr_1fr_5rem_4.5rem_6.5rem_5rem_7rem_2.5rem] gap-2 text-xs font-semibold text-steel-600 px-2 pb-1">
-              <span className="text-center">ลำดับ</span>
-              <span>ชื่อสินค้า/บริการ *</span>
-              <span>รายละเอียดเพิ่มเติม</span>
+          <div className="space-y-3">
+            <div className="hidden sm:grid sm:grid-cols-[auto_1fr_6rem_5rem_7rem_5rem_7rem_auto] gap-2.5 text-xs font-bold text-steel-600 px-3 pb-1 border-b border-steel-100">
+              <span className="w-7 text-center">#</span>
+              <span>ชื่อสินค้า / รายการงานวิศวกรรม *</span>
               <span className="text-right">จำนวน</span>
               <span className="text-center">หน่วย</span>
               <span className="text-right">ราคา/หน่วย</span>
-              <span className="text-right">ส่วนลด (%)</span>
+              <span className="text-right">ส่วนลด %</span>
               <span className="text-right">ราคารวม ({currency})</span>
-              <span />
+              <span className="w-7" />
             </div>
 
             {items.map((it, idx) => {
@@ -594,90 +645,108 @@ export default function QuotationForm() {
               return (
                 <div
                   key={idx}
-                  className={`grid grid-cols-2 gap-2 rounded-lg border p-2.5 md:grid-cols-[2.5rem_1.5fr_1fr_5rem_4.5rem_6.5rem_5rem_7rem_2.5rem] items-start transition ${
-                    nameEmpty || qtyEmpty || priceEmpty ? 'border-rose-300 bg-rose-50/20' : 'border-steel-200 bg-steel-50/50'
+                  className={`rounded-2xl border p-3.5 space-y-2.5 transition shadow-xs ${
+                    nameEmpty || qtyEmpty || priceEmpty
+                      ? 'border-rose-300 bg-rose-50/20'
+                      : 'border-steel-200 bg-white hover:border-steel-300'
                   }`}
                 >
-                  <span className="text-center font-bold text-xs text-steel-400 hidden md:block pt-2">
-                    {idx + 1}
-                  </span>
+                  {/* แถวที่ 1: ข้อมูลสินค้าและตัวเลขราคา */}
+                  <div className="grid grid-cols-2 sm:grid-cols-[auto_1fr_6rem_5rem_7rem_5rem_7rem_auto] gap-2.5 items-center">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-steel-100 font-mono font-bold text-xs text-steel-700">
+                      #{idx + 1}
+                    </span>
 
-                  <div className="col-span-2 md:col-span-1">
-                    <input
-                      list="catalog-quotation-items"
-                      className={fieldErrorClass(nameEmpty, "input text-xs w-full")}
-                      placeholder="ชื่อสินค้า/บริการ..."
-                      value={it.item_name}
-                      onChange={(e) => updItem(idx, 'item_name', e.target.value)}
+                    <div className="col-span-2 sm:col-span-1">
+                      <input
+                        list="catalog-quotation-items"
+                        className={fieldErrorClass(nameEmpty, "input text-xs w-full font-bold text-steel-900")}
+                        placeholder="ระบุชื่อสินค้า / บริการ / อุปกรณ์..."
+                        value={it.item_name}
+                        onChange={(e) => updItem(idx, 'item_name', e.target.value)}
+                      />
+                      {nameEmpty && <FieldError error="กรุณาระบุชื่อสินค้า/บริการ" />}
+                    </div>
+
+                    <div>
+                      <input
+                        type="number"
+                        min="0.01"
+                        step="0.01"
+                        className={fieldErrorClass(qtyEmpty, "input text-xs text-right w-full font-mono font-bold")}
+                        placeholder="จำนวน"
+                        value={it.quantity}
+                        onChange={(e) => updItem(idx, 'quantity', e.target.value)}
+                      />
+                    </div>
+
+                    <div>
+                      <input
+                        className="input text-xs text-center w-full"
+                        placeholder="หน่วย"
+                        value={it.unit}
+                        onChange={(e) => updItem(idx, 'unit', e.target.value)}
+                      />
+                    </div>
+
+                    <div>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        className={fieldErrorClass(priceEmpty, "input text-xs text-right w-full font-mono")}
+                        placeholder="ราคา/หน่วย"
+                        value={it.unit_price}
+                        onChange={(e) => updItem(idx, 'unit_price', e.target.value)}
+                      />
+                    </div>
+
+                    <div>
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="0.1"
+                        className="input text-xs text-right w-full font-mono"
+                        placeholder="ลด %"
+                        value={it.discount_percent}
+                        onChange={(e) => updItem(idx, 'discount_percent', e.target.value)}
+                      />
+                    </div>
+
+                    <div className="col-span-2 sm:col-span-1 text-right font-mono font-black text-xs text-sky-900 bg-sky-50 py-2 px-3 rounded-xl border border-sky-100">
+                      {baht(calc.lineTotal)}
+                    </div>
+
+                    <div className="flex justify-end sm:justify-center">
+                      <button
+                        type="button"
+                        onClick={() => setItems(items.filter((_, i) => i !== idx))}
+                        disabled={items.length === 1}
+                        className="p-1.5 text-steel-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition disabled:opacity-20 cursor-pointer"
+                        title="ลบแถวนี้"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* แถวที่ 2: Richbox / Textarea ขยายลงล่าง สำหรับสเปกและรายละเอียด (กด Enter ได้อิสระ) */}
+                  <div className="pt-1 border-t border-steel-100">
+                    <div className="flex items-center justify-between text-[11px] text-steel-500 mb-1">
+                      <span className="flex items-center gap-1.5 font-semibold text-steel-700">
+                        <span>📝</span>
+                        <span>รายละเอียดเฉพาะ / สเปกวิศวกรรม (กด Enter ขึ้นบรรทัดใหม่ได้อิสระ)</span>
+                      </span>
+                      <span className="text-[10px] text-steel-400">รองรับข้อความหลายบรรทัดและหัวข้อย่อย</span>
+                    </div>
+                    <textarea
+                      rows={2}
+                      className="w-full rounded-xl border border-steel-200 bg-steel-50/60 p-2.5 text-xs text-steel-800 placeholder:text-steel-400 focus:bg-white focus:border-steel-900 focus:outline-none transition leading-relaxed font-sans"
+                      placeholder="เช่น • แผงโซล่าเซลล์ชนิด Monocrystalline Half-cell 550W Tier-1&#10;• รับประกันตัวผลิตภัณฑ์ 12 ปี และรับประกันประสิทธิภาพการผลิตไฟ 25 ปี&#10;• ได้รับมาตรฐานสากล TUV Rheinland / IEC 61215"
+                      value={it.description || ''}
+                      onChange={(e) => updItem(idx, 'description', e.target.value)}
                     />
-                    {nameEmpty && <FieldError error="ช่องนี้ยังไม่กรอก ช่องว่างนะ" />}
-                  </div>
-
-                  <input
-                    className="input text-xs col-span-2 md:col-span-1"
-                    placeholder="รายละเอียดเฉพาะ..."
-                    value={it.description}
-                    onChange={(e) => updItem(idx, 'description', e.target.value)}
-                  />
-
-                  <div>
-                    <input
-                      type="number"
-                      min="0.01"
-                      step="0.01"
-                      className={fieldErrorClass(qtyEmpty, "input text-xs text-right w-full")}
-                      placeholder="จำนวน"
-                      value={it.quantity}
-                      onChange={(e) => updItem(idx, 'quantity', e.target.value)}
-                    />
-                    {qtyEmpty && <FieldError error="ช่องว่างนะ" />}
-                  </div>
-
-                  <input
-                    className="input text-xs text-center"
-                    placeholder="หน่วย"
-                    value={it.unit}
-                    onChange={(e) => updItem(idx, 'unit', e.target.value)}
-                  />
-
-                  <div>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      className={fieldErrorClass(priceEmpty, "input text-xs text-right w-full")}
-                      placeholder="ราคา/หน่วย"
-                      value={it.unit_price}
-                      onChange={(e) => updItem(idx, 'unit_price', e.target.value)}
-                    />
-                    {priceEmpty && <FieldError error="ช่องว่างนะ" />}
-                  </div>
-
-                  <input
-                    type="number"
-                    min="0"
-                    max="100"
-                    step="0.1"
-                    className="input text-xs text-right"
-                    placeholder="%"
-                    value={it.discount_percent}
-                    onChange={(e) => updItem(idx, 'discount_percent', e.target.value)}
-                  />
-
-                  <div className="text-right font-bold text-xs text-ink px-1">
-                    {baht(calc.lineTotal)}
-                  </div>
-
-                  <div className="text-center">
-                    <button
-                      type="button"
-                      onClick={() => setItems(items.filter((_, i) => i !== idx))}
-                      disabled={items.length === 1}
-                      className="text-steel-400 hover:text-red-600 disabled:opacity-20 text-sm"
-                      title="ลบแถว"
-                    >
-                      ✕
-                    </button>
                   </div>
                 </div>
               )
