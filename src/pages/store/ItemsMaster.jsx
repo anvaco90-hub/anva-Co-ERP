@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
@@ -6,6 +6,7 @@ import { canManageStore, getCategoryPrefix, uploadItemImage, formatIntQty, toInt
 import { fmtDateTime } from '../../lib/purchasing'
 import { baht } from '../../lib/projects'
 import { FieldError, fieldErrorClass } from '../../components/FieldError'
+import Pagination from '../../components/Pagination'
 import {
   Package,
   Layers,
@@ -67,6 +68,8 @@ export default function ItemsMaster() {
   // View Mode: 'table' (ตารางมาตรฐาน - ค่าเริ่มต้น) | 'grid' (การ์ดวิศวกรรม)
   const [viewMode, setViewMode] = useState('table')
   const [selectedCatFilter, setSelectedCatFilter] = useState('all')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(20) // 10 | 20 | 50 | 100
 
   // Edit Modal State (ข้อ 3: ไม่อนุญาตให้แก้ตรง ๆ ในตาราง ให้กดแก้ไขผ่าน Modal)
   const [editingItem, setEditingItem] = useState(null)
@@ -503,6 +506,17 @@ export default function ItemsMaster() {
         .includes(q)
   )
 
+  // รีเซ็ตหน้ากลับไปหน้าที่ 1 เมื่อตัวกรองหรือคำค้นหาเปลี่ยน
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [search, selectedCatFilter, viewMode])
+
+  // คำนวณรายการเฉพาะหน้าปัจจุบัน
+  const paginatedItems = useMemo(() => {
+    const start = (currentPage - 1) * pageSize
+    return shownItems.slice(start, start + pageSize)
+  }, [shownItems, currentPage, pageSize])
+
   return (
     <div className="space-y-6 pb-12 font-sans text-slate-800">
       {/* 1. Header Banner: ANVA & Co Solar Engineering Brand */}
@@ -906,7 +920,7 @@ export default function ItemsMaster() {
                   </td>
                 </tr>
               ) : (
-                shownItems.map((it) => {
+                paginatedItems.map((it) => {
                   const isLow =
                     Number(it.reorder_point) > 0 &&
                     Number(it.qty_on_hand) <= Number(it.reorder_point) &&
@@ -1035,7 +1049,7 @@ export default function ItemsMaster() {
       ) : (
         /* การ์ดวัสดุ (Engineering Grid View) */
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {shownItems.map((it) => {
+          {paginatedItems.map((it) => {
             const isLow =
               Number(it.reorder_point) > 0 &&
               Number(it.qty_on_hand) <= Number(it.reorder_point) &&
@@ -1119,6 +1133,23 @@ export default function ItemsMaster() {
               </div>
             )
           })}
+        </div>
+      )}
+
+      {/* 4.1 แถบเปลี่ยนหน้า (Pagination < 1 2 3 4 5 6 >) */}
+      {shownItems.length > 0 && (
+        <div className="rounded-2xl border border-steel-200 bg-white px-5 py-3 shadow-xs">
+          <Pagination
+            currentPage={currentPage}
+            totalItems={shownItems.length}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={(newSize) => {
+              setPageSize(newSize)
+              setCurrentPage(1)
+            }}
+            pageSizeOptions={[10, 20, 50, 100]}
+          />
         </div>
       )}
 

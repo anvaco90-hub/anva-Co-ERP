@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
@@ -7,6 +7,7 @@ import { baht } from '../../lib/projects'
 import { ArrowLeft } from 'lucide-react'
 import SearchableItemSelect from '../../components/SearchableItemSelect'
 import SearchableProjectSelect from '../../components/SearchableProjectSelect'
+import Pagination from '../../components/Pagination'
 
 const TYPE = { receipt: 'รับเข้าสโตร์', adjustment: 'ปรับปรุงสต็อก', migration: 'ยกมา' }
 
@@ -19,6 +20,8 @@ export default function ReceiptsList() {
   const [items, setItems] = useState([])
   const [projects, setProjects] = useState([])
   const [search, setSearch] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(20) // 10 | 20 | 50 | 100
   const [showStockInForm, setShowStockInForm] = useState(false)
   const [docViewMode, setDocViewMode] = useState('business') // 'business' | 'accounting'
   const [saving, setSaving] = useState(false)
@@ -119,9 +122,23 @@ export default function ReceiptsList() {
     }
   }
 
+  // รีเซ็ตหน้าเมื่อคำค้นหาเปลี่ยน (ต้องอยู่ก่อน Early Return)
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [search])
+
+  const shown = useMemo(() => {
+    if (!rows) return []
+    const q = search.trim().toLowerCase()
+    return rows.filter((r) => !q || (r.inventory_items?.item_name ?? '').toLowerCase().includes(q) || (r.inventory_items?.item_code ?? '').toLowerCase().includes(q))
+  }, [rows, search])
+
+  const paginatedRows = useMemo(() => {
+    const start = (currentPage - 1) * pageSize
+    return shown.slice(start, start + pageSize)
+  }, [shown, currentPage, pageSize])
+
   if (!rows) return <p className="text-steel-500">{error || 'กำลังโหลดประวัติรับเข้า...'}</p>
-  const q = search.trim().toLowerCase()
-  const shown = rows.filter((r) => !q || (r.inventory_items?.item_name ?? '').toLowerCase().includes(q) || (r.inventory_items?.item_code ?? '').toLowerCase().includes(q))
   const totalValue = shown.reduce((s, r) => s + Number(r.qty_received) * Number(r.unit_cost), 0)
 
   return (
@@ -357,7 +374,7 @@ export default function ReceiptsList() {
                 </td>
               </tr>
             ) : (
-              shown.map((r) => {
+              paginatedRows.map((r) => {
                 const grn = r.goods_receipt_items?.[0]?.goods_receipts
                 return (
                   <tr key={r.id} className="hover:bg-steel-50/80 transition text-xs">
@@ -441,6 +458,23 @@ export default function ReceiptsList() {
           </tbody>
         </table>
       </div>
+
+      {/* แถบเปลี่ยนหน้า (Pagination < 1 2 3 4 5 6 >) */}
+      {shown.length > 0 && (
+        <div className="rounded-2xl border border-steel-200 bg-white px-5 py-3 shadow-xs">
+          <Pagination
+            currentPage={currentPage}
+            totalItems={shown.length}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={(newSize) => {
+              setPageSize(newSize)
+              setCurrentPage(1)
+            }}
+            pageSizeOptions={[10, 20, 50, 100]}
+          />
+        </div>
+      )}
     </div>
   )
 }

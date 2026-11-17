@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { NAV_ITEMS, ROLE_LABELS } from '../lib/roles'
-import { ChevronDown, ChevronRight, BookOpen, ShoppingCart, ArrowLeft, Home, FileText } from 'lucide-react'
+import { ChevronDown, ChevronRight, BookOpen, ShoppingCart, ArrowLeft, Home, FileText, Users } from 'lucide-react'
 
 export default function Layout() {
   const { profile, signOut } = useAuth()
@@ -16,6 +16,7 @@ export default function Layout() {
     '/accounting': location.pathname.startsWith('/accounting'),
     '/purchasing': location.pathname.startsWith('/purchasing'),
     '/quotations': location.pathname.startsWith('/quotations'),
+    '/contacts': location.pathname.startsWith('/contacts'),
   })
 
   // Automatically keep section open if user navigates to it
@@ -28,6 +29,9 @@ export default function Layout() {
     }
     if (location.pathname.startsWith('/accounting')) {
       setExpandedSections((prev) => ({ ...prev, '/accounting': true }))
+    }
+    if (location.pathname.startsWith('/contacts')) {
+      setExpandedSections((prev) => ({ ...prev, '/contacts': true }))
     }
   }, [location.pathname])
 
@@ -54,6 +58,11 @@ export default function Layout() {
       if (targetParams.has('tab')) {
         return currentTab === targetParams.get('tab')
       }
+      if (targetParams.has('role')) {
+        const defaultRole = path === '/contacts' ? 'all' : null
+        const currentRole = currentParams.get('role') || defaultRole
+        return currentRole === targetParams.get('role')
+      }
       for (const [key, val] of targetParams.entries()) {
         if (currentParams.get(key) !== val) return false
       }
@@ -64,6 +73,7 @@ export default function Layout() {
   }
 
   const getSectionIcon = (path) => {
+    if (path === '/contacts') return <Users className="h-4 w-4 text-hivis shrink-0" />
     if (path === '/quotations') return <FileText className="h-4 w-4 text-hivis shrink-0" />
     if (path === '/purchasing') return <ShoppingCart className="h-4 w-4 text-hivis shrink-0" />
     return <BookOpen className="h-4 w-4 text-hivis shrink-0" />

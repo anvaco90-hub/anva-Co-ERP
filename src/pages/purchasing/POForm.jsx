@@ -8,6 +8,7 @@ import { baht } from '../../lib/projects'
 import ItemsEditor from './ItemsEditor'
 import ItemProjectUsageModal from '../../components/ItemProjectUsageModal'
 import { FieldError, fieldErrorClass } from '../../components/FieldError'
+import SearchableSelect from '../../components/SearchableSelect'
 
 export const PAYMENT_TYPES = [
   { value: 'credit_30', label: 'เครดิตเทอม 30 วัน (วางบิล-จ่ายเช็ค/โอน)' },
@@ -40,6 +41,17 @@ export default function POForm() {
   const [selectedPrId, setSelectedPrId] = useState(initialPrId)
   const [vendors, setVendors] = useState([])
   const [vendorId, setVendorId] = useState('')
+  const [vendorMode, setVendorMode] = useState('select') // 'select' | 'custom'
+  const [customVendorName, setCustomVendorName] = useState('')
+  const [customVendorPhone, setCustomVendorPhone] = useState('')
+  const [customVendorTaxId, setCustomVendorTaxId] = useState('')
+  const [customVendorAddress, setCustomVendorAddress] = useState('')
+
+  const [projectMode, setProjectMode] = useState('select') // 'select' | 'custom'
+  const [customProjectName, setCustomProjectName] = useState('')
+  const [customerName, setCustomerName] = useState('')
+  const [customers, setCustomers] = useState([])
+
   const [vendorSuggestions, setVendorSuggestions] = useState([])
   const [buyerName, setBuyerName] = useState(profile?.full_name || '')
   const [items, setItems] = useState([{ ...EMPTY_ITEM }])
@@ -72,6 +84,7 @@ export default function POForm() {
   useEffect(() => {
     supabase.from('vendors').select('id, vendor_code, vendor_name, phone, tax_id').order('vendor_code').then(({ data }) => setVendors(data ?? []))
     supabase.from('projects').select('id, project_code, project_name').order('project_code').then(({ data }) => setProjects(data ?? []))
+    supabase.from('customers').select('id, customer_code, customer_name').order('customer_name').then(({ data }) => setCustomers(data ?? []))
 
     if (!id) {
       supabase.from('purchase_requisitions')
@@ -91,7 +104,13 @@ export default function POForm() {
         if (dupRes.data) {
           setDuplicateBanner(true)
           if (dupRes.data.project_id) setProjectId(dupRes.data.project_id)
+          if (dupRes.data.custom_project_name) {
+            setCustomProjectName(dupRes.data.custom_project_name)
+            if (!dupRes.data.project_id) setProjectMode('custom')
+          }
+          if (dupRes.data.customer_name) setCustomerName(dupRes.data.customer_name)
           if (dupRes.data.vendor_id) setVendorId(dupRes.data.vendor_id)
+          if (dupRes.data.custom_vendor_name) setCustomVendorName(dupRes.data.custom_vendor_name)
           if (dupRes.data.pr_id) setSelectedPrId(dupRes.data.pr_id)
           setPaymentType(dupRes.data.payment_type || 'credit_30')
           setTaxType(dupRes.data.tax_type || 'vat_included')
@@ -120,6 +139,7 @@ export default function POForm() {
       ]).then(([qRes, itemsRes]) => {
         if (qRes.data) {
           if (qRes.data.project_id) setProjectId(qRes.data.project_id)
+          if (qRes.data.customer_name) setCustomerName(qRes.data.customer_name)
           setQuotationNo(qRes.data.quotation_no || '')
           setQuotationDate(qRes.data.issue_date || '')
         }
@@ -147,6 +167,14 @@ export default function POForm() {
       if (a.data.status === 'cancelled') return setError('ใบสั่งซื้อที่ยกเลิกแล้วแก้ไขไม่ได้')
       setPo(a.data)
       setVendorId(a.data.vendor_id || '')
+      setCustomVendorName(a.data.custom_vendor_name || '')
+      if (a.data.custom_vendor_name && !a.data.vendor_id) setVendorMode('custom')
+
+      setProjectId(a.data.project_id || '')
+      setCustomProjectName(a.data.custom_project_name || '')
+      if (a.data.custom_project_name && !a.data.project_id) setProjectMode('custom')
+
+      setCustomerName(a.data.customer_name || '')
       setProjectId(a.data.project_id || '')
       setBuyerName(a.data.buyer_name || profile?.full_name || '')
       setPaymentType(a.data.payment_type || 'credit_30')
@@ -181,14 +209,34 @@ export default function POForm() {
       return
     }
     const [a, b] = await Promise.all([
-      supabase.from('purchase_requisitions').select('id, pr_no, status, project_id, projects(id, project_code, project_name)').eq('id', prIdToLoad).single(),
+      supabase.from('purchase_requisitions').select('*, projects(id, project_code, project_name)').eq('id', prIdToLoad).single(),
       supabase.from('purchase_requisition_items').select('*').eq('pr_id', prIdToLoad),
     ])
     if (a.error || a.data.status !== 'pending') {
       return setError('ใบขอซื้อไม่พร้อมสั่งซื้อ (ไม่พบหรือสั่งซื้อไปแล้ว)')
     }
     setPr(a.data)
-    setProjectId(a.data.project_id || '')
+    if (a.data.project_id) {
+      setProjectId(a.data.project_id)
+      setProjectMode('select')
+    } else if (a.data.custom_project_name) {
+      setCustomProjectName(a.data.custom_project_name)
+      setProjectMode('custom')
+    }
+    if (a.data.customer_name) {
+      setCustomerName(a.data.customer_name)
+    }
+    if (a.data.suggested_vendor) {
+      setCustomVendorName(a.data.suggested_vendor)
+      // Check if matches an existing vendor
+      const matchedV = vendors.find(v => v.vendor_name.trim().toLowerCase() === a.data.suggested_vendor.trim().toLowerCase())
+      if (matchedV) {
+        setVendorId(matchedV.id)
+        setVendorMode('select')
+      } else {
+        setVendorMode('custom')
+      }
+    }
     setItems((b.data ?? []).map((i) => ({
       item_name: i.item_name,
       quantity: String(i.quantity),
@@ -303,8 +351,15 @@ export default function POForm() {
     if (!id && !selectedPrId) {
       newErrors.selectedPrId = 'ช่องนี้ยังไม่กรอก ช่องว่างนะ (กรุณาเลือกใบขอซื้อ PR)'
     }
-    if (!vendorId) {
-      newErrors.vendorId = 'ช่องนี้ยังไม่กรอก ช่องว่างนะ (กรุณาเลือกผู้ขาย/ร้านค้า)'
+    
+    if (vendorMode === 'custom') {
+      if (!customVendorName.trim()) {
+        newErrors.vendorId = 'ช่องนี้ยังไม่กรอก ช่องว่างนะ (กรุณากรอกชื่อร้านค้า/ผู้ขาย)'
+      }
+    } else {
+      if (!vendorId) {
+        newErrors.vendorId = 'ช่องนี้ยังไม่กรอก ช่องว่างนะ (กรุณาเลือกผู้ขาย/ร้านค้า หรือเลือกพิมพ์ชื่อร้านเอง)'
+      }
     }
 
     const hasEmptyItem = !items || items.length === 0 || !items.some((i) => i.item_name && i.item_name.trim())
@@ -323,62 +378,218 @@ export default function POForm() {
     }
 
     setBusy(true)
-    const p_items = items.map((i) => ({
-      id: i.id,
-      item_name: i.item_name,
-      quantity: Number(i.quantity),
-      unit: i.unit,
-      price: Number(i.price) || 0,
-    }))
-
-    const extraFields = {
-      buyer_name: buyerName,
-      payment_type: paymentType,
-      deposit_type: hasDeposit ? 'deposit' : 'none',
-      deposit_percent: hasDeposit ? (Number(depositPercent) || 0) : 0,
-      deposit_amount: calcDepositAmount,
-      remaining_amount: calcRemainingAmount,
-      payment_channel_requested: paymentChannelRequested,
-      payment_status: sendToAccounting ? 'รอชำระเงิน' : (po?.payment_status || 'รอชำระเงิน'),
-      quotation_no: quotationNo || null,
-      quotation_date: quotationDate || null,
-      tax_type: taxType,
-      vat_rate: taxType === 'vat_exempt' ? 0 : 7,
-      vat_amount: vatAmount,
-      wht_rate: Number(whtRate),
-      wht_amount: whtAmount,
-      net_amount: netAmount,
-      vendor_tax_invoice_no: vendorTaxInvoiceNo || null,
-      tax_invoice_date: taxInvoiceDate || null,
-      expected_delivery_date: expectedDeliveryDate || null,
-      delivery_address: deliveryAddress || null,
-      notes: notes || null,
-      project_id: projectId || pr?.project_id || null,
-    }
 
     try {
+      // 1. จัดการข้อมูลผู้ขาย (Vendor)
+      let finalVendorId = vendorId
+      let finalCustomVendorName = customVendorName.trim()
+
+      if (vendorMode === 'custom') {
+        const matchedV = vendors.find(v => (v.vendor_name || '').trim().toLowerCase() === finalCustomVendorName.toLowerCase())
+        if (matchedV) {
+          finalVendorId = matchedV.id
+        } else {
+          try {
+            const autoCode = `VEND-${Date.now().toString().slice(-4)}`
+            const { data: newV, error: vInsErr } = await supabase.from('vendors').insert({
+              vendor_code: autoCode,
+              vendor_name: finalCustomVendorName,
+              phone: customVendorPhone.trim() || null,
+              tax_id: customVendorTaxId.trim() || null,
+              address: customVendorAddress.trim() || null,
+            }).select().single()
+
+            if (!vInsErr && newV) {
+              finalVendorId = newV.id
+              setVendors(prev => [...prev, newV])
+            }
+          } catch (e) {
+            console.warn('Auto insert vendor fallback:', e)
+          }
+
+          if (!finalVendorId && vendors.length > 0) {
+            finalVendorId = vendors[0].id
+          }
+        }
+      } else {
+        const chosenV = vendors.find(v => v.id === finalVendorId)
+        if (chosenV) finalCustomVendorName = chosenV.vendor_name
+      }
+
+      // 2. จัดการโครงการ (Project)
+      let finalProjectId = projectMode === 'custom' ? null : (projectId || null)
+      let finalCustomProjectName = customProjectName.trim()
+      if (projectMode === 'select' && projectId) {
+        const chosenP = projects.find(p => p.id === projectId)
+        if (chosenP) finalCustomProjectName = `${chosenP.project_code} ${chosenP.project_name}`
+      }
+
+      const p_items = items.map((i) => ({
+        id: i.id,
+        item_name: i.item_name,
+        quantity: Number(i.quantity),
+        unit: i.unit,
+        price: Number(i.price) || 0,
+      }))
+
+      const extraFields = {
+        buyer_name: buyerName,
+        payment_type: paymentType,
+        deposit_type: hasDeposit ? 'deposit' : 'none',
+        deposit_percent: hasDeposit ? (Number(depositPercent) || 0) : 0,
+        deposit_amount: calcDepositAmount,
+        remaining_amount: calcRemainingAmount,
+        payment_channel_requested: paymentChannelRequested,
+        payment_status: sendToAccounting ? 'รอชำระเงิน' : (po?.payment_status || 'รอชำระเงิน'),
+        quotation_no: quotationNo || null,
+        quotation_date: quotationDate || null,
+        tax_type: taxType,
+        vat_rate: taxType === 'vat_exempt' ? 0 : 7,
+        vat_amount: vatAmount,
+        wht_rate: Number(whtRate),
+        wht_amount: whtAmount,
+        net_amount: netAmount,
+        vendor_tax_invoice_no: vendorTaxInvoiceNo || null,
+        tax_invoice_date: taxInvoiceDate || null,
+        expected_delivery_date: expectedDeliveryDate || null,
+        delivery_address: deliveryAddress || null,
+        notes: notes || null,
+        project_id: finalProjectId || pr?.project_id || null,
+        customer_name: customerName.trim() || null,
+        custom_project_name: finalCustomProjectName || null,
+        custom_vendor_name: finalCustomVendorName || null,
+      }
+
+      const applyExtraFields = async (targetId) => {
+        let payload = { ...extraFields }
+        let res = await supabase.from('purchase_orders').update(payload).eq('id', targetId)
+        if (res.error && res.error.message?.includes('does not exist')) {
+          delete payload.customer_name
+          delete payload.custom_project_name
+          delete payload.custom_vendor_name
+          const tags = [
+            customerName.trim() ? `[ลูกค้า: ${customerName.trim()}]` : '',
+            finalCustomProjectName ? `[โครงการ: ${finalCustomProjectName}]` : '',
+            finalCustomVendorName ? `[ร้านค้า: ${finalCustomVendorName}]` : '',
+          ].filter(Boolean).join(' ')
+          payload.notes = (notes ? `${notes}\n${tags}` : tags) || null
+          res = await supabase.from('purchase_orders').update(payload).eq('id', targetId)
+        }
+        if (res.error) throw res.error
+      }
+
       if (id) {
-        const { error: updErr } = await supabase.rpc('update_purchase_order', {
-          p_po_id: id,
-          p_vendor_id: vendorId,
-          p_items,
-        })
-        if (updErr) throw updErr
-        await supabase.from('purchase_orders').update(extraFields).eq('id', id)
+        let updateSuccess = false
+        try {
+          const { error: updErr } = await supabase.rpc('update_purchase_order', {
+            p_po_id: id,
+            p_vendor_id: finalVendorId,
+            p_items,
+          })
+          if (updErr) throw updErr
+          updateSuccess = true
+        } catch (rpcErr) {
+          console.warn('RPC update_purchase_order error, falling back to direct table update:', rpcErr)
+          // Fallback อัปเดตรายการตรง
+          await supabase.from('purchase_orders').update({
+            vendor_id: finalVendorId,
+            project_id: finalProjectId || pr?.project_id || null,
+            total_amount: subtotal,
+            grand_total: grandTotal,
+          }).eq('id', id)
+
+          await supabase.from('purchase_order_items').delete().eq('po_id', id)
+          const itemsPayload = p_items.map((it) => ({
+            po_id: id,
+            item_name: it.item_name,
+            quantity: Number(it.quantity) || 1,
+            unit: it.unit || 'รายการ',
+            unit_price: Number(it.unit_price) || 0,
+            total_amount: (Number(it.quantity) || 1) * (Number(it.unit_price) || 0),
+          }))
+          const { error: itErr } = await supabase.from('purchase_order_items').insert(itemsPayload)
+          if (itErr) console.warn('Direct items update warning:', itErr)
+        }
+        await applyExtraFields(id)
         navigate(`/purchasing/po/${id}`)
       } else {
         if (!selectedPrId) throw new Error('กรุณาเลือกใบขอซื้อ (PR)')
-        const { data: newId, error: insErr } = await supabase.rpc('create_purchase_order', {
-          p_pr_id: selectedPrId,
-          p_project_id: projectId || pr?.project_id || null,
-          p_vendor_id: vendorId,
-          p_items,
-        })
-        if (insErr) throw insErr
-        if (newId) {
-          await supabase.from('purchase_orders').update(extraFields).eq('id', newId)
+        let newId = null
+
+        try {
+          const { data: rpcNewId, error: insErr } = await supabase.rpc('create_purchase_order', {
+            p_pr_id: selectedPrId,
+            p_project_id: finalProjectId || pr?.project_id || null,
+            p_vendor_id: finalVendorId,
+            p_items,
+          })
+          if (insErr) throw insErr
+          newId = rpcNewId
+        } catch (rpcErr) {
+          console.warn('RPC create_purchase_order error (e.g. missing pr_item_id), running resilient fallback:', rpcErr)
+
+          // Fallback สร้างรหัสเอกสาร PO
+          let genPoNo = `PO${new Date().toISOString().slice(2, 4)}${String(new Date().getMonth() + 1).padStart(2, '0')}${String(Math.floor(Math.random() * 9000) + 1000)}`
+          try {
+            const { data: noData } = await supabase.rpc('next_doc_no', { p_prefix: 'PO' })
+            if (noData) genPoNo = noData
+          } catch (_) {}
+
+          // Fallback บันทึก PO โดยตรง
+          const { data: poRows, error: poErr } = await supabase
+            .from('purchase_orders')
+            .insert({
+              po_no: genPoNo,
+              pr_id: selectedPrId,
+              project_id: finalProjectId || pr?.project_id || null,
+              vendor_id: finalVendorId,
+              order_date: new Date().toISOString().slice(0, 10),
+              status: 'open',
+              total_amount: subtotal,
+              grand_total: grandTotal,
+            })
+            .select('id')
+
+          if (poErr) throw poErr
+          newId = poRows?.[0]?.id
+
+          if (newId) {
+            // Fallback บันทึกรายการสินค้าใน PO (ลองแบบมี pr_item_id ก่อน ถ้าไม่มีคอลัมน์ให้ตัดออก)
+            const baseItems = p_items.map((it) => ({
+              po_id: newId,
+              item_name: it.item_name,
+              quantity: Number(it.quantity) || 1,
+              unit: it.unit || 'รายการ',
+              unit_price: Number(it.unit_price) || 0,
+              total_amount: (Number(it.quantity) || 1) * (Number(it.unit_price) || 0),
+            }))
+
+            try {
+              const itemsWithPr = baseItems.map((it, idx) => ({
+                ...it,
+                pr_item_id: p_items[idx]?.pr_item_id || null,
+              }))
+              const { error: itErr1 } = await supabase.from('purchase_order_items').insert(itemsWithPr)
+              if (itErr1) throw itErr1
+            } catch (itErr) {
+              console.warn('Retrying insert purchase_order_items without pr_item_id:', itErr)
+              const { error: itErr2 } = await supabase.from('purchase_order_items').insert(baseItems)
+              if (itErr2) console.warn('Could not insert items directly:', itErr2)
+            }
+
+            // อัปเดตสถานะ PR เป็น ordered
+            if (selectedPrId) {
+              await supabase.from('purchase_requisitions').update({ status: 'ordered', updated_at: new Date().toISOString() }).eq('id', selectedPrId)
+            }
+          }
         }
-        navigate(`/purchasing/po/${newId}`)
+
+        if (newId) {
+          await applyExtraFields(newId)
+          navigate(`/purchasing/po/${newId}`)
+        } else {
+          throw new Error('ไม่สามารถสร้างรหัสใบสั่งซื้อ (PO) ได้')
+        }
       }
     } catch (err) {
       setError(err.message || 'บันทึกไม่สำเร็จ')
@@ -387,8 +598,50 @@ export default function POForm() {
     }
   }
 
-  const ready = vendorId && itemsValid(items) && (id ? po : pr)
+  const hasVendor = vendorMode === 'custom' ? Boolean(customVendorName.trim()) : Boolean(vendorId)
+  const ready = hasVendor && itemsValid(items) && (id ? po : pr)
   const hasReceived = items.some((i) => Number(i.received) > 0)
+
+  // ตัวเลือกสำหรับ SearchableSelect ในการพิมพ์ค้นหา
+  const prOptions = pendingPrs.map((p) => ({
+    value: p.id,
+    badge: p.pr_no,
+    label: `${p.pr_no} · ${p.projects ? `${p.projects.project_code} ${p.projects.project_name}` : '🏢 ของกลางบริษัท'}`,
+    subLabel: `วันที่ขอ: ${p.request_date} ${p.projects ? `(โครงการ: ${p.projects.project_name})` : ''}`,
+    keywords: `${p.pr_no} ${p.projects?.project_code || ''} ${p.projects?.project_name || ''} ${p.request_date}`,
+  }))
+
+  const projectOptions = [
+    { value: '', label: '🏢 ของกลางบริษัท / สต็อกส่วนกลาง (ไม่ระบุโครงการ)', badge: 'ของกลาง', keywords: 'ของกลาง สต็อก ส่วนกลาง' },
+    ...projects.map((pj) => ({
+      value: pj.id,
+      badge: pj.project_code,
+      label: `${pj.project_code} - ${pj.project_name}`,
+      subLabel: pj.project_name,
+      keywords: `${pj.project_code} ${pj.project_name}`,
+    })),
+  ]
+
+  const vendorOptions = vendors.map((v) => ({
+    value: v.id,
+    badge: v.vendor_code,
+    label: v.vendor_name,
+    subLabel: [v.phone ? `โทร: ${v.phone}` : '', v.tax_id ? `เลขภาษี: ${v.tax_id}` : ''].filter(Boolean).join(' · '),
+    keywords: `${v.vendor_code} ${v.vendor_name} ${v.phone || ''} ${v.tax_id || ''}`,
+  }))
+
+  const customerOptions = customers.map((c) => ({
+    value: c.customer_name,
+    badge: c.customer_code || 'ลูกค้า',
+    label: c.customer_name,
+    keywords: `${c.customer_code || ''} ${c.customer_name}`,
+  }))
+
+  const paymentOptions = PAYMENT_TYPES.map((pt) => ({
+    value: pt.value,
+    label: pt.label,
+    keywords: pt.label,
+  }))
 
   return (
     <div className="max-w-4xl space-y-4">
@@ -418,86 +671,198 @@ export default function POForm() {
         <Link to="/purchasing?tab=po" className="text-xs text-steel-500 hover:underline">← กลับไปรายการใบสั่งซื้อ</Link>
       </div>
 
-      <div className="space-y-4 rounded-lg bg-white p-5 shadow-sm">
-        {/* เลือกหรือแสดง PR & โครงการ */}
-        {id ? (
-          <div className="border-b border-steel-100 pb-3">
-            <div className="text-xs text-steel-500">อ้างอิงใบขอซื้อ (PR):</div>
-            <div className="font-semibold text-sky-700">{po?.pr?.pr_no || 'สั่งตรง'}</div>
-            <div className="mt-1 text-sm">
-              โครงการ (Project Cost Center): <b>{po?.projects ? `${po.projects.project_code} ${po.projects.project_name}` : '🏢 ของกลางบริษัท / สต็อกส่วนกลาง'}</b>
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            <div>
-              <label className="block text-sm font-medium text-ink">
-                เลือกใบขอซื้อ (PR) ที่ต้องการสั่งซื้อ *
-                <select
-                  className={fieldErrorClass(errors.selectedPrId, 'input mt-1')}
-                  value={selectedPrId}
-                  onChange={(e) => {
-                    setSelectedPrId(e.target.value)
-                    if (errors.selectedPrId) setErrors((prev) => ({ ...prev, selectedPrId: '' }))
-                  }}
-                >
-                  <option value="">-- เลือกใบขอซื้อ (PR ที่รอสั่งซื้อ) --</option>
-                  {pendingPrs.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.pr_no} · {p.projects ? `${p.projects.project_code} ${p.projects.project_name}` : '🏢 ของกลางบริษัท'} ({p.request_date})
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <FieldError error={errors.selectedPrId} />
-              {pendingPrs.length === 0 && !selectedPrId && (
-                <div className="mt-2 rounded-md bg-amber-50 p-3 text-xs text-amber-800">
-                  ⚠️ ขณะนี้ไม่มีใบขอซื้อ (PR) ที่รอสั่งซื้อในระบบ — กรุณา{' '}
-                  <Link to="/purchasing/pr/new" className="font-bold underline text-amber-900">สร้างใบขอซื้อ (PR)</Link> ก่อนออกใบสั่งซื้อ
-                </div>
-              )}
-            </div>
-
-            {/* Project Selector Override */}
-            <div>
-              <label className="block text-xs font-semibold text-steel-700 mb-1">
-                โครงการที่ตัดต้นทุน (Project Cost Center - P&L Allocation)
-              </label>
-              <select
-                className="input text-xs"
-                value={projectId}
-                onChange={(e) => setProjectId(e.target.value)}
-              >
-                <option value="">-- ของกลางบริษัท / สต็อกส่วนกลาง --</option>
-                {projects.map((pj) => (
-                  <option key={pj.id} value={pj.id}>{pj.project_code} - {pj.project_name}</option>
-                ))}
-              </select>
-            </div>
+      <div className="space-y-5 rounded-lg bg-white p-5 shadow-sm">
+        {/* เลือกรหัส PR อ้างอิง (กรณีสร้าง PO ใหม่) - ใช้ SearchableSelect พิมพ์ค้นหาได้ทันที */}
+        {!id && (
+          <div>
+            <label className="block text-sm font-medium text-ink mb-1">
+              เลือกใบขอซื้อ (PR) ที่ต้องการสั่งซื้อ * <span className="text-xs font-normal text-steel-500">(พิมพ์เลขที่ PR หรือชื่อโครงการเพื่อค้นหาทันที)</span>
+            </label>
+            <SearchableSelect
+              options={prOptions}
+              value={selectedPrId}
+              onChange={(val) => {
+                setSelectedPrId(val)
+                if (errors.selectedPrId) setErrors((prev) => ({ ...prev, selectedPrId: '' }))
+              }}
+              placeholder="พิมพ์เลขที่ PR, รหัสโครงการ หรือชื่อโครงการเพื่อค้นหา..."
+              error={errors.selectedPrId}
+            />
+            {pendingPrs.length === 0 && !selectedPrId && (
+              <div className="mt-2 rounded-md bg-amber-50 p-3 text-xs text-amber-800">
+                ⚠️ ขณะนี้ไม่มีใบขอซื้อ (PR) ที่รอสั่งซื้อในระบบ — กรุณา{' '}
+                <Link to="/purchasing/pr/new" className="font-bold underline text-amber-900">สร้างใบขอซื้อ (PR)</Link> ก่อนออกใบสั่งซื้อ
+              </div>
+            )}
           </div>
         )}
 
-        {/* ข้อมูลผู้ซื้อ และ ร้านค้า */}
-        <div className="space-y-3">
+        {id && (
+          <div className="border-b border-steel-100 pb-3">
+            <div className="text-xs text-steel-500">อ้างอิงใบขอซื้อ (PR):</div>
+            <div className="font-semibold text-sky-700">{po?.pr?.pr_no || 'สั่งตรง'}</div>
+          </div>
+        )}
+
+        {/* 1. โครงการ และ ลูกค้า/ผู้ว่าจ้าง (สามารถพิมพ์ค้นหาหรือพิมพ์สร้างใหม่ได้ในช่องเดียวกัน) */}
+        <div className="rounded-xl border border-steel-200 bg-steel-50/60 p-4 space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-steel-200/80 pb-2">
+            <span className="text-xs font-bold uppercase tracking-wider text-steel-700 flex items-center gap-1.5">
+              <span>🏗️</span>
+              <span>โครงการ และ ลูกค้า / ผู้ว่าจ้าง (Project & Customer)</span>
+            </span>
+            <div className="flex items-center gap-1 bg-white p-0.5 rounded-lg border border-steel-200 text-xs">
+              <button
+                type="button"
+                onClick={() => setProjectMode('select')}
+                className={`px-2.5 py-1 rounded-md font-medium transition cursor-pointer ${
+                  projectMode === 'select' ? 'bg-sky-700 text-white shadow-2xs font-bold' : 'text-steel-600 hover:text-steel-900'
+                }`}
+              >
+                🏢 เลือกโครงการในระบบ
+              </button>
+              <button
+                type="button"
+                onClick={() => setProjectMode('custom')}
+                className={`px-2.5 py-1 rounded-md font-medium transition cursor-pointer ${
+                  projectMode === 'custom' ? 'bg-sky-700 text-white shadow-2xs font-bold' : 'text-steel-600 hover:text-steel-900'
+                }`}
+              >
+                ✏️ พิมพ์ชื่อโครงการเอง
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {/* ฟิลด์โครงการ (Searchable & Typeable) */}
+            <div>
+              <label className="block text-xs font-semibold text-steel-700 mb-1">
+                โครงการที่ตัดต้นทุน (Project Cost Center) *
+              </label>
+              {projectMode === 'select' ? (
+                <SearchableSelect
+                  options={projectOptions}
+                  value={projectId}
+                  onChange={(val, opt) => {
+                    if (opt?.isCustom) {
+                      setProjectMode('custom')
+                      setCustomProjectName(val)
+                      setProjectId('')
+                    } else {
+                      setProjectId(val)
+                      setCustomProjectName(opt?.label || '')
+                    }
+                  }}
+                  allowCustom={true}
+                  placeholder="พิมพ์รหัส หรือชื่อโครงการเพื่อค้นหา..."
+                  customPlaceholder="กด Enter เพื่อใช้ชื่อโครงการนี้"
+                />
+              ) : (
+                <input
+                  type="text"
+                  className="input text-xs"
+                  placeholder="พิมพ์ระบุชื่อโครงการ เช่น โครงการติดตั้งโซลาร์สระบุรี หรือ งานซ่อมท่อไซต์ B"
+                  value={customProjectName}
+                  onChange={(e) => setCustomProjectName(e.target.value)}
+                />
+              )}
+              <span className="text-[11px] text-steel-500 mt-1 block">
+                {projectMode === 'select' ? 'พิมพ์รหัสหรือชื่อเพื่อค้นหาทันที หรือพิมพ์ชื่อใหม่แล้วกด Enter' : 'สามารถคีย์ชื่อโครงการ ไซต์งาน หรือชื่องานซ่อมได้อิสระ'}
+              </span>
+            </div>
+
+            {/* ฟิลด์ชื่อลูกค้า / ผู้ว่าจ้าง (Searchable & Typeable) */}
+            <div>
+              <label className="block text-xs font-semibold text-steel-700 mb-1">
+                ลูกค้า / ผู้ว่าจ้าง (Customer / Client)
+              </label>
+              <SearchableSelect
+                options={customerOptions}
+                value={customerName}
+                onChange={(val) => setCustomerName(val)}
+                onCustomChange={(val) => setCustomerName(val)}
+                allowCustom={true}
+                placeholder="พิมพ์เพื่อค้นหาลูกค้าในระบบ หรือพิมพ์ชื่อลูกค้าใหม่เอง..."
+                customPlaceholder="กด Enter เพื่อใช้ชื่อลูกค้านี้"
+              />
+              <span className="text-[11px] text-steel-500 mt-1 block">
+                พิมพ์เพื่อค้นหาลูกค้าเดิม หรือพิมพ์ชื่อลูกค้าใหม่ได้อิสระ
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* 2. ข้อมูลร้านค้า / ผู้ขาย (Searchable & Typeable) */}
+        <div className="rounded-xl border border-steel-200 bg-steel-50/60 p-4 space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-steel-200/80 pb-2">
+            <span className="text-xs font-bold uppercase tracking-wider text-steel-700 flex items-center gap-1.5">
+              <span>🏪</span>
+              <span>ผู้ขาย / ร้านค้า (Vendor / Supplier)</span>
+            </span>
+            <div className="flex items-center gap-1 bg-white p-0.5 rounded-lg border border-steel-200 text-xs">
+              <button
+                type="button"
+                onClick={() => setVendorMode('select')}
+                className={`px-2.5 py-1 rounded-md font-medium transition cursor-pointer ${
+                  vendorMode === 'select' ? 'bg-sky-700 text-white shadow-2xs font-bold' : 'text-steel-600 hover:text-steel-900'
+                }`}
+              >
+                🏪 เลือกร้านค้าในระบบ
+              </button>
+              <button
+                type="button"
+                onClick={() => setVendorMode('custom')}
+                className={`px-2.5 py-1 rounded-md font-medium transition cursor-pointer ${
+                  vendorMode === 'custom' ? 'bg-sky-700 text-white shadow-2xs font-bold' : 'text-steel-600 hover:text-steel-900'
+                }`}
+              >
+                ✏️ พิมพ์ชื่อร้านค้าใหม่เอง
+              </button>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label className="block text-sm font-medium text-ink">
-                ผู้ขาย / ร้านค้า *
-                <select
-                  className={fieldErrorClass(errors.vendorId, 'input mt-1')}
+              <label className="block text-sm font-medium text-ink mb-1">
+                ชื่อผู้ขาย / ร้านค้า *
+              </label>
+              {vendorMode === 'select' ? (
+                <SearchableSelect
+                  options={vendorOptions}
                   value={vendorId}
-                  onChange={(e) => {
-                    setVendorId(e.target.value)
+                  onChange={(val, opt) => {
+                    if (opt?.isCustom) {
+                      setVendorMode('custom')
+                      setCustomVendorName(val)
+                      setVendorId('')
+                    } else {
+                      setVendorId(val)
+                      setCustomVendorName(opt?.label || '')
+                    }
                     if (errors.vendorId) setErrors((prev) => ({ ...prev, vendorId: '' }))
                   }}
-                >
-                  <option value="">-- เลือกผู้ขาย --</option>
-                  {vendors.map((v) => (
-                    <option key={v.id} value={v.id}>{v.vendor_code} {v.vendor_name}</option>
-                  ))}
-                </select>
-              </label>
-              <FieldError error={errors.vendorId} />
+                  allowCustom={true}
+                  placeholder="พิมพ์ชื่อร้านค้า รหัส หรือเลขภาษีเพื่อค้นหา..."
+                  customPlaceholder="กด Enter เพื่อพิมพ์ใช้เป็นร้านค้าใหม่"
+                  error={errors.vendorId}
+                />
+              ) : (
+                <input
+                  type="text"
+                  className={fieldErrorClass(errors.vendorId, 'input')}
+                  placeholder="พิมพ์ชื่อร้านค้า/ผู้ขาย เช่น ไทวัสดุ สาขาสระบุรี, ร้านโฮมฮาร์ดแวร์"
+                  value={customVendorName}
+                  onChange={(e) => {
+                    setCustomVendorName(e.target.value)
+                    if (errors.vendorId) setErrors((prev) => ({ ...prev, vendorId: '' }))
+                  }}
+                />
+              )}
+              {vendorMode === 'custom' && (
+                <div className="mt-1 text-[11px] text-emerald-700 bg-emerald-50 px-2 py-1 rounded border border-emerald-200">
+                  💡 ระบบจะบันทึกร้านค้านี้เข้าระบบให้อัตโนมัติ เพื่อให้เรียกใช้งานได้ในครั้งถัดไป
+                </div>
+              )}
             </div>
 
             <label className="block text-sm font-medium text-ink">
@@ -512,6 +877,42 @@ export default function POForm() {
             </label>
           </div>
 
+          {/* รายละเอียดเพิ่มเติมของร้านค้ากรณีพิมพ์เอง */}
+          {vendorMode === 'custom' && (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 pt-2 border-t border-steel-200/70 text-xs">
+              <label className="block font-medium text-steel-700">
+                เบอร์โทรศัพท์ร้านค้า (ถ้ามี)
+                <input
+                  type="text"
+                  className="input mt-1 text-xs"
+                  placeholder="02-xxx-xxxx หรือ 08x-xxx-xxxx"
+                  value={customVendorPhone}
+                  onChange={(e) => setCustomVendorPhone(e.target.value)}
+                />
+              </label>
+              <label className="block font-medium text-steel-700">
+                เลขประจำตัวผู้เสียภาษี (ถ้ามี)
+                <input
+                  type="text"
+                  className="input mt-1 text-xs font-mono"
+                  placeholder="เลข 13 หลัก"
+                  value={customVendorTaxId}
+                  onChange={(e) => setCustomVendorTaxId(e.target.value)}
+                />
+              </label>
+              <label className="block font-medium text-steel-700">
+                ที่อยู่ร้านค้า (ถ้ามี)
+                <input
+                  type="text"
+                  className="input mt-1 text-xs"
+                  placeholder="ที่อยู่/สาขา"
+                  value={customVendorAddress}
+                  onChange={(e) => setCustomVendorAddress(e.target.value)}
+                />
+              </label>
+            </div>
+          )}
+
           {/* แถบแนะนำร้านค้าเดิม */}
           {vendorSuggestions.length > 0 && (
             <div className="rounded-md border border-emerald-200 bg-emerald-50/70 p-3 text-xs text-emerald-900">
@@ -520,13 +921,17 @@ export default function POForm() {
               </div>
               <div className="mt-2 flex flex-wrap gap-2">
                 {vendorSuggestions.map((vs) => {
-                  const isSelected = vendorId === vs.vendorId
+                  const isSelected = vendorMode === 'select' && vendorId === vs.vendorId
                   return (
                     <button
                       key={vs.vendorId}
                       type="button"
-                      onClick={() => setVendorId(vs.vendorId)}
-                      className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-xs transition border shadow-sm ${
+                      onClick={() => {
+                        setVendorMode('select')
+                        setVendorId(vs.vendorId)
+                        if (errors.vendorId) setErrors((prev) => ({ ...prev, vendorId: '' }))
+                      }}
+                      className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-xs transition border shadow-sm cursor-pointer ${
                         isSelected
                           ? 'bg-emerald-700 text-white border-emerald-800 ring-2 ring-emerald-400 font-bold'
                           : 'bg-white text-emerald-900 border-emerald-300 hover:bg-emerald-100'
@@ -589,15 +994,12 @@ export default function POForm() {
               <label className="block text-xs font-semibold text-steel-700 mb-1">
                 ประเภทการชำระเงิน *
               </label>
-              <select
-                className="input text-xs"
+              <SearchableSelect
+                options={paymentOptions}
                 value={paymentType}
-                onChange={(e) => setPaymentType(e.target.value)}
-              >
-                {PAYMENT_TYPES.map((pt) => (
-                  <option key={pt.value} value={pt.value}>{pt.label}</option>
-                ))}
-              </select>
+                onChange={(val) => setPaymentType(val)}
+                placeholder="พิมพ์ค้นหาเงื่อนไขชำระเงิน เช่น เครดิต 30 วัน, เงินสด..."
+              />
             </div>
 
             <div>

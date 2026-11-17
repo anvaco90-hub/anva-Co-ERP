@@ -69,7 +69,9 @@ export default function PRDocumentModal({ pr, items, onClose }) {
 
             {/* ข้อมูลโครงการ */}
             <div className="my-4 rounded border border-neutral-300 p-3 text-xs space-y-1">
-              <div>โครงการ: <b className="text-sm">{pr.projects?.project_code} {pr.projects?.project_name}</b></div>
+              <div>โครงการ: <b className="text-sm">{pr.custom_project_name || (pr.projects ? `${pr.projects.project_code} ${pr.projects.project_name}` : '🏢 ของกลางบริษัท / สต็อกส่วนกลาง')}</b></div>
+              {pr.customer_name && <div>ลูกค้า / ผู้ว่าจ้าง: <b>{pr.customer_name}</b></div>}
+              {pr.suggested_vendor && <div>ร้านค้าแนะนำ / แหล่งซื้อ: <b>{pr.suggested_vendor}</b></div>}
               <div>ผู้ขอซื้อ: <b>{pr.creator?.full_name || 'เจ้าหน้าที่หน้างาน / สโตร์'}</b></div>
               {pr.notes && <div>วัตถุประสงค์ / หมายเหตุ: <span className="italic">{pr.notes}</span></div>}
             </div>

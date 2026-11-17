@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { baht } from '../../lib/projects'
 import { fmtDateTime } from '../../lib/purchasing'
+import Pagination from '../../components/Pagination'
 import {
   History,
   ArrowUpFromLine,
@@ -23,6 +24,8 @@ export default function IssueList() {
   const navigate = useNavigate()
   const [rows, setRows] = useState(null)
   const [error, setError] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10) // 10 | 20 | 50 | 100
 
   useEffect(() => {
     supabase
@@ -51,6 +54,12 @@ export default function IssueList() {
         }
       })
   }, [])
+
+  const paginatedRows = useMemo(() => {
+    if (!rows) return []
+    const start = (currentPage - 1) * pageSize
+    return rows.slice(start, start + pageSize)
+  }, [rows, currentPage, pageSize])
 
   if (!rows) {
     return (
@@ -123,7 +132,7 @@ export default function IssueList() {
         </div>
       ) : (
         <div className="space-y-3.5">
-          {rows.map((r) => {
+          {paginatedRows.map((r) => {
             const itemsList = r.stock_issue_items || []
             const total = itemsList.reduce(
               (s, i) => s + Number(i.quantity || 0) * Number(i.unit_cost || 0),
@@ -240,6 +249,23 @@ export default function IssueList() {
               </div>
             )
           })}
+        </div>
+      )}
+
+      {/* แถบเปลี่ยนหน้า (Pagination < 1 2 3 4 5 6 >) */}
+      {rows && rows.length > 0 && (
+        <div className="rounded-2xl border border-steel-200 bg-white px-5 py-3 shadow-xs">
+          <Pagination
+            currentPage={currentPage}
+            totalItems={rows.length}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={(newSize) => {
+              setPageSize(newSize)
+              setCurrentPage(1)
+            }}
+            pageSizeOptions={[5, 10, 20, 50]}
+          />
         </div>
       )}
     </div>

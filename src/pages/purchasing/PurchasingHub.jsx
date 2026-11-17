@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, useMemo } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
@@ -10,6 +10,8 @@ import PaymentActionModal from '../../components/PaymentActionModal'
 import PODocumentModal from '../../components/reports/PODocumentModal'
 import EnvelopePrintModal from '../../components/reports/EnvelopePrintModal'
 import POShareModal from '../../components/purchasing/POShareModal'
+import SearchableSelect from '../../components/SearchableSelect'
+import Pagination from '../../components/Pagination'
 import {
   Printer,
   Mail,
@@ -67,6 +69,8 @@ export default function PurchasingHub() {
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
   const [datePreset, setDatePreset] = useState('all') // 'all' | 'today' | 'yesterday' | 'this_week' | 'this_month' | 'last_month' | 'next_7_days' | 'next_30_days' | 'custom'
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(15) // 10 | 15 | 30 | 50
 
   const canCreate = canCreatePurchasing(profile.role)
   const canReceive = canReceiveGoods(profile.role)
@@ -78,13 +82,13 @@ export default function PurchasingHub() {
       const [prsRes, posRes, projRes, venRes] = await Promise.all([
         supabase
           .from('purchase_requisitions')
-          .select('id, pr_no, request_date, status, notes, project_id, projects(id, project_code, project_name), purchase_requisition_items(*)')
+          .select('*, projects(id, project_code, project_name), purchase_requisition_items(*)')
           .order('request_date', { ascending: false })
           .order('pr_no', { ascending: false }),
         supabase
           .from('purchase_orders')
           .select(
-            'id, po_no, pr_id, order_date, expected_delivery_date, delivery_address, notes, total_amount, net_amount, status, payment_type, quotation_no, quotation_date, buyer_name, vendor_id, project_id, vendors(id, vendor_code, vendor_name, contact_person, phone, tax_id, address), projects(id, project_code, project_name), pr:purchase_requisitions(id, pr_no), purchase_order_items(*)'
+            '*, vendors(id, vendor_code, vendor_name, contact_person, phone, tax_id, address), projects(id, project_code, project_name), pr:purchase_requisitions(id, pr_no), purchase_order_items(*)'
           )
           .order('order_date', { ascending: false })
           .order('po_no', { ascending: false }),
@@ -282,13 +286,13 @@ export default function PurchasingHub() {
   }
 
   const filteredPrs = prs.filter((r) => {
-    if (!filterRow(r, [r.pr_no, r.projects?.project_name, r.projects?.project_code, r.notes])) return false
+    if (!filterRow(r, [r.pr_no, r.projects?.project_name, r.projects?.project_code, r.custom_project_name, r.customer_name, r.suggested_vendor, r.notes])) return false
     if (!checkDateRange(r.request_date)) return false
     return true
   })
 
   const filteredPos = pos.filter((r) => {
-    if (!filterRow(r, [r.po_no, r.vendors?.vendor_name, r.projects?.project_name, r.projects?.project_code, r.pr?.pr_no, r.buyer_name])) {
+    if (!filterRow(r, [r.po_no, r.vendors?.vendor_name, r.custom_vendor_name, r.projects?.project_name, r.projects?.project_code, r.custom_project_name, r.customer_name, r.pr?.pr_no, r.buyer_name, r.notes])) {
       return false
     }
     if (filterDueStatus !== 'all') {
@@ -306,7 +310,7 @@ export default function PurchasingHub() {
 
   const pendingReceipts = pos.filter((p) => {
     if (!['open', 'partial'].includes(p.status)) return false
-    if (!filterRow(p, [p.po_no, p.vendors?.vendor_name, p.projects?.project_name])) return false
+    if (!filterRow(p, [p.po_no, p.vendors?.vendor_name, p.custom_vendor_name, p.projects?.project_name, p.custom_project_name, p.customer_name])) return false
     const targetDate = dateType === 'order_date' ? p.order_date : p.expected_delivery_date
     if (!checkDateRange(targetDate)) return false
     return true
@@ -326,6 +330,32 @@ export default function PurchasingHub() {
     }
     return true
   })
+
+  // รีเซ็ตหน้ากลับไปหน้าที่ 1 เมื่อแท็บ หรือ ตัวกรองเปลี่ยน
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [activeTab, search, filterProject, filterStatus, filterDueStatus, dateFrom, dateTo, dateType])
+
+  // คำนวณข้อมูลเฉพาะหน้าปัจจุบันของแต่ละแท็บ
+  const paginatedPos = useMemo(() => {
+    const start = (currentPage - 1) * pageSize
+    return filteredPos.slice(start, start + pageSize)
+  }, [filteredPos, currentPage, pageSize])
+
+  const paginatedPrs = useMemo(() => {
+    const start = (currentPage - 1) * pageSize
+    return filteredPrs.slice(start, start + pageSize)
+  }, [filteredPrs, currentPage, pageSize])
+
+  const paginatedReceipts = useMemo(() => {
+    const start = (currentPage - 1) * pageSize
+    return pendingReceipts.slice(start, start + pageSize)
+  }, [pendingReceipts, currentPage, pageSize])
+
+  const paginatedPipeline = useMemo(() => {
+    const start = (currentPage - 1) * pageSize
+    return filteredPipelinePrs.slice(start, start + pageSize)
+  }, [filteredPipelinePrs, currentPage, pageSize])
 
   return (
     <div className="space-y-5">
@@ -552,20 +582,23 @@ export default function PurchasingHub() {
 
         {/* ตัวกรองรอง */}
         <div className="flex flex-wrap items-center gap-3 text-xs">
-          <div className="flex items-center gap-1.5">
-            <span className="font-semibold text-steel-600">โครงการ:</span>
-            <select
-              className="rounded-lg border border-steel-200 bg-white px-2.5 py-1 text-xs text-steel-800 focus:outline-none"
+          <div className="flex items-center gap-1.5 min-w-[220px] max-w-xs">
+            <span className="font-semibold text-steel-600 shrink-0">โครงการ:</span>
+            <SearchableSelect
+              options={[
+                { value: '', label: 'ทุกโครงการ', badge: 'ทั้งหมด' },
+                ...projects.map((p) => ({
+                  value: p.id,
+                  badge: p.project_code,
+                  label: `${p.project_code} ${p.project_name}`,
+                  subLabel: p.project_name,
+                  keywords: `${p.project_code} ${p.project_name}`,
+                })),
+              ]}
               value={filterProject}
-              onChange={(e) => setFilterProject(e.target.value)}
-            >
-              <option value="">ทุกโครงการ</option>
-              {projects.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.project_code} {p.project_name}
-                </option>
-              ))}
-            </select>
+              onChange={(val) => setFilterProject(val)}
+              placeholder="พิมพ์ค้นหาโครงการ..."
+            />
           </div>
 
           {activeTab === 'po' && (
@@ -818,7 +851,7 @@ export default function PurchasingHub() {
                         </td>
                       </tr>
                     ) : (
-                      filteredPos.map((r) => {
+                      paginatedPos.map((r) => {
                         const dueStatus = getPoDueStatus(r)
                         const isMenuOpen = actionMenuPoId === r.id
 
@@ -845,23 +878,29 @@ export default function PurchasingHub() {
 
                             {/* 2. ผู้ขาย / ร้านค้า */}
                             <td className="py-3 px-3.5 align-top">
-                              <div className="font-bold text-steel-900 truncate max-w-[200px]" title={r.vendors?.vendor_name}>
-                                {r.vendors?.vendor_name || '-'}
+                              <div className="font-bold text-steel-900 truncate max-w-[200px]" title={r.custom_vendor_name || r.vendors?.vendor_name}>
+                                {r.custom_vendor_name || r.vendors?.vendor_name || '-'}
                               </div>
                               <div className="text-[11px] text-steel-500 truncate max-w-[200px]">
                                 {r.vendors?.contact_person ? `ติดต่อ: ${r.vendors.contact_person}` : ''}
                                 {r.vendors?.phone ? ` โทร: ${r.vendors.phone}` : ''}
+                                {!r.vendors && r.custom_vendor_name && <span className="text-amber-700 bg-amber-50 px-1 rounded text-[10px]">ร้านค้าคีย์เอง</span>}
                               </div>
                             </td>
 
-                            {/* 3. โครงการ */}
+                            {/* 3. โครงการ & ลูกค้า */}
                             <td className="py-3 px-3.5 align-top">
-                              <div className="font-bold text-steel-900 truncate max-w-[190px]" title={r.projects?.project_name}>
-                                {r.projects ? r.projects.project_code : 'ของกลางบริษัท'}
+                              <div className="font-bold text-steel-900 truncate max-w-[190px]" title={r.custom_project_name || (r.projects ? `${r.projects.project_code} ${r.projects.project_name}` : 'ของกลางบริษัท')}>
+                                {r.custom_project_name || (r.projects ? r.projects.project_code : 'ของกลางบริษัท')}
                               </div>
                               <div className="text-[11px] text-steel-600 truncate max-w-[190px]">
-                                {r.projects?.project_name || 'สต็อกส่วนกลาง'}
+                                {r.projects?.project_name || (r.custom_project_name ? 'โครงการคีย์เอง' : 'สต็อกส่วนกลาง')}
                               </div>
+                              {r.customer_name && (
+                                <div className="text-[10px] text-blue-700 truncate max-w-[190px] font-semibold mt-0.5">
+                                  👤 {r.customer_name}
+                                </div>
+                              )}
                             </td>
 
                             {/* 4. ยอดรวมสุทธิ */}
@@ -1050,6 +1089,23 @@ export default function PurchasingHub() {
                   </tbody>
                 </table>
               </div>
+
+              {/* แถบเปลี่ยนหน้า (PO Pagination) */}
+              {filteredPos.length > 0 && (
+                <div className="border-t border-steel-100 bg-white px-4 py-2.5">
+                  <Pagination
+                    currentPage={currentPage}
+                    totalItems={filteredPos.length}
+                    pageSize={pageSize}
+                    onPageChange={setCurrentPage}
+                    onPageSizeChange={(newSize) => {
+                      setPageSize(newSize)
+                      setCurrentPage(1)
+                    }}
+                    pageSizeOptions={[10, 15, 30, 50]}
+                  />
+                </div>
+              )}
             </div>
           )}
 
@@ -1087,7 +1143,7 @@ export default function PurchasingHub() {
                       </td>
                     </tr>
                   ) : (
-                    filteredPrs.map((r) => {
+                    paginatedPrs.map((r) => {
                       const linkedPos = poByPrId[r.id] || []
                       return (
                         <tr key={r.id} className="hover:bg-steel-50/70 transition-colors">
@@ -1098,8 +1154,10 @@ export default function PurchasingHub() {
                             </Link>
                           </td>
                           <td className="py-3 px-3.5">
-                            <div className="font-semibold text-steel-900">{r.projects?.project_code}</div>
-                            <div className="text-xs text-steel-500 truncate max-w-[220px]">{r.projects?.project_name}</div>
+                            <div className="font-semibold text-steel-900">{r.custom_project_name || r.projects?.project_code || 'ของกลางบริษัท'}</div>
+                            <div className="text-xs text-steel-500 truncate max-w-[220px]">{r.projects?.project_name || (r.custom_project_name ? 'โครงการคีย์เอง' : 'สต็อกส่วนกลาง')}</div>
+                            {r.customer_name && <div className="text-[10px] text-blue-700 truncate font-semibold mt-0.5">👤 {r.customer_name}</div>}
+                            {r.suggested_vendor && <div className="text-[10px] text-emerald-700 truncate font-semibold">🏪 แนะนำ: {r.suggested_vendor}</div>}
                           </td>
                           <td className="py-3 px-3 text-steel-600 whitespace-nowrap">{formatThaiDate(r.request_date)}</td>
                           <td className="py-3 px-3 text-right font-bold text-steel-900">{r.purchase_requisition_items?.length || 0}</td>
@@ -1142,6 +1200,23 @@ export default function PurchasingHub() {
                   )}
                 </tbody>
               </table>
+
+              {/* แถบเปลี่ยนหน้า (PR Pagination) */}
+              {filteredPrs.length > 0 && (
+                <div className="border-t border-steel-100 bg-white px-2 py-2 mt-2">
+                  <Pagination
+                    currentPage={currentPage}
+                    totalItems={filteredPrs.length}
+                    pageSize={pageSize}
+                    onPageChange={setCurrentPage}
+                    onPageSizeChange={(newSize) => {
+                      setPageSize(newSize)
+                      setCurrentPage(1)
+                    }}
+                    pageSizeOptions={[10, 15, 30, 50]}
+                  />
+                </div>
+              )}
             </div>
           )}
 
@@ -1180,7 +1255,7 @@ export default function PurchasingHub() {
                         </td>
                       </tr>
                     ) : (
-                      pendingReceipts.map((r) => {
+                      paginatedReceipts.map((r) => {
                         const dueStatus = getPoDueStatus(r)
                         return (
                           <tr key={r.id} className="hover:bg-steel-50/70 transition-colors">
@@ -1192,15 +1267,20 @@ export default function PurchasingHub() {
                               {r.pr?.pr_no && <div className="text-[11px] text-steel-500 font-normal">จาก {r.pr.pr_no}</div>}
                             </td>
                             <td className="py-3 px-3.5 font-semibold text-steel-900">
-                              <div className="truncate max-w-[200px]" title={r.vendors?.vendor_name}>
-                                {r.vendors?.vendor_name || '-'}
+                              <div className="truncate max-w-[200px]" title={r.custom_vendor_name || r.vendors?.vendor_name}>
+                                {r.custom_vendor_name || r.vendors?.vendor_name || '-'}
                               </div>
                             </td>
                             <td className="py-3 px-3.5 text-steel-700">
-                              <div className="truncate max-w-[200px]" title={`${r.projects?.project_code || ''} ${r.projects?.project_name || ''}`}>
-                                <span className="font-semibold text-steel-900">{r.projects?.project_code}</span>{' '}
+                              <div className="truncate max-w-[200px]" title={r.custom_project_name || `${r.projects?.project_code || ''} ${r.projects?.project_name || ''}`}>
+                                <span className="font-semibold text-steel-900">{r.custom_project_name || r.projects?.project_code || 'ของกลาง'}</span>{' '}
                                 <span className="text-steel-600">{r.projects?.project_name}</span>
                               </div>
+                              {r.customer_name && (
+                                <div className="text-[10px] text-blue-700 truncate font-semibold">
+                                  👤 {r.customer_name}
+                                </div>
+                              )}
                             </td>
                             <td className="py-3 px-3 text-steel-600 whitespace-nowrap">{formatThaiDate(r.order_date)}</td>
                             <td className="py-3 px-3.5">
@@ -1238,6 +1318,23 @@ export default function PurchasingHub() {
                   </tbody>
                 </table>
               </div>
+
+              {/* แถบเปลี่ยนหน้า (Receipts Pagination) */}
+              {pendingReceipts.length > 0 && (
+                <div className="border-t border-steel-100 bg-white px-4 py-2.5">
+                  <Pagination
+                    currentPage={currentPage}
+                    totalItems={pendingReceipts.length}
+                    pageSize={pageSize}
+                    onPageChange={setCurrentPage}
+                    onPageSizeChange={(newSize) => {
+                      setPageSize(newSize)
+                      setCurrentPage(1)
+                    }}
+                    pageSizeOptions={[10, 15, 30, 50]}
+                  />
+                </div>
+              )}
             </div>
           )}
 
@@ -1299,7 +1396,7 @@ export default function PurchasingHub() {
                           </td>
                         </tr>
                       ) : (
-                        filteredPipelinePrs.map((r) => {
+                        paginatedPipeline.map((r) => {
                           const linkedPos = poByPrId[r.id] || []
                           const linkedTotal = linkedPos.reduce((s, p) => s + Number(p.total_amount || 0), 0)
                           return (
@@ -1345,6 +1442,23 @@ export default function PurchasingHub() {
                     </tbody>
                   </table>
                 </div>
+
+                {/* แถบเปลี่ยนหน้า (Pipeline Pagination) */}
+                {filteredPipelinePrs.length > 0 && (
+                  <div className="border-t border-steel-100 bg-white px-2 py-2 mt-2">
+                    <Pagination
+                      currentPage={currentPage}
+                      totalItems={filteredPipelinePrs.length}
+                      pageSize={pageSize}
+                      onPageChange={setCurrentPage}
+                      onPageSizeChange={(newSize) => {
+                        setPageSize(newSize)
+                        setCurrentPage(1)
+                      }}
+                      pageSizeOptions={[10, 15, 30, 50]}
+                    />
+                  </div>
+                )}
               </div>
             </div>
           )}

@@ -7,6 +7,7 @@ import EnvelopePrintModal from '../../components/reports/EnvelopePrintModal'
 import QuotationShareModal from '../../components/quotations/QuotationShareModal'
 import CustomerPoModal from '../../components/quotations/CustomerPoModal'
 import PaymentActionModal from '../../components/PaymentActionModal'
+import Pagination from '../../components/Pagination'
 import {
   Printer,
   Mail,
@@ -79,6 +80,8 @@ export default function QuotationList() {
   const [datePreset, setDatePreset] = useState('all') // 'all' | 'today' | 'this_week' | 'this_month' | 'next_30' | 'custom'
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(15) // 10 | 15 | 30 | 50
 
   // โมดัลและเมนู Action
   const [actionMenuId, setActionMenuId] = useState(null)
@@ -264,6 +267,17 @@ export default function QuotationList() {
       return true
     })
   }, [quotations, activeTab, filterStatus, filterProject, search, dateFrom, dateTo])
+
+  // รีเซ็ตหน้ากลับไปหน้าที่ 1 เมื่อตัวกรองเปลี่ยน
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [activeTab, filterStatus, filterProject, search, dateFrom, dateTo])
+
+  // คำนวณรายการเฉพาะหน้าปัจจุบัน
+  const paginatedQuotations = useMemo(() => {
+    const start = (currentPage - 1) * pageSize
+    return filtered.slice(start, start + pageSize)
+  }, [filtered, currentPage, pageSize])
 
   return (
     <div className="space-y-4">
@@ -610,7 +624,7 @@ export default function QuotationList() {
                   </td>
                 </tr>
               ) : (
-                filtered.map((q) => {
+                paginatedQuotations.map((q) => {
                   const status = STATUS_CONFIG[q.status] || STATUS_CONFIG.draft
                   const expInfo = getExpiryInfo(q)
                   const isMenuOpen = actionMenuId === q.id
@@ -819,6 +833,23 @@ export default function QuotationList() {
               )}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* แถบเปลี่ยนหน้า (Pagination < 1 2 3 4 5 6 >) */}
+      {filtered.length > 0 && (
+        <div className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 shadow-2xs">
+          <Pagination
+            currentPage={currentPage}
+            totalItems={filtered.length}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={(newSize) => {
+              setPageSize(newSize)
+              setCurrentPage(1)
+            }}
+            pageSizeOptions={[10, 15, 30, 50]}
+          />
         </div>
       )}
 

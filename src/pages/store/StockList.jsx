@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState } from 'react'
+import { Fragment, useEffect, useState, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
@@ -6,6 +6,7 @@ import { baht } from '../../lib/projects'
 import { formatIntQty } from '../../lib/store'
 import ItemProjectUsageModal from '../../components/ItemProjectUsageModal'
 import InventoryReportModal from '../../components/reports/InventoryReportModal'
+import Pagination from '../../components/Pagination'
 import {
   Package,
   Search,
@@ -45,6 +46,8 @@ export default function StockList() {
   const [search, setSearch] = useState('')
   const [onlyLow, setOnlyLow] = useState(false)
   const [onlyOut, setOnlyOut] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(20) // 10 | 20 | 50 | 100
   const [open, setOpen] = useState(null)
   const [previewImg, setPreviewImg] = useState(null)
   const [selectedUsageItem, setSelectedUsageItem] = useState(null)
@@ -90,6 +93,38 @@ export default function StockList() {
       .finally(() => setLoading(false))
   }, [])
 
+  const isLow = (i) =>
+    Number(i?.reorder_point) > 0 &&
+    Number(i?.qty_on_hand) <= Number(i?.reorder_point) &&
+    Number(i?.qty_on_hand) > 0
+  const isOut = (i) => Number(i?.qty_on_hand) <= 0
+
+  // รีเซ็ตหน้ากลับไปหน้าที่ 1 เมื่อตัวกรองหรือคำค้นหาเปลี่ยน (ต้องอยู่ก่อน Early Return ตามกฎของ React Hooks)
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [cat, search, onlyLow, onlyOut])
+
+  // คำนวณรายการที่ผ่านการกรอง (ต้องอยู่ก่อน Early Return)
+  const shown = useMemo(() => {
+    if (!items) return []
+    const q = search.trim().toLowerCase()
+    return items.filter((i) => {
+      if (cat && i.category_id !== cat) return false
+      if (onlyLow && !isLow(i)) return false
+      if (onlyOut && !isOut(i)) return false
+      if (!q) return true
+      return `${i.item_name} ${i.item_code} ${i.unit || ''}`
+        .toLowerCase()
+        .includes(q)
+    })
+  }, [items, cat, onlyLow, onlyOut, search])
+
+  // คำนวณรายการเฉพาะหน้าปัจจุบัน (ต้องอยู่ก่อน Early Return)
+  const paginatedItems = useMemo(() => {
+    const start = (currentPage - 1) * pageSize
+    return shown.slice(start, start + pageSize)
+  }, [shown, currentPage, pageSize])
+
   if (loading || !items) {
     return (
       <div className="flex h-64 flex-col items-center justify-center space-y-3 font-sans">
@@ -100,23 +135,6 @@ export default function StockList() {
       </div>
     )
   }
-
-  const isLow = (i) =>
-    Number(i.reorder_point) > 0 &&
-    Number(i.qty_on_hand) <= Number(i.reorder_point) &&
-    Number(i.qty_on_hand) > 0
-  const isOut = (i) => Number(i.qty_on_hand) <= 0
-  const q = search.trim().toLowerCase()
-
-  const shown = items.filter((i) => {
-    if (cat && i.category_id !== cat) return false
-    if (onlyLow && !isLow(i)) return false
-    if (onlyOut && !isOut(i)) return false
-    if (!q) return true
-    return `${i.item_name} ${i.item_code} ${i.unit || ''}`
-      .toLowerCase()
-      .includes(q)
-  })
 
   const totalValue = shown.reduce(
     (s, i) => s + Number(i.qty_on_hand || 0) * Number(i.avg_unit_cost || 0),
@@ -463,7 +481,7 @@ export default function StockList() {
         </div>
       ) : viewMode === 'grid' ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-5">
-          {shown.map((it) => {
+          {paginatedItems.map((it) => {
             const itemLow = isLow(it)
             const itemOut = isOut(it)
             const qty = Number(it.qty_on_hand || 0)
@@ -622,7 +640,7 @@ export default function StockList() {
               </tr>
             </thead>
             <tbody className="divide-y divide-steel-100">
-              {shown.map((i) => {
+              {paginatedItems.map((i) => {
                 const isItemLow = isLow(i)
                 const isItemOut = isOut(i)
                 const isOpen = open === i.id
@@ -799,6 +817,23 @@ export default function StockList() {
               })}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* 4.1 แถบเปลี่ยนหน้า (Pagination < 1 2 3 4 5 6 >) */}
+      {shown.length > 0 && (
+        <div className="rounded-2xl border border-steel-200 bg-white px-5 py-3 shadow-xs">
+          <Pagination
+            currentPage={currentPage}
+            totalItems={shown.length}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={(newSize) => {
+              setPageSize(newSize)
+              setCurrentPage(1)
+            }}
+            pageSizeOptions={[10, 20, 50, 100]}
+          />
         </div>
       )}
 
