@@ -602,9 +602,9 @@ export default function QuotationList() {
       ) : (
 
         /* TAB 1 & 2: ตารางหลัก (High-Legibility Table - สบายตา ไม่ซับซ้อน) */
-        <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-2xs">
-          <table className="w-full text-left text-xs divide-y divide-slate-200">
-            <thead className="bg-slate-50 text-slate-600 font-semibold uppercase text-[11px] tracking-wider">
+        <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs min-h-[380px] pb-16">
+          <table className="w-full text-left text-xs divide-y divide-slate-200 dark:divide-slate-800">
+            <thead className="bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-semibold uppercase text-[11px] tracking-wider">
               <tr>
                 <th className="py-3 px-3.5 w-40">เลขที่เอกสาร</th>
                 <th className="py-3 px-3.5 min-w-[220px]">ลูกค้า / โครงการ</th>
@@ -614,13 +614,13 @@ export default function QuotationList() {
                 <th className="py-3 px-3.5 w-28 text-right">จัดการ</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 bg-white">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-slate-400">
+                  <td colSpan={6} className="py-12 text-center text-slate-400 dark:text-slate-500">
                     <div className="text-2xl mb-1">📑</div>
-                    <div className="font-medium text-slate-600">ไม่พบใบเสนอราคาตามเงื่อนไขที่เลือก</div>
-                    <p className="text-[11px] text-slate-400 mt-0.5">ลองเปลี่ยนคำค้นหา หรือกด "ล้างตัวกรอง"</p>
+                    <div className="font-medium text-slate-600 dark:text-slate-300">ไม่พบใบเสนอราคาตามเงื่อนไขที่เลือก</div>
+                    <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">ลองเปลี่ยนคำค้นหา หรือกด "ล้างตัวกรอง"</p>
                   </td>
                 </tr>
               ) : (
@@ -631,7 +631,12 @@ export default function QuotationList() {
                   const hasCustomerPo = Boolean(q.customer_po_no)
 
                   return (
-                    <tr key={q.id} className="hover:bg-slate-50/80 transition-colors">
+                    <tr
+                      key={q.id}
+                      className={`hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors ${
+                        isMenuOpen ? 'relative z-30' : ''
+                      }`}
+                    >
                       {/* 1. เลขที่ QT + วันที่ */}
                       <td className="py-3 px-3.5 align-top whitespace-nowrap">
                         <Link
@@ -697,7 +702,7 @@ export default function QuotationList() {
                           {/* Quick Link to Details */}
                           <Link
                             to={`/quotations/${q.id}`}
-                            className="rounded px-2 py-1 text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition"
+                            className="rounded px-2 py-1 text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition"
                           >
                             ดูเอกสาร
                           </Link>
@@ -707,10 +712,10 @@ export default function QuotationList() {
                             <button
                               type="button"
                               onClick={() => setActionMenuId(isMenuOpen ? null : q.id)}
-                              className={`p-1 rounded-md border transition cursor-pointer ${
+                              className={`p-1.5 rounded-lg border transition cursor-pointer ${
                                 isMenuOpen
-                                  ? 'bg-slate-900 text-white border-slate-900'
-                                  : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-100'
+                                  ? 'bg-slate-900 dark:bg-slate-700 text-white border-slate-900 dark:border-slate-600 shadow-xs'
+                                  : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
                               }`}
                               title="ตัวเลือกเพิ่มเติม"
                             >
@@ -718,13 +723,13 @@ export default function QuotationList() {
                             </button>
 
                             {isMenuOpen && (
-                              <div className="absolute right-0 top-full mt-1 w-52 rounded-xl border border-slate-200 bg-white p-1 shadow-lg z-50 text-left text-xs animate-in fade-in zoom-in-95 duration-100">
+                              <div className="absolute right-0 top-full mt-1.5 w-60 min-w-[220px] rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-1.5 shadow-2xl z-50 text-left text-xs ring-1 ring-black/5 dark:ring-white/10 animate-in fade-in zoom-in-95 duration-100 space-y-0.5">
                                 
                                 <Link
                                   to={`/quotations/${q.id}/edit`}
-                                  className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-slate-700 hover:bg-slate-50 font-medium"
+                                  className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium transition"
                                 >
-                                  <Edit3 className="h-3.5 w-3.5 text-slate-500" />
+                                  <Edit3 className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
                                   <span>แก้ไขใบเสนอราคา</span>
                                 </Link>
 
@@ -734,7 +739,7 @@ export default function QuotationList() {
                                     setCustomerPoTarget(q)
                                     setActionMenuId(null)
                                   }}
-                                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-emerald-800 hover:bg-emerald-50 font-semibold cursor-pointer"
+                                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-emerald-800 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 font-semibold cursor-pointer transition"
                                 >
                                   <span>✍️</span>
                                   <span>{hasCustomerPo ? 'แก้ไขข้อมูล PO ลูกค้า' : 'บันทึก PO ลูกค้า'}</span>
@@ -743,14 +748,14 @@ export default function QuotationList() {
                                 {hasCustomerPo && (
                                   <Link
                                     to={`/purchasing/po/new?quotation_id=${q.id}`}
-                                    className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-amber-900 hover:bg-amber-50 font-semibold"
+                                    className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-amber-900 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/50 font-semibold transition"
                                   >
-                                    <ShoppingCart className="h-3.5 w-3.5 text-amber-600" />
+                                    <ShoppingCart className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
                                     <span>ส่งต่อฝ่ายจัดซื้อ (เปิด PO)</span>
                                   </Link>
                                 )}
 
-                                <div className="my-1 border-t border-slate-100" />
+                                <div className="my-1 border-t border-slate-100 dark:border-slate-800" />
 
                                 <button
                                   type="button"
@@ -758,9 +763,9 @@ export default function QuotationList() {
                                     handleOpenPrint(q)
                                     setActionMenuId(null)
                                   }}
-                                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-slate-700 hover:bg-slate-50 font-medium cursor-pointer"
+                                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium cursor-pointer transition"
                                 >
-                                  <Printer className="h-3.5 w-3.5 text-slate-500" />
+                                  <Printer className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
                                   <span>พิมพ์ A4 / ดาวน์โหลด PDF</span>
                                 </button>
 
@@ -770,9 +775,9 @@ export default function QuotationList() {
                                     setEnvelopeTarget(q)
                                     setActionMenuId(null)
                                   }}
-                                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-slate-700 hover:bg-slate-50 font-medium cursor-pointer"
+                                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium cursor-pointer transition"
                                 >
-                                  <Mail className="h-3.5 w-3.5 text-indigo-500" />
+                                  <Mail className="h-3.5 w-3.5 text-indigo-500 dark:text-indigo-400" />
                                   <span>พิมพ์หน้าจ่าซองส่งลูกค้า</span>
                                 </button>
 
@@ -782,17 +787,17 @@ export default function QuotationList() {
                                     setShareTarget(q)
                                     setActionMenuId(null)
                                   }}
-                                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-slate-700 hover:bg-slate-50 font-medium cursor-pointer"
+                                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium cursor-pointer transition"
                                 >
-                                  <Share2 className="h-3.5 w-3.5 text-emerald-600" />
+                                  <Share2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
                                   <span>แชร์ลิงก์ & LINE</span>
                                 </button>
 
                                 <Link
                                   to={`/quotations/new?duplicate_from=${q.id}`}
-                                  className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-slate-700 hover:bg-slate-50 font-medium"
+                                  className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium transition"
                                 >
-                                  <Copy className="h-3.5 w-3.5 text-blue-500" />
+                                  <Copy className="h-3.5 w-3.5 text-blue-500 dark:text-blue-400" />
                                   <span>ทำซ้ำใบเสนอราคา (Duplicate)</span>
                                 </Link>
 
@@ -803,21 +808,21 @@ export default function QuotationList() {
                                       setPaymentTarget(q)
                                       setActionMenuId(null)
                                     }}
-                                    className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-emerald-700 hover:bg-emerald-50 font-semibold cursor-pointer"
+                                    className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 font-semibold cursor-pointer transition"
                                   >
-                                    <DollarSign className="h-3.5 w-3.5 text-emerald-600" />
+                                    <DollarSign className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
                                     <span>บันทึกรับชำระเงิน</span>
                                   </button>
                                 )}
 
-                                <div className="my-1 border-t border-slate-100" />
+                                <div className="my-1 border-t border-slate-100 dark:border-slate-800" />
 
                                 <button
                                   type="button"
                                   onClick={() => handleDelete(q)}
-                                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-rose-600 hover:bg-rose-50 font-medium cursor-pointer"
+                                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 font-medium cursor-pointer transition"
                                 >
-                                  <Trash2 className="h-3.5 w-3.5 text-rose-500" />
+                                  <Trash2 className="h-3.5 w-3.5 text-rose-500 dark:text-rose-400" />
                                   <span>ลบใบเสนอราคานี้</span>
                                 </button>
 

@@ -1,4 +1,4 @@
--- 033_sync_purchasing_to_store_inventory.sql
+,-- 033_sync_purchasing_to_store_inventory.sql
 -- เชื่อมโยงระบบจัดซื้อ (PO / Goods Receipt) เข้าสู่ระบบสโตร์และคลังพัสดุ (inventory_items / stock_lots) อัตโนมัติ 100%
 -- และแก้ไข Trigger ตรวจสอบสมุดรายวันบัญชี (journal_entries) ให้บันทึกชำระเงินผ่านได้ฉลุย
 

@@ -99,17 +99,32 @@ export default function AdjustStock() {
   const [histMonth, setHistMonth] = useState('all')
   const [histSearch, setHistSearch] = useState('')
 
-  const loadHistory = useCallback(() => {
-    supabase
-      .from('stock_adjustments')
-      .select(
-        'id, adj_no, qty_before, qty_after, unit_cost, reason, target_type, target_location, created_at, inventory_items(id, item_code, item_name, unit), projects(project_code, project_name), creator:profiles!created_by(full_name)'
-      )
-      .order('created_at', { ascending: false })
-      .limit(100)
-      .then(({ data, error }) => {
-        if (!error && data) setHistory(data)
-      })
+  const loadHistory = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('stock_adjustments')
+        .select(
+          'id, adj_no, qty_before, qty_after, unit_cost, reason, created_at, source_project_id, item_id, inventory_items(id, item_code, item_name, unit), projects:source_project_id(project_code, project_name)'
+        )
+        .order('created_at', { ascending: false })
+        .limit(100)
+
+      if (!error && data) {
+        setHistory(data)
+      } else {
+        // Fallback without project foreign join if needed
+        const { data: fbData } = await supabase
+          .from('stock_adjustments')
+          .select(
+            'id, adj_no, qty_before, qty_after, unit_cost, reason, created_at, source_project_id, item_id, inventory_items(id, item_code, item_name, unit)'
+          )
+          .order('created_at', { ascending: false })
+          .limit(100)
+        if (fbData) setHistory(fbData)
+      }
+    } catch {
+      // ignore
+    }
   }, [])
 
   const loadItems = useCallback(() => {
@@ -232,17 +247,6 @@ export default function AdjustStock() {
       return setError(rpcErr.message)
     }
 
-    // อัปเดต target_type และ target_location ใน stock_adjustments หากบันทึกสำเร็จ
-    if (adjId) {
-      await supabase
-        .from('stock_adjustments')
-        .update({
-          target_type: targetType,
-          target_location: targetLocation.trim() || null,
-        })
-        .eq('id', adjId)
-    }
-
     // อัปเดต avg_unit_cost ถ้ามีการแก้ไขต้นทุน
     if (unitCostNum !== null && unitCostNum >= 0) {
       await supabase
@@ -290,7 +294,7 @@ export default function AdjustStock() {
   })
 
   return (
-    <div className="max-w-4xl space-y-6 font-sans text-slate-800">
+    <div className="max-w-4xl space-y-6 font-sans text-slate-900 dark:text-slate-100">
       {/* 1. Header Banner */}
       <div className="rounded-2xl bg-gradient-to-r from-slate-900 via-steel-900 to-slate-800 p-6 text-white shadow-md border border-steel-700">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -332,17 +336,17 @@ export default function AdjustStock() {
       </div>
 
       {/* 2. Main Action Card */}
-      <div className="rounded-2xl border border-steel-200 bg-white p-6 shadow-xs space-y-5">
+      <div className="rounded-2xl border border-steel-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-xs space-y-5">
         
         {/* เลือกแท็บการทำงาน: 1. คืนของเหลือ | 2. ตัดชำรุด/ปรับยอด */}
-        <div className="flex rounded-xl bg-steel-100 p-1 max-w-md">
+        <div className="flex rounded-xl bg-steel-100 dark:bg-slate-800 p-1 max-w-md">
           <button
             type="button"
             onClick={() => handleTabChange('return_stock')}
             className={`flex-1 rounded-lg py-2.5 text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
               activeTab === 'return_stock'
                 ? 'bg-emerald-700 text-white shadow-xs font-black'
-                : 'text-steel-600 hover:text-steel-900'
+                : 'text-steel-600 dark:text-slate-300 hover:text-steel-900 dark:hover:text-white'
             }`}
           >
             <TrendingUp className="h-4 w-4" />
@@ -368,8 +372,8 @@ export default function AdjustStock() {
           
           {/* ส่วนที่ 1: เลือกแหล่งที่มา (โครงการ / ออฟฟิศ / หน้างาน) */}
           <div className="space-y-3">
-            <span className="text-xs sm:text-sm font-bold text-steel-900 flex items-center gap-1.5">
-              <Building2 className="h-4 w-4 text-steel-700" />
+            <span className="text-xs sm:text-sm font-bold text-steel-900 dark:text-slate-100 flex items-center gap-1.5">
+              <Building2 className="h-4 w-4 text-steel-700 dark:text-slate-400" />
               <span>
                 1. {activeTab === 'return_stock' ? 'เลือกต้นทางที่ส่งของคืนมา *' : 'เลือกสถานที่ที่วัสดุชำรุด/สูญหาย *'}
               </span>
@@ -390,18 +394,18 @@ export default function AdjustStock() {
                     className={`rounded-xl p-3 text-left transition border cursor-pointer ${
                       isSelected
                         ? activeTab === 'return_stock'
-                          ? 'border-emerald-700 bg-emerald-900 text-white shadow-sm ring-2 ring-emerald-300'
-                          : 'border-rose-700 bg-rose-900 text-white shadow-sm ring-2 ring-rose-300'
-                        : 'border-steel-200 bg-white hover:bg-steel-50 text-steel-700'
+                          ? 'border-emerald-700 dark:border-emerald-500 bg-emerald-900 dark:bg-emerald-950 text-white shadow-sm ring-2 ring-emerald-300 dark:ring-emerald-500/30'
+                          : 'border-rose-700 dark:border-rose-500 bg-rose-900 dark:bg-rose-950 text-white shadow-sm ring-2 ring-rose-300 dark:ring-rose-500/30'
+                        : 'border-steel-200 dark:border-slate-700/80 bg-white dark:bg-slate-800/40 hover:bg-steel-50 dark:hover:bg-slate-800 text-steel-700 dark:text-slate-300'
                     }`}
                   >
                     <div className="text-xs font-black flex items-center justify-between">
-                      <span>{opt.label}</span>
-                      {isSelected && <CheckCircle2 className="h-4 w-4 text-hivis" />}
+                      <span className={isSelected ? 'text-white dark:text-emerald-200' : ''}>{opt.label}</span>
+                      {isSelected && <CheckCircle2 className="h-4 w-4 text-hivis dark:text-amber-400" />}
                     </div>
                     <div
                       className={`text-[11px] mt-1 line-clamp-2 ${
-                        isSelected ? 'text-steel-200' : 'text-steel-500'
+                        isSelected ? 'text-steel-200 dark:text-slate-300' : 'text-steel-500 dark:text-slate-400'
                       }`}
                     >
                       {opt.desc}
@@ -414,7 +418,7 @@ export default function AdjustStock() {
             {/* Dynamic Input Based on Target Type */}
             {targetType === 'project' ? (
               <div className="pt-2">
-                <label className="block text-xs font-bold text-steel-700 mb-1">
+                <label className="block text-xs font-bold text-steel-700 dark:text-slate-300 mb-1">
                   ค้นหาและเลือกโครงการ *
                 </label>
                 <SearchableProjectSelect
@@ -431,20 +435,20 @@ export default function AdjustStock() {
               </div>
             ) : targetType === 'office' ? (
               <div className="pt-2">
-                <label className="block text-xs font-bold text-steel-700 mb-1">
+                <label className="block text-xs font-bold text-steel-700 dark:text-slate-300 mb-1">
                   ระบุแผนก / ส่วนงานในออฟฟิศ
                 </label>
                 <input
                   type="text"
                   placeholder="เช่น แผนกบัญชี, ธุรการ, สโตร์, ส่วนกลาง"
-                  className="w-full rounded-xl border border-steel-300 bg-white px-3.5 py-2 text-xs sm:text-sm text-steel-900 focus:border-steel-900 focus:outline-none"
+                  className="w-full rounded-xl border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3.5 py-2 text-xs sm:text-sm text-steel-900 dark:text-slate-100 placeholder:text-steel-400 dark:placeholder:text-slate-500 focus:border-steel-900 dark:focus:border-amber-400 focus:outline-none"
                   value={targetLocation}
                   onChange={(e) => setTargetLocation(e.target.value)}
                 />
               </div>
             ) : (
               <div className="pt-2">
-                <label className="block text-xs font-bold text-steel-700 mb-1">
+                <label className="block text-xs font-bold text-steel-700 dark:text-slate-300 mb-1">
                   ระบุชื่อหน้างาน / สถานที่ *
                 </label>
                 <input
@@ -452,7 +456,7 @@ export default function AdjustStock() {
                   placeholder="เช่น หน้างานบ้านคุณวินิจ หาดใหญ่, งานซ่อม O&M"
                   className={fieldErrorClass(
                     errors.targetLocation,
-                    'w-full rounded-xl border border-steel-300 bg-white px-3.5 py-2 text-xs sm:text-sm text-steel-900 focus:border-steel-900 focus:outline-none'
+                    'w-full rounded-xl border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3.5 py-2 text-xs sm:text-sm text-steel-900 dark:text-slate-100 placeholder:text-steel-400 dark:placeholder:text-slate-500 focus:border-steel-900 dark:focus:border-amber-400 focus:outline-none'
                   )}
                   value={targetLocation}
                   onChange={(e) => {
@@ -467,15 +471,15 @@ export default function AdjustStock() {
           </div>
 
           {/* ส่วนที่ 2: เหตุผลในการทำรายการ (7 ปุ่มตรงตามตัวอย่าง) */}
-          <div className="space-y-3 pt-3 border-t border-steel-100">
+          <div className="space-y-3 pt-3 border-t border-steel-100 dark:border-slate-800">
             <div className="flex items-center justify-between">
-              <span className="text-xs sm:text-sm font-bold text-steel-900 flex items-center gap-1.5">
-                <FileSpreadsheet className="h-4 w-4 text-steel-700" />
+              <span className="text-xs sm:text-sm font-bold text-steel-900 dark:text-slate-100 flex items-center gap-1.5">
+                <FileSpreadsheet className="h-4 w-4 text-steel-700 dark:text-slate-400" />
                 <span>
                   2. วัตถุประสงค์ / เหตุผลในการ{activeTab === 'return_stock' ? 'คืนของ' : 'ตัดชำรุด'} *
                 </span>
               </span>
-              <span className="text-[11px] text-steel-500">
+              <span className="text-[11px] text-steel-500 dark:text-slate-400">
                 เลือกประเภทเหตุผลที่ตรงกับความเป็นจริง
               </span>
             </div>
@@ -491,9 +495,9 @@ export default function AdjustStock() {
                     className={`rounded-xl px-3 py-2 text-xs font-bold transition flex items-center gap-2 border cursor-pointer ${
                       active
                         ? activeTab === 'return_stock'
-                          ? 'bg-emerald-900 text-amber-300 border-emerald-900 shadow-sm'
-                          : 'bg-rose-900 text-amber-300 border-rose-900 shadow-sm'
-                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                          ? 'bg-emerald-900 dark:bg-emerald-800 text-amber-300 dark:text-amber-200 border-emerald-900 dark:border-emerald-600 shadow-sm'
+                          : 'bg-rose-900 dark:bg-rose-800 text-amber-300 dark:text-amber-200 border-rose-900 dark:border-rose-600 shadow-sm'
+                        : 'bg-white dark:bg-slate-800/60 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'
                     }`}
                   >
                     <span className="text-base">{r.icon}</span>
@@ -505,9 +509,9 @@ export default function AdjustStock() {
           </div>
 
           {/* ส่วนที่ 3: เลือกพัสดุและระบุจำนวน */}
-          <div className="space-y-3 pt-3 border-t border-steel-100">
-            <label className="block text-xs sm:text-sm font-bold text-steel-900 flex items-center gap-1.5">
-              <Boxes className="h-4 w-4 text-steel-700" />
+          <div className="space-y-3 pt-3 border-t border-steel-100 dark:border-slate-800">
+            <label className="block text-xs sm:text-sm font-bold text-steel-900 dark:text-slate-100 flex items-center gap-1.5">
+              <Boxes className="h-4 w-4 text-steel-700 dark:text-slate-400" />
               <span>
                 3. เลือกวัสดุที่ต้องการ{activeTab === 'return_stock' ? 'คืน' : 'ตัดลด'} (จำนวนเต็ม int) *
               </span>
@@ -528,22 +532,22 @@ export default function AdjustStock() {
 
           {/* เมื่อเลือกวัสดุแล้ว */}
           {item && (
-            <div className="space-y-4 pt-3 border-t border-steel-100">
+            <div className="space-y-4 pt-3 border-t border-steel-100 dark:border-slate-800">
               
               {/* แถบยอดคงเหลือเดิม (int) */}
-              <div className="rounded-xl bg-steel-50 border border-steel-200 p-3.5 flex items-center justify-between">
+              <div className="rounded-xl bg-steel-50 dark:bg-slate-800 border border-steel-200 dark:border-slate-700 p-3.5 flex items-center justify-between">
                 <div>
-                  <span className="text-[10px] text-steel-500 font-bold uppercase">วัสดุที่เลือก</span>
-                  <div className="font-bold text-steel-900 text-sm">{item.item_name}</div>
-                  <div className="text-xs text-steel-600 font-mono">
+                  <span className="text-[10px] text-steel-500 dark:text-slate-400 font-bold uppercase">วัสดุที่เลือก</span>
+                  <div className="font-bold text-steel-900 dark:text-white text-sm">{item.item_name}</div>
+                  <div className="text-xs text-steel-600 dark:text-slate-300 font-mono">
                     รหัส: <b>{item.item_code}</b> · ต้นทุนเฉลี่ย: <b>{baht(item.avg_unit_cost)}</b> บาท/{item.unit}
                   </div>
                 </div>
                 <div className="text-right">
-                  <span className="text-[10px] text-steel-500 font-bold uppercase">ยอดเดิมในสโตร์</span>
-                  <div className="text-xl font-mono font-black text-steel-900">
+                  <span className="text-[10px] text-steel-500 dark:text-slate-400 font-bold uppercase">ยอดเดิมในสโตร์</span>
+                  <div className="text-xl font-mono font-black text-steel-900 dark:text-amber-400">
                     {formatIntQty(currentStoreQty)}{' '}
-                    <span className="text-xs font-normal text-steel-600">{item.unit}</span>
+                    <span className="text-xs font-normal text-steel-600 dark:text-slate-400">{item.unit}</span>
                   </div>
                 </div>
               </div>
@@ -551,15 +555,15 @@ export default function AdjustStock() {
               {/* ฟอร์มตามแท็บที่เลือก */}
               {activeTab === 'return_stock' ? (
                 /* โหมดคืนของเหลือ (int) */
-                <div className="rounded-xl border border-emerald-300 bg-emerald-50/40 p-4 space-y-3">
+                <div className="rounded-xl border border-emerald-300 dark:border-emerald-800 bg-emerald-50/40 dark:bg-emerald-950/30 p-4 space-y-3">
                   <div>
-                    <label className="block text-xs font-bold text-emerald-950 mb-1">
+                    <label className="block text-xs font-bold text-emerald-950 dark:text-emerald-200 mb-1">
                       จำนวนที่เหลือคืนมา ({item.unit}) (จำนวนเต็ม int) *
                     </label>
                     <input
                       className={fieldErrorClass(
                         errors.returnedQty,
-                        'input w-full font-mono text-base font-black text-emerald-900'
+                        'input w-full font-mono text-base font-black text-emerald-900 dark:text-emerald-200'
                       )}
                       type="number"
                       min="1"
@@ -576,20 +580,20 @@ export default function AdjustStock() {
                   </div>
 
                   {/* สมการแสดงผลสด (int) */}
-                  <div className="rounded-lg bg-white p-3 border border-emerald-200">
-                    <div className="text-[10px] font-bold text-steel-500 uppercase">
+                  <div className="rounded-lg bg-white dark:bg-slate-800 p-3 border border-emerald-200 dark:border-emerald-800/60">
+                    <div className="text-[10px] font-bold text-steel-500 dark:text-slate-400 uppercase">
                       สรุปยอดคงคลังสโตร์หลักหลังรับคืน
                     </div>
                     <div className="mt-1 flex items-center gap-2 text-xs sm:text-sm font-mono font-bold flex-wrap">
-                      <span className="text-steel-600 bg-steel-100 px-2 py-0.5 rounded">
+                      <span className="text-steel-600 dark:text-slate-300 bg-steel-100 dark:bg-slate-700 px-2 py-0.5 rounded">
                         เดิมมี: {formatIntQty(currentStoreQty)} {item.unit}
                       </span>
-                      <span className="text-emerald-700 font-bold">+</span>
-                      <span className="text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded font-black">
+                      <span className="text-emerald-700 dark:text-emerald-400 font-bold">+</span>
+                      <span className="text-emerald-800 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/60 px-2 py-0.5 rounded font-black">
                         คืนมา: {returnedQty ? formatIntQty(toIntQty(returnedQty)) : 0} {item.unit}
                       </span>
-                      <span className="text-steel-600 font-bold">=</span>
-                      <span className="text-emerald-900 bg-emerald-200 px-2.5 py-0.5 rounded-md font-black">
+                      <span className="text-steel-600 dark:text-slate-400 font-bold">=</span>
+                      <span className="text-emerald-900 dark:text-emerald-200 bg-emerald-200 dark:bg-emerald-900 px-2.5 py-0.5 rounded-md font-black">
                         รวมเป็น {formatIntQty(calculatedTotal)} {item.unit} ในสโตร์
                       </span>
                     </div>
@@ -597,16 +601,16 @@ export default function AdjustStock() {
                 </div>
               ) : (
                 /* โหมดตัดชำรุด / ปรับลดสต็อก (int) */
-                <div className="rounded-xl border border-rose-300 bg-rose-50/40 p-4 space-y-3">
+                <div className="rounded-xl border border-rose-300 dark:border-rose-800 bg-rose-50/40 dark:bg-rose-950/30 p-4 space-y-3">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
                     <div>
-                      <label className="block text-xs font-bold text-rose-950 mb-1">
+                      <label className="block text-xs font-bold text-rose-950 dark:text-rose-200 mb-1">
                         จำนวนที่ต้องการตัดลด ({item.unit}) (จำนวนเต็ม int) *
                       </label>
                       <input
                         className={fieldErrorClass(
                           errors.reducedQty,
-                          'input w-full font-mono text-base font-black text-rose-900'
+                          'input w-full font-mono text-base font-black text-rose-900 dark:text-rose-200'
                         )}
                         type="number"
                         min="1"
@@ -623,20 +627,20 @@ export default function AdjustStock() {
                       <FieldError error={errors.reducedQty} />
                     </div>
 
-                    <div className="rounded-lg bg-white p-3 border border-rose-200">
-                      <div className="text-[10px] font-bold text-steel-500 uppercase">
+                    <div className="rounded-lg bg-white dark:bg-slate-800 p-3 border border-rose-200 dark:border-rose-800/60">
+                      <div className="text-[10px] font-bold text-steel-500 dark:text-slate-400 uppercase">
                         คงเหลือในสโตร์หลังตัดลด
                       </div>
                       <div className="mt-1 flex items-center gap-2 text-xs sm:text-sm font-mono font-bold flex-wrap">
-                        <span className="text-steel-600 bg-steel-100 px-2 py-0.5 rounded">
+                        <span className="text-steel-600 dark:text-slate-300 bg-steel-100 dark:bg-slate-700 px-2 py-0.5 rounded">
                           เดิมมี: {formatIntQty(currentStoreQty)} {item.unit}
                         </span>
-                        <span className="text-rose-700 font-bold">-</span>
-                        <span className="text-rose-800 bg-rose-100 px-2 py-0.5 rounded font-black">
+                        <span className="text-rose-700 dark:text-rose-400 font-bold">-</span>
+                        <span className="text-rose-800 dark:text-rose-300 bg-rose-100 dark:bg-rose-900/60 px-2 py-0.5 rounded font-black">
                           ตัดออก: {reducedQty ? formatIntQty(toIntQty(reducedQty)) : 0} {item.unit}
                         </span>
-                        <span className="text-steel-600 font-bold">=</span>
-                        <span className="text-rose-900 bg-rose-200 px-2.5 py-0.5 rounded-md font-black">
+                        <span className="text-steel-600 dark:text-slate-400 font-bold">=</span>
+                        <span className="text-rose-900 dark:text-rose-200 bg-rose-200 dark:bg-rose-900 px-2.5 py-0.5 rounded-md font-black">
                           คงเหลือ {formatIntQty(calculatedTotal)} {item.unit}
                         </span>
                       </div>
@@ -697,14 +701,14 @@ export default function AdjustStock() {
       </div>
 
       {/* 3. ประวัติการคืนของและปรับยอด */}
-      <div className="rounded-2xl border border-steel-200 bg-white p-5 shadow-xs space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-steel-100 pb-3">
+      <div className="rounded-2xl border border-steel-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-steel-100 dark:border-slate-800 pb-3">
           <div>
-            <h3 className="font-bold text-sm text-steel-900 flex items-center gap-1.5">
-              <RotateCcw className="h-4 w-4 text-steel-700" />
+            <h3 className="font-bold text-sm text-steel-900 dark:text-slate-100 flex items-center gap-1.5">
+              <RotateCcw className="h-4 w-4 text-steel-700 dark:text-amber-400" />
               <span>ประวัติการคืนของและปรับยอด ({filteredHistory.length} รายการ)</span>
             </h3>
-            <p className="text-[11px] text-steel-500">
+            <p className="text-[11px] text-steel-500 dark:text-slate-400">
               ตรวจสอบรายการคืนของจากโครงการและการตัดลดที่ผ่านมา (แสดงผลจำนวนเต็ม int)
             </p>
           </div>
@@ -712,7 +716,7 @@ export default function AdjustStock() {
           {/* ฟิลเตอร์ ปี / เดือน */}
           <div className="flex flex-wrap items-center gap-2 text-xs">
             <select
-              className="rounded-lg border border-steel-300 bg-white px-2 py-1 text-xs font-bold text-steel-800"
+              className="rounded-lg border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-2 py-1 text-xs font-bold text-steel-800 dark:text-slate-200"
               value={histYear}
               onChange={(e) => setHistYear(e.target.value)}
             >
@@ -722,7 +726,7 @@ export default function AdjustStock() {
             </select>
 
             <select
-              className="rounded-lg border border-steel-300 bg-white px-2 py-1 text-xs font-bold text-steel-800"
+              className="rounded-lg border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-2 py-1 text-xs font-bold text-steel-800 dark:text-slate-200"
               value={histMonth}
               onChange={(e) => setHistMonth(e.target.value)}
             >
@@ -737,7 +741,7 @@ export default function AdjustStock() {
             <input
               type="text"
               placeholder="ค้นหาเลขที่, รหัส, ชื่อ..."
-              className="rounded-lg border border-steel-300 bg-white px-2.5 py-1 text-xs"
+              className="rounded-lg border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 py-1 text-xs text-steel-900 dark:text-slate-100 placeholder:text-steel-400 dark:placeholder:text-slate-500"
               value={histSearch}
               onChange={(e) => setHistSearch(e.target.value)}
             />
@@ -751,7 +755,7 @@ export default function AdjustStock() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-xs text-left">
-              <thead className="bg-steel-50 text-steel-600 font-semibold border-b border-steel-200">
+              <thead className="bg-steel-50 dark:bg-slate-800 text-steel-600 dark:text-slate-300 font-semibold border-b border-steel-200 dark:border-slate-800">
                 <tr>
                   <th className="py-2 px-3">เลขที่</th>
                   <th className="py-2 px-3">วันที่ / เวลา</th>
@@ -762,53 +766,53 @@ export default function AdjustStock() {
                   <th className="py-2 px-3">เหตุผล / รายละเอียด</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-steel-100">
+              <tbody className="divide-y divide-steel-100 dark:divide-slate-800">
                 {filteredHistory.map((h) => {
                   const isIncrease = Number(h.qty_after) > Number(h.qty_before)
                   const unit = h.inventory_items?.unit || ''
                   return (
-                    <tr key={h.id} className="hover:bg-steel-50/50">
-                      <td className="py-2.5 px-3 font-mono font-bold text-steel-900">
+                    <tr key={h.id} className="hover:bg-steel-50/50 dark:hover:bg-slate-800/50">
+                      <td className="py-2.5 px-3 font-mono font-bold text-steel-900 dark:text-amber-400">
                         {h.adj_no || '-'}
                       </td>
-                      <td className="py-2.5 px-3 text-steel-500 whitespace-nowrap">
+                      <td className="py-2.5 px-3 text-steel-500 dark:text-slate-400 whitespace-nowrap">
                         {fmtDateTime(h.created_at)}
                       </td>
                       <td className="py-2.5 px-3">
-                        <div className="font-bold text-steel-900">
+                        <div className="font-bold text-steel-900 dark:text-slate-100">
                           {h.inventory_items?.item_name || '-'}
                         </div>
-                        <div className="text-[10px] text-steel-500 font-mono">
+                        <div className="text-[10px] text-steel-500 dark:text-slate-400 font-mono">
                           {h.inventory_items?.item_code || ''}
                         </div>
                       </td>
-                      <td className="py-2.5 px-3 text-right font-mono text-steel-600">
+                      <td className="py-2.5 px-3 text-right font-mono text-steel-600 dark:text-slate-300">
                         {formatIntQty(h.qty_before)} {unit}
                       </td>
                       <td className="py-2.5 px-3 text-right font-mono font-bold">
                         <span
                           className={
-                            isIncrease ? 'text-emerald-700' : 'text-rose-700'
+                            isIncrease ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'
                           }
                         >
                           {formatIntQty(h.qty_after)} {unit}
                         </span>
                       </td>
-                      <td className="py-2.5 px-3 text-steel-700">
+                      <td className="py-2.5 px-3 text-steel-700 dark:text-slate-300">
                         {h.projects ? (
-                          <span className="font-semibold text-indigo-900">
+                          <span className="font-semibold text-indigo-900 dark:text-indigo-300">
                             🏗️ {h.projects.project_code} {h.projects.project_name}
                           </span>
-                        ) : h.target_type === 'office' ? (
-                          <span className="text-amber-800">
-                            🏢 ออฟฟิศ {h.target_location ? `(${h.target_location})` : ''}
+                        ) : (h.reason && h.reason.includes('ออฟฟิศ')) ? (
+                          <span className="text-amber-800 dark:text-amber-300 font-semibold">
+                            🏢 ออฟฟิศ
                           </span>
-                        ) : h.target_type === 'site' ? (
-                          <span className="text-cyan-800">
-                            ⚡ หน้างาน {h.target_location ? `(${h.target_location})` : ''}
+                        ) : (h.reason && h.reason.includes('หน้างาน')) ? (
+                          <span className="text-cyan-800 dark:text-cyan-300 font-semibold">
+                            ⚡ หน้างาน
                           </span>
                         ) : (
-                          <span className="text-steel-400">-</span>
+                          <span className="text-steel-400">ของกลาง/สโตร์</span>
                         )}
                       </td>
                       <td className="py-2.5 px-3 text-steel-600 max-w-xs truncate" title={h.reason}>

@@ -89,7 +89,6 @@ export default function POForm() {
     if (!id) {
       supabase.from('purchase_requisitions')
         .select('id, pr_no, request_date, status, project_id, projects(id, project_code, project_name)')
-        .eq('status', 'pending')
         .order('request_date', { ascending: false })
         .then(({ data }) => setPendingPrs(data ?? []))
     }
@@ -204,7 +203,7 @@ export default function POForm() {
 
   // โหลดข้อมูล PR เมื่อเลือก PR
   const loadPrData = async (prIdToLoad) => {
-    if (!prIdToLoad) {
+    if (!prIdToLoad || prIdToLoad === 'DIRECT_PO') {
       setPr(null)
       return
     }
@@ -212,8 +211,11 @@ export default function POForm() {
       supabase.from('purchase_requisitions').select('*, projects(id, project_code, project_name)').eq('id', prIdToLoad).single(),
       supabase.from('purchase_requisition_items').select('*').eq('pr_id', prIdToLoad),
     ])
-    if (a.error || a.data.status !== 'pending') {
-      return setError('ใบขอซื้อไม่พร้อมสั่งซื้อ (ไม่พบหรือสั่งซื้อไปแล้ว)')
+    if (a.error) {
+      return setError('ไม่พบข้อมูลใบขอซื้อ')
+    }
+    if (a.data.status !== 'pending') {
+      setError(`ℹ️ ใบขอซื้อ ${a.data.pr_no} มีสถานะเป็น "${a.data.status === 'ordered' ? 'สั่งซื้อแล้ว' : a.data.status}" (สามารถใช้ข้อมูลนี้เพื่อออก PO ซ้ำหรือสั่งซื้อเพิ่มเติมได้)`)
     }
     setPr(a.data)
     if (a.data.project_id) {
@@ -237,12 +239,14 @@ export default function POForm() {
         setVendorMode('custom')
       }
     }
-    setItems((b.data ?? []).map((i) => ({
-      item_name: i.item_name,
-      quantity: String(i.quantity),
-      unit: i.unit ?? '',
-      price: String(i.estimated_price || ''),
-    })))
+    if (b.data && b.data.length > 0) {
+      setItems(b.data.map((i) => ({
+        item_name: i.item_name,
+        quantity: String(i.quantity),
+        unit: i.unit ?? '',
+        price: String(i.estimated_price || ''),
+      })))
+    }
   }
 
   useEffect(() => {
@@ -286,6 +290,7 @@ export default function POForm() {
 
   // คำนวณภาษีและยอดสุทธิ
   const rawSubtotal = items.reduce((s, i) => s + (Number(i.quantity) || 0) * (Number(i.price) || 0), 0)
+  const subtotal = rawSubtotal
   let amountBeforeVat = rawSubtotal
   let vatAmount = 0
   let totalWithVat = rawSubtotal
@@ -304,6 +309,7 @@ export default function POForm() {
     totalWithVat = rawSubtotal
   }
 
+  const grandTotal = totalWithVat
   const whtAmount = Math.round((amountBeforeVat * (Number(whtRate) / 100)) * 100) / 100
   const netAmount = Math.round((totalWithVat - whtAmount) * 100) / 100
 
@@ -348,8 +354,10 @@ export default function POForm() {
     setError('')
     const newErrors = {}
 
-    if (!id && !selectedPrId) {
-      newErrors.selectedPrId = 'ช่องนี้ยังไม่กรอก ช่องว่างนะ (กรุณาเลือกใบขอซื้อ PR)'
+    // PR เป็นตัวเลือก (ถ้าไม่ระบุ ถือเป็นการสั่งซื้อตรง / Direct PO อัตโนมัติ)
+    let effectivePrId = selectedPrId
+    if (!id && (!effectivePrId || effectivePrId === 'DIRECT_PO')) {
+      effectivePrId = 'DIRECT_PO'
     }
     
     if (vendorMode === 'custom') {
@@ -424,13 +432,19 @@ export default function POForm() {
         if (chosenP) finalCustomProjectName = `${chosenP.project_code} ${chosenP.project_name}`
       }
 
-      const p_items = items.map((i) => ({
-        id: i.id,
-        item_name: i.item_name,
-        quantity: Number(i.quantity),
-        unit: i.unit,
-        price: Number(i.price) || 0,
-      }))
+      const p_items = items.map((i) => {
+        const itemPrice = Number(i.price ?? i.unit_price) || 0
+        return {
+          id: i.id,
+          item_id: i.item_id || null,
+          item_name: i.item_name,
+          quantity: Number(i.quantity) || 1,
+          unit: i.unit || 'รายการ',
+          price: itemPrice,
+          unit_price: itemPrice,
+          pr_item_id: i.pr_item_id || null,
+        }
+      })
 
       const extraFields = {
         buyer_name: buyerName,
@@ -501,6 +515,7 @@ export default function POForm() {
           await supabase.from('purchase_order_items').delete().eq('po_id', id)
           const itemsPayload = p_items.map((it) => ({
             po_id: id,
+            item_id: it.item_id || null,
             item_name: it.item_name,
             quantity: Number(it.quantity) || 1,
             unit: it.unit || 'รายการ',
@@ -513,20 +528,25 @@ export default function POForm() {
         await applyExtraFields(id)
         navigate(`/purchasing/po/${id}`)
       } else {
-        if (!selectedPrId) throw new Error('กรุณาเลือกใบขอซื้อ (PR)')
+        const isDirectPo = !selectedPrId || selectedPrId === 'DIRECT_PO'
+        const actualPrId = isDirectPo ? null : selectedPrId
         let newId = null
 
         try {
-          const { data: rpcNewId, error: insErr } = await supabase.rpc('create_purchase_order', {
-            p_pr_id: selectedPrId,
-            p_project_id: finalProjectId || pr?.project_id || null,
-            p_vendor_id: finalVendorId,
-            p_items,
-          })
-          if (insErr) throw insErr
-          newId = rpcNewId
+          if (!isDirectPo && actualPrId) {
+            const { data: rpcNewId, error: insErr } = await supabase.rpc('create_purchase_order', {
+              p_pr_id: actualPrId,
+              p_project_id: finalProjectId || pr?.project_id || null,
+              p_vendor_id: finalVendorId,
+              p_items,
+            })
+            if (insErr) throw insErr
+            newId = rpcNewId
+          } else {
+            throw new Error('Direct PO fallback')
+          }
         } catch (rpcErr) {
-          console.warn('RPC create_purchase_order error (e.g. missing pr_item_id), running resilient fallback:', rpcErr)
+          console.warn('Using direct PO creation:', rpcErr?.message)
 
           // Fallback สร้างรหัสเอกสาร PO
           let genPoNo = `PO${new Date().toISOString().slice(2, 4)}${String(new Date().getMonth() + 1).padStart(2, '0')}${String(Math.floor(Math.random() * 9000) + 1000)}`
@@ -540,7 +560,7 @@ export default function POForm() {
             .from('purchase_orders')
             .insert({
               po_no: genPoNo,
-              pr_id: selectedPrId,
+              pr_id: actualPrId,
               project_id: finalProjectId || pr?.project_id || null,
               vendor_id: finalVendorId,
               order_date: new Date().toISOString().slice(0, 10),
@@ -557,6 +577,7 @@ export default function POForm() {
             // Fallback บันทึกรายการสินค้าใน PO (ลองแบบมี pr_item_id ก่อน ถ้าไม่มีคอลัมน์ให้ตัดออก)
             const baseItems = p_items.map((it) => ({
               po_id: newId,
+              item_id: it.item_id || null,
               item_name: it.item_name,
               quantity: Number(it.quantity) || 1,
               unit: it.unit || 'รายการ',
@@ -577,9 +598,9 @@ export default function POForm() {
               if (itErr2) console.warn('Could not insert items directly:', itErr2)
             }
 
-            // อัปเดตสถานะ PR เป็น ordered
-            if (selectedPrId) {
-              await supabase.from('purchase_requisitions').update({ status: 'ordered', updated_at: new Date().toISOString() }).eq('id', selectedPrId)
+            // อัปเดตสถานะ PR เป็น ordered ถ้ามี PR ผูกไว้
+            if (actualPrId) {
+              await supabase.from('purchase_requisitions').update({ status: 'ordered', updated_at: new Date().toISOString() }).eq('id', actualPrId)
             }
           }
         }
@@ -599,17 +620,31 @@ export default function POForm() {
   }
 
   const hasVendor = vendorMode === 'custom' ? Boolean(customVendorName.trim()) : Boolean(vendorId)
-  const ready = hasVendor && itemsValid(items) && (id ? po : pr)
+  const isDirectPo = !selectedPrId || selectedPrId === 'DIRECT_PO'
+  const ready = hasVendor && itemsValid(items) && (id ? po : (isDirectPo || pr || items.length > 0))
   const hasReceived = items.some((i) => Number(i.received) > 0)
 
-  // ตัวเลือกสำหรับ SearchableSelect ในการพิมพ์ค้นหา
-  const prOptions = pendingPrs.map((p) => ({
-    value: p.id,
-    badge: p.pr_no,
-    label: `${p.pr_no} · ${p.projects ? `${p.projects.project_code} ${p.projects.project_name}` : '🏢 ของกลางบริษัท'}`,
-    subLabel: `วันที่ขอ: ${p.request_date} ${p.projects ? `(โครงการ: ${p.projects.project_name})` : ''}`,
-    keywords: `${p.pr_no} ${p.projects?.project_code || ''} ${p.projects?.project_name || ''} ${p.request_date}`,
-  }))
+  // ตัวเลือกสำหรับ SearchableSelect ในการพิมพ์ค้นหา (เพิ่มตัวเลือกสั่งซื้อตรง และค้นหา PR ได้ทุกสถานะ)
+  const prOptions = [
+    {
+      value: 'DIRECT_PO',
+      badge: '⚡ สั่งซื้อตรง',
+      label: '⚡ สั่งซื้อตรง / จัดซื้อด่วน (ไม่ต้องอ้างอิงใบขอซื้อ PR)',
+      subLabel: 'กรอกโครงการ ผู้จำหน่าย และรายการพัสดุเพื่อออก PO ได้ทันทีโดยไม่ต้องมี PR',
+      keywords: 'สั่งตรง ด่วน จัดซื้อตรง ไม่ใช้pr direct po ไม่มีpr 006 direct',
+    },
+    ...pendingPrs.map((p) => {
+      const isOrdered = p.status === 'ordered'
+      const statusText = isOrdered ? 'สั่งซื้อแล้ว' : p.status === 'pending' ? 'รอสั่งซื้อ' : p.status
+      return {
+        value: p.id,
+        badge: p.pr_no,
+        label: `${p.pr_no} [${statusText}] · ${p.projects ? `${p.projects.project_code} ${p.projects.project_name}` : '🏢 ของกลางบริษัท'}`,
+        subLabel: `วันที่ขอ: ${p.request_date} ${p.projects ? `(โครงการ: ${p.projects.project_name})` : ''}`,
+        keywords: `${p.pr_no} ${p.pr_no.replace(/[^0-9]/g, '')} ${p.projects?.project_code || ''} ${p.projects?.project_name || ''} ${p.request_date}`,
+      }
+    }),
+  ]
 
   const projectOptions = [
     { value: '', label: '🏢 ของกลางบริษัท / สต็อกส่วนกลาง (ไม่ระบุโครงการ)', badge: 'ของกลาง', keywords: 'ของกลาง สต็อก ส่วนกลาง' },
@@ -644,20 +679,20 @@ export default function POForm() {
   }))
 
   return (
-    <div className="max-w-4xl space-y-4">
+    <div className="max-w-5xl mx-auto space-y-4">
       {duplicateBanner && (
-        <div className="rounded-xl border border-blue-200 bg-blue-50 p-3.5 text-xs text-blue-900 flex items-center justify-between gap-3 shadow-xs">
+        <div className="rounded-xl border border-blue-200 bg-blue-50 dark:bg-blue-950/40 dark:border-blue-800 p-3.5 text-xs text-blue-900 dark:text-blue-200 flex items-center justify-between gap-3 shadow-xs">
           <div className="flex items-center gap-2">
             <span className="text-lg">📋</span>
             <div>
               <b>สร้างซ้ำจากใบสั่งซื้อเดิมเรียบร้อย!</b>
-              <p className="text-blue-700 text-[11px]">ระบบคัดลอกข้อมูลร้านค้า โครงการ เงื่อนไข และรายการสินค้าเดิมมาให้แล้ว คุณสามารถปรับแก้จำนวน ราคา หรือเลือก PR ใหม่ได้</p>
+              <p className="text-blue-700 dark:text-blue-300 text-[11px]">ระบบคัดลอกข้อมูลร้านค้า โครงการ เงื่อนไข และรายการสินค้าเดิมมาให้แล้ว คุณสามารถปรับแก้จำนวน ราคา หรือเลือก PR ใหม่ได้</p>
             </div>
           </div>
           <button
             type="button"
             onClick={() => setDuplicateBanner(false)}
-            className="text-xs text-blue-700 hover:text-blue-900 underline font-semibold cursor-pointer"
+            className="text-xs text-blue-700 dark:text-blue-300 hover:text-blue-900 underline font-semibold cursor-pointer"
           >
             ปิด
           </button>
@@ -665,19 +700,70 @@ export default function POForm() {
       )}
 
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold">
-          {id ? `แก้ไขใบสั่งซื้อ ${po?.po_no ?? ''}` : params.get('duplicate_from') ? 'สร้างซ้ำใบสั่งซื้อ (Duplicate PO)' : 'สร้างใบสั่งซื้อ (PO)'}
+        <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+          <span>📄</span>
+          <span>{id ? `แก้ไขใบสั่งซื้อ ${po?.po_no ?? ''}` : params.get('duplicate_from') ? 'สร้างซ้ำใบสั่งซื้อ (Duplicate PO)' : 'ออกใบสั่งซื้อ (Purchase Order - PO)'}</span>
         </h2>
-        <Link to="/purchasing?tab=po" className="text-xs text-steel-500 hover:underline">← กลับไปรายการใบสั่งซื้อ</Link>
+        <Link to="/purchasing?tab=po" className="text-xs font-semibold text-sky-700 dark:text-sky-400 hover:underline">
+          ← กลับไปรายการใบสั่งซื้อ
+        </Link>
       </div>
 
-      <div className="space-y-5 rounded-lg bg-white p-5 shadow-sm">
+      {/* ========================================================================= */}
+      {/* กล่องเอกสารใบสั่งซื้อรูปแบบกระดาษ (Paper Receipt / Invoice Sheet Layout) */}
+      {/* ========================================================================= */}
+      <div className="space-y-6 rounded-2xl border border-steel-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 sm:p-8 shadow-md">
+        
+        {/* 1. ส่วนหัวกระดาษเอกสาร (Company Brand & Document Title) */}
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 border-b-2 border-steel-200 dark:border-slate-800 pb-5">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-lg font-black tracking-tight text-slate-900 dark:text-white">
+                ANVA & CO., LTD.
+              </span>
+              <span className="rounded bg-sky-100 dark:bg-sky-950 text-sky-800 dark:text-sky-300 px-1.5 py-0.5 text-[10px] font-bold">
+                สำนักงานใหญ่
+              </span>
+            </div>
+            <p className="text-xs text-steel-600 dark:text-slate-400 font-medium mt-0.5">
+              บริษัท อันวาแอนด์โค จำกัด (ระบบบริหารงานวิศวกรรมและโครงการก่อสร้าง)
+            </p>
+            <p className="text-[11px] text-steel-500 dark:text-slate-400 mt-1">
+              ผู้สั่งซื้อ: <b className="text-slate-800 dark:text-slate-200">{buyerName || profile?.full_name || 'ฝ่ายจัดซื้อ'}</b>
+            </p>
+          </div>
+
+          <div className="sm:text-right bg-slate-50 dark:bg-slate-800/80 p-3 rounded-xl border border-slate-200 dark:border-slate-700 min-w-[240px]">
+            <div className="text-xs font-bold uppercase tracking-wider text-sky-800 dark:text-sky-300">
+              ใบสั่งซื้อ / PURCHASE ORDER
+            </div>
+            <div className="font-mono text-base font-black text-slate-900 dark:text-white mt-0.5">
+              {po?.po_no || 'PO2026-XXXX (สร้างใหม่อัตโนมัติ)'}
+            </div>
+            <div className="text-[11px] text-steel-500 dark:text-slate-400 mt-1">
+              วันที่: <span className="font-mono font-medium text-slate-800 dark:text-slate-200">{new Date().toLocaleDateString('th-TH')}</span>
+            </div>
+          </div>
+        </div>
         {/* เลือกรหัส PR อ้างอิง (กรณีสร้าง PO ใหม่) - ใช้ SearchableSelect พิมพ์ค้นหาได้ทันที */}
         {!id && (
           <div>
-            <label className="block text-sm font-medium text-ink mb-1">
-              เลือกใบขอซื้อ (PR) ที่ต้องการสั่งซื้อ * <span className="text-xs font-normal text-steel-500">(พิมพ์เลขที่ PR หรือชื่อโครงการเพื่อค้นหาทันที)</span>
-            </label>
+            <div className="flex flex-wrap items-center justify-between gap-1 mb-1">
+              <label className="block text-sm font-medium text-ink">
+                เลือกใบขอซื้อ (PR) หรือ สั่งซื้อตรง (Direct PO)
+              </label>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedPrId('DIRECT_PO')
+                  if (errors.selectedPrId) setErrors((prev) => ({ ...prev, selectedPrId: '' }))
+                }}
+                className="text-xs font-bold text-sky-700 hover:text-sky-900 hover:underline cursor-pointer flex items-center gap-1"
+              >
+                <span>⚡</span>
+                <span>คลิกเพื่อสั่งซื้อตรง (ไม่ต้องอ้างอิง PR)</span>
+              </button>
+            </div>
             <SearchableSelect
               options={prOptions}
               value={selectedPrId}
@@ -685,14 +771,29 @@ export default function POForm() {
                 setSelectedPrId(val)
                 if (errors.selectedPrId) setErrors((prev) => ({ ...prev, selectedPrId: '' }))
               }}
-              placeholder="พิมพ์เลขที่ PR, รหัสโครงการ หรือชื่อโครงการเพื่อค้นหา..."
+              placeholder="พิมพ์เลขที่ PR, รหัสโครงการ หรือเลือก 'สั่งซื้อตรง'..."
               error={errors.selectedPrId}
+              emptyActionLabel="⚡ สั่งซื้อตรงทันที (Direct PO ไม่ต้องอ้างอิง PR)"
+              onEmptyAction={() => {
+                setSelectedPrId('DIRECT_PO')
+                if (errors.selectedPrId) setErrors((prev) => ({ ...prev, selectedPrId: '' }))
+              }}
             />
-            {pendingPrs.length === 0 && !selectedPrId && (
-              <div className="mt-2 rounded-md bg-amber-50 p-3 text-xs text-amber-800">
-                ⚠️ ขณะนี้ไม่มีใบขอซื้อ (PR) ที่รอสั่งซื้อในระบบ — กรุณา{' '}
-                <Link to="/purchasing/pr/new" className="font-bold underline text-amber-900">สร้างใบขอซื้อ (PR)</Link> ก่อนออกใบสั่งซื้อ
+            {selectedPrId === 'DIRECT_PO' ? (
+              <div className="mt-2 rounded-lg bg-sky-50 border border-sky-200 p-2.5 text-xs text-sky-900 font-medium flex items-center justify-between">
+                <span>⚡ โหมดสั่งซื้อตรง (Direct PO): คุณสามารถกรอกโครงการ ผู้ขาย และรายการวัสดุเพื่อออกใบสั่งซื้อได้ทันที</span>
+                <button
+                  type="button"
+                  onClick={() => setSelectedPrId('')}
+                  className="text-sky-700 font-bold hover:underline ml-2"
+                >
+                  ยกเลิก
+                </button>
               </div>
+            ) : (
+              <p className="mt-1 text-[11px] text-steel-500">
+                💡 สามารถเลือกใบขอซื้อ (PR) ในระบบ หรือเลือก <b>"สั่งซื้อตรง"</b> เพื่อออกใบสั่งซื้อโดยไม่ต้องผ่าน PR ได้ทันที
+              </p>
             )}
           </div>
         )}
@@ -704,8 +805,10 @@ export default function POForm() {
           </div>
         )}
 
+        {/* ข้อมูล 2 ฝั่งเหมือนใบสั่งซื้อกระดาษ: ผู้จำหน่าย / ร้านค้า (ซ้าย) vs โครงการ & ผู้สั่งซื้อ (ขวา) */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* 1. โครงการ และ ลูกค้า/ผู้ว่าจ้าง (สามารถพิมพ์ค้นหาหรือพิมพ์สร้างใหม่ได้ในช่องเดียวกัน) */}
-        <div className="rounded-xl border border-steel-200 bg-steel-50/60 p-4 space-y-3">
+        <div className="rounded-xl border border-steel-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 p-4 space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-steel-200/80 pb-2">
             <span className="text-xs font-bold uppercase tracking-wider text-steel-700 flex items-center gap-1.5">
               <span>🏗️</span>
@@ -948,6 +1051,7 @@ export default function POForm() {
               </div>
             </div>
           )}
+        </div>
         </div>
 
         {/* ข้อมูลการชำระเงิน เงื่อนไขมัดจำ และ ใบเสนอราคา */}
@@ -1377,8 +1481,8 @@ export default function POForm() {
                     <option key={wr.value} value={wr.value}>{wr.label}</option>
                   ))}
                 </select>
-                <span className="text-[10px] text-steel-500 mt-1 block">
-                  ระบบจับคู่อัตโนมัติ: บุคคลธรรมดา $\rightarrow$ ภ.ง.ด.3 / นิติบุคคล $\rightarrow$ ภ.ง.ด.53
+                <span className="text-[10px] text-steel-500 dark:text-slate-400 mt-1 block">
+                  ระบบจับคู่อัตโนมัติ: บุคคลธรรมดา ➔ ภ.ง.ด.3 / นิติบุคคล ➔ ภ.ง.ด.53
                 </span>
               </div>
             </div>

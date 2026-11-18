@@ -57,6 +57,22 @@ export default function PRForm() {
       })
     }
 
+    // โหลดรายการวัสดุจากสโตร์ถ้ามีการกดปุ่ม "สั่ง PR" มาจากหน้าสต็อก (?item_id=...)
+    const itId = params.get('item_id')
+    if (itId && !id && !qId) {
+      supabase.from('inventory_items').select('id, item_code, item_name, unit, avg_unit_cost').eq('id', itId).single().then(({ data }) => {
+        if (data) {
+          setItems([{
+            item_name: data.item_name,
+            quantity: '1',
+            unit: data.unit || 'ชิ้น',
+            price: data.avg_unit_cost ? String(data.avg_unit_cost) : '',
+            item_id: data.id,
+          }])
+        }
+      })
+    }
+
     if (!id) return
     Promise.all([
       supabase.from('purchase_requisitions').select('*').eq('id', id).single(),

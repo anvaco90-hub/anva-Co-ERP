@@ -18,6 +18,8 @@ export default function SearchableSelect({
   disabled = false,
   icon: Icon = null,
   className = '',
+  emptyActionLabel = '',
+  onEmptyAction = null,
 }) {
   const [isOpen, setIsOpen] = useState(false)
   const [query, setQuery] = useState('')
@@ -129,18 +131,18 @@ export default function SearchableSelect({
     <div ref={containerRef} className={`relative w-full ${className}`}>
       {/* ส่วน Input แสดงผล / ค้นหา */}
       <div
-        className={`relative flex items-center rounded-lg border bg-white transition shadow-2xs ${
+        className={`relative flex items-center rounded-lg border bg-white dark:bg-slate-900 transition shadow-2xs ${
           disabled
-            ? 'bg-steel-100 cursor-not-allowed border-steel-200'
+            ? 'bg-steel-100 dark:bg-slate-800 cursor-not-allowed border-steel-200 dark:border-slate-700'
             : isOpen
-            ? 'border-sky-600 ring-2 ring-sky-100'
+            ? 'border-sky-600 dark:border-sky-500 ring-2 ring-sky-100 dark:ring-sky-950'
             : error
-            ? 'border-rose-400 bg-rose-50/20'
-            : 'border-steel-300 hover:border-steel-400'
+            ? 'border-rose-400 bg-rose-50/20 dark:bg-rose-950/20'
+            : 'border-steel-300 dark:border-slate-700 hover:border-steel-400 dark:hover:border-slate-600'
         }`}
       >
         {Icon && (
-          <div className="pl-3 text-steel-400 shrink-0">
+          <div className="pl-3 text-steel-400 dark:text-slate-400 shrink-0">
             <Icon className="h-4 w-4" />
           </div>
         )}
@@ -151,7 +153,7 @@ export default function SearchableSelect({
               ref={inputRef}
               type="text"
               disabled={disabled}
-              className="w-full bg-transparent px-3 py-2 text-xs sm:text-sm text-steel-900 placeholder:text-steel-400 focus:outline-none"
+              className="w-full bg-transparent px-3 py-2 text-xs sm:text-sm text-steel-900 dark:text-slate-100 placeholder:text-steel-400 dark:placeholder:text-slate-500 focus:outline-none"
               placeholder={selectedOption ? `เดิม: ${selectedOption.label}` : placeholder}
               value={query}
               onChange={(e) => {
@@ -176,30 +178,30 @@ export default function SearchableSelect({
               {selectedOption ? (
                 <div className="flex items-center gap-1.5 min-w-0 pr-1">
                   {selectedOption.badge && (
-                    <span className="font-mono text-[11px] font-bold text-sky-800 bg-sky-50 border border-sky-200 px-1.5 py-0.2 rounded shrink-0">
+                    <span className="font-mono text-[11px] font-bold text-sky-800 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/70 border border-sky-200 dark:border-sky-800 px-1.5 py-0.2 rounded shrink-0">
                       {selectedOption.badge}
                     </span>
                   )}
-                  <span className="text-xs sm:text-sm font-semibold text-steel-900 truncate">
+                  <span className="text-xs sm:text-sm font-semibold text-steel-900 dark:text-slate-100 truncate">
                     {selectedOption.label}
                   </span>
                   {selectedOption.subLabel && (
-                    <span className="text-xs text-steel-400 truncate hidden sm:inline">
+                    <span className="text-xs text-steel-400 dark:text-slate-400 truncate hidden sm:inline">
                       · {selectedOption.subLabel}
                     </span>
                   )}
                 </div>
               ) : value && allowCustom ? (
                 <div className="flex items-center gap-1.5 min-w-0 pr-1">
-                  <span className="font-mono text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-1.5 py-0.2 rounded shrink-0">
+                  <span className="font-mono text-[10px] font-bold text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/70 border border-amber-200 dark:border-amber-800 px-1.5 py-0.2 rounded shrink-0">
                     พิมพ์เอง
                   </span>
-                  <span className="text-xs sm:text-sm font-semibold text-steel-900 truncate">
+                  <span className="text-xs sm:text-sm font-semibold text-steel-900 dark:text-slate-100 truncate">
                     {value}
                   </span>
                 </div>
               ) : (
-                <span className="text-xs sm:text-sm text-steel-400 truncate">
+                <span className="text-xs sm:text-sm text-steel-400 dark:text-slate-400 truncate">
                   {placeholder}
                 </span>
               )}
@@ -213,7 +215,7 @@ export default function SearchableSelect({
             <button
               type="button"
               onClick={handleClear}
-              className="rounded p-1 text-steel-400 hover:bg-steel-100 hover:text-steel-700 transition cursor-pointer"
+              className="rounded p-1 text-steel-400 hover:bg-steel-100 dark:hover:bg-slate-800 hover:text-steel-700 dark:hover:text-slate-200 transition cursor-pointer"
               title="ล้างค่า"
             >
               <X className="h-3.5 w-3.5" />
@@ -228,21 +230,21 @@ export default function SearchableSelect({
                 if (!isOpen) setTimeout(() => inputRef.current?.focus(), 50)
               }
             }}
-            className="rounded p-1 text-steel-400 hover:text-steel-700 transition cursor-pointer"
+            className="rounded p-1 text-steel-400 hover:text-steel-700 dark:hover:text-slate-200 transition cursor-pointer"
           >
-            <ChevronDown className={`h-4 w-4 transition-transform duration-150 ${isOpen ? 'rotate-180 text-sky-600' : ''}`} />
+            <ChevronDown className={`h-4 w-4 transition-transform duration-150 ${isOpen ? 'rotate-180 text-sky-600 dark:text-sky-400' : ''}`} />
           </button>
         </div>
       </div>
 
       {/* Dropdown ผลการค้นหา */}
       {isOpen && (
-        <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-64 overflow-y-auto rounded-xl border border-steel-200 bg-white shadow-xl animate-in fade-in zoom-in-95 duration-100">
-          <div className="sticky top-0 z-10 flex items-center justify-between border-b border-steel-100 bg-steel-50/95 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-steel-500 backdrop-blur-xs">
+        <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-64 overflow-y-auto rounded-xl border border-steel-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl animate-in fade-in zoom-in-95 duration-100">
+          <div className="sticky top-0 z-10 flex items-center justify-between border-b border-steel-100 dark:border-slate-800 bg-steel-50/95 dark:bg-slate-800/95 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-steel-500 dark:text-slate-400 backdrop-blur-xs">
             <span>
               {query.trim() ? `ผลการค้นหา (${filteredOptions.length})` : `รายการทั้งหมด (${options.length})`}
             </span>
-            <span className="text-[10px] text-steel-400 lowercase font-normal">
+            <span className="text-[10px] text-steel-400 dark:text-slate-500 lowercase font-normal">
               พิมพ์เพื่อกรอง หรือใช้ลูกศร ↑ ↓ Enter
             </span>
           </div>
@@ -250,10 +252,25 @@ export default function SearchableSelect({
           {/* รายการตัวเลือกที่ค้นหาเจอ */}
           <div className="p-1 space-y-0.5">
             {filteredOptions.length === 0 && !allowCustom && (
-              <div className="py-6 px-4 text-center text-xs text-steel-400">
-                <Search className="mx-auto h-5 w-5 text-steel-300 mb-1" />
-                <p>ไม่พบรายการที่ตรงกับ "{query}"</p>
-                <p className="text-[11px] text-steel-400 mt-0.5">ลองพิมพ์ค้นหาด้วยคำอื่น</p>
+              <div className="py-5 px-4 text-center text-xs text-steel-500 dark:text-slate-400 space-y-2">
+                <Search className="mx-auto h-5 w-5 text-steel-300 dark:text-slate-600" />
+                <div>
+                  <p className="font-semibold text-steel-700 dark:text-slate-200">ไม่พบรายการที่ตรงกับ "{query}"</p>
+                  <p className="text-[11px] text-steel-400 dark:text-slate-400 mt-0.5">ลองพิมพ์ค้นหาด้วยคำอื่น หรือคลิกทางเลือกด้านล่าง</p>
+                </div>
+                {emptyActionLabel && onEmptyAction && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onEmptyAction()
+                      setIsOpen(false)
+                      setQuery('')
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-50 dark:bg-sky-950/70 text-sky-800 dark:text-sky-300 border border-sky-300 dark:border-sky-800 hover:bg-sky-100 dark:hover:bg-sky-900/60 font-bold text-xs cursor-pointer shadow-xs transition"
+                  >
+                    <span>{emptyActionLabel}</span>
+                  </button>
+                )}
               </div>
             )}
 
@@ -269,28 +286,28 @@ export default function SearchableSelect({
                   onMouseEnter={() => setHighlightedIndex(idx)}
                   className={`w-full text-left px-3 py-2 rounded-lg text-xs sm:text-sm transition flex items-center justify-between gap-2 cursor-pointer ${
                     isSelected
-                      ? 'bg-sky-50 text-sky-900 font-bold border border-sky-200'
+                      ? 'bg-sky-50 dark:bg-sky-950/80 text-sky-900 dark:text-sky-200 font-bold border border-sky-200 dark:border-sky-800'
                       : isHighlighted
-                      ? 'bg-steel-100 text-steel-900'
-                      : 'hover:bg-steel-50 text-steel-800'
+                      ? 'bg-steel-100 dark:bg-slate-800 text-steel-900 dark:text-slate-100'
+                      : 'hover:bg-steel-50 dark:hover:bg-slate-800/60 text-steel-800 dark:text-slate-200'
                   }`}
                 >
                   <div className="flex items-center gap-2 min-w-0">
                     {opt.badge && (
-                      <span className="font-mono text-[11px] font-bold text-sky-800 bg-sky-100/70 border border-sky-200 px-1.5 py-0.2 rounded shrink-0">
+                      <span className="font-mono text-[11px] font-bold text-sky-800 dark:text-sky-300 bg-sky-100/70 dark:bg-sky-950/70 border border-sky-200 dark:border-sky-800 px-1.5 py-0.2 rounded shrink-0">
                         {opt.badge}
                       </span>
                     )}
                     <div className="min-w-0">
                       <div className="truncate font-semibold">{opt.label}</div>
                       {opt.subLabel && (
-                        <div className="text-[11px] text-steel-500 truncate">{opt.subLabel}</div>
+                        <div className="text-[11px] text-steel-500 dark:text-slate-400 truncate">{opt.subLabel}</div>
                       )}
                     </div>
                   </div>
 
                   {isSelected && (
-                    <Check className="h-4 w-4 text-sky-600 shrink-0 ml-2" />
+                    <Check className="h-4 w-4 text-sky-600 dark:text-sky-400 shrink-0 ml-2" />
                   )}
                 </button>
               )

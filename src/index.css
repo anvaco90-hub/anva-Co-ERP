@@ -1,23 +1,330 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-body { @apply bg-steel-50 text-ink font-sans antialiased; }
-:focus-visible { outline: 2px solid #F2B705; outline-offset: 2px; }
+html {
+  font-family: 'IBM Plex Sans Thai', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  @apply bg-[#F8FAFC] text-slate-900 font-sans antialiased transition-colors duration-200;
+}
+
+html.dark body {
+  @apply bg-[#0B0F19] text-slate-100;
+}
+
+:focus-visible {
+  outline: 2px solid #F59E0B;
+  outline-offset: 2px;
+}
 
 @layer components {
-  .btn { @apply inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-semibold transition-colors disabled:opacity-50; }
-  .btn-primary { @apply btn bg-hivis text-ink hover:bg-hivis-dark; }
-  .btn-ghost { @apply btn bg-white text-steel-700 border border-steel-300 hover:bg-steel-100; }
-  .input { @apply w-full rounded-md border border-steel-300 bg-white px-3 py-2 text-sm text-ink placeholder:text-steel-400 focus:border-hivis focus:ring-1 focus:ring-hivis; }
+  .btn {
+    @apply inline-flex items-center justify-center rounded-xl px-4 py-2 text-xs sm:text-sm font-semibold transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm;
+  }
+  .btn-primary {
+    @apply btn bg-slate-900 text-white hover:bg-slate-800 dark:bg-amber-500 dark:text-slate-950 dark:hover:bg-amber-400 shadow-sm active:scale-[0.98];
+  }
+  .btn-amber {
+    @apply btn bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-bold shadow-sm shadow-amber-500/20 active:scale-[0.98];
+  }
+  .btn-ghost {
+    @apply btn bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200/90 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 shadow-sm;
+  }
+  .input {
+    @apply w-full rounded-xl border border-slate-200/90 dark:border-slate-700 bg-white dark:bg-slate-900 px-3.5 py-2 text-xs sm:text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 shadow-sm focus:border-amber-500 focus:ring-2 focus:ring-amber-500/15 focus:outline-none transition-all;
+  }
+  .card-premium {
+    @apply rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-5 shadow-[0_2px_12px_rgba(0,0,0,0.03)] transition-all;
+  }
 }
 
-/* Ensure all inputs, selects, and textareas have clear dark text on white backgrounds */
+/* ============================================================== */
+/* 1. INPUTS, SELECTS, AND TEXTAREAS IN LIGHT AND DARK THEMES     */
+/* ============================================================== */
 input:not([type="checkbox"]):not([type="radio"]), select, textarea {
-  color: #1B2430;
+  color: #0F172A;
 }
+
+html.dark input:not([type="checkbox"]):not([type="radio"]),
+html.dark select,
+html.dark textarea {
+  color: #F8FAFC !important;
+  background-color: #0F172A;
+  border-color: #334155;
+}
+
 input::placeholder, textarea::placeholder {
   color: #94A3B8;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: #64748B;
+}
+
+/* ============================================================== */
+/* 2. ANTI-TEXT OVERLAP RULES (ป้องกันข้อความทับซ้อนกัน)             */
+/* ============================================================== */
+.table-responsive {
+  @apply overflow-x-auto w-full -mx-4 sm:mx-0 px-4 sm:px-0;
+  -webkit-overflow-scrolling: touch;
+}
+
+.badge-nowrap, .date-nowrap, .amount-nowrap {
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+}
+
+table td, table th {
+  vertical-align: middle;
+}
+table td div, table td span {
+  max-width: 100%;
+}
+
+/* ============================================================== */
+/* 3. DARK MODE HARMONIZATION (ปรับสีฟอนต์และพื้นหลังให้ชัดเจน)     */
+/* ============================================================== */
+
+/* พื้นหลัง Card และคอนเทนเนอร์ในโหมดกลางคืน */
+html.dark .bg-white:not([class*="dark:bg-"]):not(.paper-sheet):not(#printable-report):not(#printable-report *) {
+  background-color: #0F172A !important;
+  color: #F8FAFC;
+}
+
+/* รองรับทั้งคลาสปกติและคลาสที่มี opacity เช่น bg-steel-50/50, bg-slate-50/60 */
+html.dark [class*="bg-slate-50"]:not([class*="dark:bg-"]):not(.paper-sheet *),
+html.dark [class*="bg-steel-50"]:not([class*="dark:bg-"]):not(.paper-sheet *),
+html.dark [class*="bg-gray-50"]:not([class*="dark:bg-"]):not(.paper-sheet *),
+html.dark [class*="bg-neutral-50"]:not([class*="dark:bg-"]):not(.paper-sheet *),
+html.dark [class*="bg-zinc-50"]:not([class*="dark:bg-"]):not(.paper-sheet *) {
+  background-color: #1E293B !important;
+}
+
+html.dark [class*="bg-slate-100"]:not([class*="dark:bg-"]):not(.paper-sheet *),
+html.dark [class*="bg-steel-100"]:not([class*="dark:bg-"]):not(.paper-sheet *),
+html.dark [class*="bg-gray-100"]:not([class*="dark:bg-"]):not(.paper-sheet *),
+html.dark [class*="bg-neutral-100"]:not([class*="dark:bg-"]):not(.paper-sheet *),
+html.dark [class*="bg-zinc-100"]:not([class*="dark:bg-"]):not(.paper-sheet *) {
+  background-color: #1E293B !important;
+  color: #F8FAFC;
+}
+
+html.dark .border-slate-200, html.dark .border-steel-200, 
+html.dark .border-slate-100, html.dark .border-steel-100,
+html.dark .border-gray-200, html.dark .border-gray-100 {
+  border-color: #334155 !important;
+}
+
+html.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]),
+html.dark .divide-slate-200 > :not([hidden]) ~ :not([hidden]),
+html.dark .divide-steel-100 > :not([hidden]) ~ :not([hidden]),
+html.dark .divide-steel-200 > :not([hidden]) ~ :not([hidden]),
+html.dark .divide-gray-100 > :not([hidden]) ~ :not([hidden]),
+html.dark .divide-gray-200 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #334155 !important;
+}
+
+/* ตารางข้อมูลในโหมดกลางคืน: ให้หัวตารางและเนื้อหาตารางสว่างอ่านง่าย */
+html.dark table thead tr {
+  background-color: #1E293B !important;
+  color: #E2E8F0 !important;
+}
+html.dark table tbody tr {
+  background-color: #0F172A !important;
+  border-color: #334155 !important;
+  color: #F8FAFC !important;
+}
+html.dark table tbody tr:hover {
+  background-color: #1E293B !important;
+}
+
+/* ปรับสีข้อความในโหมดกลางคืนให้อ่านออกชัดเจน 100% ไม่จมหายไปกับพื้นหลัง */
+html.dark .text-slate-900,
+html.dark .text-slate-950,
+html.dark .text-steel-900,
+html.dark .text-steel-950,
+html.dark .text-gray-900,
+html.dark .text-gray-950,
+html.dark .text-neutral-900,
+html.dark .text-neutral-950,
+html.dark .text-zinc-900,
+html.dark .text-zinc-950,
+html.dark .text-ink {
+  color: #F8FAFC !important;
+}
+
+html.dark .text-slate-800,
+html.dark .text-steel-800,
+html.dark .text-gray-800,
+html.dark .text-neutral-800,
+html.dark .text-zinc-800 {
+  color: #E2E8F0 !important;
+}
+
+html.dark .text-slate-700,
+html.dark .text-steel-700,
+html.dark .text-gray-700,
+html.dark .text-neutral-700,
+html.dark .text-zinc-700 {
+  color: #CBD5E1 !important;
+}
+
+html.dark .text-slate-600,
+html.dark .text-steel-600,
+html.dark .text-gray-600,
+html.dark .text-neutral-600,
+html.dark .text-zinc-600 {
+  color: #94A3B8 !important;
+}
+
+html.dark .text-slate-500,
+html.dark .text-steel-500,
+html.dark .text-gray-500,
+html.dark .text-neutral-500,
+html.dark .text-zinc-500 {
+  color: #94A3B8 !important;
+}
+
+html.dark .text-slate-400,
+html.dark .text-steel-400,
+html.dark .text-gray-400,
+html.dark .text-neutral-400,
+html.dark .text-zinc-400 {
+  color: #94A3B8 !important;
+}
+
+/* ปรับสีข้อความเน้นพิเศษ (Accents) ในโหมดกลางคืนให้สว่างเรืองรอง สบายตา */
+html.dark .text-sky-700,
+html.dark .text-sky-800,
+html.dark .text-sky-900,
+html.dark .text-sky-950,
+html.dark .text-blue-700,
+html.dark .text-blue-800,
+html.dark .text-blue-900,
+html.dark .text-blue-950 {
+  color: #38BDF8 !important;
+}
+
+html.dark .text-emerald-700,
+html.dark .text-emerald-800,
+html.dark .text-emerald-900,
+html.dark .text-emerald-950,
+html.dark .text-green-700,
+html.dark .text-green-800,
+html.dark .text-green-900,
+html.dark .text-green-950 {
+  color: #34D399 !important;
+}
+
+html.dark .text-amber-700,
+html.dark .text-amber-800,
+html.dark .text-amber-900,
+html.dark .text-amber-950,
+html.dark .text-yellow-700,
+html.dark .text-yellow-800,
+html.dark .text-yellow-900,
+html.dark .text-yellow-950 {
+  color: #FBBF24 !important;
+}
+
+html.dark .text-rose-700,
+html.dark .text-rose-800,
+html.dark .text-rose-900,
+html.dark .text-rose-950,
+html.dark .text-red-700,
+html.dark .text-red-800,
+html.dark .text-red-900,
+html.dark .text-red-950 {
+  color: #FB7185 !important;
+}
+
+html.dark .text-purple-700,
+html.dark .text-purple-800,
+html.dark .text-purple-900,
+html.dark .text-purple-950,
+html.dark .text-indigo-700,
+html.dark .text-indigo-800,
+html.dark .text-indigo-900,
+html.dark .text-indigo-950 {
+  color: #C084FC !important;
+}
+
+/* ปรับป้ายกำกับสถานะ (Status Badges) ให้พื้นหลังโปร่งใสและข้อความสว่าง (รองรับทั้งคลาสตรงและ opacity) */
+html.dark [class*="bg-sky-50"]:not([class*="dark:bg-"]):not(.paper-sheet *),
+html.dark [class*="bg-sky-100"]:not([class*="dark:bg-"]):not(.paper-sheet *),
+html.dark [class*="bg-blue-50"]:not([class*="dark:bg-"]):not(.paper-sheet *),
+html.dark [class*="bg-blue-100"]:not([class*="dark:bg-"]):not(.paper-sheet *) {
+  background-color: rgba(14, 165, 233, 0.15) !important;
+  border-color: rgba(14, 165, 233, 0.3) !important;
+  color: #7DD3FC !important;
+}
+
+html.dark [class*="bg-amber-50"]:not([class*="dark:bg-"]):not(.paper-sheet *),
+html.dark [class*="bg-amber-100"]:not([class*="dark:bg-"]):not(.paper-sheet *),
+html.dark [class*="bg-yellow-50"]:not([class*="dark:bg-"]):not(.paper-sheet *),
+html.dark [class*="bg-yellow-100"]:not([class*="dark:bg-"]):not(.paper-sheet *) {
+  background-color: rgba(245, 158, 11, 0.15) !important;
+  border-color: rgba(245, 158, 11, 0.3) !important;
+  color: #FCD34D !important;
+}
+
+html.dark [class*="bg-emerald-50"]:not([class*="dark:bg-"]):not(.paper-sheet *),
+html.dark [class*="bg-emerald-100"]:not([class*="dark:bg-"]):not(.paper-sheet *),
+html.dark [class*="bg-green-50"]:not([class*="dark:bg-"]):not(.paper-sheet *),
+html.dark [class*="bg-green-100"]:not([class*="dark:bg-"]):not(.paper-sheet *) {
+  background-color: rgba(16, 185, 129, 0.15) !important;
+  border-color: rgba(16, 185, 129, 0.3) !important;
+  color: #6EE7B7 !important;
+}
+
+html.dark [class*="bg-rose-50"]:not([class*="dark:bg-"]):not(.paper-sheet *),
+html.dark [class*="bg-rose-100"]:not([class*="dark:bg-"]):not(.paper-sheet *),
+html.dark [class*="bg-red-50"]:not([class*="dark:bg-"]):not(.paper-sheet *),
+html.dark [class*="bg-red-100"]:not([class*="dark:bg-"]):not(.paper-sheet *) {
+  background-color: rgba(244, 63, 94, 0.15) !important;
+  border-color: rgba(244, 63, 94, 0.3) !important;
+  color: #FDA4AF !important;
+}
+
+html.dark [class*="bg-purple-50"]:not([class*="dark:bg-"]):not(.paper-sheet *),
+html.dark [class*="bg-purple-100"]:not([class*="dark:bg-"]):not(.paper-sheet *),
+html.dark [class*="bg-indigo-50"]:not([class*="dark:bg-"]):not(.paper-sheet *),
+html.dark [class*="bg-indigo-100"]:not([class*="dark:bg-"]):not(.paper-sheet *) {
+  background-color: rgba(168, 85, 247, 0.15) !important;
+  border-color: rgba(168, 85, 247, 0.3) !important;
+  color: #D8B4FE !important;
+}
+
+/* ============================================================== */
+/* 4. CRITICAL EXCEPTIONS (ปุ่มสีสดและหน้าพิมพ์กระดาษ)            */
+/* ============================================================== */
+/* ปุ่มสีเหลือง/ส้ม (Amber Buttons) ตัวหนังสือต้องเป็นสีดำเสมอ ไม่ว่าจะโหมดไหน */
+.btn-amber,
+html.dark .btn-amber,
+.btn-amber *,
+html.dark .btn-amber * {
+  color: #0F172A !important;
+}
+
+/* หน้ากระดาษพิมพ์ใบสั่งซื้อ/ใบเสนอราคา A4 ต้องเป็นกระดาษขาวตัวอักษรดำเสมอ */
+.paper-sheet,
+html.dark .paper-sheet,
+.paper-sheet *,
+html.dark .paper-sheet *,
+#printable-report,
+html.dark #printable-report,
+#printable-report *,
+html.dark #printable-report * {
+  background-color: #FFFFFF !important;
+  color: #000000 !important;
+  border-color: #CBD5E1 !important;
 }
 
 @media print {

@@ -184,9 +184,12 @@ export default function PaymentActionModal({
   const numericFee = Number(bankFee) || 0
   const remainingAfter = Math.max(0, Math.round((outstanding - numericPay) * 100) / 100)
 
+  const isAlreadyFullyPaid = paymentStatus === 'ชำระครบแล้ว' || (outstanding <= 0.01 && Number(totalAmount) > 0)
+
   // บันทึกการจ่ายชำระเงิน & ลงสมุดรายวัน
   const handleSubmit = async (e) => {
     e.preventDefault()
+    if (isAlreadyFullyPaid) return setError('เอกสารนี้ชำระเงินครบถ้วนแล้ว ไม่สามารถทำรายการชำระซ้ำได้')
     if (numericPay <= 0) return setError('ยอดชำระต้องมากกว่า 0 บาท')
     if (numericPay > outstanding + 0.05) return setError('ยอดชำระเกินยอดค้างชำระ')
 
@@ -470,6 +473,16 @@ export default function PaymentActionModal({
           </div>
           <button onClick={onClose} className="text-steel-400 hover:text-steel-600 text-base">✕</button>
         </div>
+
+        {isAlreadyFullyPaid && (
+          <div className="mt-3 p-3.5 rounded-xl bg-emerald-50 border border-emerald-300 text-xs text-emerald-950 flex items-center gap-2.5 font-medium shadow-xs">
+            <span className="text-xl">✅</span>
+            <div>
+              <div className="font-bold text-emerald-950">เอกสารนี้ได้รับการชำระเงินครบถ้วนแล้ว (Fully Paid)</div>
+              <div className="text-[11px] text-emerald-800">ไม่มียอดหนี้คงค้าง ระบบป้องกันการชำระเงินซ้ำซ้อนเรียบร้อยแล้ว</div>
+            </div>
+          </div>
+        )}
 
         {error && (
           <div className="mt-3 p-3 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-700 font-medium">
@@ -908,13 +921,19 @@ export default function PaymentActionModal({
             </button>
             <button
               type="submit"
-              disabled={saving}
-              className="inline-flex items-center gap-1.5 rounded-lg px-5 py-2 font-bold text-white bg-sky-700 hover:bg-sky-800 shadow transition disabled:opacity-50"
+              disabled={saving || isAlreadyFullyPaid}
+              className={`inline-flex items-center gap-1.5 rounded-lg px-5 py-2 font-bold text-white shadow transition ${
+                isAlreadyFullyPaid
+                  ? 'bg-steel-400 cursor-not-allowed opacity-60'
+                  : 'bg-sky-700 hover:bg-sky-800'
+              }`}
             >
-              <span>{type === 'receive' ? '💰' : '💸'}</span>
+              <span>{isAlreadyFullyPaid ? '✅' : type === 'receive' ? '💰' : '💸'}</span>
               <span>
                 {saving
                   ? 'กำลังบันทึกและลงบัญชี...'
+                  : isAlreadyFullyPaid
+                  ? 'ชำระเงินครบแล้ว (ไม่สามารถชำระซ้ำ)'
                   : `ยืนยันการจ่ายเงิน (${baht(numericPay)} บ.)`}
               </span>
             </button>
