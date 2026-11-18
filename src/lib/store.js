@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { uploadFile } from './files'
 
 // สิทธิ์จัดการสโตร์ (สโตร์ และ แอดมิน)
 export const canManageStore = (role) => ["store", "admin"].includes(role);
