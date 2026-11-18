@@ -6,6 +6,7 @@ import { canManageStore, getCategoryPrefix, uploadItemImage, formatIntQty, toInt
 import { fmtDateTime } from '../../lib/purchasing'
 import { baht } from '../../lib/projects'
 import { FieldError, fieldErrorClass } from '../../components/FieldError'
+import R2Image from '../../components/R2Image'
 import {
   Package,
   Layers,
@@ -924,8 +925,8 @@ export default function ItemsMaster() {
                       {/* 2. รูปภาพ */}
                       <td>
                         {it.image_url ? (
-                          <img
-                            src={it.image_url}
+                          <R2Image
+                            fileKey={it.image_url}
                             alt={it.item_name}
                             className="h-10 w-10 rounded-xl border border-steel-200 object-cover shadow-xs cursor-pointer hover:opacity-80 transition"
                             onClick={() => setPreviewModalImg(it.image_url)}
@@ -1060,8 +1061,8 @@ export default function ItemsMaster() {
 
                   <div className="flex gap-3 items-center">
                     {it.image_url ? (
-                      <img
-                        src={it.image_url}
+                      <R2Image
+                        fileKey={it.image_url}
                         alt={it.item_name}
                         className="h-14 w-14 rounded-xl border border-steel-200 object-cover shrink-0"
                       />
@@ -1448,8 +1449,8 @@ export default function ItemsMaster() {
                       className="h-12 w-12 rounded-xl border border-steel-200 object-cover"
                     />
                   ) : editForm.image_url ? (
-                    <img
-                      src={editForm.image_url}
+                    <R2Image
+                      fileKey={editForm.image_url}
                       alt="Current"
                       className="h-12 w-12 rounded-xl border border-steel-200 object-cover"
                     />
@@ -1604,7 +1605,7 @@ export default function ItemsMaster() {
           onClick={() => setPreviewModalImg(null)}
         >
           <div className="relative max-h-[90vh] max-w-2xl overflow-hidden rounded-2xl bg-white p-2">
-            <img src={previewModalImg} alt="Preview" className="max-h-[85vh] w-auto object-contain rounded-xl" />
+            <R2Image fileKey={previewModalImg} alt="Preview" className="max-h-[85vh] min-h-[200px] min-w-[200px] w-auto object-contain rounded-xl" />
             <button
               onClick={() => setPreviewModalImg(null)}
               className="absolute right-4 top-4 rounded-full bg-black/60 p-2 text-white hover:bg-black"
