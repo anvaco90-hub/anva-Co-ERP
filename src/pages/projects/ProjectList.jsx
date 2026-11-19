@@ -7,6 +7,7 @@ import StatusBadge from "./StatusBadge";
 import { SIMULATED_PROJECTS } from "../../lib/dashboardSimulationData";
 import { Building2, Calendar, DollarSign, Plus, Search, ArrowRight, Layers } from "lucide-react";
 import Pagination from "../../components/Pagination";
+import TableSortFilter from "../../components/TableSortFilter";
 
 // ฟังก์ชันสำหรับแปลงรูปแบบวันที่ให้แสดงเฉพาะ วัน เดือน ปี (เช่น 12 พ.ย. 2569)
 function formatDateOnly(dateString) {
@@ -24,11 +25,23 @@ export default function ProjectList() {
   const { profile } = useAuth();
   const [projects, setProjects] = useState([]);
   const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState("code_asc");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(8); // 8 | 16 | 24 | 48 (เหมาะสำหรับ grid 2-columns)
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [isDemo, setIsDemo] = useState(false);
+
+  const PROJECT_SORT_OPTIONS = [
+    { value: "code_asc", label: "🔢 รหัสโครงการ (น้อย ➔ มาก: 0 ➔ 9)" },
+    { value: "code_desc", label: "🔢 รหัสโครงการ (มาก ➔ น้อย: 9 ➔ 0)" },
+    { value: "name_asc", label: "🔤 ชื่อโครงการ ก ➔ ฮ (A ➔ Z)" },
+    { value: "name_desc", label: "🔤 ชื่อโครงการ ฮ ➔ ก (Z ➔ A)" },
+    { value: "amount_desc", label: "💰 มูลค่าสัญญา (มาก ➔ น้อย)" },
+    { value: "amount_asc", label: "💰 มูลค่าสัญญา (น้อย ➔ มาก)" },
+    { value: "date_desc", label: "🕒 วันที่โครงการล่าสุด (ใหม่ ➔ เก่า)" },
+    { value: "date_asc", label: "🕒 วันที่โครงการ (เก่า ➔ ใหม่)" },
+  ];
 
   useEffect(() => {
     supabase
@@ -66,13 +79,27 @@ export default function ProjectList() {
   }, []);
 
   const q = search.trim().toLowerCase();
-  const shown = projects.filter(
-    (p) =>
-      !q ||
-      [p.project_code, p.project_name, p.client_name, p.customer_name].some((v) =>
-        (v ?? "").toLowerCase().includes(q)
-      )
-  );
+  const shown = useMemo(() => {
+    const filtered = projects.filter(
+      (p) =>
+        !q ||
+        [p.project_code, p.project_name, p.client_name, p.customer_name].some((v) =>
+          (v ?? "").toLowerCase().includes(q)
+        )
+    );
+
+    return filtered.sort((a, b) => {
+      if (sortBy === "name_asc") return (a.project_name || "").localeCompare(b.project_name || "", "th");
+      if (sortBy === "name_desc") return (b.project_name || "").localeCompare(a.project_name || "", "th");
+      if (sortBy === "code_asc") return (a.project_code || "").localeCompare(b.project_code || "", undefined, { numeric: true });
+      if (sortBy === "code_desc") return (b.project_code || "").localeCompare(a.project_code || "", undefined, { numeric: true });
+      if (sortBy === "amount_desc") return Number(b.contract_amount || b.budget_total || 0) - Number(a.contract_amount || a.budget_total || 0);
+      if (sortBy === "amount_asc") return Number(a.contract_amount || a.budget_total || 0) - Number(b.contract_amount || b.budget_total || 0);
+      if (sortBy === "date_asc") return (a.created_at || a.start_date || "").localeCompare(b.created_at || b.start_date || "");
+      // Default: date_desc
+      return (b.created_at || b.start_date || "").localeCompare(a.created_at || a.start_date || "");
+    });
+  }, [projects, q, sortBy]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -141,14 +168,22 @@ export default function ProjectList() {
         </div>
       </div>
 
-      {/* Search Input */}
-      <div className="relative max-w-md">
-        <Search className="absolute left-3.5 top-3 h-4 w-4 text-steel-400" />
-        <input
-          className="w-full rounded-xl border border-steel-300 bg-white py-2 pl-10 pr-4 text-xs font-semibold text-steel-900 placeholder-steel-400 focus:border-hivis focus:outline-none focus:ring-1 focus:ring-hivis shadow-xs"
-          placeholder="ค้นหารหัสโครงการ / ชื่อโครงการ / ลูกค้า..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
+      {/* Search Input & Standard Sort Filter */}
+      <div className="flex flex-wrap items-center gap-2 max-w-2xl">
+        <div className="relative flex-1 min-w-[240px]">
+          <Search className="absolute left-3.5 top-3 h-4 w-4 text-steel-400" />
+          <input
+            className="w-full rounded-xl border border-steel-300 bg-white py-2 pl-10 pr-4 text-xs font-semibold text-steel-900 placeholder-steel-400 focus:border-hivis focus:outline-none focus:ring-1 focus:ring-hivis shadow-xs"
+            placeholder="ค้นหารหัสโครงการ / ชื่อโครงการ / ลูกค้า..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+
+        <TableSortFilter
+          value={sortBy}
+          onChange={setSortBy}
+          options={PROJECT_SORT_OPTIONS}
         />
       </div>
 

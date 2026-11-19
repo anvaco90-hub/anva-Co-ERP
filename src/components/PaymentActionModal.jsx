@@ -32,8 +32,36 @@ export default function PaymentActionModal({
   requestedChannel = 'transfer', // 'transfer' | 'cheque' | 'cash'
   projectId = null,
   projectName = '',
+  items = null, // รายการวัสดุ/สินค้าที่สั่งซื้อ (ถ้าส่งมาจะแสดงทันที ไม่ต้องดึงซ้ำ)
 }) {
   if (!isOpen) return null
+
+  // State สำหรับรายการสินค้าที่สั่งซื้อ (สำหรับให้ผู้จ่ายเงินเห็นว่าจ่ายค่าอะไรบ้าง)
+  const [orderedItems, setOrderedItems] = useState(Array.isArray(items) && items.length > 0 ? items : [])
+  const [loadingItems, setLoadingItems] = useState(false)
+  const [showItemsList, setShowItemsList] = useState(true)
+
+  useEffect(() => {
+    if (Array.isArray(items) && items.length > 0) {
+      setOrderedItems(items)
+      return
+    }
+    // หากเป็นใบสั่งซื้อ (PO) และยังไม่มี items ให้ดึงอัตโนมัติจากตาราง purchase_order_items
+    if (docType === 'PO' && docId) {
+      setLoadingItems(true)
+      supabase
+        .from('purchase_order_items')
+        .select('*')
+        .eq('po_id', docId)
+        .order('id', { ascending: true })
+        .then(({ data, error }) => {
+          if (!error && data && data.length > 0) {
+            setOrderedItems(data)
+          }
+        })
+        .finally(() => setLoadingItems(false))
+    }
+  }, [items, docId, docType])
 
   const outstanding = Math.max(0, Number(totalAmount) - Number(alreadyPaid))
 
@@ -468,6 +496,11 @@ export default function PaymentActionModal({
               </h3>
               <p className="text-xs text-steel-500">
                 เอกสาร: <span className="font-mono font-bold text-sky-800">{docNo}</span> · {contactName}
+                {docType === 'PO' && (
+                  <span className="ml-1.5 font-bold text-emerald-700 dark:text-emerald-400">
+                    · ราคาที่สั่งซื้อ: {baht(totalAmount)} บ.
+                  </span>
+                )}
               </p>
             </div>
           </div>
@@ -494,7 +527,9 @@ export default function PaymentActionModal({
           {/* กล่องสรุปยอดหนี้ */}
           <div className="grid grid-cols-3 gap-2 p-3 bg-steel-50 rounded-xl border border-steel-200 text-center">
             <div>
-              <span className="text-steel-500 text-[10px] block font-medium">มูลค่ารวมสุทธิ</span>
+              <span className="text-steel-500 text-[10px] block font-medium">
+                {docType === 'PO' ? 'ราคาที่สั่งซื้อ (PO Total)' : 'มูลค่ารวมสุทธิ'}
+              </span>
               <span className="font-bold text-ink font-mono text-xs">{baht(totalAmount)} บ.</span>
             </div>
             <div>
@@ -506,6 +541,74 @@ export default function PaymentActionModal({
               <span className="font-bold text-rose-700 font-mono text-xs">{baht(outstanding)} บ.</span>
             </div>
           </div>
+
+          {/* รายการพัสดุ/สินค้าที่สั่งซื้อ (Ordered Items - ให้ผู้จ่ายเงินเห็นชัดเจนว่าสั่งซื้ออะไรไปบ้าง) */}
+          {orderedItems.length > 0 && (
+            <div className="rounded-xl border border-sky-200 dark:border-sky-900 bg-sky-50/40 dark:bg-sky-950/20 overflow-hidden shadow-2xs">
+              <div
+                className="flex items-center justify-between px-3 py-2 bg-sky-100/70 dark:bg-sky-900/40 border-b border-sky-200 dark:border-sky-800/60 cursor-pointer select-none"
+                onClick={() => setShowItemsList(!showItemsList)}
+                title="คลิกเพื่อย่อ/ขยายรายการสินค้า"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">📦</span>
+                  <span className="font-bold text-sky-950 dark:text-sky-200 text-xs">
+                    รายการสินค้าและพัสดุที่สั่งซื้อ ({orderedItems.length} รายการ)
+                  </span>
+                </div>
+                <span className="text-[11px] font-semibold text-sky-800 dark:text-sky-300 hover:underline">
+                  {showItemsList ? 'ย่อรายการ ▲' : 'ดูรายการสินค้า ▼'}
+                </span>
+              </div>
+
+              {showItemsList && (
+                <div className="max-h-44 overflow-y-auto divide-y divide-sky-100 dark:divide-sky-900/40 bg-white dark:bg-slate-900">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-50 dark:bg-slate-800 text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase sticky top-0">
+                      <tr>
+                        <th className="py-1.5 px-3">#</th>
+                        <th className="py-1.5 px-2">ชื่อวัสดุ / รายการสั่งซื้อ</th>
+                        <th className="py-1.5 px-2 text-right">จำนวน</th>
+                        <th className="py-1.5 px-2 text-right">ราคา/หน่วย</th>
+                        <th className="py-1.5 px-3 text-right">รวมเงิน</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                      {orderedItems.map((it, idx) => {
+                        const qtyNum = Number(it.quantity || 1)
+                        const priceNum = Number(it.unit_price ?? it.price ?? 0)
+                        const totalLine = Number(it.total_amount) || (qtyNum * priceNum)
+                        return (
+                          <tr key={it.id || idx} className="hover:bg-sky-50/30 dark:hover:bg-slate-800/40 transition">
+                            <td className="py-2 px-3 text-slate-400 font-mono text-[11px]">{idx + 1}</td>
+                            <td className="py-2 px-2 font-bold text-slate-900 dark:text-slate-100">
+                              <div>{it.item_name}</div>
+                              {it.notes && <div className="text-[10px] text-slate-400 font-normal">{it.notes}</div>}
+                            </td>
+                            <td className="py-2 px-2 text-right font-mono text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                              {qtyNum.toLocaleString()} {it.unit || 'หน่วย'}
+                            </td>
+                            <td className="py-2 px-2 text-right font-mono text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                              ฿{baht(priceNum)}
+                            </td>
+                            <td className="py-2 px-3 text-right font-mono font-bold text-emerald-700 dark:text-emerald-400 whitespace-nowrap">
+                              ฿{baht(totalLine)}
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
+          {loadingItems && (
+            <div className="p-3 text-center text-xs text-sky-700 bg-sky-50 rounded-xl border border-sky-200 animate-pulse">
+              📦 กำลังโหลดรายการพัสดุที่สั่งซื้อ...
+            </div>
+          )}
 
           {/* 1. ตัวเลือกขั้นตอนการจ่ายเงิน (Payment Stage) */}
           {type === 'disburse' && hasDeposit && (

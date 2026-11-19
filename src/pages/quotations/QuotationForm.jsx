@@ -263,7 +263,18 @@ export default function QuotationForm() {
     if (!file) return
     try {
       setBusy(true)
-      const url = await uploadItemImage(file)
+      let url = null
+      try {
+        url = await uploadItemImage(file)
+      } catch (uploadErr) {
+        console.warn('API upload failed, fallback to DataURL:', uploadErr)
+        url = await new Promise((resolve, reject) => {
+          const reader = new FileReader()
+          reader.onload = () => resolve(reader.result)
+          reader.onerror = reject
+          reader.readAsDataURL(file)
+        })
+      }
       if (type === 'signature') {
         setSignatureUrl(url)
       } else {
@@ -271,7 +282,7 @@ export default function QuotationForm() {
         setAttachmentName(file.name)
       }
     } catch (err) {
-      setError('อัปโหลดไฟล์ไม่สำเร็จ')
+      setError('อัปโหลดไฟล์ไม่สำเร็จ: ' + (err.message || ''))
     } finally {
       setBusy(false)
     }

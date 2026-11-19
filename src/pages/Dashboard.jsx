@@ -192,8 +192,7 @@ export default function Dashboard() {
         supabase
           .from('purchase_orders')
           .select('id, po_no, order_date, total_amount, status, vendor_id, project_id, vendors(vendor_name), projects(project_name, project_code)')
-          .order('order_date', { ascending: false })
-          .catch(() => ({ data: [] })),
+          .order('order_date', { ascending: false }),
       ])
 
       const realData = {

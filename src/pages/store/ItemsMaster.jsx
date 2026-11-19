@@ -7,6 +7,8 @@ import { fmtDateTime } from '../../lib/purchasing'
 import { baht } from '../../lib/projects'
 import { FieldError, fieldErrorClass } from '../../components/FieldError'
 import Pagination from '../../components/Pagination'
+import R2Image from '../../components/R2Image'
+import { discardFile } from '../../lib/files'
 import {
   Package,
   Layers,
@@ -259,6 +261,9 @@ export default function ItemsMaster() {
 
       if (updErr) throw updErr
 
+      // บันทึกสำเร็จแล้ว → ลบรูปเก่าบน R2 (ถ้ามีการเปลี่ยน/ลบรูป)
+      discardFile(editingItem.image_url, finalImageUrl)
+
       setSuccess(
         `บันทึกการแก้ไข "${editForm.item_name}" เรียบร้อยแล้ว (อัปเดตล่าสุด: ${fmtDateTime(nowIso)})`
       )
@@ -297,6 +302,9 @@ export default function ItemsMaster() {
         const { error: delErr } = await supabase.from('inventory_items').delete().eq('id', item.id)
         if (delErr) throw delErr
       }
+
+      // ลบวัสดุสำเร็จแล้ว → ลบรูปของวัสดุนี้บน R2 ด้วย
+      discardFile(item.image_url)
 
       setSuccess(`ลบวัสดุ "${item.item_name}" ออกจากระบบเรียบร้อยแล้ว`)
       setTimeout(() => setSuccess(''), 3000)
@@ -938,8 +946,8 @@ export default function ItemsMaster() {
                       {/* 2. รูปภาพ */}
                       <td>
                         {it.image_url ? (
-                          <img
-                            src={it.image_url}
+                          <R2Image
+                            fileKey={it.image_url}
                             alt={it.item_name}
                             className="h-10 w-10 rounded-xl border border-steel-200 dark:border-slate-700 object-cover shadow-xs cursor-pointer hover:opacity-80 transition"
                             onClick={() => setPreviewModalImg(it.image_url)}
@@ -1074,8 +1082,8 @@ export default function ItemsMaster() {
 
                   <div className="flex gap-3 items-center">
                     {it.image_url ? (
-                      <img
-                        src={it.image_url}
+                      <R2Image
+                        fileKey={it.image_url}
                         alt={it.item_name}
                         className="h-14 w-14 rounded-xl border border-steel-200 dark:border-slate-700 object-cover shrink-0"
                       />
@@ -1479,8 +1487,8 @@ export default function ItemsMaster() {
                       className="h-12 w-12 rounded-xl border border-steel-200 object-cover"
                     />
                   ) : editForm.image_url ? (
-                    <img
-                      src={editForm.image_url}
+                    <R2Image
+                      fileKey={editForm.image_url}
                       alt="Current"
                       className="h-12 w-12 rounded-xl border border-steel-200 object-cover"
                     />
@@ -1635,7 +1643,7 @@ export default function ItemsMaster() {
           onClick={() => setPreviewModalImg(null)}
         >
           <div className="relative max-h-[90vh] max-w-2xl overflow-hidden rounded-2xl bg-white dark:bg-slate-900 border border-steel-200 dark:border-slate-800 p-2">
-            <img src={previewModalImg} alt="Preview" className="max-h-[85vh] w-auto object-contain rounded-xl" />
+            <R2Image fileKey={previewModalImg} alt="Preview" className="max-h-[85vh] min-h-[200px] min-w-[200px] w-auto object-contain rounded-xl" />
             <button
               onClick={() => setPreviewModalImg(null)}
               className="absolute right-4 top-4 rounded-full bg-black/60 p-2 text-white hover:bg-black"

@@ -13,6 +13,7 @@ import POShareModal from '../../components/purchasing/POShareModal'
 import ItemProjectUsageModal from '../../components/ItemProjectUsageModal'
 import SearchableSelect from '../../components/SearchableSelect'
 import Pagination from '../../components/Pagination'
+import TableSortFilter from '../../components/TableSortFilter'
 import {
   Printer,
   Mail,
@@ -47,6 +48,9 @@ export default function PurchasingHub() {
   
   // โมดัลต่าง ๆ
   const [paymentTargetPo, setPaymentTargetPo] = useState(null)
+  const [poToCancel, setPoToCancel] = useState(null)
+  const [cancelListReason, setCancelListReason] = useState('')
+  const [cancellingList, setCancellingList] = useState(false)
   const [selectedPoForPrint, setSelectedPoForPrint] = useState(null)
   const [selectedPoForEnvelope, setSelectedPoForEnvelope] = useState(null)
   const [selectedPoForShare, setSelectedPoForShare] = useState(null)
@@ -64,9 +68,22 @@ export default function PurchasingHub() {
 
   // ตัวกรอง
   const [search, setSearch] = useState('')
+  const [sortBy, setSortBy] = useState('date_desc')
   const [filterProject, setFilterProject] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
   const [filterDueStatus, setFilterDueStatus] = useState('all') // 'all' | 'overdue' | 'urgent' | 'on_track' | 'completed' | 'no_date'
+
+  // ตัวเลือกการเรียงลำดับมาตรฐานสำหรับสายงานจัดซื้อ
+  const PURCHASING_SORT_OPTIONS = [
+    { value: 'date_desc', label: '🕒 วันที่ล่าสุด (ใหม่ ➔ เก่า)' },
+    { value: 'date_asc', label: '🕒 วันที่ (เก่า ➔ ใหม่)' },
+    { value: 'code_desc', label: '🔢 เลขที่เอกสาร (มาก ➔ น้อย)' },
+    { value: 'code_asc', label: '🔢 เลขที่เอกสาร (น้อย ➔ มาก)' },
+    { value: 'name_asc', label: '🔤 ชื่อคู่ค้า/โครงการ ก ➔ ฮ (A ➔ Z)' },
+    { value: 'name_desc', label: '🔤 ชื่อคู่ค้า/โครงการ ฮ ➔ ก (Z ➔ A)' },
+    { value: 'amount_desc', label: '💰 มูลค่าสั่งซื้อ (มาก ➔ น้อย)' },
+    { value: 'amount_asc', label: '💰 มูลค่าสั่งซื้อ (น้อย ➔ มาก)' },
+  ]
 
   // ตัวกรองวันที่ (Date Search & Filters)
   const [dateType, setDateType] = useState('expected_delivery_date') // 'expected_delivery_date' | 'order_date' | 'request_date'
@@ -261,6 +278,44 @@ export default function PurchasingHub() {
       setActionMenuPoId(null)
     } catch (err) {
       alert('ไม่สามารถลบใบสั่งซื้อได้: ' + (err.message || 'โปรดตรวจสอบสิทธิ์หรือรายการตรวจรับของ'))
+    }
+  }
+
+  // ฟังก์ชันยกเลิก PO จากหน้ารายการ
+  const handleConfirmCancelPoList = async () => {
+    if (!poToCancel || !cancelListReason.trim()) {
+      alert('กรุณาระบุเหตุผลในการยกเลิกใบสั่งซื้อ')
+      return
+    }
+    setCancellingList(true)
+    try {
+      const { error: rpcErr } = await supabase.rpc('cancel_purchase_order', {
+        p_po_id: poToCancel.id,
+        p_reason: cancelListReason.trim(),
+      })
+      if (rpcErr) {
+        const remarksWithReason = [poToCancel.remarks, `[ยกเลิกเมื่อ ${new Date().toLocaleString('th-TH')}]: ${cancelListReason.trim()}`].filter(Boolean).join(' | ')
+        const { error: updErr } = await supabase.from('purchase_orders').update({
+          status: 'cancelled',
+          remarks: remarksWithReason,
+          updated_at: new Date().toISOString(),
+        }).eq('id', poToCancel.id)
+        if (updErr) throw updErr
+
+        if (poToCancel.pr_id) {
+          await supabase.from('purchase_requests').update({
+            status: 'approved',
+            updated_at: new Date().toISOString(),
+          }).eq('id', poToCancel.pr_id)
+        }
+      }
+      setPoToCancel(null)
+      setCancelListReason('')
+      loadData()
+    } catch (err) {
+      alert('ยกเลิกใบสั่งซื้อไม่สำเร็จ: ' + (err.message || 'เกิดข้อผิดพลาด'))
+    } finally {
+      setCancellingList(false)
     }
   }
 
@@ -506,16 +561,60 @@ export default function PurchasingHub() {
     setCurrentPage(1)
   }, [activeTab, search, filterProject, filterStatus, filterDueStatus, dateFrom, dateTo, dateType])
 
+  // จัดเรียงรายการ PO ตามเงื่อนไขมาตรฐาน (Sort Engine)
+  const sortedPos = useMemo(() => {
+    return [...filteredPos].sort((a, b) => {
+      if (sortBy === 'name_asc') {
+        const nameA = a.vendors?.vendor_name || a.custom_vendor_name || ''
+        const nameB = b.vendors?.vendor_name || b.custom_vendor_name || ''
+        return nameA.localeCompare(nameB, 'th')
+      }
+      if (sortBy === 'name_desc') {
+        const nameA = a.vendors?.vendor_name || a.custom_vendor_name || ''
+        const nameB = b.vendors?.vendor_name || b.custom_vendor_name || ''
+        return nameB.localeCompare(nameA, 'th')
+      }
+      if (sortBy === 'code_asc') return (a.po_no || '').localeCompare(b.po_no || '', undefined, { numeric: true })
+      if (sortBy === 'code_desc') return (b.po_no || '').localeCompare(a.po_no || '', undefined, { numeric: true })
+      if (sortBy === 'amount_desc') return Number(b.net_amount || b.total_amount || 0) - Number(a.net_amount || a.total_amount || 0)
+      if (sortBy === 'amount_asc') return Number(a.net_amount || a.total_amount || 0) - Number(b.net_amount || b.total_amount || 0)
+      if (sortBy === 'date_asc') return (a.order_date || '').localeCompare(b.order_date || '')
+      // Default: date_desc
+      return (b.order_date || '').localeCompare(a.order_date || '')
+    })
+  }, [filteredPos, sortBy])
+
+  // จัดเรียงรายการ PR ตามเงื่อนไขมาตรฐาน
+  const sortedPrs = useMemo(() => {
+    return [...filteredPrs].sort((a, b) => {
+      if (sortBy === 'name_asc') {
+        const nameA = a.suggested_vendor || a.projects?.project_name || ''
+        const nameB = b.suggested_vendor || b.projects?.project_name || ''
+        return nameA.localeCompare(nameB, 'th')
+      }
+      if (sortBy === 'name_desc') {
+        const nameA = a.suggested_vendor || a.projects?.project_name || ''
+        const nameB = b.suggested_vendor || b.projects?.project_name || ''
+        return nameB.localeCompare(nameA, 'th')
+      }
+      if (sortBy === 'code_asc') return (a.pr_no || '').localeCompare(b.pr_no || '', undefined, { numeric: true })
+      if (sortBy === 'code_desc') return (b.pr_no || '').localeCompare(a.pr_no || '', undefined, { numeric: true })
+      if (sortBy === 'date_asc') return (a.request_date || '').localeCompare(b.request_date || '')
+      // Default: date_desc
+      return (b.request_date || '').localeCompare(a.request_date || '')
+    })
+  }, [filteredPrs, sortBy])
+
   // คำนวณข้อมูลเฉพาะหน้าปัจจุบันของแต่ละแท็บ
   const paginatedPos = useMemo(() => {
     const start = (currentPage - 1) * pageSize
-    return filteredPos.slice(start, start + pageSize)
-  }, [filteredPos, currentPage, pageSize])
+    return sortedPos.slice(start, start + pageSize)
+  }, [sortedPos, currentPage, pageSize])
 
   const paginatedPrs = useMemo(() => {
     const start = (currentPage - 1) * pageSize
-    return filteredPrs.slice(start, start + pageSize)
-  }, [filteredPrs, currentPage, pageSize])
+    return sortedPrs.slice(start, start + pageSize)
+  }, [sortedPrs, currentPage, pageSize])
 
   const paginatedReceipts = useMemo(() => {
     const start = (currentPage - 1) * pageSize
@@ -678,57 +777,26 @@ export default function PurchasingHub() {
         </div>
       )}
 
-      {/* 3. แถบตัวกรองและควบคุมการแสดงผล (Filters) */}
+      {/* 3. แถบตัวกรองและควบคุมการแสดงผล (Filters & Search) */}
       <div className="rounded-2xl bg-white dark:bg-slate-900 p-4 shadow-xs border border-steel-200 dark:border-slate-800 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-steel-100 dark:border-slate-800 pb-3">
           
-          {/* แถบสลับ Tab หลัก */}
-          <div className="flex flex-wrap gap-1">
-            <button
-              onClick={() => changeTab('pipeline')}
-              className={`rounded-xl px-3.5 py-2 text-xs font-bold transition cursor-pointer ${
-                activeTab === 'pipeline'
-                  ? 'bg-steel-900 text-hivis shadow-sm dark:bg-amber-400 dark:text-slate-950'
-                  : 'text-steel-600 dark:text-slate-300 hover:bg-steel-100 dark:hover:bg-slate-800 dark:hover:text-white'
-              }`}
-            >
-              🔄 PR ➔ PO (สายงานจัดซื้อ)
-            </button>
-            <button
-              onClick={() => changeTab('pr')}
-              className={`rounded-xl px-3.5 py-2 text-xs font-bold transition cursor-pointer ${
-                activeTab === 'pr'
-                  ? 'bg-steel-900 text-hivis shadow-sm dark:bg-amber-400 dark:text-slate-950'
-                  : 'text-steel-600 dark:text-slate-300 hover:bg-steel-100 dark:hover:bg-slate-800 dark:hover:text-white'
-              }`}
-            >
-              📋 ใบขอซื้อ (PR) <span className="ml-1 rounded-full bg-steel-200 text-steel-800 dark:bg-slate-700 dark:text-slate-200 px-1.5 py-0.2 text-[10px]">{prs.length}</span>
-            </button>
-            <button
-              onClick={() => changeTab('po')}
-              className={`rounded-xl px-3.5 py-2 text-xs font-bold transition cursor-pointer ${
-                activeTab === 'po'
-                  ? 'bg-steel-900 text-hivis shadow-sm dark:bg-amber-400 dark:text-slate-950'
-                  : 'text-steel-600 dark:text-slate-300 hover:bg-steel-100 dark:hover:bg-slate-800 dark:hover:text-white'
-              }`}
-            >
-              🛒 ใบสั่งซื้อ (PO) <span className="ml-1 rounded-full bg-steel-700 text-white dark:bg-slate-700 dark:text-slate-200 px-1.5 py-0.2 text-[10px]">{pos.length}</span>
-            </button>
-            <button
-              onClick={() => changeTab('receipts')}
-              className={`rounded-xl px-3.5 py-2 text-xs font-bold transition cursor-pointer ${
-                activeTab === 'receipts'
-                  ? 'bg-emerald-700 text-white shadow-sm dark:bg-emerald-600'
-                  : 'text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40'
-              }`}
-            >
-              📦 ตรวจรับของเข้าสโตร์ <span className="ml-1 rounded-full bg-emerald-100 px-1.5 text-[10px] font-bold text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">{pendingReceipts.length}</span>
-            </button>
+          {/* ข้อมูลหัวตารางตาม Tab ที่เลือก */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-black text-slate-900 dark:text-slate-100">
+              {activeTab === 'po'
+                ? `🛒 รายการใบสั่งซื้อ (PO) · ${pos.length} รายการ`
+                : activeTab === 'pr'
+                ? `📋 รายการใบขอซื้อ (PR) · ${prs.length} รายการ`
+                : activeTab === 'receipts'
+                ? `📦 ตรวจรับสินค้าเข้าสโตร์ · ${pendingReceipts.length} รายการรอรับ`
+                : '🔄 ภาพรวมไปป์ไลน์ PR ➔ PO (สายงานจัดซื้อ)'}
+            </span>
           </div>
 
-          {/* ช่องค้นหา */}
-          <div className="flex flex-1 items-center justify-end gap-2 sm:max-w-xs">
-            <div className="relative w-full">
+          {/* ช่องค้นหา & ตัวเลือกการเรียงลำดับมาตรฐาน */}
+          <div className="flex flex-1 flex-wrap items-center justify-end gap-2">
+            <div className="relative w-full sm:w-64">
               <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-steel-400 dark:text-slate-400" />
               <input
                 type="text"
@@ -738,6 +806,13 @@ export default function PurchasingHub() {
                 className="w-full rounded-xl border border-steel-200 dark:border-slate-700 bg-steel-50/50 dark:bg-slate-800 pl-8 pr-3 py-1.5 text-xs text-steel-900 dark:text-slate-100 placeholder:text-steel-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-steel-800 dark:focus:border-amber-400"
               />
             </div>
+
+            <TableSortFilter
+              value={sortBy}
+              onChange={setSortBy}
+              options={PURCHASING_SORT_OPTIONS}
+            />
+
             {hasActiveFilter && (
               <button
                 type="button"
@@ -1156,11 +1231,11 @@ export default function PurchasingHub() {
                                       <button
                                         type="button"
                                         onClick={() => setPaymentTargetPo(r)}
-                                        className="inline-flex items-center gap-1 rounded-lg bg-amber-500 hover:bg-amber-600 px-2 py-1 text-xs font-bold text-slate-950 transition shadow-xs cursor-pointer"
-                                        title="รับของเข้าคลังแล้ว คลิกเพื่อจ่ายชำระเงิน (PAY)"
+                                        className="inline-flex items-center gap-1 rounded-lg bg-amber-500 hover:bg-amber-600 px-2.5 py-1 text-xs font-bold text-slate-950 transition shadow-xs cursor-pointer"
+                                        title={`รับของเข้าคลังแล้ว คลิกเพื่อจ่ายชำระเงินตามยอดสั่งซื้อ ฿${baht(r.net_amount || r.total_amount)} บ.`}
                                       >
                                         <span>💸</span>
-                                        <span>จ่ายเงิน</span>
+                                        <span>จ่ายเงิน · ฿{baht(r.net_amount || r.total_amount)} บ.</span>
                                       </button>
                                     )
                                   }
@@ -1306,7 +1381,22 @@ export default function PurchasingHub() {
                                             className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-sky-700 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-950/40 font-semibold transition cursor-pointer"
                                           >
                                             <DollarSign className="h-3.5 w-3.5 text-sky-600 dark:text-sky-400" />
-                                            <span>จ่ายชำระเงิน (PAY)</span>
+                                            <span>จ่ายชำระเงิน · ฿{baht(r.net_amount || r.total_amount)} บ.</span>
+                                          </button>
+                                        )}
+
+                                        {canCreate && r.status !== 'cancelled' && r.payment_status !== 'ชำระครบแล้ว' && r.status !== 'received' && (
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              setActionMenuPoId(null)
+                                              setPoToCancel(r)
+                                              setCancelListReason('')
+                                            }}
+                                            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-rose-700 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 font-semibold transition cursor-pointer"
+                                          >
+                                            <span className="text-xs">❌</span>
+                                            <span>ยกเลิกใบสั่งซื้อ</span>
                                           </button>
                                         )}
                                       </div>
@@ -2005,6 +2095,7 @@ export default function PurchasingHub() {
           docNo={paymentTargetPo.po_no}
           vendorId={paymentTargetPo.vendor_id}
           contactName={paymentTargetPo.vendors?.vendor_name}
+          items={paymentTargetPo.purchase_order_items || []}
           totalAmount={paymentTargetPo.net_amount || paymentTargetPo.total_amount}
           alreadyPaid={paymentTargetPo.deposit_paid_amount || 0}
           depositAmount={paymentTargetPo.deposit_amount || 0}
@@ -2026,6 +2117,90 @@ export default function PurchasingHub() {
           item={selectedUsageItem}
           onClose={() => setSelectedUsageItem(null)}
         />
+      )}
+
+      {/* โมดัล 6: ยืนยันยกเลิกใบสั่งซื้อ (Cancel PO Modal) */}
+      {poToCancel && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+          <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
+            <div className="flex items-center gap-3 border-b border-slate-200 dark:border-slate-800 pb-3">
+              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-400 font-bold text-xl shrink-0">
+                ❌
+              </span>
+              <div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                  ยกเลิกใบสั่งซื้อ (Cancel PO)
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">
+                  {poToCancel.po_no} · ราคาที่สั่งซื้อ ฿{baht(poToCancel.net_amount || poToCancel.total_amount)} บ.
+                </p>
+              </div>
+            </div>
+
+            <div className="text-xs text-slate-600 dark:text-slate-300 space-y-2 bg-rose-50/70 dark:bg-rose-950/20 p-3 rounded-xl border border-rose-200/80 dark:border-rose-900/50">
+              <p className="font-bold text-rose-900 dark:text-rose-300">
+                ⚠️ ผลของการยกเลิกใบสั่งซื้อ:
+              </p>
+              <ul className="list-disc list-inside space-y-1 text-[11px] text-slate-600 dark:text-slate-400">
+                <li>สถานะของใบสั่งซื้อจะเปลี่ยนเป็น <strong>"ยกเลิก (Cancelled)"</strong></li>
+                <li>หากมีใบขอซื้อ (PR) เชื่อมอยู่ ระบบจะปลดล็อค PR ให้สามารถนำไปสั่งซื้อใหม่ได้</li>
+                <li>ไม่สามารถตรวจรับของหรือจ่ายเงินในใบสั่งซื้อนี้ได้อีกต่อไป</li>
+              </ul>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                ระบุเหตุผลในการยกเลิก *
+              </label>
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {[
+                  'ผู้ขายแจ้งสินค้าหมด / เลิกผลิต',
+                  'เปลี่ยนคู่ค้า / เปรียบเทียบราคาใหม่',
+                  'เปลี่ยนสเปกวัสดุวิศวกรรม',
+                  'ยกเลิกโครงการหรือปรับแผนงาน',
+                ].map((preset) => (
+                  <button
+                    key={preset}
+                    type="button"
+                    onClick={() => setCancelListReason(preset)}
+                    className="text-[10px] bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-2.5 py-1 rounded-lg transition cursor-pointer"
+                  >
+                    + {preset}
+                  </button>
+                ))}
+              </div>
+              <textarea
+                rows={3}
+                value={cancelListReason}
+                onChange={(e) => setCancelListReason(e.target.value)}
+                placeholder="กรอกเหตุผล เช่น ร้านค้าของหมด / สเปกไม่ตรงตามวิศวกรต้องการ..."
+                className="w-full text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 p-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-rose-500"
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => {
+                  setPoToCancel(null)
+                  setCancelListReason('')
+                }}
+                disabled={cancellingList}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+              >
+                ปิด / ย้อนกลับ
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmCancelPoList}
+                disabled={cancellingList || !cancelListReason.trim()}
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white shadow-xs transition disabled:opacity-50 cursor-pointer flex items-center gap-1.5"
+              >
+                <span>{cancellingList ? 'กำลังดำเนินการ...' : '❌ ยืนยันยกเลิกใบสั่งซื้อ'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

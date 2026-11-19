@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
+import { supabase } from '../lib/supabase'
 import { NAV_ITEMS, ROLE_LABELS } from '../lib/roles'
 import {
   ChevronDown,
@@ -136,9 +137,19 @@ export default function Layout() {
   const { profile, signOut } = useAuth()
   const { theme, toggleTheme, isDark } = useTheme()
   const [open, setOpen] = useState(false)
+  const [pendingStoreCount, setPendingStoreCount] = useState(0)
   const location = useLocation()
   const navigate = useNavigate()
   const items = NAV_ITEMS.filter((i) => i.roles.includes(profile.role))
+
+  // ดึงจำนวนใบสั่งซื้อที่รอตรวจรับเข้าสโตร์ (Pending POs) เพื่อแสดง Badge แจ้งเตือนข้างเมนูสโตร์
+  useEffect(() => {
+    supabase
+      .from('purchase_orders')
+      .select('id', { count: 'exact', head: true })
+      .in('status', ['open', 'partial', 'pending_receipt'])
+      .then(({ count }) => setPendingStoreCount(count || 0))
+  }, [location.pathname])
 
   // State to track expanded menu sections
   const [expandedSections, setExpandedSections] = useState({
@@ -359,6 +370,11 @@ export default function Layout() {
                       {icon}
                     </span>
                     <span>{i.label}</span>
+                    {i.path === '/store' && pendingStoreCount > 0 && (
+                      <span className="ml-auto rounded-full bg-rose-500 text-white px-2 py-0.5 text-[10px] font-black font-mono shadow-sm animate-pulse">
+                        {pendingStoreCount}
+                      </span>
+                    )}
                   </>
                 )}
               </NavLink>

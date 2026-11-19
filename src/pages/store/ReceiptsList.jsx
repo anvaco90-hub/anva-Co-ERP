@@ -8,6 +8,7 @@ import { ArrowLeft } from 'lucide-react'
 import SearchableItemSelect from '../../components/SearchableItemSelect'
 import SearchableProjectSelect from '../../components/SearchableProjectSelect'
 import Pagination from '../../components/Pagination'
+import TableSortFilter from '../../components/TableSortFilter'
 
 const TYPE = { receipt: 'รับเข้าสโตร์', adjustment: 'ปรับปรุงสต็อก', migration: 'ยกมา' }
 
@@ -22,6 +23,18 @@ export default function ReceiptsList() {
   const [pendingPos, setPendingPos] = useState([])
   const [activeMainTab, setActiveMainTab] = useState('received') // 'received' | 'pending_po'
   const [search, setSearch] = useState('')
+  const [sortBy, setSortBy] = useState('date_desc')
+
+  const RECEIPTS_SORT_OPTIONS = [
+    { value: 'date_desc', label: '🕒 วันที่และเวลาล่าสุด (ใหม่ ➔ เก่า)' },
+    { value: 'date_asc', label: '🕒 วันที่ (เก่า ➔ ใหม่)' },
+    { value: 'name_asc', label: '🔤 ชื่อพัสดุ ก ➔ ฮ (A ➔ Z)' },
+    { value: 'name_desc', label: '🔤 ชื่อพัสดุ ฮ ➔ ก (Z ➔ A)' },
+    { value: 'code_asc', label: '🔢 รหัสพัสดุ (น้อย ➔ มาก: 0 ➔ 9)' },
+    { value: 'code_desc', label: '🔢 รหัสพัสดุ (มาก ➔ น้อย: 9 ➔ 0)' },
+    { value: 'qty_desc', label: '📦 จำนวนรับเข้า (มาก ➔ น้อย)' },
+    { value: 'amount_desc', label: '💰 มูลค่ารับเข้า (มาก ➔ น้อย)' },
+  ]
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(20) // 10 | 20 | 50 | 100
   const [showStockInForm, setShowStockInForm] = useState(false)
@@ -79,9 +92,9 @@ export default function ReceiptsList() {
   const loadData = useCallback(() => {
     supabase.from('stock_lots')
       .select('id, item_id, grn_item_id, lot_type, received_date, qty_received, qty_remaining, unit_cost, created_at, inventory_items(id, item_code, item_name, unit), projects(project_code, project_name), goods_receipt_items(goods_receipts(grn_no, purchase_orders(po_no)))')
-      .order('received_date', { ascending: false })
       .order('created_at', { ascending: false })
-      .limit(200)
+      .order('received_date', { ascending: false })
+      .limit(300)
       .then(({ data, error }) => (error ? setError('โหลดไม่สำเร็จ') : setRows(data ?? [])))
 
     supabase.from('inventory_items')
@@ -253,29 +266,37 @@ export default function ReceiptsList() {
     })
 
     return [...cleanGrnRows, ...cleanNoGrnRows].sort((a, b) => {
-      // 1. วันที่รับเข้าล่าสุดอยู่บนสุด
+      if (sortBy === 'name_asc') return (a.inventory_items?.item_name || '').localeCompare(b.inventory_items?.item_name || '', 'th')
+      if (sortBy === 'name_desc') return (b.inventory_items?.item_name || '').localeCompare(a.inventory_items?.item_name || '', 'th')
+      if (sortBy === 'code_asc') return (a.inventory_items?.item_code || '').localeCompare(b.inventory_items?.item_code || '', undefined, { numeric: true })
+      if (sortBy === 'code_desc') return (b.inventory_items?.item_code || '').localeCompare(a.inventory_items?.item_code || '', undefined, { numeric: true })
+      if (sortBy === 'qty_desc') return Number(b.qty_received || 0) - Number(a.qty_received || 0)
+      if (sortBy === 'amount_desc') return (Number(b.qty_received || 0) * Number(b.unit_cost || 0)) - (Number(a.qty_received || 0) * Number(a.unit_cost || 0))
+      if (sortBy === 'date_asc') {
+        const timeA = new Date(a.created_at || a.received_date || 0).getTime()
+        const timeB = new Date(b.created_at || b.received_date || 0).getTime()
+        return timeA - timeB
+      }
+
+      // Default: date_desc (วันที่และเวลาที่บันทึกรับเข้าจริงล่าสุด Timestamp ล่าสุดอยู่บนสุดเสมอ)
+      const timeA = new Date(a.created_at || a.received_date || 0).getTime()
+      const timeB = new Date(b.created_at || b.received_date || 0).getTime()
+      if (timeB !== timeA) return timeB - timeA
+
       const dComp = (b.received_date || '').localeCompare(a.received_date || '')
       if (dComp !== 0) return dComp
 
-      // 2. ถ้าวันที่เดียวกัน ให้ดูเลขที่ใบรับของ (GRN / RI) ล่าสุดอยู่บนสุด (เช่น RI2026-0020 มาก่อน RI2026-0019)
       const aGri = Array.isArray(a.goods_receipt_items) ? a.goods_receipt_items[0] : a.goods_receipt_items
       const bGri = Array.isArray(b.goods_receipt_items) ? b.goods_receipt_items[0] : b.goods_receipt_items
       const aGrn = aGri?.goods_receipts?.grn_no || ''
       const bGrn = bGri?.goods_receipts?.grn_no || ''
-      if (aGrn && bGrn) {
-        const grnComp = bGrn.localeCompare(aGrn)
-        if (grnComp !== 0) return grnComp
-      }
+      if (aGrn && bGrn) return bGrn.localeCompare(aGrn)
       if (bGrn && !aGrn) return 1
       if (aGrn && !bGrn) return -1
 
-      // 3. เวลาสร้างจริงล่าสุด (created_at) ล่าสุดอยู่บนสุด
-      const cComp = (b.created_at || '').localeCompare(a.created_at || '')
-      if (cComp !== 0) return cComp
-
       return (b.id || '').localeCompare(a.id || '')
     })
-  }, [rows])
+  }, [rows, sortBy])
 
   const shown = useMemo(() => {
     if (!deduplicatedRows) return []
@@ -541,10 +562,11 @@ export default function ReceiptsList() {
             }`}
           >
             <span>🚚</span>
-            <span>ใบสั่งซื้อรอรับเข้าสโตร์ (Pending PO Deliveries)</span>
+            <span>นำเข้า / ตรวจรับของเข้าสโตร์</span>
             {pendingPos.length > 0 ? (
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200 animate-pulse">
-                {pendingPos.length} ใบ
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-mono font-black bg-rose-500 text-white shadow-sm animate-pulse">
+                <span>🔔</span>
+                <span>({pendingPos.length})</span>
               </span>
             ) : (
               <span className="px-2 py-0.5 rounded-full text-[10px] font-mono text-steel-400">0</span>
@@ -552,14 +574,21 @@ export default function ReceiptsList() {
           </button>
         </div>
 
-        {/* ช่องค้นหาด่วน */}
-        <div className="w-full sm:w-auto">
+        {/* ช่องค้นหาด่วน & ตัวเลือกการเรียงลำดับมาตรฐาน */}
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <input
-            className="input text-xs w-full sm:w-72"
+            className="input text-xs w-full sm:w-64"
             placeholder={activeMainTab === 'received' ? "🔍 ค้นหารหัส / ชื่อพัสดุ / เลขที่ RI..." : "🔍 ค้นหาเลขที่ PO / ผู้ขาย / วัสดุ..."}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
+          {activeMainTab === 'received' && (
+            <TableSortFilter
+              value={sortBy}
+              onChange={setSortBy}
+              options={RECEIPTS_SORT_OPTIONS}
+            />
+          )}
         </div>
       </div>
 
@@ -835,9 +864,24 @@ export default function ReceiptsList() {
                 const grn = gri?.goods_receipts
                 return (
                   <tr key={r.id} className="hover:bg-steel-50/80 dark:hover:bg-slate-800/60 transition text-xs">
-                    {/* วันที่รับเข้า (อยู่บรรทัดเดียว ไม่ตัดบรรทัด) */}
-                    <td className="py-3 px-3 font-mono text-steel-700 dark:text-slate-300 whitespace-nowrap font-medium">
-                      {r.received_date}
+                    {/* วันที่และเวลารับเข้า (จัดรูปแบบ ชัดเจน สวยงาม) */}
+                    <td className="py-2.5 px-3 whitespace-nowrap">
+                      <div className="flex flex-col">
+                        <span className="font-mono font-bold text-steel-900 dark:text-slate-100 text-xs">
+                          {(() => {
+                            const d = new Date(r.received_date || r.created_at)
+                            return isNaN(d) ? r.received_date : d.toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' })
+                          })()}
+                        </span>
+                        <span className="text-[11px] text-sky-700 dark:text-sky-400 font-mono flex items-center gap-1 font-semibold mt-0.5">
+                          <span>🕒</span>
+                          <span>
+                            {r.created_at
+                              ? new Date(r.created_at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + ' น.'
+                              : '10:00 น.'}
+                          </span>
+                        </span>
+                      </div>
                     </td>
 
                     {/* รหัสพัสดุ (อยู่บรรทัดเดียว) */}

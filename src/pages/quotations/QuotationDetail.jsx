@@ -176,31 +176,39 @@ export default function QuotationDetail() {
 
   return (
     <div className="space-y-6">
-      {/* Top Bar Navigation & Actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <Link
-            to="/quotations"
-            className="rounded-lg border border-steel-200 bg-white px-3 py-1.5 text-sm font-medium text-steel-600 hover:bg-steel-50 shadow-sm"
-          >
-            ← กลับ
-          </Link>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold text-ink">{quotation.quotation_no}</h1>
-              <span className={`inline-block px-2.5 py-0.5 text-xs font-semibold rounded-full border ${statusInfo.color}`}>
-                {statusInfo.label}
-              </span>
-            </div>
-            <p className="text-xs text-steel-500">
-              สร้างเมื่อ: {new Date(quotation.created_at).toLocaleString('th-TH')}
-            </p>
+      {/* Top Bar Navigation & Actions (จัดเลเอาต์เรียบหรู ไม่ซ้ำซ้อน ไม่ตกบรรทัด) */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-steel-200 dark:border-slate-800 shadow-xs">
+        <div>
+          <div className="flex flex-wrap items-center gap-2.5">
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-950 dark:text-white tracking-tight font-mono">
+              {quotation.quotation_no}
+            </h1>
+            <span className={`inline-flex items-center px-3 py-1 text-xs font-bold rounded-full border shadow-2xs ${statusInfo.color}`}>
+              {statusInfo.label}
+            </span>
           </div>
+          <p className="text-xs text-steel-500 dark:text-slate-400 mt-1 flex items-center gap-1.5">
+            <span>📅 สร้างเมื่อ:</span>
+            <span className="font-semibold text-steel-700 dark:text-slate-300 font-mono">
+              {new Date(quotation.created_at).toLocaleString('th-TH')}
+            </span>
+          </p>
         </div>
 
-        {/* Action Buttons */}
+        {/* Action Buttons Toolbar */}
         <div className="flex flex-wrap items-center gap-2">
-          {/* ปุ่มบันทึกการเซ็น PO ของลูกค้า (Flow: เอกสารขาย -> ลูกค้า -> เซ็น PO) */}
+          {/* ปุ่มพิมพ์ PDF (Primary Action เด่นชัด) */}
+          <button
+            type="button"
+            onClick={() => setShowPrintModal(true)}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-sky-700 hover:bg-sky-800 dark:bg-sky-600 dark:hover:bg-sky-700 text-white px-3.5 py-2 text-xs font-bold shadow-xs transition cursor-pointer"
+            title="พิมพ์เอกสารใบเสนอราคามาตรฐาน หรือบันทึก PDF"
+          >
+            <span>🖨️</span>
+            <span>พิมพ์ใบเสนอราคา (PDF)</span>
+          </button>
+
+          {/* ปุ่มบันทึกการเซ็น PO ของลูกค้า */}
           <button
             type="button"
             onClick={openPoModal}
@@ -210,7 +218,7 @@ export default function QuotationDetail() {
             <span>{quotation.customer_po_no ? 'แก้ไขข้อมูล PO ลูกค้า' : 'ลูกค้าเซ็นอนุมัติ / บันทึก PO'}</span>
           </button>
 
-          {/* ปุ่มเชื่อมโยงส่งต่อฝ่ายจัดซื้อ (Flow: ใบเสนอราคา + จัดซื้อ) */}
+          {/* ปุ่มเชื่อมโยงส่งต่อฝ่ายจัดซื้อ */}
           <Link
             to={`/purchasing/po/new?quotation_id=${quotation.id}`}
             className="inline-flex items-center gap-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 px-3.5 py-2 text-xs font-black shadow-xs transition"
@@ -232,7 +240,7 @@ export default function QuotationDetail() {
             value={quotation.status}
             onChange={(e) => handleStatusChange(e.target.value)}
             disabled={updatingStatus}
-            className="rounded-xl border border-steel-300 bg-white px-3 py-2 text-xs font-semibold text-steel-700 shadow-sm focus:border-sky-500 focus:outline-none"
+            className="rounded-xl border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-xs font-semibold text-steel-700 dark:text-slate-200 shadow-2xs focus:border-sky-500 focus:outline-none"
           >
             <option value="draft">ฉบับร่าง (Draft)</option>
             <option value="sent">ส่งลูกค้าแล้ว (Sent)</option>
@@ -244,7 +252,7 @@ export default function QuotationDetail() {
           {/* Edit */}
           <Link
             to={`/quotations/${quotation.id}/edit`}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-steel-300 bg-white px-3 py-2 text-xs font-semibold text-steel-700 shadow-sm hover:bg-steel-50 transition"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-xs font-semibold text-steel-700 dark:text-slate-200 shadow-2xs hover:bg-steel-50 dark:hover:bg-slate-700 transition"
           >
             <span>✏️</span>
             <span>แก้ไข</span>
@@ -252,21 +260,13 @@ export default function QuotationDetail() {
 
           {/* Delete */}
           <button
+            type="button"
             onClick={handleDelete}
             disabled={deleting}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 shadow-sm hover:bg-rose-100 transition"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/60 px-3 py-2 text-xs font-semibold text-rose-700 dark:text-rose-300 shadow-2xs hover:bg-rose-100 transition cursor-pointer"
           >
             <span>🗑️</span>
             <span>ลบ</span>
-          </button>
-
-          {/* Print PDF Button */}
-          <button
-            onClick={() => setShowPrintModal(true)}
-            className="inline-flex items-center gap-2 rounded-xl bg-sky-700 px-4 py-2 text-xs font-bold text-white shadow hover:bg-sky-800 transition"
-          >
-            <span>🖨️</span>
-            <span>พิมพ์ใบเสนอราคา (PDF)</span>
           </button>
         </div>
       </div>
@@ -704,20 +704,40 @@ export default function QuotationDetail() {
 
             {/* Document Content */}
             <div className="p-6 space-y-6 max-h-[75vh] overflow-y-auto bg-slate-50 dark:bg-slate-950/50">
-              {/* ถ้ามีไฟล์ภาพที่อัปโหลดไว้จริง (เช่น data:image หรือ url รูปภาพ) ให้แสดงตัวอย่างรูปภาพ */}
-              {quotation.customer_po_file_url && (quotation.customer_po_file_url.startsWith('data:image') || /\.(png|jpg|jpeg|webp|gif)/i.test(quotation.customer_po_file_url)) && (
+              {/* ถ้ามีไฟล์แนบที่อัปโหลดไว้จริง (รูปภาพ หรือ PDF) ให้แสดงตัวอย่าง */}
+              {quotation.customer_po_file_url && !quotation.customer_po_file_url.includes('example.com') && (
                 <div className="rounded-2xl border border-emerald-300 dark:border-emerald-800 bg-white dark:bg-slate-900 p-4 shadow-xs">
-                  <div className="text-xs font-bold text-emerald-900 dark:text-emerald-200 mb-2 flex items-center gap-2">
-                    <span>📎</span>
-                    <span>ไฟล์สแกน / รูปถ่ายใบสั่งซื้อที่แนบไว้จริง:</span>
+                  <div className="text-xs font-bold text-emerald-900 dark:text-emerald-200 mb-2 flex items-center justify-between">
+                    <span className="flex items-center gap-2">
+                      <span>📎</span>
+                      <span>ไฟล์สแกน / เอกสารใบสั่งซื้อของลูกค้าที่แนบไว้:</span>
+                    </span>
+                    <a
+                      href={quotation.customer_po_file_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-xs font-bold text-sky-600 hover:underline flex items-center gap-1"
+                    >
+                      <span>เปิดในแท็บใหม่ ↗</span>
+                    </a>
                   </div>
-                  <div className="flex justify-center bg-slate-100 dark:bg-slate-950 p-2 rounded-xl">
-                    <img
-                      src={quotation.customer_po_file_url}
-                      alt="Customer PO Document"
-                      className="max-h-96 max-w-full rounded-lg object-contain shadow-xs"
-                    />
-                  </div>
+                  {quotation.customer_po_file_url.startsWith('data:image') || /\.(png|jpg|jpeg|webp|gif)/i.test(quotation.customer_po_file_url) ? (
+                    <div className="flex justify-center bg-slate-100 dark:bg-slate-950 p-2 rounded-xl">
+                      <img
+                        src={quotation.customer_po_file_url}
+                        alt="Customer PO Document"
+                        className="max-h-96 max-w-full rounded-lg object-contain shadow-xs"
+                      />
+                    </div>
+                  ) : (
+                    <div className="rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800">
+                      <iframe
+                        src={quotation.customer_po_file_url}
+                        title="Customer PO PDF"
+                        className="w-full h-96 rounded-xl"
+                      />
+                    </div>
+                  )}
                 </div>
               )}
 

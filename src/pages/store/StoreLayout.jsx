@@ -114,7 +114,7 @@ export default function StoreLayout() {
                       <Icon className="h-3.5 w-3.5 shrink-0" />
                       <span>{t.label}</span>
                       {t.to === '/store/receipts' && pendingPoCount > 0 && (
-                        <span className="rounded-full bg-amber-400 text-slate-900 px-1.5 py-0.2 text-[10px] font-black font-mono">
+                        <span className="rounded-full bg-rose-500 text-white px-2 py-0.5 text-[10px] font-black font-mono shadow-sm animate-pulse">
                           {pendingPoCount}
                         </span>
                       )}

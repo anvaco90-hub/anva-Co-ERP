@@ -18,7 +18,18 @@ export default function CustomerPoModal({ quotation, onClose, onSuccess }) {
     if (!file) return
     setUploading(true)
     try {
-      const url = await uploadItemImage(file)
+      let url = null
+      try {
+        url = await uploadItemImage(file)
+      } catch (err) {
+        console.warn('API upload failed, using DataURL fallback:', err)
+        url = await new Promise((resolve, reject) => {
+          const reader = new FileReader()
+          reader.onload = () => resolve(reader.result)
+          reader.onerror = reject
+          reader.readAsDataURL(file)
+        })
+      }
       setCustomerPoFileUrl(url)
     } catch {
       alert('อัปโหลดไฟล์ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง')
