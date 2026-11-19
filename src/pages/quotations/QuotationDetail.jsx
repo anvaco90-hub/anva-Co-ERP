@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { baht } from '../../lib/projects'
-import { uploadItemImage } from '../../lib/store'
+import { uploadItemImage, formatIntQty } from '../../lib/store'
 import QuotationPrintModal from '../../components/reports/QuotationPrintModal'
 
 const STATUS_MAP = {
@@ -26,6 +26,7 @@ export default function QuotationDetail() {
 
   // จัดการข้อมูลการเซ็น PO ของลูกค้า (Customer PO)
   const [showPoModal, setShowPoModal] = useState(false)
+  const [showCustomerPoDoc, setShowCustomerPoDoc] = useState(false)
   const [customerPoNo, setCustomerPoNo] = useState('')
   const [customerPoDate, setCustomerPoDate] = useState('')
   const [customerSignerName, setCustomerSignerName] = useState('')
@@ -379,17 +380,14 @@ export default function QuotationDetail() {
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
-            {quotation.customer_po_file_url && (
-              <a
-                href={quotation.customer_po_file_url}
-                target="_blank"
-                rel="noreferrer"
-                className="rounded-xl border border-emerald-300 dark:border-emerald-700 bg-white dark:bg-slate-800 px-3.5 py-2 text-xs font-bold text-emerald-900 dark:text-emerald-200 hover:bg-emerald-50 dark:hover:bg-slate-700 transition shadow-2xs flex items-center gap-1.5"
-              >
-                <span>📎</span>
-                <span>เปิดดูไฟล์ PO ลูกค้า</span>
-              </a>
-            )}
+            <button
+              type="button"
+              onClick={() => setShowCustomerPoDoc(true)}
+              className="rounded-xl border border-emerald-300 dark:border-emerald-700 bg-white dark:bg-slate-800 px-3.5 py-2 text-xs font-bold text-emerald-900 dark:text-emerald-200 hover:bg-emerald-50 dark:hover:bg-slate-700 transition shadow-2xs flex items-center gap-1.5 cursor-pointer"
+            >
+              <span>📄</span>
+              <span>เปิดดูไฟล์ PO ลูกค้า</span>
+            </button>
             <Link
               to={`/purchasing/po/new?quotation_id=${quotation.id}`}
               className="rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 px-4 py-2 text-xs font-black shadow-xs transition flex items-center gap-1.5"
@@ -581,7 +579,7 @@ export default function QuotationDetail() {
                       </div>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-right font-medium">{Number(it.quantity || 0).toLocaleString()}</td>
+                  <td className="px-4 py-3 text-right font-mono font-bold text-steel-900">{formatIntQty(it.quantity)}</td>
                   <td className="px-4 py-3 text-center text-xs text-steel-500">{it.unit || 'หน่วย'}</td>
                   <td className="px-4 py-3 text-right font-mono">{baht(it.unit_price || 0)}</td>
                   <td className="px-4 py-3 text-right text-xs">
@@ -669,6 +667,238 @@ export default function QuotationDetail() {
           items={items}
           onClose={() => setShowPrintModal(false)}
         />
+      )}
+
+      {/* โมดัลแสดงเอกสารใบสั่งซื้อจากลูกค้า (Customer PO Document Viewer) */}
+      {showCustomerPoDoc && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-xs overflow-y-auto">
+          <div className="w-full max-w-3xl rounded-2xl bg-white dark:bg-slate-900 shadow-2xl border border-steel-200 dark:border-slate-800 overflow-hidden my-6 animate-in fade-in zoom-in-95 duration-150">
+            {/* Header */}
+            <div className="bg-slate-900 p-4 sm:p-5 text-white flex items-center justify-between border-b border-slate-800">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-xs text-lg">
+                  ✍️
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm sm:text-base font-bold text-white">
+                      ใบสั่งซื้อจากลูกค้า (Customer Purchase Order)
+                    </span>
+                    <span className="rounded-full bg-emerald-400/20 text-emerald-300 border border-emerald-400/30 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider">
+                      VERIFIED & APPROVED
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400 font-mono">
+                    เลขที่ PO: <strong className="text-emerald-400">{quotation.customer_po_no}</strong> | อ้างอิงใบเสนอราคา: {quotation.quotation_no}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowCustomerPoDoc(false)}
+                className="text-slate-400 hover:text-white rounded-lg p-2 text-lg cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Document Content */}
+            <div className="p-6 space-y-6 max-h-[75vh] overflow-y-auto bg-slate-50 dark:bg-slate-950/50">
+              {/* ถ้ามีไฟล์ภาพที่อัปโหลดไว้จริง (เช่น data:image หรือ url รูปภาพ) ให้แสดงตัวอย่างรูปภาพ */}
+              {quotation.customer_po_file_url && (quotation.customer_po_file_url.startsWith('data:image') || /\.(png|jpg|jpeg|webp|gif)/i.test(quotation.customer_po_file_url)) && (
+                <div className="rounded-2xl border border-emerald-300 dark:border-emerald-800 bg-white dark:bg-slate-900 p-4 shadow-xs">
+                  <div className="text-xs font-bold text-emerald-900 dark:text-emerald-200 mb-2 flex items-center gap-2">
+                    <span>📎</span>
+                    <span>ไฟล์สแกน / รูปถ่ายใบสั่งซื้อที่แนบไว้จริง:</span>
+                  </div>
+                  <div className="flex justify-center bg-slate-100 dark:bg-slate-950 p-2 rounded-xl">
+                    <img
+                      src={quotation.customer_po_file_url}
+                      alt="Customer PO Document"
+                      className="max-h-96 max-w-full rounded-lg object-contain shadow-xs"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* ใบ PO ทางการ (Corporate PO Sheet) */}
+              <div className="rounded-2xl border border-steel-300 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 sm:p-8 shadow-sm space-y-6 text-slate-800 dark:text-slate-200">
+                {/* PO Header */}
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b border-steel-200 dark:border-slate-800 pb-5">
+                  <div>
+                    <span className="text-[11px] font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
+                      CUSTOMER / ผู้สั่งซื้อ
+                    </span>
+                    <h3 className="text-lg font-black text-slate-900 dark:text-white mt-0.5">
+                      {quotation.customer_name}
+                    </h3>
+                    <div className="text-xs text-slate-600 dark:text-slate-400 mt-1 space-y-0.5">
+                      <div>สาขา: {quotation.customer_branch || 'สำนักงานใหญ่'}</div>
+                      <div>เลขประจำตัวผู้เสียภาษี: <span className="font-mono">{quotation.customer_tax_id || '-'}</span></div>
+                      {quotation.customer_address && <div>ที่อยู่: {quotation.customer_address} {quotation.customer_postal_code}</div>}
+                    </div>
+                  </div>
+
+                  <div className="sm:text-right bg-emerald-50/70 dark:bg-emerald-950/40 p-4 rounded-xl border border-emerald-200 dark:border-emerald-800/80 sm:min-w-[240px]">
+                    <div className="text-xs font-black text-emerald-800 dark:text-emerald-300 uppercase tracking-wider">
+                      PURCHASE ORDER (PO)
+                    </div>
+                    <div className="text-base font-black text-emerald-950 dark:text-emerald-100 font-mono mt-0.5">
+                      {quotation.customer_po_no}
+                    </div>
+                    <div className="text-xs text-slate-600 dark:text-slate-400 mt-2 space-y-0.5">
+                      <div>วันที่ออกเอกสาร: <b className="font-mono">{quotation.customer_po_date ? new Date(quotation.customer_po_date).toLocaleDateString('th-TH') : new Date(quotation.issue_date).toLocaleDateString('th-TH')}</b></div>
+                      <div>อ้างอิงใบเสนอราคา: <b className="font-mono">{quotation.quotation_no}</b></div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* ผู้จำหน่าย (Vendor) */}
+                <div className="rounded-xl border border-steel-200 dark:border-slate-800 bg-steel-50/60 dark:bg-slate-800/60 p-3.5 text-xs">
+                  <div className="text-[10px] font-bold text-steel-500 uppercase tracking-wider">สั่งซื้อถึง (VENDOR / SUPPLIER):</div>
+                  <div className="font-bold text-slate-900 dark:text-white mt-0.5">บริษัท แอนวา พาวเวอร์ จำกัด (ANVA POWER CO., LTD.)</div>
+                  <div className="text-slate-600 dark:text-slate-400 text-[11px] mt-0.5">
+                    สำนักงานใหญ่ | เลขประจำตัวผู้เสียภาษี: 0105562098711 | ระบบวิศวกรรมพลังงานแสงอาทิตย์ครบวงจร
+                  </div>
+                </div>
+
+                {/* Items Table */}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead>
+                      <tr className="border-b border-steel-200 dark:border-slate-800 bg-steel-100/70 dark:bg-slate-800 text-steel-700 dark:text-slate-300 font-bold uppercase">
+                        <th className="py-2.5 px-3 text-center w-10">#</th>
+                        <th className="py-2.5 px-3">รายการสินค้า / บริการที่สั่งซื้อ</th>
+                        <th className="py-2.5 px-3 text-right w-24">จำนวน</th>
+                        <th className="py-2.5 px-3 text-center w-20">หน่วย</th>
+                        <th className="py-2.5 px-3 text-right w-28">ราคา/หน่วย</th>
+                        <th className="py-2.5 px-3 text-right w-32">จำนวนเงิน</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-steel-100 dark:divide-slate-800">
+                      {items.map((it, idx) => (
+                        <tr key={idx}>
+                          <td className="py-2 px-3 text-center text-slate-400 font-mono">{idx + 1}</td>
+                          <td className="py-2 px-3 font-semibold text-slate-900 dark:text-slate-100">{it.item_name}</td>
+                          <td className="py-2 px-3 text-right font-mono font-bold text-slate-900 dark:text-slate-100">
+                            {formatIntQty(it.quantity)}
+                          </td>
+                          <td className="py-2 px-3 text-center text-slate-500">{it.unit || 'รายการ'}</td>
+                          <td className="py-2 px-3 text-right font-mono">{baht(it.unit_price || 0)}</td>
+                          <td className="py-2 px-3 text-right font-mono font-bold text-slate-900 dark:text-slate-100">
+                            {baht(it.total_amount || 0)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Summary & Totals */}
+                <div className="flex flex-col sm:flex-row justify-between items-start gap-4 pt-3 border-t border-steel-200 dark:border-slate-800">
+                  <div className="text-xs text-slate-500 space-y-1">
+                    <div>เงื่อนไข: ส่งมอบและติดตั้งตามรายละเอียดโครงการ</div>
+                    <div>สถานที่ส่งมอบ: {quotation.customer_address || 'หน้างานโครงการลูกค้า'}</div>
+                  </div>
+
+                  <div className="w-full sm:w-72 space-y-1.5 text-xs">
+                    <div className="flex justify-between text-slate-600 dark:text-slate-400">
+                      <span>รวมเป็นเงิน:</span>
+                      <span className="font-mono font-semibold">{baht(quotation.subtotal || 0)}</span>
+                    </div>
+                    {Number(quotation.discount_amount || 0) > 0 && (
+                      <div className="flex justify-between text-rose-600 font-medium">
+                        <span>ส่วนลด:</span>
+                        <span className="font-mono">-{baht(quotation.discount_amount)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between text-slate-600 dark:text-slate-400">
+                      <span>ภาษีมูลค่าเพิ่ม 7%:</span>
+                      <span className="font-mono font-semibold">{baht(quotation.vat_amount || 0)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm font-black text-emerald-900 dark:text-emerald-300 pt-2 border-t border-steel-200 dark:border-slate-800">
+                      <span>ยอดสุทธิทั้งสิ้น:</span>
+                      <span className="font-mono text-base">{baht(quotation.grand_total || quotation.total_amount || 0)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Signer Box */}
+                <div className="pt-4 border-t border-steel-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="rounded-xl border border-dashed border-emerald-300 dark:border-emerald-700 bg-emerald-50/50 dark:bg-emerald-950/20 p-3 flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-emerald-600 text-white flex items-center justify-center font-black text-lg">
+                      ✓
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-black uppercase tracking-wider text-emerald-800 dark:text-emerald-300">
+                        OFFICIAL CUSTOMER APPROVAL
+                      </div>
+                      <div className="text-xs font-bold text-emerald-950 dark:text-emerald-100">
+                        เอกสารใบสั่งซื้อได้รับการตรวจสอบและลงนามถูกต้องสมบูรณ์
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="text-right sm:pr-4">
+                    <div className="text-xs text-slate-400">ผู้มีอำนาจลงนามของลูกค้า:</div>
+                    <div className="text-sm font-black text-slate-900 dark:text-white mt-0.5">
+                      {quotation.customer_signer_name || 'ผู้มีอำนาจลงนาม'}
+                    </div>
+                    <div className="text-[11px] text-slate-500 font-mono mt-0.5">
+                      วันที่ลงนาม: {quotation.customer_po_date ? new Date(quotation.customer_po_date).toLocaleDateString('th-TH') : new Date(quotation.issue_date).toLocaleDateString('th-TH')}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Actions Footer */}
+            <div className="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-slate-900 px-6 py-4 border-t border-steel-200 dark:border-slate-800">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowCustomerPoDoc(false)
+                    openPoModal()
+                  }}
+                  className="rounded-xl border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-steel-50 dark:hover:bg-slate-700 px-3.5 py-2 text-xs font-bold text-steel-700 dark:text-slate-200 transition shadow-2xs flex items-center gap-1.5 cursor-pointer"
+                >
+                  <span>✏️</span>
+                  <span>แก้ไขข้อมูล / แนบไฟล์ใหม่</span>
+                </button>
+                {quotation.customer_po_file_url && !quotation.customer_po_file_url.includes('example.com') && (
+                  <a
+                    href={quotation.customer_po_file_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="rounded-xl border border-sky-300 dark:border-sky-700 bg-sky-50 dark:bg-sky-950/40 hover:bg-sky-100 px-3.5 py-2 text-xs font-bold text-sky-800 dark:text-sky-200 transition shadow-2xs flex items-center gap-1.5"
+                  >
+                    <span>🔗</span>
+                    <span>เปิดไฟล์แนบต้นฉบับ</span>
+                  </a>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="rounded-xl border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-steel-50 dark:hover:bg-slate-700 px-4 py-2 text-xs font-bold text-steel-700 dark:text-slate-200 transition shadow-2xs flex items-center gap-1.5 cursor-pointer"
+                >
+                  <span>🖨️</span>
+                  <span>พิมพ์เอกสาร PO</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowCustomerPoDoc(false)}
+                  className="rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600 text-white px-5 py-2 text-xs font-bold transition shadow-xs cursor-pointer"
+                >
+                  ✕ ปิดหน้าต่าง
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Customer PO / Signed Confirmation Modal */}

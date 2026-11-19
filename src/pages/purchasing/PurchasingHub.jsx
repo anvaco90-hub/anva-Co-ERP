@@ -250,7 +250,7 @@ export default function PurchasingHub() {
     try {
       const { error: rpcErr } = await supabase.rpc('delete_purchase_order', {
         p_po_id: poToDelete.id,
-        p_reason: 'ลบจากหน้าศูนย์จัดซื้อ',
+        p_reason: 'ลบจากหน้ารายการจัดซื้อ',
       })
       if (rpcErr) {
         // Fallback delete
@@ -540,7 +540,7 @@ export default function PurchasingHub() {
               ? '📋 รายการใบขอซื้อ (PR)'
               : activeTab === 'receipts'
               ? '📦 ตรวจรับสินค้าเข้าสโตร์ (GR)'
-              : 'ศูนย์จัดการจัดซื้อและพัสดุ (Purchasing Hub)'}
+              : 'PR ➔ PO (สายงานจัดซื้อ)'}
           </h2>
           <p className="text-xs sm:text-sm text-steel-500">
             {activeTab === 'po'
@@ -556,17 +556,17 @@ export default function PurchasingHub() {
         {canCreate && (
           <div className="flex flex-wrap gap-2">
             <Link
+              to="/purchasing/pr/new"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-steel-50 dark:hover:bg-slate-700 px-3.5 py-2 text-xs sm:text-sm font-bold text-steel-800 dark:text-slate-200 shadow-xs transition"
+            >
+              <span>+ ออกใบขอซื้อ (PR)</span>
+            </Link>
+            <Link
               to="/purchasing/po/new"
-              className="inline-flex items-center gap-1.5 rounded-xl bg-steel-900 hover:bg-steel-800 px-3.5 py-2 text-xs sm:text-sm font-bold text-hivis shadow-md transition"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-steel-900 hover:bg-steel-800 dark:bg-amber-400 dark:hover:bg-amber-500 px-3.5 py-2 text-xs sm:text-sm font-bold text-hivis dark:text-slate-950 shadow-md transition"
             >
               <Plus className="h-4 w-4" />
               <span>สร้างใบสั่งซื้อ (PO)</span>
-            </Link>
-            <Link
-              to="/purchasing/pr/new"
-              className="inline-flex items-center gap-1.5 rounded-xl border border-steel-300 bg-white hover:bg-steel-50 px-3.5 py-2 text-xs sm:text-sm font-bold text-steel-800 shadow-xs transition"
-            >
-              <span>+ ออกใบขอซื้อ (PR)</span>
             </Link>
           </div>
         )}
@@ -692,17 +692,7 @@ export default function PurchasingHub() {
                   : 'text-steel-600 dark:text-slate-300 hover:bg-steel-100 dark:hover:bg-slate-800 dark:hover:text-white'
               }`}
             >
-              🔄 สายงาน PR ➔ PO (Pipeline)
-            </button>
-            <button
-              onClick={() => changeTab('po')}
-              className={`rounded-xl px-3.5 py-2 text-xs font-bold transition cursor-pointer ${
-                activeTab === 'po'
-                  ? 'bg-steel-900 text-hivis shadow-sm dark:bg-amber-400 dark:text-slate-950'
-                  : 'text-steel-600 dark:text-slate-300 hover:bg-steel-100 dark:hover:bg-slate-800 dark:hover:text-white'
-              }`}
-            >
-              🛒 ใบสั่งซื้อ (PO) <span className="ml-1 rounded-full bg-steel-700 text-white dark:bg-slate-700 dark:text-slate-200 px-1.5 py-0.2 text-[10px]">{pos.length}</span>
+              🔄 PR ➔ PO (สายงานจัดซื้อ)
             </button>
             <button
               onClick={() => changeTab('pr')}
@@ -713,6 +703,16 @@ export default function PurchasingHub() {
               }`}
             >
               📋 ใบขอซื้อ (PR) <span className="ml-1 rounded-full bg-steel-200 text-steel-800 dark:bg-slate-700 dark:text-slate-200 px-1.5 py-0.2 text-[10px]">{prs.length}</span>
+            </button>
+            <button
+              onClick={() => changeTab('po')}
+              className={`rounded-xl px-3.5 py-2 text-xs font-bold transition cursor-pointer ${
+                activeTab === 'po'
+                  ? 'bg-steel-900 text-hivis shadow-sm dark:bg-amber-400 dark:text-slate-950'
+                  : 'text-steel-600 dark:text-slate-300 hover:bg-steel-100 dark:hover:bg-slate-800 dark:hover:text-white'
+              }`}
+            >
+              🛒 ใบสั่งซื้อ (PO) <span className="ml-1 rounded-full bg-steel-700 text-white dark:bg-slate-700 dark:text-slate-200 px-1.5 py-0.2 text-[10px]">{pos.length}</span>
             </button>
             <button
               onClick={() => changeTab('receipts')}

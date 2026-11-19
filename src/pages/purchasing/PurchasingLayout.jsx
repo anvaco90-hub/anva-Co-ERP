@@ -2,11 +2,11 @@ import { Link, Outlet, useLocation } from 'react-router-dom'
 import { FileText, ShoppingCart, Package, Building2, Workflow, ClipboardList } from 'lucide-react'
 
 const tabs = [
-  { to: '/purchasing?tab=pipeline', tabKey: 'pipeline', label: 'ศูนย์จัดซื้อ & วงจรเอกสาร', icon: <Workflow className="h-3.5 w-3.5" /> },
+  { to: '/purchasing?tab=pipeline', tabKey: 'pipeline', label: 'PR ➔ PO (สายงานจัดซื้อ)', icon: <Workflow className="h-3.5 w-3.5" /> },
   { to: '/purchasing?tab=pr', tabKey: 'pr', label: 'ใบขอซื้อ (PR)', icon: <ClipboardList className="h-3.5 w-3.5" /> },
   { to: '/purchasing?tab=po', tabKey: 'po', label: 'ใบสั่งซื้อ (PO)', icon: <ShoppingCart className="h-3.5 w-3.5" /> },
   { to: '/purchasing?tab=receipts', tabKey: 'receipts', label: 'ตรวจรับของเข้า (GR)', icon: <Package className="h-3.5 w-3.5" /> },
-  { to: '/purchasing/vendors', pathKey: '/purchasing/vendors', label: 'ผู้ขาย (Vendors)', icon: <Building2 className="h-3.5 w-3.5" /> },
+  { to: '/contacts?role=vendor', pathKey: '/contacts', label: 'ผู้ขาย (Vendors)', icon: <Building2 className="h-3.5 w-3.5" /> },
   { to: '/quotations', pathKey: '/quotations', label: 'ใบเสนอราคา (Quotations)', icon: <FileText className="h-3.5 w-3.5" /> },
 ]
 
@@ -19,7 +19,7 @@ export default function PurchasingLayout() {
       return location.pathname === '/purchasing' && currentTab === item.tabKey
     }
     if (item.pathKey) {
-      return location.pathname === item.pathKey
+      return location.pathname.startsWith(item.pathKey)
     }
     return false
   }

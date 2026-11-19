@@ -52,7 +52,7 @@ export function getLocationBreadcrumb(pathname, search = '') {
     if (tab === 'pr') return { module: 'ฝ่ายจัดซื้อและพัสดุ', feature: 'รายการใบขอซื้อ (PR)', icon: '📝', modulePath: '/purchasing' }
     if (tab === 'po') return { module: 'ฝ่ายจัดซื้อและพัสดุ', feature: 'รายการใบสั่งซื้อ (PO)', icon: '🛒', modulePath: '/purchasing' }
     if (tab === 'receipts') return { module: 'ฝ่ายจัดซื้อและพัสดุ', feature: 'ตรวจรับของเข้า (GR / RI)', icon: '📦', modulePath: '/purchasing' }
-    return { module: 'ฝ่ายจัดซื้อและพัสดุ', feature: 'ศูนย์จัดซื้อ & วงจรเอกสาร', icon: '🛒', modulePath: '/purchasing' }
+    return { module: 'ฝ่ายจัดซื้อและพัสดุ', feature: 'PR ➔ PO (สายงานจัดซื้อ)', icon: '🛒', modulePath: '/purchasing' }
   }
 
   // 2. คลังและสโตร์ (Store & Inventory)
@@ -223,7 +223,7 @@ export default function Layout() {
       {/* Mobile Top Header */}
       <header className="flex items-center justify-between bg-[#0B111E] px-4 py-3 text-white md:hidden shadow-md border-b border-slate-800">
         <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-amber-400 via-amber-500 to-amber-700 text-slate-950 font-black text-sm shadow-md">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-400 via-emerald-500 to-teal-700 text-white font-black text-sm shadow-md">
             A
           </div>
           <span className="font-bold tracking-wide text-sm">anva-Co ERP</span>
@@ -235,7 +235,7 @@ export default function Layout() {
             className="rounded-lg bg-white/10 p-2 text-white hover:bg-white/20 transition cursor-pointer"
             title={isDark ? 'เปลี่ยนเป็นธีมกลางวัน (Light Mode)' : 'เปลี่ยนเป็นธีมกลางคืน (Dark Mode)'}
           >
-            {isDark ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4 text-slate-300" />}
+            {isDark ? <Sun className="h-4 w-4 text-emerald-400" /> : <Moon className="h-4 w-4 text-slate-300" />}
           </button>
           <button
             className="rounded-lg bg-white/10 px-3 py-1.5 text-xs font-semibold text-white hover:bg-white/20 transition cursor-pointer"
@@ -254,13 +254,13 @@ export default function Layout() {
         {/* Brand Header */}
         <div className="mb-6 hidden pb-4 border-b border-slate-800/80 md:block">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-700 text-slate-950 font-black text-xl shadow-lg shadow-amber-500/25 border border-amber-300/30">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-400 via-emerald-500 to-teal-700 text-white font-black text-xl shadow-lg shadow-emerald-500/25 border border-emerald-300/30">
               A
             </div>
             <div>
               <div className="text-base font-black tracking-tight text-white flex items-center gap-1.5">
                 <span>anva-Co</span>
-                <span className="text-[9px] font-black bg-gradient-to-r from-amber-400/20 to-amber-500/30 text-amber-300 border border-amber-400/30 px-1.5 py-0.2 rounded tracking-widest">
+                <span className="text-[9px] font-black bg-gradient-to-r from-emerald-400/20 to-emerald-500/30 text-emerald-300 border border-emerald-400/30 px-1.5 py-0.2 rounded tracking-widest">
                   PRO
                 </span>
               </div>
@@ -320,13 +320,13 @@ export default function Layout() {
                             onClick={() => setOpen(false)}
                             className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all duration-150 ${
                               active
-                                ? 'bg-amber-400/15 text-amber-300 font-bold border border-amber-400/25 shadow-xs'
+                                ? 'bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30 shadow-xs'
                                 : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
                             }`}
                           >
                             <span
                               className={`h-1.5 w-1.5 rounded-full shrink-0 transition-colors ${
-                                active ? 'bg-amber-400 shadow-sm shadow-amber-400/50' : 'bg-slate-600'
+                                active ? 'bg-emerald-400 shadow-sm shadow-emerald-400/50' : 'bg-slate-600'
                               }`}
                             />
                             <span className="truncate">{sub.label}</span>
@@ -348,14 +348,14 @@ export default function Layout() {
                 className={({ isActive }) =>
                   `flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold transition-all duration-150 ${
                     isActive
-                      ? 'bg-gradient-to-r from-amber-500/20 via-amber-500/10 to-transparent text-amber-300 font-bold border-l-2 border-amber-400 shadow-xs'
+                      ? 'bg-gradient-to-r from-emerald-500/20 via-emerald-500/10 to-transparent text-emerald-300 font-bold border-l-2 border-emerald-400 shadow-xs'
                       : 'text-slate-300 hover:bg-white/[0.05] hover:text-white'
                   }`
                 }
               >
                 {({ isActive }) => (
                   <>
-                    <span className={isActive ? 'text-amber-400' : 'text-slate-400'}>
+                    <span className={isActive ? 'text-emerald-400' : 'text-slate-400'}>
                       {icon}
                     </span>
                     <span>{i.label}</span>
@@ -419,17 +419,17 @@ export default function Layout() {
               <button
                 type="button"
                 onClick={() => navigate(-1)}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-900 dark:border-amber-500/40 bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 dark:hover:bg-slate-700 px-3.5 py-1.5 text-xs font-bold text-amber-400 shadow-xs transition cursor-pointer active:scale-95"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-600 dark:border-amber-500/40 bg-emerald-600 dark:bg-slate-800 hover:bg-emerald-700 dark:hover:bg-slate-700 px-3.5 py-1.5 text-xs font-bold text-white dark:text-amber-400 shadow-xs shadow-emerald-600/20 transition cursor-pointer active:scale-95"
                 title="ย้อนกลับไปหน้าก่อนหน้า (คลิกได้ตลอดเวลา)"
               >
-                <ArrowLeft className="h-3.5 w-3.5 text-amber-400" />
+                <ArrowLeft className="h-3.5 w-3.5 text-white dark:text-amber-400" />
                 <span>ย้อนกลับ</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => navigate('/')}
-                className="hidden sm:inline-flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 transition shadow-2xs cursor-pointer"
+                className="hidden sm:inline-flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200 dark:hover:bg-slate-700 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 transition shadow-2xs cursor-pointer"
                 title="กลับหน้าหลักแดชบอร์ด"
               >
                 <Home className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
@@ -440,17 +440,17 @@ export default function Layout() {
               {(() => {
                 const locInfo = getLocationBreadcrumb(location.pathname, location.search)
                 return (
-                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-100/90 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700 text-xs shadow-2xs">
+                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-50/60 dark:bg-slate-800/90 border border-emerald-100/80 dark:border-slate-700 text-xs shadow-2xs">
                     <Link
                       to={locInfo.modulePath || '/'}
-                      className="flex items-center gap-1.5 font-bold text-slate-700 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-400 transition group"
+                      className="flex items-center gap-1.5 font-bold text-slate-700 dark:text-slate-300 hover:text-emerald-700 dark:hover:text-amber-400 transition group"
                       title={`คลิกเพื่อไปยังหน้าหลักของ ${locInfo.module}`}
                     >
                       <span className="text-sm group-hover:scale-110 transition-transform">{locInfo.icon}</span>
                       <span className="hidden md:inline group-hover:underline">{locInfo.module}</span>
                     </Link>
-                    <ChevronRight className="h-3.5 w-3.5 text-slate-400 hidden md:inline" />
-                    <span className="font-black text-amber-600 dark:text-amber-400">{locInfo.feature}</span>
+                    <ChevronRight className="h-3.5 w-3.5 text-emerald-400/80 dark:text-slate-400 hidden md:inline" />
+                    <span className="font-black text-emerald-700 dark:text-amber-400">{locInfo.feature}</span>
                   </div>
                 )
               })()}
@@ -461,17 +461,17 @@ export default function Layout() {
               <button
                 type="button"
                 onClick={toggleTheme}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 px-3 py-1.5 text-xs font-bold text-slate-700 dark:text-amber-400 transition shadow-2xs cursor-pointer active:scale-95"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200 dark:hover:bg-slate-700 px-3 py-1.5 text-xs font-bold text-slate-700 dark:text-amber-400 transition shadow-2xs cursor-pointer active:scale-95"
                 title={isDark ? 'เปลี่ยนเป็นธีมกลางวัน (Light Mode)' : 'เปลี่ยนเป็นธีมกลางคืน (Dark Mode)'}
               >
                 {isDark ? (
                   <>
-                    <Sun className="h-3.5 w-3.5 text-amber-400" />
-                    <span className="hidden sm:inline text-amber-400">กลางวัน</span>
+                    <Sun className="h-3.5 w-3.5 text-emerald-400" />
+                    <span className="hidden sm:inline text-emerald-400">กลางวัน</span>
                   </>
                 ) : (
                   <>
-                    <Moon className="h-3.5 w-3.5 text-slate-600" />
+                    <Moon className="h-3.5 w-3.5 text-emerald-700 dark:text-slate-400" />
                     <span className="hidden sm:inline text-slate-700">กลางคืน</span>
                   </>
                 )}

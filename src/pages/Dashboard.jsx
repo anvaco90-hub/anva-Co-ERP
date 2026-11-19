@@ -666,22 +666,22 @@ export default function Dashboard() {
       {/* ------------------------------------------------------------------------ */}
       {/* 1. Header & Welcome Bar                                                  */}
       {/* ------------------------------------------------------------------------ */}
-      <div className="rounded-2xl bg-gradient-to-r from-steel-900 via-steel-800 to-steel-900 p-6 text-white shadow-lg border border-steel-700/60">
+      <div className="rounded-2xl bg-gradient-to-r from-emerald-950 via-slate-900 to-teal-950 p-6 text-white shadow-lg border border-emerald-900/60">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="rounded-md bg-hivis px-2.5 py-0.5 text-xs font-black text-steel-900 tracking-wide uppercase shrink-0">
+              <span className="rounded-md bg-emerald-500 text-white px-2.5 py-0.5 text-xs font-black tracking-wide uppercase shrink-0 shadow-xs">
                 Executive Overview
               </span>
-              <span className="text-xs text-steel-400 truncate">
+              <span className="text-xs text-emerald-200/80 truncate">
                 บริษัท แอนวา แอนด์ โค จำกัด (ANVA & CO., LTD.)
               </span>
             </div>
             <h1 className="mt-2 text-2xl font-black tracking-tight text-white sm:text-3xl leading-snug">
               แดชบอร์ดบริหารธุรกิจและบัญชีการเงิน
             </h1>
-            <p className="mt-1 text-xs sm:text-sm text-steel-300">
-              สวัสดีคุณ <span className="font-bold text-white">{profile?.full_name || 'ผู้ใช้งาน'}</span> • สิทธิ์การใช้งาน: <span className="text-hivis font-bold">{ROLE_LABELS[profile?.role] || profile?.role}</span>
+            <p className="mt-1 text-xs sm:text-sm text-slate-300">
+              สวัสดีคุณ <span className="font-bold text-white">{profile?.full_name || 'ผู้ใช้งาน'}</span> • สิทธิ์การใช้งาน: <span className="text-emerald-400 font-bold">{ROLE_LABELS[profile?.role] || profile?.role}</span>
             </p>
           </div>
 
@@ -691,8 +691,8 @@ export default function Dashboard() {
               onClick={toggleDemoMode}
               className={`flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold transition shadow-sm border ${
                 isDemoMode
-                  ? 'bg-amber-400 text-steel-950 border-amber-300 ring-2 ring-amber-300/40 hover:bg-amber-300'
-                  : 'bg-steel-700/80 hover:bg-steel-700 text-white border-steel-600'
+                  ? 'bg-emerald-500 text-white border-emerald-400 ring-2 ring-emerald-400/30 hover:bg-emerald-400 shadow-emerald-500/20'
+                  : 'bg-slate-800/80 hover:bg-slate-700 text-white border-slate-600'
               }`}
               title="สลับระหว่างข้อมูลจำลองสำหรับทดสอบ (Demo) และข้อมูลจริงจากระบบ (Live DB)"
             >
@@ -725,25 +725,25 @@ export default function Dashboard() {
 
       {/* Simulation Info Banner */}
       {isDemoMode && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-300/80 dark:border-amber-800/60 bg-gradient-to-r from-amber-50 via-amber-100/70 to-amber-50 dark:from-slate-900 dark:via-amber-950/20 dark:to-slate-900 p-4 text-xs text-amber-950 dark:text-amber-200 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-emerald-300/80 dark:border-emerald-800/60 bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 dark:from-slate-900 dark:via-emerald-950/20 dark:to-slate-900 p-4 text-xs text-emerald-950 dark:text-emerald-200 shadow-sm">
           <div className="flex items-center gap-3 min-w-0">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-400 dark:bg-amber-500 text-steel-950 font-black text-base shadow-xs">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-600 dark:bg-emerald-500 text-white font-black text-base shadow-xs">
               📊
             </span>
             <div className="min-w-0">
-              <div className="font-bold text-sm text-steel-900 dark:text-white flex items-center gap-2 flex-wrap">
+              <div className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2 flex-wrap">
                 <span>กำลังแสดงผลชุดข้อมูลจำลองสมจริง (Realistic Enterprise Simulation Active)</span>
-                <span className="rounded-md bg-amber-200 dark:bg-amber-900/80 px-2 py-0.5 text-[10px] font-black text-amber-900 dark:text-amber-300 uppercase border border-amber-300 dark:border-amber-700">
+                <span className="rounded-md bg-emerald-200/90 dark:bg-emerald-900/80 px-2 py-0.5 text-[10px] font-black text-emerald-950 dark:text-emerald-300 uppercase border border-emerald-300 dark:border-emerald-700">
                   สำหรับผู้ทดลองระบบ
                 </span>
               </div>
-              <div className="text-steel-700 dark:text-slate-300 text-xs mt-0.5 leading-relaxed">
+              <div className="text-emerald-800 dark:text-slate-300 text-xs mt-0.5 leading-relaxed">
                 จำลองข้อมูลครบวงจร 6 ด้าน: ยอดขายตามสินค้า, สรุปยอดเก็บเงิน, ยอดค้างรับ (AR), ยอดค้างจ่าย (AP), สรุปยอดชำระเงิน, และรายได้-ค่าใช้จ่ายตามเอกสาร พร้อมเชื่อมโยง ฝ่ายจัดซื้อ ฝ่ายสโตร์ และฝ่ายโครงการ
               </div>
             </div>
           </div>
           <div className="flex items-center gap-2 font-medium shrink-0">
-            <span className="rounded-lg bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-bold text-steel-800 dark:text-slate-200 border border-amber-200 dark:border-slate-700 shadow-xs">
+            <span className="rounded-lg bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-bold text-emerald-900 dark:text-slate-200 border border-emerald-200 dark:border-slate-700 shadow-xs">
               🎯 ทดสอบตัวกรอง ปี/เดือน/ไตรมาส ได้แบบเรียลไทม์
             </span>
           </div>
@@ -756,7 +756,7 @@ export default function Dashboard() {
       <div className="sticky top-0 z-30 rounded-2xl border border-steel-200/90 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md p-4 shadow-md transition-all">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400">
               <Calendar className="h-5 w-5" />
             </div>
             <div className="min-w-0">
@@ -789,8 +789,8 @@ export default function Dashboard() {
                 onClick={() => handlePresetChange(preset.id)}
                 className={`rounded-lg px-2.5 py-1 text-xs font-bold transition cursor-pointer ${
                   periodPreset === preset.id
-                    ? 'bg-steel-900 dark:bg-amber-500 text-white dark:text-slate-950 shadow-xs'
-                    : 'bg-steel-100 dark:bg-slate-800 text-steel-700 dark:text-slate-300 hover:bg-steel-200 dark:hover:bg-slate-700'
+                    ? 'bg-emerald-700 dark:bg-amber-500 text-white dark:text-slate-950 shadow-xs'
+                    : 'bg-steel-100 dark:bg-slate-800 text-steel-700 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-slate-700'
                 }`}
               >
                 {preset.label}

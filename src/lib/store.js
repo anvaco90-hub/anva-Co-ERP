@@ -48,20 +48,53 @@ export async function uploadItemImage(file) {
   const fileName = `item_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${cleanExt}`
   const filePath = `uploads/${fileName}`
 
-  const { error: uploadError } = await supabase.storage
-    .from('item-images')
-    .upload(filePath, file, { cacheControl: '3600', upsert: true })
+  try {
+    const { error: uploadError } = await supabase.storage
+      .from('item-images')
+      .upload(filePath, file, { cacheControl: '3600', upsert: true })
 
-  if (uploadError) {
-    console.warn('Storage upload warning:', uploadError)
-    // ถ้าไม่มี bucket หรือติดสิทธิ์ ให้ใช้ Data URL ชั่วคราวเพื่อให้ผู้ใช้ใช้งานต่อได้ไม่สะดุด
-    return new Promise((resolve) => {
-      const reader = new FileReader()
-      reader.onload = (e) => resolve(e.target.result)
-      reader.readAsDataURL(file)
-    })
+    if (!uploadError) {
+      const { data } = supabase.storage.from('item-images').getPublicUrl(filePath)
+      if (data?.publicUrl) return data.publicUrl
+    } else {
+      console.warn('Storage upload warning:', uploadError)
+    }
+  } catch (storageErr) {
+    console.warn('Storage upload exception:', storageErr)
   }
 
-  const { data } = supabase.storage.from('item-images').getPublicUrl(filePath)
-  return data?.publicUrl || null
+  // Fallback: ใช้ Data URL พร้อมบีบอัดภาพเพื่อป้องกันปัญหา HTTP 413 Payload Too Large
+  return new Promise((resolve) => {
+    if (file.type && file.type.startsWith('image/')) {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        const img = new Image()
+        img.onload = () => {
+          const maxWidth = 1000
+          let w = img.width
+          let h = img.height
+          if (w > maxWidth) {
+            h = Math.round((h * maxWidth) / w)
+            w = maxWidth
+          }
+          const canvas = document.createElement('canvas')
+          canvas.width = w
+          canvas.height = h
+          const ctx = canvas.getContext('2d')
+          ctx.drawImage(img, 0, 0, w, h)
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.72)
+          resolve(compressedDataUrl)
+        }
+        img.onerror = () => resolve(e.target.result)
+        img.src = e.target.result
+      }
+      reader.onerror = () => resolve(null)
+      reader.readAsDataURL(file)
+    } else {
+      const reader = new FileReader()
+      reader.onload = (e) => resolve(e.target.result)
+      reader.onerror = () => resolve(null)
+      reader.readAsDataURL(file)
+    }
+  })
 }

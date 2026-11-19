@@ -208,6 +208,11 @@ export default function QuotationForm() {
     const next = items.map((it, idx) => {
       if (idx !== index) return it
       const updated = { ...it, [key]: val }
+      // บังคับจำนวนวัสดุให้เป็นจำนวนเต็ม (int เท่านั้น)
+      if (key === 'quantity') {
+        const cleanInt = val === '' ? '' : String(Math.max(1, parseInt(val, 10) || 1))
+        updated.quantity = cleanInt
+      }
       if (key === 'item_name') {
         const found = catalog.find((c) => c.item_name.toLowerCase() === String(val).trim().toLowerCase())
         if (found) {
@@ -222,7 +227,7 @@ export default function QuotationForm() {
 
   // คำนวณยอดเงิน (Financial Calculations)
   const lineTotals = items.map((it) => {
-    const qty = Number(it.quantity) || 0
+    const qty = parseInt(it.quantity, 10) || 0
     const price = Number(it.unit_price) || 0
     const disc = Number(it.discount_percent) || 0
     const raw = qty * price
@@ -287,9 +292,9 @@ export default function QuotationForm() {
       newErrors.issueDate = 'ช่องนี้ยังไม่กรอก ช่องว่างนะ (ระบุวันที่ออกเอกสาร)'
     }
 
-    // กรองเอาเฉพาะแถวที่มีการกรอกข้อมูลจริง (ตัดแถวว่างทิ้งอัตโนมัติ)
+    // กรองเอาเฉพาะแถวที่มีการกรอกชื่อสินค้าจริง (ตัดแถวว่างทิ้งอัตโนมัติ)
     const validItems = (items || []).filter(
-      (i) => (i.item_name && i.item_name.trim()) || Number(i.quantity) > 0 || Number(i.unit_price) > 0
+      (i) => i.item_name && i.item_name.trim()
     )
 
     if (validItems.length === 0) {
@@ -297,17 +302,18 @@ export default function QuotationForm() {
       newErrors.items = 'รายการสินค้า/บริการยังไม่ได้กรอก (กรุณาระบุอย่างน้อย 1 รายการ)'
     } else {
       const hasInvalidItem = validItems.some(
-        (i) => !i.item_name || !i.item_name.trim() || !i.quantity || Number(i.quantity) <= 0 || isNaN(Number(i.quantity)) || i.unit_price === '' || isNaN(Number(i.unit_price))
+        (i) => !i.quantity || Number(i.quantity) <= 0 || isNaN(Number(i.quantity)) || i.unit_price === '' || isNaN(Number(i.unit_price))
       )
       if (hasInvalidItem) {
         setShowItemErrors(true)
-        newErrors.items = 'รายการสินค้า/บริการมีช่องที่ยังไม่กรอกครบถ้วน (กรุณาระบุชื่อ จำนวน และราคาต่อหน่วย)'
+        newErrors.items = 'รายการสินค้า/บริการมีช่องที่ยังไม่กรอกครบถ้วน (กรุณาระบุจำนวน > 0 และราคาต่อหน่วย)'
       }
     }
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)
-      setError('⚠️ ไม่สามารถบันทึกได้: มีช่องที่ยังไม่ได้กรอก (กรุณาตรวจสอบช่องที่มีข้อความเตือนสีแดง)')
+      setError('⚠️ ไม่สามารถบันทึกได้: มีช่องที่ยังไม่ได้กรอกครบถ้วน (กรุณาตรวจสอบช่องที่มีข้อความเตือนสีแดง)')
+      window.scrollTo({ top: 0, behavior: 'smooth' })
       return
     }
 
@@ -319,7 +325,7 @@ export default function QuotationForm() {
       quotation_no: quotationNo.trim(),
       issue_date: issueDate,
       quotation_date: issueDate, // รองรับ schema ทั้งสองเวอร์ชัน
-      validity_days: Number(validityDays) || 30,
+      validity_days: parseInt(validityDays, 10) || 30,
       expiry_date: expiryDate || null,
       valid_until: expiryDate || null,
       sales_person: salesPerson.trim() || null,
@@ -362,6 +368,10 @@ export default function QuotationForm() {
           const { error: updErr } = await supabase.from('quotations').update(currentPayload).eq('id', currentId)
           if (updErr) throw updErr
           return currentId
+        } else if (id) {
+          const { error: updErr } = await supabase.from('quotations').update(currentPayload).eq('quotation_no', id)
+          if (updErr) throw updErr
+          return id
         } else {
           const { data: insData, error: insErr } = await supabase
             .from('quotations')
@@ -372,11 +382,11 @@ export default function QuotationForm() {
         }
       }
 
-      // ระบบบันทึกแบบ Self-Healing: หากติด foreign key หรือ column ไหนที่ไม่มีในฐานข้อมูล จะปลดออกแล้วลองใหม่ทันที
+      // ระบบบันทึกแบบ Self-Healing: ปลด foreign key หรือ column ที่ไม่มีในฐานข้อมูลอัตโนมัติ
       let savedId = null
       let activePayload = { ...payload }
 
-      for (let attempt = 0; attempt < 3; attempt++) {
+      for (let attempt = 0; attempt < 5; attempt++) {
         try {
           savedId = await saveRecord(activePayload)
           break
@@ -384,16 +394,51 @@ export default function QuotationForm() {
           console.warn(`Quotation save attempt ${attempt + 1} error:`, dbErr)
           const errMsg = dbErr?.message || ''
 
-          if (errMsg.includes('created_by') || errMsg.includes('foreign key')) {
+          // หากเลขที่ QT ซ้ำในโหมดสร้างใหม่ ให้สร้างเลขใหม่แล้วลองอีกครั้ง
+          if (!id && (errMsg.includes('duplicate key') || errMsg.includes('unique constraint') || errMsg.includes('quotation_no_key'))) {
+            const ym = new Date().toISOString().slice(0, 7).replace('-', '')
+            const rand = String(Math.floor(Math.random() * 90000) + 10000)
+            const nextNo = `QT${ym}${rand}`
+            activePayload.quotation_no = nextNo
+            setQuotationNo(nextNo)
+            continue
+          }
+
+          // Foreign key errors
+          if (errMsg.includes('created_by')) {
             delete activePayload.created_by
             continue
           }
+          if (errMsg.includes('project_id') || (errMsg.includes('foreign key') && errMsg.includes('project'))) {
+            delete activePayload.project_id
+            continue
+          }
+          if (errMsg.includes('customer_id') || (errMsg.includes('foreign key') && errMsg.includes('customer'))) {
+            delete activePayload.customer_id
+            continue
+          }
+          if (errMsg.includes('foreign key')) {
+            delete activePayload.created_by
+            delete activePayload.project_id
+            delete activePayload.customer_id
+            continue
+          }
+
+          // Column does not exist
           const colMatch = errMsg.match(/column "(.*?)" of relation "quotations" does not exist/)
           if (colMatch && colMatch[1]) {
             delete activePayload[colMatch[1]]
             continue
           }
-          if (attempt === 2) throw dbErr
+
+          // Payload too large error (จาก base64 image)
+          if (errMsg.includes('413') || errMsg.includes('payload') || errMsg.includes('too large')) {
+            if (activePayload.attachment_url?.startsWith('data:')) delete activePayload.attachment_url
+            if (activePayload.signature_url?.startsWith('data:')) delete activePayload.signature_url
+            continue
+          }
+
+          if (attempt >= 3) throw dbErr
         }
       }
 
@@ -401,27 +446,32 @@ export default function QuotationForm() {
         savedId = currentId || id || quotationNo.trim()
       }
 
-      // บันทึกรายการย่อย
-      if (isUUID(savedId)) {
-        await supabase.from('quotation_items').delete().eq('quotation_id', savedId)
-        const itemRows = validItems.map((it, idx) => ({
-          quotation_id: savedId,
-          item_name: it.item_name.trim(),
-          description: it.description?.trim() || null,
-          quantity: Number(it.quantity) || 1,
-          unit: it.unit?.trim() || null,
-          unit_price: Number(it.unit_price) || 0,
-          discount_percent: Number(it.discount_percent) || 0,
-          total_amount: lineTotals[idx]?.lineTotal || (Number(it.quantity) * Number(it.unit_price)),
-        }))
-        const { error: itErr } = await supabase.from('quotation_items').insert(itemRows)
-        if (itErr) console.warn('Items insert warning:', itErr)
+      // บันทึกรายการย่อย (บังคับ quantity เป็นจำนวนเต็ม int)
+      if (savedId && isUUID(savedId)) {
+        try {
+          await supabase.from('quotation_items').delete().eq('quotation_id', savedId)
+          const itemRows = validItems.map((it, idx) => ({
+            quotation_id: savedId,
+            item_name: it.item_name.trim(),
+            description: it.description?.trim() || null,
+            quantity: Math.max(1, parseInt(it.quantity, 10) || 1),
+            unit: it.unit?.trim() || 'รายการ',
+            unit_price: Number(it.unit_price) || 0,
+            discount_percent: Number(it.discount_percent) || 0,
+            total_amount: lineTotals[idx]?.lineTotal || ((Math.max(1, parseInt(it.quantity, 10) || 1)) * (Number(it.unit_price) || 0)),
+          }))
+          const { error: itErr } = await supabase.from('quotation_items').insert(itemRows)
+          if (itErr) console.warn('Items insert warning:', itErr)
+        } catch (itEx) {
+          console.warn('Items insert exception:', itEx)
+        }
       }
 
       navigate(`/quotations/${savedId}`)
     } catch (err) {
       console.error('Final quotation save error:', err)
       setError(err.message || 'บันทึกใบเสนอราคาไม่สำเร็จ')
+      window.scrollTo({ top: 0, behavior: 'smooth' })
     } finally {
       setBusy(false)
     }
@@ -723,10 +773,10 @@ export default function QuotationForm() {
                     <div>
                       <input
                         type="number"
-                        min="0.01"
-                        step="0.01"
+                        min="1"
+                        step="1"
                         className={fieldErrorClass(qtyEmpty, "input text-xs text-right w-full font-mono font-bold")}
-                        placeholder="จำนวน"
+                        placeholder="จำนวน (int)"
                         value={it.quantity}
                         onChange={(e) => updItem(idx, 'quantity', e.target.value)}
                       />

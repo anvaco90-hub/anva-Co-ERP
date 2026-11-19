@@ -33,7 +33,11 @@ import {
   ExternalLink,
   Layers,
   Sparkles,
+  Upload,
+  Eye,
+  X,
 } from 'lucide-react'
+import { uploadItemImage } from '../../lib/store'
 
 // ฟังก์ชันระบุหมวดหมู่วัสดุและสีสันสไตล์ไทวัสดุ & วิศวกรรมโซลาร์เซลล์
 function getMaterialCategory(itemName = '') {
@@ -102,6 +106,25 @@ export default function PODetail() {
   const [showEnvelope, setShowEnvelope] = useState(false)
   const [showShare, setShowShare] = useState(false)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [uploadingQuotation, setUploadingQuotation] = useState(false)
+  const [previewQuotationModal, setPreviewQuotationModal] = useState(null)
+
+  const handleDirectQuotationUpload = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file || !po?.id) return
+    setUploadingQuotation(true)
+    try {
+      const upUrl = await uploadItemImage(file)
+      if (upUrl) {
+        await supabase.from('purchase_orders').update({ quotation_url: upUrl }).eq('id', po.id)
+        setPo((prev) => ({ ...prev, quotation_url: upUrl }))
+      }
+    } catch (err) {
+      console.warn('Failed to upload quotation in detail:', err)
+    } finally {
+      setUploadingQuotation(false)
+    }
+  }
 
   // สลับมุมมองระหว่าง Web Portal กับ Paper A4 และ รูปแบบการแสดงสินค้า (Cards vs Table)
   const [viewStyle, setViewStyle] = useState('portal') // 'portal' | 'paper'
@@ -428,7 +451,7 @@ export default function PODetail() {
             className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-sky-700 transition"
           >
             <ArrowLeft className="h-4 w-4" />
-            <span>กลับไปศูนย์จัดซื้อและพัสดุ (PO Hub)</span>
+            <span>กลับไป PR ➔ PO (สายงานจัดซื้อ)</span>
           </Link>
 
           {/* Action Toolbar */}
@@ -945,6 +968,117 @@ export default function PODetail() {
               </div>
             </div>
 
+            {/* Vendor Quotation Box (เอกสารอ้างอิงใบเสนอราคาผู้ขาย) */}
+            <div className="rounded-2xl border border-sky-200/90 dark:border-sky-800/80 bg-gradient-to-r from-sky-50/70 via-blue-50/40 to-sky-50/70 dark:from-slate-900 dark:via-sky-950/20 dark:to-slate-900 p-5 shadow-xs space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-sky-100 dark:border-sky-900/60 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-600 text-white font-bold text-base shadow-xs">
+                    📄
+                  </span>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-sm font-black text-slate-900 dark:text-slate-100">
+                        เอกสารใบเสนอราคาจากผู้ขาย (Vendor Quotation)
+                      </h3>
+                      {po.quotation_no && (
+                        <span className="font-mono text-xs font-bold text-sky-800 dark:text-sky-300 bg-sky-100 dark:bg-sky-950 px-2 py-0.5 rounded-md border border-sky-300 dark:border-sky-800">
+                          {po.quotation_no}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                      เอกสารยืนยันสเปกและราคาที่ได้รับจากคู่ค้า เพื่อใช้ตรวจสอบเปรียบเทียบก่อนการจัดซื้อ
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {/* Upload/Change Button */}
+                  <input
+                    type="file"
+                    id="po-detail-quotation-upload"
+                    accept="image/*,application/pdf"
+                    className="hidden"
+                    onChange={handleDirectQuotationUpload}
+                  />
+                  <label
+                    htmlFor="po-detail-quotation-upload"
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-sky-300 dark:border-sky-800 bg-white dark:bg-slate-800 hover:bg-sky-50 dark:hover:bg-slate-700 px-3 py-1.5 text-xs font-bold text-sky-800 dark:text-sky-300 transition shadow-2xs cursor-pointer"
+                  >
+                    <Upload className="h-3.5 w-3.5" />
+                    <span>{uploadingQuotation ? 'กำลังอัปโหลด...' : (po.quotation_url ? 'เปลี่ยนรูปใบเสนอราคา' : '+ แนบรูปใบเสนอราคา')}</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Quotation Info & File Preview */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-center">
+                <div className="space-y-1 text-xs text-slate-600 dark:text-slate-300">
+                  <div>เลขที่ใบเสนอราคา: <b className="text-slate-900 dark:text-white font-mono">{po.quotation_no || 'ไม่ระบุ'}</b></div>
+                  <div>วันที่ใบเสนอราคา: <b className="text-slate-900 dark:text-white">{po.quotation_date ? formatThaiDate(po.quotation_date, true) : 'ไม่ระบุ'}</b></div>
+                  <div>ผู้ขาย / ร้านค้า: <b className="text-slate-900 dark:text-white">{po.vendors?.vendor_name || po.custom_vendor_name || '-'}</b></div>
+                </div>
+
+                {po.quotation_url ? (
+                  <div className="sm:col-span-2 flex flex-wrap items-center gap-3 bg-white dark:bg-slate-800/80 p-2.5 rounded-xl border border-sky-200 dark:border-sky-800/60">
+                    {/* Thumbnail if Image */}
+                    {po.quotation_url.match(/\.(jpeg|jpg|png|webp|gif)($|\?)/i) || po.quotation_url.startsWith('data:image') ? (
+                      <div
+                        onClick={() => setPreviewQuotationModal(po.quotation_url)}
+                        className="relative h-14 w-20 shrink-0 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 cursor-pointer group bg-slate-100"
+                        title="คลิกเพื่อดูรูปขนาดเต็ม"
+                      >
+                        <img
+                          src={po.quotation_url}
+                          alt="Vendor Quotation"
+                          className="h-full w-full object-cover group-hover:scale-110 transition duration-200"
+                        />
+                        <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 flex items-center justify-center transition">
+                          <Eye className="h-4 w-4 text-white drop-shadow" />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="h-14 w-14 shrink-0 rounded-lg bg-sky-100 dark:bg-sky-950 flex items-center justify-center text-sky-700 dark:text-sky-300 text-2xl font-bold">
+                        📄
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <div className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
+                        ไฟล์เอกสารใบเสนอราคาจากผู้ขาย
+                      </div>
+                      <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                        ตรวจสอบสเปก รายละเอียด และราคาสินค้าได้ตลอดเวลา
+                      </div>
+                      <div className="flex items-center gap-2 mt-1">
+                        <button
+                          type="button"
+                          onClick={() => setPreviewQuotationModal(po.quotation_url)}
+                          className="text-xs font-bold text-sky-700 dark:text-sky-400 hover:underline flex items-center gap-1 cursor-pointer"
+                        >
+                          <Eye className="h-3.5 w-3.5" />
+                          <span>ดูรูปขนาดใหญ่</span>
+                        </button>
+                        <span className="text-slate-300">|</span>
+                        <a
+                          href={po.quotation_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-xs font-bold text-slate-600 dark:text-slate-300 hover:underline flex items-center gap-1"
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                          <span>เปิดลิงก์ไฟล์</span>
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="sm:col-span-2 text-xs text-slate-400 dark:text-slate-500 italic bg-white/50 dark:bg-slate-800/40 p-3 rounded-xl border border-dashed border-slate-200 dark:border-slate-800 flex items-center gap-2">
+                    <span>💡 ยังไม่ได้แนบไฟล์รูปใบเสนอราคา สามารถคลิกปุ่ม "+ แนบรูปใบเสนอราคา" เพื่ออัปโหลดเอกสารต้นฉบับได้</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* 3. Section: รายการพัสดุและแคตตาล็อกวัสดุ (Thai Watsadu Style Product Showcase) */}
             <div className="rounded-3xl border border-slate-200/90 bg-white p-6 shadow-sm space-y-4">
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
@@ -1051,7 +1185,7 @@ export default function PODetail() {
                             <div className="text-right">
                               <div className="text-[10px] text-slate-400 font-semibold uppercase">สั่งซื้อ</div>
                               <div className="font-mono font-bold text-slate-900 text-sm">
-                                {i.quantity} {i.unit || 'ชิ้น'}
+                                {Math.round(Number(i.quantity) || 0)} {i.unit || 'ชิ้น'}
                               </div>
                             </div>
                           </div>
@@ -1144,7 +1278,7 @@ export default function PODetail() {
                               </button>
                             </td>
                             <td className="py-3 px-3 text-right font-mono font-bold text-slate-900">
-                              {i.quantity}
+                              {Math.round(Number(i.quantity) || 0)}
                             </td>
                             <td className="py-3 px-3 text-center text-slate-600 font-medium">
                               {i.unit || 'ชิ้น'}
@@ -1487,7 +1621,7 @@ export default function PODetail() {
                     <tr key={i.id}>
                       <td className="py-2.5 px-3 text-center font-mono">{idx + 1}</td>
                       <td className="py-2.5 px-3 font-semibold text-slate-900">{i.item_name}</td>
-                      <td className="py-2.5 px-3 text-right font-mono">{i.quantity}</td>
+                      <td className="py-2.5 px-3 text-right font-mono font-bold">{Math.round(Number(i.quantity) || 0)}</td>
                       <td className="py-2.5 px-3 text-center text-slate-600">{i.unit}</td>
                       <td className="py-2.5 px-3 text-right font-mono">{baht(itemUnitPrice)}</td>
                       <td className="py-2.5 px-3 text-right font-mono font-bold">{baht(itemTotal)}</td>
@@ -1561,6 +1695,54 @@ export default function PODetail() {
 
         {showShare && (
           <POShareModal po={po} onClose={() => setShowShare(false)} />
+        )}
+
+        {/* Modal: ขยายดูรูปใบเสนอราคาขนาดเต็ม (Quotation Lightbox Preview) */}
+        {previewQuotationModal && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-xs p-4 animate-in fade-in duration-150"
+            onClick={() => setPreviewQuotationModal(null)}
+          >
+            <div
+              className="relative max-w-4xl max-h-[90vh] bg-white dark:bg-slate-900 rounded-2xl p-4 shadow-2xl overflow-hidden flex flex-col space-y-3"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-base">📄</span>
+                  <span className="font-bold text-sm text-slate-900 dark:text-white">
+                    รูปใบเสนอราคาจากผู้ขาย {po.quotation_no ? `(เลขที่ ${po.quotation_no})` : ''}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <a
+                    href={previewQuotationModal}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition flex items-center gap-1"
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                    <span>เปิดภาพต้นฉบับ</span>
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewQuotationModal(null)}
+                    className="rounded-lg p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition cursor-pointer"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-auto max-h-[75vh] flex items-center justify-center bg-slate-950/20 dark:bg-slate-950 rounded-xl p-2">
+                <img
+                  src={previewQuotationModal}
+                  alt="Full Quotation"
+                  className="max-h-full max-w-full object-contain rounded-lg shadow-md"
+                />
+              </div>
+            </div>
+          </div>
         )}
 
       </div>
