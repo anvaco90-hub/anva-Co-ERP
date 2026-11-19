@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import { baht } from '../../lib/projects'
 import { supabase } from '../../lib/supabase'
+import R2Image from '../R2Image'
 
 const THAI_MONTHS = [
   'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
@@ -108,29 +109,29 @@ export default function InventoryReportModal({
 
         const moveMap = {}
 
-        // 1. รับเข้า
-        ;(lotsRes.data || []).forEach((lot) => {
-          if (!lot.item_id) return
-          if (!moveMap[lot.item_id]) moveMap[lot.item_id] = { inQty: 0, outQty: 0, adjQty: 0 }
-          moveMap[lot.item_id].inQty += Number(lot.qty_received || 0)
-        })
-
-        // 2. เบิกจ่าย
-        ;(issuesRes.data || []).forEach((iss) => {
-          ;(iss.stock_issue_items || []).forEach((item) => {
-            if (!item.item_id) return
-            if (!moveMap[item.item_id]) moveMap[item.item_id] = { inQty: 0, outQty: 0, adjQty: 0 }
-            moveMap[item.item_id].outQty += Number(item.quantity || 0)
+          // 1. รับเข้า
+          ; (lotsRes.data || []).forEach((lot) => {
+            if (!lot.item_id) return
+            if (!moveMap[lot.item_id]) moveMap[lot.item_id] = { inQty: 0, outQty: 0, adjQty: 0 }
+            moveMap[lot.item_id].inQty += Number(lot.qty_received || 0)
           })
-        })
 
-        // 3. ปรับปรุง
-        ;(adjRes.data || []).forEach((adj) => {
-          if (!adj.item_id) return
-          if (!moveMap[adj.item_id]) moveMap[adj.item_id] = { inQty: 0, outQty: 0, adjQty: 0 }
-          const diff = Number(adj.qty_after || 0) - Number(adj.qty_before || 0)
-          moveMap[adj.item_id].adjQty += diff
-        })
+          // 2. เบิกจ่าย
+          ; (issuesRes.data || []).forEach((iss) => {
+            ; (iss.stock_issue_items || []).forEach((item) => {
+              if (!item.item_id) return
+              if (!moveMap[item.item_id]) moveMap[item.item_id] = { inQty: 0, outQty: 0, adjQty: 0 }
+              moveMap[item.item_id].outQty += Number(item.quantity || 0)
+            })
+          })
+
+          // 3. ปรับปรุง
+          ; (adjRes.data || []).forEach((adj) => {
+            if (!adj.item_id) return
+            if (!moveMap[adj.item_id]) moveMap[adj.item_id] = { inQty: 0, outQty: 0, adjQty: 0 }
+            const diff = Number(adj.qty_after || 0) - Number(adj.qty_before || 0)
+            moveMap[adj.item_id].adjQty += diff
+          })
 
         if (isMounted) setMovements(moveMap)
       } catch (err) {
@@ -272,7 +273,7 @@ export default function InventoryReportModal({
 
       {/* Modal Container */}
       <div className="flex max-h-[96vh] w-full max-w-6xl flex-col rounded-2xl bg-white shadow-2xl overflow-hidden border border-steel-200">
-        
+
         {/* แถบควบคุมด้านบน (ซ่อนเมื่อพิมพ์ no-print) */}
         <div className="no-print border-b border-steel-200 bg-gradient-to-r from-steel-50 to-steel-100 p-4 space-y-3">
           {/* Header Bar */}
@@ -317,36 +318,32 @@ export default function InventoryReportModal({
                 <button
                   type="button"
                   onClick={() => setPeriodType('current')}
-                  className={`py-1 px-1.5 rounded font-semibold text-center transition ${
-                    periodType === 'current' ? 'bg-sky-700 text-white' : 'bg-steel-100 text-steel-700 hover:bg-steel-200'
-                  }`}
+                  className={`py-1 px-1.5 rounded font-semibold text-center transition ${periodType === 'current' ? 'bg-sky-700 text-white' : 'bg-steel-100 text-steel-700 hover:bg-steel-200'
+                    }`}
                 >
                   ณ วันนี้
                 </button>
                 <button
                   type="button"
                   onClick={() => setPeriodType('monthly')}
-                  className={`py-1 px-1.5 rounded font-semibold text-center transition ${
-                    periodType === 'monthly' ? 'bg-sky-700 text-white' : 'bg-steel-100 text-steel-700 hover:bg-steel-200'
-                  }`}
+                  className={`py-1 px-1.5 rounded font-semibold text-center transition ${periodType === 'monthly' ? 'bg-sky-700 text-white' : 'bg-steel-100 text-steel-700 hover:bg-steel-200'
+                    }`}
                 >
                   รายเดือน
                 </button>
                 <button
                   type="button"
                   onClick={() => setPeriodType('yearly')}
-                  className={`py-1 px-1.5 rounded font-semibold text-center transition ${
-                    periodType === 'yearly' ? 'bg-sky-700 text-white' : 'bg-steel-100 text-steel-700 hover:bg-steel-200'
-                  }`}
+                  className={`py-1 px-1.5 rounded font-semibold text-center transition ${periodType === 'yearly' ? 'bg-sky-700 text-white' : 'bg-steel-100 text-steel-700 hover:bg-steel-200'
+                    }`}
                 >
                   รายปี
                 </button>
                 <button
                   type="button"
                   onClick={() => setPeriodType('custom')}
-                  className={`py-1 px-1.5 rounded font-semibold text-center transition ${
-                    periodType === 'custom' ? 'bg-sky-700 text-white' : 'bg-steel-100 text-steel-700 hover:bg-steel-200'
-                  }`}
+                  className={`py-1 px-1.5 rounded font-semibold text-center transition ${periodType === 'custom' ? 'bg-sky-700 text-white' : 'bg-steel-100 text-steel-700 hover:bg-steel-200'
+                    }`}
                 >
                   กำหนดเอง
                 </button>
@@ -527,22 +524,20 @@ export default function InventoryReportModal({
                   <button
                     type="button"
                     onClick={() => setPaperOrientation('landscape')}
-                    className={`px-2 py-0.5 rounded text-[10px] font-bold transition ${
-                      paperOrientation === 'landscape'
+                    className={`px-2 py-0.5 rounded text-[10px] font-bold transition ${paperOrientation === 'landscape'
                         ? 'bg-steel-900 text-hivis shadow-xs'
                         : 'bg-steel-100 text-steel-600 hover:bg-steel-200'
-                    }`}
+                      }`}
                   >
                     📄 แนวนอน (แนะนำ)
                   </button>
                   <button
                     type="button"
                     onClick={() => setPaperOrientation('portrait')}
-                    className={`px-2 py-0.5 rounded text-[10px] font-bold transition ${
-                      paperOrientation === 'portrait'
+                    className={`px-2 py-0.5 rounded text-[10px] font-bold transition ${paperOrientation === 'portrait'
                         ? 'bg-steel-900 text-hivis shadow-xs'
                         : 'bg-steel-100 text-steel-600 hover:bg-steel-200'
-                    }`}
+                      }`}
                   >
                     📄 แนวตั้ง
                   </button>
@@ -566,9 +561,8 @@ export default function InventoryReportModal({
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-steel-100 flex justify-center">
           <div
             id="printable-report"
-            className={`w-full ${
-              paperOrientation === 'landscape' ? 'max-w-6xl' : 'max-w-[210mm]'
-            } min-h-[297mm] bg-white p-6 sm:p-8 shadow-lg border border-steel-200 rounded text-black font-sans leading-relaxed text-xs`}
+            className={`w-full ${paperOrientation === 'landscape' ? 'max-w-6xl' : 'max-w-[210mm]'
+              } min-h-[297mm] bg-white p-6 sm:p-8 shadow-lg border border-steel-200 rounded text-black font-sans leading-relaxed text-xs`}
           >
             {/* 1. ส่วนหัวบริษัท */}
             <div className="border-b-2 border-black pb-4 text-center">
@@ -581,8 +575,8 @@ export default function InventoryReportModal({
                   {reportType === 'movement'
                     ? 'รายงานสรุปความเคลื่อนไหวรับ-จ่ายสินค้าสโตร์ (Stock Movement Report)'
                     : reportType === 'reorder'
-                    ? 'รายงานวัสดุใกล้หมดและจุดสั่งซื้อเร่งด่วน (Reorder Alert Report)'
-                    : 'รายงานสินค้าคงเหลือและมูลค่าสต็อกสโตร์ (Inventory Stock & Valuation Report)'}
+                      ? 'รายงานวัสดุใกล้หมดและจุดสั่งซื้อเร่งด่วน (Reorder Alert Report)'
+                      : 'รายงานสินค้าคงเหลือและมูลค่าสต็อกสโตร์ (Inventory Stock & Valuation Report)'}
                 </h2>
               </div>
 
@@ -701,7 +695,7 @@ export default function InventoryReportModal({
                           {showImages && (
                             <td className="py-2 px-1 text-center whitespace-nowrap">
                               {it.image_url ? (
-                                <img src={it.image_url} alt="" className="mx-auto h-7 w-7 rounded object-cover border border-neutral-300" />
+                                <R2Image fileKey={it.image_url} alt="" className="mx-auto h-7 w-7 rounded object-cover border border-neutral-300" />
                               ) : (
                                 <span className="text-neutral-300 text-[10px]">-</span>
                               )}

@@ -7,6 +7,7 @@ import { formatIntQty } from '../../lib/store'
 import ItemProjectUsageModal from '../../components/ItemProjectUsageModal'
 import InventoryReportModal from '../../components/reports/InventoryReportModal'
 import Pagination from '../../components/Pagination'
+import R2Image from '../../components/R2Image'
 import {
   Package,
   Search,
@@ -499,8 +500,8 @@ export default function StockList() {
                   onClick={() => setSelectedDetailItem(it)}
                 >
                   {it.image_url ? (
-                    <img
-                      src={it.image_url}
+                    <R2Image
+                      fileKey={it.image_url}
                       alt={it.item_name}
                       className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
                       loading="lazy"
@@ -664,8 +665,8 @@ export default function StockList() {
                       {/* รูปภาพ */}
                       <td>
                         {i.image_url ? (
-                          <img
-                            src={i.image_url}
+                          <R2Image
+                            fileKey={i.image_url}
                             alt={i.item_name}
                             className="h-10 w-10 rounded-xl border border-steel-200 dark:border-slate-700 object-cover shadow-xs cursor-pointer hover:opacity-80 transition"
                             onClick={() => setPreviewImg(i.image_url)}
@@ -866,8 +867,8 @@ export default function StockList() {
               <div className="flex flex-col sm:flex-row gap-4 items-center sm:items-start">
                 <div className="relative h-28 w-28 shrink-0 overflow-hidden rounded-2xl border border-steel-200 dark:border-slate-700 bg-steel-50 dark:bg-slate-800">
                   {selectedDetailItem.image_url ? (
-                    <img
-                      src={selectedDetailItem.image_url}
+                    <R2Image
+                      fileKey={selectedDetailItem.image_url}
                       alt={selectedDetailItem.item_name}
                       className="h-full w-full object-cover"
                     />
@@ -983,10 +984,10 @@ export default function StockList() {
           onClick={() => setPreviewImg(null)}
         >
           <div className="relative max-h-[90vh] max-w-2xl overflow-hidden rounded-2xl bg-white dark:bg-slate-900 p-2 border border-steel-200 dark:border-slate-800">
-            <img
-              src={previewImg}
+            <R2Image
+              fileKey={previewImg}
               alt="Preview"
-              className="max-h-[85vh] w-auto object-contain rounded-xl"
+              className="max-h-[85vh] min-h-[200px] min-w-[200px] w-auto object-contain rounded-xl"
             />
             <button
               onClick={() => setPreviewImg(null)}
