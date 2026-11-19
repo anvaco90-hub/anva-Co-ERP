@@ -354,19 +354,19 @@ export default function QuotationDetail() {
 
       {/* 3. Customer PO Signed Banner (แสดงเมื่อลูกค้าเซ็นรับแล้ว) */}
       {quotation.customer_po_no && (
-        <div className="rounded-2xl border border-emerald-300 bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="rounded-2xl border border-emerald-300 dark:border-emerald-800/80 bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 dark:from-emerald-950/40 dark:via-slate-900 dark:to-emerald-950/40 p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3.5">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-xs text-xl">
               ✍️
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-black text-emerald-950 text-base">ลูกค้าเซ็นอนุมัติ / ออกใบสั่งซื้อแล้ว</span>
-                <span className="rounded-full bg-emerald-200 text-emerald-900 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider">
+                <span className="font-black text-emerald-950 dark:text-emerald-200 text-base">ลูกค้าเซ็นอนุมัติ / ออกใบสั่งซื้อแล้ว</span>
+                <span className="rounded-full bg-emerald-200 dark:bg-emerald-900/80 text-emerald-900 dark:text-emerald-200 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider">
                   CUSTOMER PO VERIFIED
                 </span>
               </div>
-              <div className="mt-0.5 text-xs text-emerald-800 font-mono flex flex-wrap gap-x-3 gap-y-1">
+              <div className="mt-0.5 text-xs text-emerald-800 dark:text-emerald-300 font-mono flex flex-wrap gap-x-3 gap-y-1">
                 <span>เลขที่ PO ลูกค้า: <b>{quotation.customer_po_no}</b></span>
                 {quotation.customer_po_date && (
                   <span>วันที่ออก PO: <b>{new Date(quotation.customer_po_date).toLocaleDateString('th-TH')}</b></span>
@@ -384,7 +384,7 @@ export default function QuotationDetail() {
                 href={quotation.customer_po_file_url}
                 target="_blank"
                 rel="noreferrer"
-                className="rounded-xl border border-emerald-300 bg-white px-3.5 py-2 text-xs font-bold text-emerald-900 hover:bg-emerald-50 transition shadow-2xs flex items-center gap-1.5"
+                className="rounded-xl border border-emerald-300 dark:border-emerald-700 bg-white dark:bg-slate-800 px-3.5 py-2 text-xs font-bold text-emerald-900 dark:text-emerald-200 hover:bg-emerald-50 dark:hover:bg-slate-700 transition shadow-2xs flex items-center gap-1.5"
               >
                 <span>📎</span>
                 <span>เปิดดูไฟล์ PO ลูกค้า</span>

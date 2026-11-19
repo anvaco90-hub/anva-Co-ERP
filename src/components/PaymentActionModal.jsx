@@ -184,9 +184,12 @@ export default function PaymentActionModal({
   const numericFee = Number(bankFee) || 0
   const remainingAfter = Math.max(0, Math.round((outstanding - numericPay) * 100) / 100)
 
+  const isAlreadyFullyPaid = paymentStatus === 'ชำระครบแล้ว' || (outstanding <= 0.01 && Number(totalAmount) > 0)
+
   // บันทึกการจ่ายชำระเงิน & ลงสมุดรายวัน
   const handleSubmit = async (e) => {
     e.preventDefault()
+    if (isAlreadyFullyPaid) return setError('เอกสารนี้ชำระเงินครบถ้วนแล้ว ไม่สามารถทำรายการชำระซ้ำได้')
     if (numericPay <= 0) return setError('ยอดชำระต้องมากกว่า 0 บาท')
     if (numericPay > outstanding + 0.05) return setError('ยอดชำระเกินยอดค้างชำระ')
 
@@ -235,30 +238,53 @@ export default function PaymentActionModal({
       const stageLabel = paymentStage === 'deposit' ? 'มัดจำงวดแรก' : paymentStage === 'remaining' ? 'งวดคงเหลือ' : 'เต็มจำนวน'
       const methodLabel = paymentMethod === 'transfer' ? 'โอนเงิน' : paymentMethod === 'cheque' ? 'เช็ค' : 'เงินสด'
 
-      const { data: jv, error: jvErr } = await supabase
-        .from('journal_entries')
-        .insert({
-          entry_no: jvNo,
-          entry_date: todayStr,
-          reference_type: type === 'receive' ? 'RC' : 'PAY',
-          reference_id: docId || null,
-          project_id: projectId || null,
-          description: `${type === 'receive' ? 'รับชำระเงิน' : 'จ่ายชำระเงิน'}${stageLabel} เอกสาร ${docNo} (${contactName || 'คู่ค้า'}) ผ่าน ${methodLabel} [${voucherNo}]`,
-          accounting_status: 'อนุมัติแล้ว',
-        })
-        .select()
-        .single()
+      // ใช้สถานะ 'รออนุมัติ' ก่อน เพื่อไม่ให้ติด trigger ตรวจดุลบัญชีก่อนสร้าง journal_entry_lines
+      let currentJvId = null
+      try {
+        const { data: jv, error: jvErr } = await supabase
+          .from('journal_entries')
+          .insert({
+            entry_no: jvNo,
+            entry_date: todayStr,
+            reference_type: type === 'receive' ? 'RC' : 'PAY',
+            reference_id: docId || null,
+            project_id: projectId || null,
+            description: `${type === 'receive' ? 'รับชำระเงิน' : 'จ่ายชำระเงิน'}${stageLabel} เอกสาร ${docNo} (${contactName || 'คู่ค้า'}) ผ่าน ${methodLabel} [${voucherNo}]`,
+            accounting_status: 'รออนุมัติ',
+          })
+          .select('id')
+          .single()
 
-      if (jvErr) console.warn('JV error:', jvErr.message)
+        if (!jvErr && jv) {
+          currentJvId = jv.id
+        } else {
+          console.warn('JV insert warning:', jvErr?.message)
+          // Fallback: insert without status field
+          const { data: fbJv } = await supabase
+            .from('journal_entries')
+            .insert({
+              entry_no: jvNo,
+              entry_date: todayStr,
+              reference_type: type === 'receive' ? 'RC' : 'PAY',
+              reference_id: docId || null,
+              project_id: projectId || null,
+              description: `${type === 'receive' ? 'รับชำระเงิน' : 'จ่ายชำระเงิน'}${stageLabel} เอกสาร ${docNo} (${contactName || 'คู่ค้า'}) ผ่าน ${methodLabel} [${voucherNo}]`,
+            })
+            .select('id')
+          if (fbJv && fbJv[0]) currentJvId = fbJv[0].id
+        }
+      } catch (e) {
+        console.warn('Journal entry create error:', e)
+      }
 
       // 3. บันทึกบรรทัดเดบิต/เครดิต (Journal Entry Lines)
-      if (jv?.id && cashBankAccId) {
+      if (currentJvId && cashBankAccId) {
         const lines = []
         if (type === 'receive') {
           // ฝั่งรับเงิน (Receive Payment - RC)
           // Dr. ธนาคาร / เงินสด
           lines.push({
-            journal_entry_id: jv.id,
+            journal_entry_id: currentJvId,
             account_id: cashBankAccId,
             debit: numericPay - numericFee,
             credit: 0,
@@ -266,7 +292,7 @@ export default function PaymentActionModal({
           })
           if (numericFee > 0 && feeAccId) {
             lines.push({
-              journal_entry_id: jv.id,
+              journal_entry_id: currentJvId,
               account_id: feeAccId,
               debit: numericFee,
               credit: 0,
@@ -275,7 +301,7 @@ export default function PaymentActionModal({
           }
           if (arAccId) {
             lines.push({
-              journal_entry_id: jv.id,
+              journal_entry_id: currentJvId,
               account_id: arAccId,
               debit: 0,
               credit: numericPay,
@@ -287,7 +313,7 @@ export default function PaymentActionModal({
           // Dr. เจ้าหนี้การค้า (2110-01)
           if (apAccId) {
             lines.push({
-              journal_entry_id: jv.id,
+              journal_entry_id: currentJvId,
               account_id: apAccId,
               debit: numericPay,
               credit: 0,
@@ -297,7 +323,7 @@ export default function PaymentActionModal({
           // Dr. ค่าธรรมเนียมธนาคาร (ถ้ามี)
           if (numericFee > 0 && feeAccId) {
             lines.push({
-              journal_entry_id: jv.id,
+              journal_entry_id: currentJvId,
               account_id: feeAccId,
               debit: numericFee,
               credit: 0,
@@ -306,7 +332,7 @@ export default function PaymentActionModal({
           }
           // Cr. ธนาคาร / เงินสด
           lines.push({
-            journal_entry_id: jv.id,
+            journal_entry_id: currentJvId,
             account_id: cashBankAccId,
             debit: 0,
             credit: numericPay + numericFee,
@@ -316,10 +342,12 @@ export default function PaymentActionModal({
 
         if (lines.length > 0) {
           await supabase.from('journal_entry_lines').insert(lines)
+          // ปรับสถานะเป็นอนุมัติหลังจากบันทึกบรรทัดเดบิต/เครดิตเรียบร้อย
+          await supabase.from('journal_entries').update({ accounting_status: 'อนุมัติแล้ว' }).eq('id', currentJvId)
         }
       }
 
-      // 4. บันทึกลงตาราง payment_transactions
+      // 4. บันทึกลงตาราง payment_transactions แบบ Self-Healing
       const txPayload = {
         transaction_no: voucherNo,
         document_type: docType,
@@ -330,7 +358,9 @@ export default function PaymentActionModal({
         project_id: projectId || null,
         payment_stage: paymentStage,
         payment_method: paymentMethod,
+        payment_channel: paymentMethod === 'transfer' ? (companyBank || 'โอนเงิน') : paymentMethod === 'cheque' ? 'เช็ค' : 'เงินสด',
         amount: numericPay,
+        amount_paid: numericPay,
         payment_date: todayStr,
         company_bank_account: paymentMethod === 'transfer' ? companyBank : null,
         vendor_bank_name: vendorBank.bank_name || null,
@@ -338,6 +368,7 @@ export default function PaymentActionModal({
         vendor_bank_account_name: vendorBank.bank_account_name || null,
         vendor_promptpay: vendorBank.promptpay_no || null,
         bank_fee: numericFee,
+        transfer_fee: numericFee,
         cheque_no: paymentMethod === 'cheque' ? chequeNo : null,
         cheque_bank: paymentMethod === 'cheque' ? chequeBank : null,
         cheque_date: paymentMethod === 'cheque' ? chequeDate : null,
@@ -345,10 +376,21 @@ export default function PaymentActionModal({
         cash_source: paymentMethod === 'cash' ? cashSource : null,
         slip_reference_no: paymentMethod === 'transfer' ? slipRef : paymentMethod === 'cash' ? cashVoucherNo : chequeAttachmentNote,
         notes: notes || null,
-        journal_entry_id: jv?.id || null,
+        journal_entry_id: currentJvId || null,
       }
 
-      await supabase.from('payment_transactions').insert(txPayload)
+      let activeTx = { ...txPayload }
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const { error: ptErr } = await supabase.from('payment_transactions').insert(activeTx)
+        if (!ptErr) break
+        console.warn(`Payment transaction attempt ${attempt + 1} warning:`, ptErr)
+        const colMatch = ptErr?.message?.match(/column "(.*?)" of relation "payment_transactions" does not exist/)
+        if (colMatch && colMatch[1]) {
+          delete activeTx[colMatch[1]]
+          continue
+        }
+        break
+      }
 
       // 5. ตัดยอดหนี้คงค้างในเอกสารเป้าหมาย
       if (docType === 'PO') {
@@ -431,6 +473,16 @@ export default function PaymentActionModal({
           </div>
           <button onClick={onClose} className="text-steel-400 hover:text-steel-600 text-base">✕</button>
         </div>
+
+        {isAlreadyFullyPaid && (
+          <div className="mt-3 p-3.5 rounded-xl bg-emerald-50 border border-emerald-300 text-xs text-emerald-950 flex items-center gap-2.5 font-medium shadow-xs">
+            <span className="text-xl">✅</span>
+            <div>
+              <div className="font-bold text-emerald-950">เอกสารนี้ได้รับการชำระเงินครบถ้วนแล้ว (Fully Paid)</div>
+              <div className="text-[11px] text-emerald-800">ไม่มียอดหนี้คงค้าง ระบบป้องกันการชำระเงินซ้ำซ้อนเรียบร้อยแล้ว</div>
+            </div>
+          </div>
+        )}
 
         {error && (
           <div className="mt-3 p-3 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-700 font-medium">
@@ -869,13 +921,19 @@ export default function PaymentActionModal({
             </button>
             <button
               type="submit"
-              disabled={saving}
-              className="inline-flex items-center gap-1.5 rounded-lg px-5 py-2 font-bold text-white bg-sky-700 hover:bg-sky-800 shadow transition disabled:opacity-50"
+              disabled={saving || isAlreadyFullyPaid}
+              className={`inline-flex items-center gap-1.5 rounded-lg px-5 py-2 font-bold text-white shadow transition ${
+                isAlreadyFullyPaid
+                  ? 'bg-steel-400 cursor-not-allowed opacity-60'
+                  : 'bg-sky-700 hover:bg-sky-800'
+              }`}
             >
-              <span>{type === 'receive' ? '💰' : '💸'}</span>
+              <span>{isAlreadyFullyPaid ? '✅' : type === 'receive' ? '💰' : '💸'}</span>
               <span>
                 {saving
                   ? 'กำลังบันทึกและลงบัญชี...'
+                  : isAlreadyFullyPaid
+                  ? 'ชำระเงินครบแล้ว (ไม่สามารถชำระซ้ำ)'
                   : `ยืนยันการจ่ายเงิน (${baht(numericPay)} บ.)`}
               </span>
             </button>

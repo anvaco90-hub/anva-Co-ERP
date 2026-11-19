@@ -101,8 +101,8 @@ export default function PODocumentModal({ po, items, onClose }) {
             <div className="my-4 grid grid-cols-2 gap-4 rounded border border-neutral-300 p-3 text-xs">
               <div className="space-y-1">
                 <span className="font-bold text-neutral-700 underline">ผู้ขาย / VENDOR:</span>
-                <div className="font-bold text-sm">{po.vendors?.vendor_name || '-'}</div>
-                <div className="text-neutral-600">รหัสผู้ขาย: {po.vendors?.vendor_code || '-'}</div>
+                <div className="font-bold text-sm">{po.custom_vendor_name || po.vendors?.vendor_name || '-'}</div>
+                {po.vendors?.vendor_code && <div className="text-neutral-600">รหัสผู้ขาย: {po.vendors.vendor_code}</div>}
                 {po.vendors?.contact_person && <div>ผู้ติดต่อ: {po.vendors.contact_person}</div>}
                 {po.vendors?.phone && <div>โทรศัพท์: {po.vendors.phone}</div>}
                 {po.vendors?.tax_id && <div>เลขผู้เสียภาษี: {po.vendors.tax_id}</div>}
@@ -111,8 +111,11 @@ export default function PODocumentModal({ po, items, onClose }) {
               <div className="space-y-1 border-l border-neutral-200 pl-4">
                 <span className="font-bold text-neutral-700 underline">ส่งมอบให้โครงการ / PROJECT:</span>
                 <div className="font-bold text-sm">
-                  {po.projects ? `${po.projects.project_code} ${po.projects.project_name}` : '🏢 ของกลางบริษัท / สต็อกส่วนกลาง'}
+                  {po.custom_project_name || (po.projects ? `${po.projects.project_code} ${po.projects.project_name}` : '🏢 ของกลางบริษัท / สต็อกส่วนกลาง')}
                 </div>
+                {po.customer_name && (
+                  <div className="text-neutral-800">ลูกค้า / ผู้ว่าจ้าง: <b>{po.customer_name}</b></div>
+                )}
                 <div className="text-neutral-600">สถานที่ส่งมอบ: {po.delivery_address || 'สโตร์หลัก / หน้างานโครงการ'}</div>
                 <div className="mt-2 text-neutral-700">
                   ผู้สั่งซื้อ: <b>{po.buyer_name || po.creator?.full_name || 'เจ้าหน้าที่จัดซื้อ'}</b>

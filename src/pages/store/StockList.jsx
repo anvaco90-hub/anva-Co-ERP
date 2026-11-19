@@ -1,12 +1,13 @@
-import { Fragment, useEffect, useState } from 'react'
+import { Fragment, useEffect, useState, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
 import { baht } from '../../lib/projects'
 import { formatIntQty } from '../../lib/store'
 import ItemProjectUsageModal from '../../components/ItemProjectUsageModal'
-import R2Image from '../../components/R2Image'
 import InventoryReportModal from '../../components/reports/InventoryReportModal'
+import Pagination from '../../components/Pagination'
+import R2Image from '../../components/R2Image'
 import {
   Package,
   Search,
@@ -46,6 +47,8 @@ export default function StockList() {
   const [search, setSearch] = useState('')
   const [onlyLow, setOnlyLow] = useState(false)
   const [onlyOut, setOnlyOut] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(20) // 10 | 20 | 50 | 100
   const [open, setOpen] = useState(null)
   const [previewImg, setPreviewImg] = useState(null)
   const [selectedUsageItem, setSelectedUsageItem] = useState(null)
@@ -91,6 +94,38 @@ export default function StockList() {
       .finally(() => setLoading(false))
   }, [])
 
+  const isLow = (i) =>
+    Number(i?.reorder_point) > 0 &&
+    Number(i?.qty_on_hand) <= Number(i?.reorder_point) &&
+    Number(i?.qty_on_hand) > 0
+  const isOut = (i) => Number(i?.qty_on_hand) <= 0
+
+  // รีเซ็ตหน้ากลับไปหน้าที่ 1 เมื่อตัวกรองหรือคำค้นหาเปลี่ยน (ต้องอยู่ก่อน Early Return ตามกฎของ React Hooks)
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [cat, search, onlyLow, onlyOut])
+
+  // คำนวณรายการที่ผ่านการกรอง (ต้องอยู่ก่อน Early Return)
+  const shown = useMemo(() => {
+    if (!items) return []
+    const q = search.trim().toLowerCase()
+    return items.filter((i) => {
+      if (cat && i.category_id !== cat) return false
+      if (onlyLow && !isLow(i)) return false
+      if (onlyOut && !isOut(i)) return false
+      if (!q) return true
+      return `${i.item_name} ${i.item_code} ${i.unit || ''}`
+        .toLowerCase()
+        .includes(q)
+    })
+  }, [items, cat, onlyLow, onlyOut, search])
+
+  // คำนวณรายการเฉพาะหน้าปัจจุบัน (ต้องอยู่ก่อน Early Return)
+  const paginatedItems = useMemo(() => {
+    const start = (currentPage - 1) * pageSize
+    return shown.slice(start, start + pageSize)
+  }, [shown, currentPage, pageSize])
+
   if (loading || !items) {
     return (
       <div className="flex h-64 flex-col items-center justify-center space-y-3 font-sans">
@@ -101,23 +136,6 @@ export default function StockList() {
       </div>
     )
   }
-
-  const isLow = (i) =>
-    Number(i.reorder_point) > 0 &&
-    Number(i.qty_on_hand) <= Number(i.reorder_point) &&
-    Number(i.qty_on_hand) > 0
-  const isOut = (i) => Number(i.qty_on_hand) <= 0
-  const q = search.trim().toLowerCase()
-
-  const shown = items.filter((i) => {
-    if (cat && i.category_id !== cat) return false
-    if (onlyLow && !isLow(i)) return false
-    if (onlyOut && !isOut(i)) return false
-    if (!q) return true
-    return `${i.item_name} ${i.item_code} ${i.unit || ''}`
-      .toLowerCase()
-      .includes(q)
-  })
 
   const totalValue = shown.reduce(
     (s, i) => s + Number(i.qty_on_hand || 0) * Number(i.avg_unit_cost || 0),
@@ -255,13 +273,13 @@ export default function StockList() {
       {/* ---------------------------------------------------------------------- */}
       {/* 2. Category Filter Pills (เลือกตามหมวดหมู่ - ไม่เลื่อน ไม่ล้น)          */}
       {/* ---------------------------------------------------------------------- */}
-      <div className="rounded-2xl border border-steel-200 bg-white p-4 shadow-xs space-y-3">
-        <div className="flex items-center justify-between text-xs font-bold text-steel-700">
-          <span className="flex items-center gap-1.5 text-steel-900">
-            <Layers className="h-4 w-4 text-steel-700" />
+      <div className="rounded-2xl border border-steel-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-xs space-y-3">
+        <div className="flex items-center justify-between text-xs font-bold text-steel-700 dark:text-slate-300">
+          <span className="flex items-center gap-1.5 text-steel-900 dark:text-slate-100">
+            <Layers className="h-4 w-4 text-steel-700 dark:text-amber-400" />
             <span>เลือกดูตามหมวดหมู่วัสดุและอุปกรณ์</span>
           </span>
-          <span className="text-steel-400 font-normal">
+          <span className="text-steel-400 dark:text-slate-300 font-normal">
             แสดง {shown.length} จาก {items.length} รายการ
           </span>
         </div>
@@ -272,14 +290,14 @@ export default function StockList() {
             onClick={() => setCat('')}
             className={`rounded-lg px-3 py-1.5 text-xs font-bold transition flex items-center gap-1.5 ${
               cat === ''
-                ? 'bg-steel-900 text-hivis font-black shadow-xs'
-                : 'bg-steel-100 text-steel-700 hover:bg-steel-200'
+                ? 'bg-steel-900 dark:bg-amber-500 text-hivis dark:text-slate-950 font-black shadow-xs'
+                : 'bg-steel-100 dark:bg-slate-800 text-steel-700 dark:text-slate-200 hover:bg-steel-200 dark:hover:bg-slate-700'
             }`}
           >
             <span>ทั้งหมด</span>
             <span
               className={`rounded-full px-1.5 py-0.2 text-[10px] ${
-                cat === '' ? 'bg-steel-800 text-hivis' : 'bg-steel-200 text-steel-800'
+                cat === '' ? 'bg-steel-800 dark:bg-amber-600 text-hivis dark:text-slate-950' : 'bg-steel-200 dark:bg-slate-700 text-steel-800 dark:text-slate-200'
               }`}
             >
               {items.length}
@@ -297,14 +315,14 @@ export default function StockList() {
                 onClick={() => setCat(c.id)}
                 className={`rounded-lg px-3 py-1.5 text-xs font-bold transition flex items-center gap-1.5 ${
                   isSelected
-                    ? 'bg-steel-900 text-hivis font-black shadow-xs'
-                    : 'bg-steel-100 text-steel-700 hover:bg-steel-200'
+                    ? 'bg-steel-900 dark:bg-amber-500 text-hivis dark:text-slate-950 font-black shadow-xs'
+                    : 'bg-steel-100 dark:bg-slate-800 text-steel-700 dark:text-slate-200 hover:bg-steel-200 dark:hover:bg-slate-700'
                 }`}
               >
                 <span>{c.name}</span>
                 <span
                   className={`rounded-full px-1.5 py-0.2 text-[10px] ${
-                    isSelected ? 'bg-steel-800 text-hivis' : 'bg-steel-200 text-steel-800'
+                    isSelected ? 'bg-steel-800 dark:bg-amber-600 text-hivis dark:text-slate-950' : 'bg-steel-200 dark:bg-slate-700 text-steel-800 dark:text-slate-200'
                   }`}
                 >
                   {count}
@@ -327,13 +345,13 @@ export default function StockList() {
               placeholder="ค้นหารหัส, ชื่อวัสดุ, หน่วยนับ..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full rounded-xl border border-steel-300 bg-white pl-9 pr-4 py-2 text-xs sm:text-sm text-steel-900 placeholder:text-steel-400 focus:border-steel-900 focus:outline-none shadow-xs"
+              className="w-full rounded-xl border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-900 pl-9 pr-4 py-2 text-xs sm:text-sm text-steel-900 dark:text-slate-100 placeholder:text-steel-400 dark:placeholder:text-slate-500 focus:border-steel-900 dark:focus:border-amber-500 focus:outline-none shadow-xs"
             />
             {search && (
               <button
                 type="button"
                 onClick={() => setSearch('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-steel-400 hover:text-steel-600"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-steel-400 hover:text-steel-600 dark:hover:text-slate-200"
               >
                 ✕
               </button>
@@ -351,8 +369,8 @@ export default function StockList() {
             }}
             className={`rounded-xl px-3 py-1.5 text-xs font-bold transition flex items-center gap-1.5 border ${
               onlyLow
-                ? 'bg-amber-500 text-white border-amber-600 shadow-xs'
-                : 'bg-white text-steel-700 border-steel-300 hover:bg-steel-50'
+                ? 'bg-amber-500 text-slate-950 font-black border-amber-600 shadow-xs'
+                : 'bg-white dark:bg-slate-900 text-steel-700 dark:text-slate-200 border-steel-300 dark:border-slate-700 hover:bg-steel-50 dark:hover:bg-slate-800'
             }`}
           >
             <span>⚠️</span>
@@ -368,7 +386,7 @@ export default function StockList() {
             className={`rounded-xl px-3 py-1.5 text-xs font-bold transition flex items-center gap-1.5 border ${
               onlyOut
                 ? 'bg-rose-600 text-white border-rose-700 shadow-xs'
-                : 'bg-white text-steel-700 border-steel-300 hover:bg-steel-50'
+                : 'bg-white dark:bg-slate-900 text-steel-700 dark:text-slate-200 border-steel-300 dark:border-slate-700 hover:bg-steel-50 dark:hover:bg-slate-800'
             }`}
           >
             <span>🚨</span>
@@ -384,21 +402,21 @@ export default function StockList() {
                 setOnlyLow(false)
                 setOnlyOut(false)
               }}
-              className="text-xs font-bold text-rose-600 hover:underline px-2"
+              className="text-xs font-bold text-rose-600 dark:text-rose-400 hover:underline px-2"
             >
               ล้างตัวกรอง
             </button>
           )}
 
           {/* View Mode Toggle: Grid vs Table */}
-          <div className="flex rounded-xl bg-steel-200 p-1 text-xs font-bold ml-1">
+          <div className="flex rounded-xl bg-steel-200 dark:bg-slate-800 p-1 text-xs font-bold ml-1">
             <button
               type="button"
               onClick={() => setViewMode('grid')}
               className={`rounded-lg px-2.5 py-1 transition flex items-center gap-1 ${
                 viewMode === 'grid'
-                  ? 'bg-white text-steel-950 shadow-xs font-black'
-                  : 'text-steel-600 hover:text-steel-900'
+                  ? 'bg-white dark:bg-slate-700 text-steel-950 dark:text-white shadow-xs font-black'
+                  : 'text-steel-600 dark:text-slate-300 hover:text-steel-900 dark:hover:text-white'
               }`}
               title="มุมมองการ์ดวัสดุ"
             >
@@ -410,8 +428,8 @@ export default function StockList() {
               onClick={() => setViewMode('table')}
               className={`rounded-lg px-2.5 py-1 transition flex items-center gap-1 ${
                 viewMode === 'table'
-                  ? 'bg-white text-steel-950 shadow-xs font-black'
-                  : 'text-steel-600 hover:text-steel-900'
+                  ? 'bg-white dark:bg-slate-700 text-steel-950 dark:text-white shadow-xs font-black'
+                  : 'text-steel-600 dark:text-slate-300 hover:text-steel-900 dark:hover:text-white'
               }`}
               title="มุมมองตารางพัสดุ"
             >
@@ -464,7 +482,7 @@ export default function StockList() {
         </div>
       ) : viewMode === 'grid' ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-5">
-          {shown.map((it) => {
+          {paginatedItems.map((it) => {
             const itemLow = isLow(it)
             const itemOut = isOut(it)
             const qty = Number(it.qty_on_hand || 0)
@@ -474,11 +492,11 @@ export default function StockList() {
             return (
               <div
                 key={it.id}
-                className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-steel-200 bg-white shadow-xs transition hover:border-steel-400 hover:shadow-md"
+                className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-steel-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs transition hover:border-steel-400 dark:hover:border-slate-700 hover:shadow-md"
               >
                 {/* 1. Thumbnail Image & Floating Stock Status Pill (ไม่ทับซ้อนกัน) */}
                 <div
-                  className="relative aspect-video sm:aspect-square w-full overflow-hidden bg-steel-100 cursor-pointer"
+                  className="relative aspect-video sm:aspect-square w-full overflow-hidden bg-steel-100 dark:bg-slate-800 cursor-pointer"
                   onClick={() => setSelectedDetailItem(it)}
                 >
                   {it.image_url ? (
@@ -486,11 +504,12 @@ export default function StockList() {
                       fileKey={it.image_url}
                       alt={it.item_name}
                       className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                      loading="lazy"
                     />
                   ) : (
-                    <div className="flex h-full w-full flex-col items-center justify-center gap-1 text-steel-400 bg-steel-50">
-                      <Boxes className="h-10 w-10 text-steel-300" />
-                      <span className="text-[10px] font-semibold text-steel-400">ANVA & CO.</span>
+                    <div className="flex h-full w-full flex-col items-center justify-center gap-1 text-steel-400 dark:text-slate-500 bg-steel-50 dark:bg-slate-800/60">
+                      <Boxes className="h-10 w-10 text-steel-300 dark:text-slate-600" />
+                      <span className="text-[10px] font-semibold text-steel-400 dark:text-slate-400">ANVA & CO.</span>
                     </div>
                   )}
 
@@ -501,7 +520,7 @@ export default function StockList() {
                         หมดสต็อก
                       </span>
                     ) : itemLow ? (
-                      <span className="rounded-md bg-amber-500 px-2.5 py-0.5 text-[10px] font-black text-white shadow-xs">
+                      <span className="rounded-md bg-amber-500 px-2.5 py-0.5 text-[10px] font-black text-slate-950 shadow-xs">
                         ใกล้หมด
                       </span>
                     ) : (
@@ -517,17 +536,17 @@ export default function StockList() {
                   <div className="space-y-1">
                     {/* รหัสวัสดุ & หมวดหมู่วัสดุ อยู่ในบรรทัดเดียวกันอย่างชัดเจน */}
                     <div className="flex items-center justify-between text-[11px] gap-2">
-                      <span className="font-mono font-bold text-steel-600 truncate">
+                      <span className="font-mono font-bold text-steel-600 dark:text-amber-400 truncate">
                         {it.item_code}
                       </span>
-                      <span className="rounded-md bg-steel-100 text-steel-700 px-2 py-0.5 text-[10px] font-semibold truncate max-w-[130px] border border-steel-200">
+                      <span className="rounded-md bg-steel-100 dark:bg-slate-800 text-steel-700 dark:text-slate-200 px-2 py-0.5 text-[10px] font-semibold truncate max-w-[130px] border border-steel-200 dark:border-slate-700">
                         {it.item_categories?.name || 'วัสดุทั่วไป'}
                       </span>
                     </div>
 
                     {/* ชื่อวัสดุ */}
                     <h3
-                      className="text-sm font-bold text-steel-900 line-clamp-2 leading-snug cursor-pointer group-hover:text-sky-700 transition"
+                      className="text-sm font-bold text-steel-900 dark:text-slate-100 line-clamp-2 leading-snug cursor-pointer group-hover:text-sky-700 dark:group-hover:text-amber-400 transition"
                       onClick={() => setSelectedDetailItem(it)}
                       title={it.item_name}
                     >
@@ -535,29 +554,29 @@ export default function StockList() {
                     </h3>
                   </div>
 
-                  <div className="space-y-1.5 pt-1 border-t border-steel-100">
+                  <div className="space-y-1.5 pt-1 border-t border-steel-100 dark:border-slate-800">
                     {/* ราคาต่อหน่วย */}
                     <div className="flex items-baseline justify-between">
                       <div className="flex items-baseline gap-1">
-                        <span className="text-xs font-semibold text-steel-500">฿</span>
-                        <span className="text-base font-black font-mono text-steel-900 tracking-tight">
+                        <span className="text-xs font-semibold text-steel-500 dark:text-slate-400">฿</span>
+                        <span className="text-base font-black font-mono text-steel-900 dark:text-white tracking-tight">
                           {cost > 0 ? baht(cost) : '-'}
                         </span>
-                        <span className="text-xs text-steel-400 font-normal">
+                        <span className="text-xs text-steel-400 dark:text-slate-400 font-normal">
                           / {it.unit || 'ชิ้น'}
                         </span>
                       </div>
 
                       {/* ยอดคงเหลือ (อยู่บรรทัดเดียวกัน) */}
                       <div className="flex items-center gap-1 font-mono text-xs">
-                        <span className="text-steel-400 text-[11px]">คงเหลือ:</span>
+                        <span className="text-steel-400 dark:text-slate-400 text-[11px]">คงเหลือ:</span>
                         <span
                           className={`font-bold ${
                             itemOut
-                              ? 'text-rose-600 font-black'
+                              ? 'text-rose-600 dark:text-rose-400 font-black'
                               : itemLow
-                              ? 'text-amber-600 font-bold'
-                              : 'text-steel-900'
+                              ? 'text-amber-600 dark:text-amber-400 font-bold'
+                              : 'text-steel-900 dark:text-slate-100'
                           }`}
                         >
                           {formatIntQty(qty)} {it.unit}
@@ -566,21 +585,21 @@ export default function StockList() {
                     </div>
 
                     {/* มูลค่ารวมในคลัง (อยู่บรรทัดเดียว สบายตา) */}
-                    <div className="text-[11px] text-steel-500 flex items-center justify-between pt-0.5">
+                    <div className="text-[11px] text-steel-500 dark:text-slate-400 flex items-center justify-between pt-0.5">
                       <span>มูลค่ารวม:</span>
-                      <span className="font-mono font-bold text-steel-800">{baht(valTotal)} บ.</span>
+                      <span className="font-mono font-bold text-steel-800 dark:text-slate-200">{baht(valTotal)} บ.</span>
                     </div>
                   </div>
                 </div>
 
                 {/* 3. Action Footer */}
-                <div className="p-2.5 pt-0 grid grid-cols-2 gap-2 border-t border-steel-100 bg-steel-50/50">
+                <div className="p-2.5 pt-2 grid grid-cols-2 gap-2 border-t border-steel-100 dark:border-slate-800 bg-steel-50/50 dark:bg-slate-950/60">
                   <Link
                     to={`/store/issue/new?item_id=${it.id}`}
                     className={`flex items-center justify-center gap-1.5 rounded-xl py-1.5 text-xs font-bold transition text-center shadow-xs ${
                       itemOut
-                        ? 'bg-steel-200 text-steel-400 cursor-not-allowed pointer-events-none'
-                        : 'bg-steel-900 hover:bg-steel-800 text-hivis'
+                        ? 'bg-steel-200 dark:bg-slate-800 text-steel-400 dark:text-slate-600 cursor-not-allowed pointer-events-none'
+                        : 'bg-slate-900 hover:bg-slate-800 dark:bg-amber-500 dark:hover:bg-amber-400 text-amber-400 dark:text-slate-950 dark:font-black'
                     }`}
                     title="เบิกวัสดุเข้าโครงการ"
                   >
@@ -590,10 +609,10 @@ export default function StockList() {
 
                   <Link
                     to={`/purchasing/pr/new?item_id=${it.id}`}
-                    className="flex items-center justify-center gap-1.5 rounded-xl bg-white hover:bg-steel-50 border border-steel-300 py-1.5 text-xs font-bold text-steel-700 hover:text-steel-900 transition shadow-xs text-center"
+                    className="flex items-center justify-center gap-1.5 rounded-xl bg-white dark:bg-slate-800 hover:bg-steel-50 dark:hover:bg-slate-700 border border-steel-300 dark:border-slate-700 py-1.5 text-xs font-bold text-steel-700 dark:text-slate-200 hover:text-steel-900 dark:hover:text-white transition shadow-xs text-center"
                     title="เปิดใบขอซื้อ (PR) เพิ่มเติม"
                   >
-                    <ShoppingCart className="h-3.5 w-3.5 text-steel-600" />
+                    <ShoppingCart className="h-3.5 w-3.5 text-steel-600 dark:text-slate-300" />
                     <span>สั่ง PR</span>
                   </Link>
                 </div>
@@ -605,10 +624,10 @@ export default function StockList() {
         /* -------------------------------------------------------------------- */
         /* Table View Mode                                                      */
         /* -------------------------------------------------------------------- */
-        <div className="overflow-x-auto rounded-2xl border border-steel-200 bg-white shadow-xs">
+        <div className="overflow-x-auto rounded-2xl border border-steel-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs">
           <table className="w-full text-xs sm:text-sm">
             <thead>
-              <tr className="border-b border-steel-200 bg-steel-50/90 text-left text-steel-600 text-xs font-bold uppercase tracking-wider">
+              <tr className="border-b border-steel-200 dark:border-slate-800 bg-steel-50/90 dark:bg-slate-800 text-left text-steel-600 dark:text-slate-200 text-xs font-bold uppercase tracking-wider">
                 <th className="py-3.5 pl-4">รหัสพัสดุ</th>
                 <th>รูปภาพ</th>
                 <th>ชื่อวัสดุ / อุปกรณ์</th>
@@ -621,8 +640,8 @@ export default function StockList() {
                 <th className="text-center pr-4">จัดการด่วน</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-steel-100">
-              {shown.map((i) => {
+            <tbody className="divide-y divide-steel-100 dark:divide-slate-800">
+              {paginatedItems.map((i) => {
                 const isItemLow = isLow(i)
                 const isItemOut = isOut(i)
                 const isOpen = open === i.id
@@ -630,16 +649,16 @@ export default function StockList() {
                 return (
                   <Fragment key={i.id}>
                     <tr
-                      className={`transition hover:bg-steel-50/80 ${
-                        isOpen ? 'bg-steel-50' : ''
+                      className={`transition hover:bg-steel-50/80 dark:hover:bg-slate-800/60 ${
+                        isOpen ? 'bg-steel-50 dark:bg-slate-800/80' : ''
                       }`}
                     >
                       {/* รหัส */}
                       <td
-                        className="py-3 pl-4 font-mono font-bold text-steel-900 cursor-pointer"
+                        className="py-3 pl-4 font-mono font-bold text-steel-900 dark:text-amber-400 cursor-pointer"
                         onClick={() => setOpen(isOpen ? null : i.id)}
                       >
-                        <span className="mr-1 text-steel-400">{isOpen ? '▾' : '▸'}</span>
+                        <span className="mr-1 text-steel-400 dark:text-slate-500">{isOpen ? '▾' : '▸'}</span>
                         {i.item_code}
                       </td>
 
@@ -649,12 +668,12 @@ export default function StockList() {
                           <R2Image
                             fileKey={i.image_url}
                             alt={i.item_name}
-                            className="h-10 w-10 rounded-xl border border-steel-200 object-cover shadow-xs cursor-pointer hover:opacity-80 transition"
+                            className="h-10 w-10 rounded-xl border border-steel-200 dark:border-slate-700 object-cover shadow-xs cursor-pointer hover:opacity-80 transition"
                             onClick={() => setPreviewImg(i.image_url)}
                             title="คลิกดูรูปใหญ่"
                           />
                         ) : (
-                          <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-dashed border-steel-200 bg-steel-50 text-[10px] text-steel-400 font-mono">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-dashed border-steel-200 dark:border-slate-700 bg-steel-50 dark:bg-slate-800 text-[10px] text-steel-400 dark:text-slate-500 font-mono">
                             -
                           </div>
                         )}
@@ -662,10 +681,10 @@ export default function StockList() {
 
                       {/* ชื่อวัสดุ */}
                       <td
-                        className="font-bold text-steel-900 cursor-pointer max-w-[280px]"
+                        className="font-bold text-steel-900 dark:text-slate-100 cursor-pointer max-w-[280px]"
                         onClick={() => setSelectedDetailItem(i)}
                       >
-                        <span className="hover:text-sky-700 transition">{i.item_name}</span>
+                        <span className="hover:text-sky-700 dark:hover:text-amber-400 transition">{i.item_name}</span>
                       </td>
 
                       {/* คงเหลือ */}
@@ -673,45 +692,45 @@ export default function StockList() {
                         <span
                           className={
                             isItemOut
-                              ? 'text-rose-600 font-black'
+                              ? 'text-rose-600 dark:text-rose-400 font-black'
                               : isItemLow
-                              ? 'text-amber-600'
-                              : 'text-steel-900'
+                              ? 'text-amber-600 dark:text-amber-400'
+                              : 'text-steel-900 dark:text-slate-100'
                           }
                         >
                           {formatIntQty(i.qty_on_hand)}
                         </span>
                         {isItemOut ? (
-                          <span className="ml-1 rounded bg-rose-100 px-1.5 py-0.5 text-[9px] font-bold text-rose-800">
+                          <span className="ml-1 rounded bg-rose-100 dark:bg-rose-950/80 px-1.5 py-0.5 text-[9px] font-bold text-rose-800 dark:text-rose-300">
                             หมด
                           </span>
                         ) : isItemLow ? (
-                          <span className="ml-1 rounded bg-amber-100 px-1.5 py-0.5 text-[9px] font-bold text-amber-800">
+                          <span className="ml-1 rounded bg-amber-100 dark:bg-amber-950/80 px-1.5 py-0.5 text-[9px] font-bold text-amber-800 dark:text-amber-300">
                             ใกล้หมด
                           </span>
                         ) : null}
                       </td>
 
                       {/* หน่วย */}
-                      <td className="text-steel-600 text-xs">{i.unit || '-'}</td>
+                      <td className="text-steel-600 dark:text-slate-400 text-xs">{i.unit || '-'}</td>
 
                       {/* หมวด */}
-                      <td className="text-steel-600 text-xs">
-                        <span className="rounded-md bg-steel-100 px-2 py-0.5 font-semibold text-steel-700">
+                      <td className="text-steel-600 dark:text-slate-300 text-xs">
+                        <span className="rounded-md bg-steel-100 dark:bg-slate-800 px-2 py-0.5 font-semibold text-steel-700 dark:text-slate-200 border border-steel-200 dark:border-slate-700">
                           {i.item_categories?.name ?? '-'}
                         </span>
                       </td>
 
                       {/* ราคา/หน่วย */}
-                      <td className="text-right font-mono text-xs">{baht(i.avg_unit_cost)} บ.</td>
+                      <td className="text-right font-mono text-xs text-steel-800 dark:text-slate-300">{baht(i.avg_unit_cost)} บ.</td>
 
                       {/* มูลค่า */}
-                      <td className="text-right font-mono font-bold text-xs text-steel-900">
+                      <td className="text-right font-mono font-bold text-xs text-steel-900 dark:text-slate-100">
                         {baht(Number(i.qty_on_hand || 0) * Number(i.avg_unit_cost || 0))} บ.
                       </td>
 
                       {/* จุดเตือน */}
-                      <td className="text-right font-mono text-xs text-steel-400">
+                      <td className="text-right font-mono text-xs text-steel-400 dark:text-slate-500">
                         {i.reorder_point ? formatIntQty(i.reorder_point) : '-'}
                       </td>
 
@@ -722,8 +741,8 @@ export default function StockList() {
                             to={`/store/issue/new?item_id=${i.id}`}
                             className={`rounded-lg px-2.5 py-1 text-xs font-bold transition flex items-center gap-1 ${
                               isItemOut
-                                ? 'bg-steel-100 text-steel-400 pointer-events-none'
-                                : 'bg-steel-900 hover:bg-steel-800 text-hivis'
+                                ? 'bg-steel-100 dark:bg-slate-800 text-steel-400 dark:text-slate-600 pointer-events-none'
+                                : 'bg-slate-900 hover:bg-slate-800 dark:bg-amber-500 dark:hover:bg-amber-400 text-amber-400 dark:text-slate-950 dark:font-black'
                             }`}
                           >
                             <ArrowUpFromLine className="h-3 w-3" />
@@ -732,7 +751,7 @@ export default function StockList() {
 
                           <Link
                             to={`/purchasing/pr/new?item_id=${i.id}`}
-                            className="rounded-lg bg-steel-100 hover:bg-steel-200 text-steel-800 px-2.5 py-1 text-xs font-bold transition flex items-center gap-1"
+                            className="rounded-lg bg-steel-100 dark:bg-slate-800 hover:bg-steel-200 dark:hover:bg-slate-700 text-steel-800 dark:text-slate-200 border border-steel-200 dark:border-slate-700 px-2.5 py-1 text-xs font-bold transition flex items-center gap-1"
                           >
                             <ShoppingCart className="h-3 w-3" />
                             <span>สั่ง PR</span>
@@ -752,17 +771,17 @@ export default function StockList() {
 
                     {/* รายละเอียดล็อตโครงการเมื่อกดเปิด */}
                     {isOpen && (
-                      <tr className="bg-steel-50/50">
+                      <tr className="bg-steel-50/50 dark:bg-slate-950/40">
                         <td colSpan={10} className="p-4 pl-8">
-                          <div className="rounded-2xl border border-steel-200 bg-white p-4 space-y-2 shadow-xs">
-                            <div className="flex items-center justify-between text-xs font-bold text-steel-900">
+                          <div className="rounded-2xl border border-steel-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 space-y-2 shadow-xs">
+                            <div className="flex items-center justify-between text-xs font-bold text-steel-900 dark:text-slate-100">
                               <span className="flex items-center gap-1.5">
-                                <Boxes className="h-4 w-4 text-steel-700" />
+                                <Boxes className="h-4 w-4 text-steel-700 dark:text-amber-400" />
                                 <span>ล็อตที่มาของวัสดุ (ตามโครงการ / สต็อกส่วนกลาง)</span>
                               </span>
                               <Link
                                 to="/store/adjust"
-                                className="text-sky-700 hover:underline flex items-center gap-1"
+                                className="text-sky-700 dark:text-sky-400 hover:underline flex items-center gap-1"
                               >
                                 <span>ปรับปรุงสต็อก / รับคืนจากโครงการ</span>
                                 <ChevronRight className="h-3.5 w-3.5" />
@@ -770,7 +789,7 @@ export default function StockList() {
                             </div>
 
                             {origins(i.id).length === 0 ? (
-                              <p className="text-xs text-steel-400">
+                              <p className="text-xs text-steel-400 dark:text-slate-500">
                                 ไม่มีล็อตแยกตามโครงการ (ยอดทั้งหมดอยู่ในสต็อกหลักของบริษัท)
                               </p>
                             ) : (
@@ -778,13 +797,16 @@ export default function StockList() {
                                 {origins(i.id).map((o, idx) => (
                                   <div
                                     key={idx}
-                                    className="flex items-center justify-between rounded-xl border border-steel-200 bg-steel-50 p-2 text-xs"
+                                    className="flex items-center justify-between rounded-xl border border-steel-200 dark:border-slate-800 bg-steel-50 dark:bg-slate-800/80 p-2 text-xs"
                                   >
-                                    <span className="font-medium text-steel-700 truncate max-w-[180px]">
+                                    <span
+                                      className="font-medium text-steel-700 dark:text-slate-200 truncate max-w-[170px] cursor-help"
+                                      title={o.name}
+                                    >
                                       {o.name}
                                     </span>
-                                    <span className="font-mono font-bold text-steel-900 shrink-0">
-                                      {o.qty} {i.unit}
+                                    <span className="font-mono font-bold text-steel-900 dark:text-slate-100 shrink-0">
+                                      {formatIntQty(o.qty)} {i.unit}
                                     </span>
                                   </div>
                                 ))}
@@ -802,12 +824,29 @@ export default function StockList() {
         </div>
       )}
 
+      {/* 4.1 แถบเปลี่ยนหน้า (Pagination < 1 2 3 4 5 6 >) */}
+      {shown.length > 0 && (
+        <div className="rounded-2xl border border-steel-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-5 py-3 shadow-xs">
+          <Pagination
+            currentPage={currentPage}
+            totalItems={shown.length}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={(newSize) => {
+              setPageSize(newSize)
+              setCurrentPage(1)
+            }}
+            pageSizeOptions={[10, 20, 50, 100]}
+          />
+        </div>
+      )}
+
       {/* 5. Modal รายละเอียดวัสดุ */}
       {selectedDetailItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
-          <div className="relative w-full max-w-lg overflow-hidden rounded-3xl bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+          <div className="relative w-full max-w-lg overflow-hidden rounded-3xl bg-white dark:bg-slate-900 border border-steel-200 dark:border-slate-800 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-steel-200 p-4 bg-gradient-to-r from-slate-900 to-steel-900 text-white">
+            <div className="flex items-center justify-between border-b border-steel-200 dark:border-slate-800 p-4 bg-gradient-to-r from-slate-900 to-steel-900 text-white">
               <div className="flex items-center gap-2">
                 <Package className="h-4 w-4 text-hivis" />
                 <span className="text-sm font-bold text-white">
@@ -826,7 +865,7 @@ export default function StockList() {
             {/* Body */}
             <div className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
               <div className="flex flex-col sm:flex-row gap-4 items-center sm:items-start">
-                <div className="relative h-28 w-28 shrink-0 overflow-hidden rounded-2xl border border-steel-200 bg-steel-50">
+                <div className="relative h-28 w-28 shrink-0 overflow-hidden rounded-2xl border border-steel-200 dark:border-slate-700 bg-steel-50 dark:bg-slate-800">
                   {selectedDetailItem.image_url ? (
                     <R2Image
                       fileKey={selectedDetailItem.image_url}
@@ -834,57 +873,57 @@ export default function StockList() {
                       className="h-full w-full object-cover"
                     />
                   ) : (
-                    <div className="flex h-full w-full items-center justify-center text-steel-400">
-                      <Boxes className="h-10 w-10 text-steel-300" />
+                    <div className="flex h-full w-full items-center justify-center text-steel-400 dark:text-slate-500">
+                      <Boxes className="h-10 w-10 text-steel-300 dark:text-slate-600" />
                     </div>
                   )}
                 </div>
 
                 <div className="space-y-1.5 text-center sm:text-left flex-1">
                   <div className="flex items-center justify-center sm:justify-start gap-2">
-                    <span className="rounded-md bg-steel-100 px-2 py-0.5 text-xs font-mono font-bold text-steel-900">
+                    <span className="rounded-md bg-steel-100 dark:bg-slate-800 px-2 py-0.5 text-xs font-mono font-bold text-steel-900 dark:text-amber-400 border border-steel-200 dark:border-slate-700">
                       {selectedDetailItem.item_code}
                     </span>
-                    <span className="rounded-md bg-steel-100 px-2 py-0.5 text-xs font-semibold text-steel-600">
+                    <span className="rounded-md bg-steel-100 dark:bg-slate-800 px-2 py-0.5 text-xs font-semibold text-steel-600 dark:text-slate-200 border border-steel-200 dark:border-slate-700">
                       {selectedDetailItem.item_categories?.name || 'วัสดุทั่วไป'}
                     </span>
                   </div>
-                  <h2 className="text-base font-bold text-steel-900 leading-snug">
+                  <h2 className="text-base font-bold text-steel-900 dark:text-slate-100 leading-snug">
                     {selectedDetailItem.item_name}
                   </h2>
                   <div className="flex items-baseline justify-center sm:justify-start gap-1 pt-1">
-                    <span className="text-xs font-semibold text-steel-500">ราคาเฉลี่ย:</span>
-                    <span className="text-lg font-black font-mono text-steel-900">
+                    <span className="text-xs font-semibold text-steel-500 dark:text-slate-400">ราคาเฉลี่ย:</span>
+                    <span className="text-lg font-black font-mono text-steel-900 dark:text-white">
                       {baht(selectedDetailItem.avg_unit_cost)}
                     </span>
-                    <span className="text-xs text-steel-400">บาท / {selectedDetailItem.unit}</span>
+                    <span className="text-xs text-steel-400 dark:text-slate-400">บาท / {selectedDetailItem.unit}</span>
                   </div>
                 </div>
               </div>
 
               {/* Stats Box */}
-              <div className="grid grid-cols-3 gap-2.5 rounded-2xl bg-steel-50 p-3.5 border border-steel-100 text-center">
+              <div className="grid grid-cols-3 gap-2.5 rounded-2xl bg-steel-50 dark:bg-slate-800/80 p-3.5 border border-steel-100 dark:border-slate-700 text-center">
                 <div>
-                  <div className="text-[10px] text-steel-400">คงเหลือในคลัง</div>
-                  <div className="mt-0.5 font-mono text-lg font-black text-steel-900">
+                  <div className="text-[10px] text-steel-400 dark:text-slate-400">คงเหลือในคลัง</div>
+                  <div className="mt-0.5 font-mono text-lg font-black text-steel-900 dark:text-slate-100">
                     {formatIntQty(selectedDetailItem.qty_on_hand)}{' '}
-                    <span className="text-xs font-normal text-steel-500">
+                    <span className="text-xs font-normal text-steel-500 dark:text-slate-400">
                       {selectedDetailItem.unit}
                     </span>
                   </div>
                 </div>
                 <div>
-                  <div className="text-[10px] text-steel-400">จุดเตือนสั่งซื้อ</div>
-                  <div className="mt-0.5 font-mono text-lg font-bold text-steel-700">
+                  <div className="text-[10px] text-steel-400 dark:text-slate-400">จุดเตือนสั่งซื้อ</div>
+                  <div className="mt-0.5 font-mono text-lg font-bold text-steel-700 dark:text-slate-200">
                     {selectedDetailItem.reorder_point ? formatIntQty(selectedDetailItem.reorder_point) : 0}{' '}
-                    <span className="text-xs font-normal text-steel-400">
+                    <span className="text-xs font-normal text-steel-400 dark:text-slate-400">
                       {selectedDetailItem.unit}
                     </span>
                   </div>
                 </div>
                 <div>
-                  <div className="text-[10px] text-steel-400">มูลค่าคงคลังรวม</div>
-                  <div className="mt-0.5 font-mono text-lg font-black text-steel-900">
+                  <div className="text-[10px] text-steel-400 dark:text-slate-400">มูลค่าคงคลังรวม</div>
+                  <div className="mt-0.5 font-mono text-lg font-black text-steel-900 dark:text-slate-100">
                     {baht(
                       Number(selectedDetailItem.qty_on_hand || 0) *
                         Number(selectedDetailItem.avg_unit_cost || 0)
@@ -897,7 +936,7 @@ export default function StockList() {
               <div className="pt-2 grid grid-cols-2 gap-2">
                 <Link
                   to={`/store/issue/new?item_id=${selectedDetailItem.id}`}
-                  className="flex items-center justify-center gap-1.5 rounded-2xl bg-steel-900 hover:bg-steel-800 text-hivis py-2.5 text-xs font-bold transition shadow-xs"
+                  className="flex items-center justify-center gap-1.5 rounded-2xl bg-slate-900 hover:bg-slate-800 dark:bg-amber-500 dark:hover:bg-amber-400 text-amber-400 dark:text-slate-950 dark:font-black py-2.5 text-xs font-bold transition shadow-xs"
                 >
                   <ArrowUpFromLine className="h-4 w-4" />
                   <span>เบิกใช้วัสดุนี้</span>
@@ -905,14 +944,14 @@ export default function StockList() {
 
                 <Link
                   to={`/purchasing/pr/new?item_id=${selectedDetailItem.id}`}
-                  className="flex items-center justify-center gap-1.5 rounded-2xl bg-steel-100 hover:bg-steel-200 text-steel-800 py-2.5 text-xs font-bold transition"
+                  className="flex items-center justify-center gap-1.5 rounded-2xl bg-steel-100 dark:bg-slate-800 hover:bg-steel-200 dark:hover:bg-slate-700 text-steel-800 dark:text-slate-100 border border-steel-200 dark:border-slate-700 py-2.5 text-xs font-bold transition"
                 >
                   <ShoppingCart className="h-4 w-4" />
                   <span>เปิดใบขอซื้อ (PR)</span>
                 </Link>
               </div>
 
-              <div className="flex items-center justify-between pt-2 border-t border-steel-100 text-xs">
+              <div className="flex items-center justify-between pt-2 border-t border-steel-100 dark:border-slate-800 text-xs">
                 <button
                   type="button"
                   onClick={() => {
@@ -920,7 +959,7 @@ export default function StockList() {
                     setSelectedDetailItem(null)
                     setSelectedUsageItem(item)
                   }}
-                  className="text-sky-700 font-bold hover:underline flex items-center gap-1"
+                  className="text-sky-700 dark:text-sky-400 font-bold hover:underline flex items-center gap-1"
                 >
                   <Eye className="h-3.5 w-3.5" />
                   <span>ดูประวัติการเบิกใช้ในโครงการ</span>
@@ -928,7 +967,7 @@ export default function StockList() {
 
                 <Link
                   to="/store/items"
-                  className="text-steel-500 hover:text-steel-800 font-semibold"
+                  className="text-steel-500 dark:text-slate-400 hover:text-steel-800 dark:hover:text-slate-200 font-semibold"
                 >
                   แก้ไขข้อมูลพัสดุนี้ →
                 </Link>
@@ -944,7 +983,7 @@ export default function StockList() {
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
           onClick={() => setPreviewImg(null)}
         >
-          <div className="relative max-h-[90vh] max-w-2xl overflow-hidden rounded-2xl bg-white p-2">
+          <div className="relative max-h-[90vh] max-w-2xl overflow-hidden rounded-2xl bg-white dark:bg-slate-900 p-2 border border-steel-200 dark:border-slate-800">
             <R2Image
               fileKey={previewImg}
               alt="Preview"

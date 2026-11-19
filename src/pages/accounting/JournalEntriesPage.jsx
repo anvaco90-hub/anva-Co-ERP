@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../../lib/supabase'
 import { formatBaht, formatThaiDate } from '../../lib/accounting'
+import Pagination from '../../components/Pagination'
 import {
   BookOpen, Plus, CheckCircle2, Lock, AlertCircle, ChevronDown, ChevronRight,
   Search, Filter, RefreshCw, FileText, Check, Trash2, Calendar
@@ -16,6 +17,8 @@ export default function JournalEntriesPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('ALL') // 'ALL' | 'รอดำเนินการ' | 'อนุมัติแล้ว'
   const [refTypeFilter, setRefTypeFilter] = useState('ALL')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(15) // 10 | 15 | 30 | 50
   const [showManualModal, setShowManualModal] = useState(false)
   const [actionLoading, setActionLoading] = useState(null)
   const [toastMsg, setToastMsg] = useState({ text: '', type: '' })
@@ -104,6 +107,17 @@ export default function JournalEntriesPage() {
     }
     return true
   })
+
+  // รีเซ็ตหน้ากลับไปหน้าที่ 1 เมื่อตัวกรองหรือคำค้นหาเปลี่ยน
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchQuery, statusFilter, refTypeFilter])
+
+  // คำนวณรายการเฉพาะหน้าปัจจุบัน
+  const paginatedEntries = useMemo(() => {
+    const start = (currentPage - 1) * pageSize
+    return filteredEntries.slice(start, start + pageSize)
+  }, [filteredEntries, currentPage, pageSize])
 
   // Calculations for summary stats
   const totalApproved = entries.filter((e) => e.accounting_status === 'อนุมัติแล้ว').length
@@ -270,7 +284,7 @@ export default function JournalEntriesPage() {
                   </td>
                 </tr>
               ) : (
-                filteredEntries.map((entry) => {
+                paginatedEntries.map((entry) => {
                   const lines = entry.journal_entry_lines || []
                   const totalDr = lines.reduce((sum, l) => sum + Number(l.debit || 0), 0)
                   const totalCr = lines.reduce((sum, l) => sum + Number(l.credit || 0), 0)
@@ -440,6 +454,23 @@ export default function JournalEntriesPage() {
             </tbody>
           </table>
         </div>
+
+        {/* แถบเปลี่ยนหน้า (Pagination < 1 2 3 4 5 6 >) */}
+        {!loading && filteredEntries.length > 0 && (
+          <div className="border-t border-steel-200 bg-white px-4 py-3">
+            <Pagination
+              currentPage={currentPage}
+              totalItems={filteredEntries.length}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={(newSize) => {
+                setPageSize(newSize)
+                setCurrentPage(1)
+              }}
+              pageSizeOptions={[10, 15, 30, 50]}
+            />
+          </div>
+        )}
       </div>
 
       {/* Modal: Create Manual JV */}

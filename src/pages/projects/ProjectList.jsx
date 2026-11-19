@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../context/AuthContext";
@@ -6,6 +6,7 @@ import { baht, canEditProjects } from "../../lib/projects";
 import StatusBadge from "./StatusBadge";
 import { SIMULATED_PROJECTS } from "../../lib/dashboardSimulationData";
 import { Building2, Calendar, DollarSign, Plus, Search, ArrowRight, Layers } from "lucide-react";
+import Pagination from "../../components/Pagination";
 
 // ฟังก์ชันสำหรับแปลงรูปแบบวันที่ให้แสดงเฉพาะ วัน เดือน ปี (เช่น 12 พ.ย. 2569)
 function formatDateOnly(dateString) {
@@ -23,6 +24,8 @@ export default function ProjectList() {
   const { profile } = useAuth();
   const [projects, setProjects] = useState([]);
   const [search, setSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(8); // 8 | 16 | 24 | 48 (เหมาะสำหรับ grid 2-columns)
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [isDemo, setIsDemo] = useState(false);
@@ -70,6 +73,15 @@ export default function ProjectList() {
         (v ?? "").toLowerCase().includes(q)
       )
   );
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search]);
+
+  const paginatedProjects = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return shown.slice(start, start + pageSize);
+  }, [shown, currentPage, pageSize]);
 
   const totalContractAll = projects.reduce((sum, p) => sum + Number(p.contract_amount || p.budget_total || 0), 0);
   const activeCount = projects.filter((p) => p.status === 'in_progress' || p.status === 'active').length;
@@ -152,7 +164,7 @@ export default function ProjectList() {
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
-          {shown.map((p) => {
+          {paginatedProjects.map((p) => {
             const displayDate = p.updated_at || p.created_at;
             const contractAmt = Number(p.contract_amount || 0);
             const budgetAmt = Number(p.budget_total || contractAmt * 0.8);
@@ -225,6 +237,23 @@ export default function ProjectList() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* แถบเปลี่ยนหน้า (Pagination < 1 2 3 4 5 6 >) */}
+      {!loading && shown.length > 0 && (
+        <div className="rounded-2xl border border-steel-200 bg-white px-5 py-3 shadow-xs">
+          <Pagination
+            currentPage={currentPage}
+            totalItems={shown.length}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={(newSize) => {
+              setPageSize(newSize);
+              setCurrentPage(1);
+            }}
+            pageSizeOptions={[8, 16, 24, 48]}
+          />
         </div>
       )}
     </div>

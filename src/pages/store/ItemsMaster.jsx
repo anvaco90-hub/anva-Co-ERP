@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
@@ -6,7 +6,9 @@ import { canManageStore, getCategoryPrefix, uploadItemImage, formatIntQty, toInt
 import { fmtDateTime } from '../../lib/purchasing'
 import { baht } from '../../lib/projects'
 import { FieldError, fieldErrorClass } from '../../components/FieldError'
+import Pagination from '../../components/Pagination'
 import R2Image from '../../components/R2Image'
+import { discardFile } from '../../lib/files'
 import {
   Package,
   Layers,
@@ -68,6 +70,8 @@ export default function ItemsMaster() {
   // View Mode: 'table' (ตารางมาตรฐาน - ค่าเริ่มต้น) | 'grid' (การ์ดวิศวกรรม)
   const [viewMode, setViewMode] = useState('table')
   const [selectedCatFilter, setSelectedCatFilter] = useState('all')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(20) // 10 | 20 | 50 | 100
 
   // Edit Modal State (ข้อ 3: ไม่อนุญาตให้แก้ตรง ๆ ในตาราง ให้กดแก้ไขผ่าน Modal)
   const [editingItem, setEditingItem] = useState(null)
@@ -257,6 +261,9 @@ export default function ItemsMaster() {
 
       if (updErr) throw updErr
 
+      // บันทึกสำเร็จแล้ว → ลบรูปเก่าบน R2 (ถ้ามีการเปลี่ยน/ลบรูป)
+      discardFile(editingItem.image_url, finalImageUrl)
+
       setSuccess(
         `บันทึกการแก้ไข "${editForm.item_name}" เรียบร้อยแล้ว (อัปเดตล่าสุด: ${fmtDateTime(nowIso)})`
       )
@@ -295,6 +302,9 @@ export default function ItemsMaster() {
         const { error: delErr } = await supabase.from('inventory_items').delete().eq('id', item.id)
         if (delErr) throw delErr
       }
+
+      // ลบวัสดุสำเร็จแล้ว → ลบรูปของวัสดุนี้บน R2 ด้วย
+      discardFile(item.image_url)
 
       setSuccess(`ลบวัสดุ "${item.item_name}" ออกจากระบบเรียบร้อยแล้ว`)
       setTimeout(() => setSuccess(''), 3000)
@@ -504,8 +514,19 @@ export default function ItemsMaster() {
         .includes(q)
   )
 
+  // รีเซ็ตหน้ากลับไปหน้าที่ 1 เมื่อตัวกรองหรือคำค้นหาเปลี่ยน
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [search, selectedCatFilter, viewMode])
+
+  // คำนวณรายการเฉพาะหน้าปัจจุบัน
+  const paginatedItems = useMemo(() => {
+    const start = (currentPage - 1) * pageSize
+    return shownItems.slice(start, start + pageSize)
+  }, [shownItems, currentPage, pageSize])
+
   return (
-    <div className="space-y-6 pb-12 font-sans text-slate-800">
+    <div className="space-y-6 pb-12 font-sans text-slate-900 dark:text-slate-100">
       {/* 1. Header Banner: ANVA & Co Solar Engineering Brand */}
       <div className="rounded-2xl bg-gradient-to-r from-slate-900 via-steel-900 to-slate-800 p-6 text-white shadow-md border border-steel-700">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -604,15 +625,15 @@ export default function ItemsMaster() {
 
       {/* 2. ฟอร์มเพิ่มวัสดุใหม่ (New Item Form - บังคับระบุหมวดหมู่) */}
       {canEdit && (
-        <div className="rounded-2xl border border-steel-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between border-b border-steel-100 pb-3 mb-5">
+        <div className="rounded-2xl border border-steel-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm">
+          <div className="flex items-center justify-between border-b border-steel-100 dark:border-slate-800 pb-3 mb-5">
             <div className="flex items-center gap-2.5">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-steel-900 text-hivis font-bold">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-steel-900 dark:bg-amber-500 text-hivis dark:text-slate-950 font-bold">
                 <Plus className="h-5 w-5" />
               </div>
               <div>
-                <h2 className="text-base font-bold text-steel-900">เพิ่มรายการวัสดุใหม่เข้าระบบ</h2>
-                <p className="text-xs text-steel-500">
+                <h2 className="text-base font-bold text-steel-900 dark:text-slate-100">เพิ่มรายการวัสดุใหม่เข้าระบบ</h2>
+                <p className="text-xs text-steel-500 dark:text-slate-400">
                   บังคับระบุหมวดหมู่เพื่อสร้างรหัสพัสดุอัตโนมัติตามมาตรฐานวิศวกรรม
                 </p>
               </div>
@@ -709,11 +730,11 @@ export default function ItemsMaster() {
                 <input
                   type="number"
                   min="0"
-                  step="0.01"
+                  step="1"
                   placeholder="10"
                   className="input w-full text-xs font-mono font-bold text-steel-900"
                   value={newItem.qty_on_hand}
-                  onChange={(e) => setNewItem({ ...newItem, qty_on_hand: e.target.value })}
+                  onChange={(e) => setNewItem({ ...newItem, qty_on_hand: e.target.value === '' ? '' : String(parseInt(e.target.value, 10) || 0) })}
                 />
               </div>
 
@@ -756,11 +777,11 @@ export default function ItemsMaster() {
                 <input
                   type="number"
                   min="0"
-                  step="0.01"
+                  step="1"
                   placeholder="5"
                   className="input w-full text-xs font-mono text-steel-900"
                   value={newItem.reorder_point}
-                  onChange={(e) => setNewItem({ ...newItem, reorder_point: e.target.value })}
+                  onChange={(e) => setNewItem({ ...newItem, reorder_point: e.target.value === '' ? '' : String(parseInt(e.target.value, 10) || 0) })}
                 />
               </div>
             </div>
@@ -837,13 +858,13 @@ export default function ItemsMaster() {
               placeholder="ค้นหารหัส, ชื่อวัสดุ, หมวดหมู่, หน่วยนับ..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full rounded-xl border border-steel-300 bg-white pl-9 pr-4 py-2 text-xs sm:text-sm text-steel-900 placeholder:text-steel-400 focus:border-steel-900 focus:outline-none shadow-xs"
+              className="w-full rounded-xl border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-900 pl-9 pr-4 py-2 text-xs sm:text-sm text-steel-900 dark:text-slate-100 placeholder:text-steel-400 dark:placeholder:text-slate-500 focus:border-steel-900 dark:focus:border-amber-500 focus:outline-none shadow-xs"
             />
             {search && (
               <button
                 type="button"
                 onClick={() => setSearch('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-steel-400 hover:text-steel-600"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-steel-400 hover:text-steel-600 dark:hover:text-slate-200"
               >
                 ✕
               </button>
@@ -854,7 +875,7 @@ export default function ItemsMaster() {
         {/* หมวดหมู่ Filter Dropdown & ปุ่มล้างข้อมูลจำลอง */}
         <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
           <select
-            className="rounded-xl border border-steel-300 bg-white px-3 py-2 text-xs font-semibold text-steel-800 focus:border-steel-900 focus:outline-none"
+            className="rounded-xl border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-semibold text-steel-800 dark:text-slate-200 focus:border-steel-900 dark:focus:border-amber-500 focus:outline-none"
             value={selectedCatFilter}
             onChange={(e) => setSelectedCatFilter(e.target.value)}
           >
@@ -871,10 +892,10 @@ export default function ItemsMaster() {
               type="button"
               onClick={handleClearAllMockItems}
               disabled={saving}
-              className="rounded-xl border border-rose-300 bg-rose-50 hover:bg-rose-100 text-rose-700 px-3 py-2 text-xs font-bold transition flex items-center gap-1.5 shadow-xs whitespace-nowrap"
+              className="rounded-xl border border-rose-300 dark:border-rose-900/50 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 px-3 py-2 text-xs font-bold transition flex items-center gap-1.5 shadow-xs whitespace-nowrap"
               title="ลบรายการจำลองทั้งหมดในสโตร์ เพื่อเตรียมป้อนข้อมูลจริง"
             >
-              <Trash2 className="h-3.5 w-3.5 text-rose-600" />
+              <Trash2 className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400" />
               <span>ล้างข้อมูลจำลองทั้งหมด</span>
             </button>
           )}
@@ -883,10 +904,10 @@ export default function ItemsMaster() {
 
       {/* 4. ตารางพัสดุวิศวกรรม (ข้อ 3 & 4: แสดงผลเป็นข้อความเรียบร้อย ไม่แก้ในตาราง พร้อมคอลัมน์ อัปเดตล่าสุด & การจัดการ) */}
       {viewMode === 'table' ? (
-        <div className="overflow-x-auto rounded-2xl border border-steel-200 bg-white shadow-xs">
+        <div className="overflow-x-auto rounded-2xl border border-steel-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs">
           <table className="w-full text-xs sm:text-sm">
             <thead>
-              <tr className="border-b border-steel-200 bg-steel-50/90 text-left text-steel-600 text-xs font-bold uppercase tracking-wider">
+              <tr className="border-b border-steel-200 dark:border-slate-800 bg-steel-50/90 dark:bg-slate-800 text-left text-steel-600 dark:text-slate-200 text-xs font-bold uppercase tracking-wider">
                 <th className="py-3.5 pl-4">รหัสพัสดุ</th>
                 <th>รูปภาพ</th>
                 <th>ชื่อวัสดุ / อุปกรณ์</th>
@@ -899,15 +920,15 @@ export default function ItemsMaster() {
                 <th className="text-center pr-4">การจัดการ (CRUD)</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-steel-100">
+            <tbody className="divide-y divide-steel-100 dark:divide-slate-800">
               {shownItems.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="py-12 text-center text-steel-400 text-xs">
+                  <td colSpan={10} className="py-12 text-center text-steel-400 dark:text-slate-500 text-xs">
                     ไม่พบรายการวัสดุตรงตามเงื่อนไขค้นหา
                   </td>
                 </tr>
               ) : (
-                shownItems.map((it) => {
+                paginatedItems.map((it) => {
                   const isLow =
                     Number(it.reorder_point) > 0 &&
                     Number(it.qty_on_hand) <= Number(it.reorder_point) &&
@@ -916,9 +937,9 @@ export default function ItemsMaster() {
                   const catObj = cats.find((c) => c.id === it.category_id)
 
                   return (
-                    <tr key={it.id} className="hover:bg-steel-50/80 transition">
+                    <tr key={it.id} className="hover:bg-steel-50/80 dark:hover:bg-slate-800/60 transition">
                       {/* 1. รหัส */}
-                      <td className="py-3 pl-4 font-mono font-bold text-steel-900">
+                      <td className="py-3 pl-4 font-mono font-bold text-steel-900 dark:text-amber-400">
                         {it.item_code}
                       </td>
 
@@ -928,25 +949,25 @@ export default function ItemsMaster() {
                           <R2Image
                             fileKey={it.image_url}
                             alt={it.item_name}
-                            className="h-10 w-10 rounded-xl border border-steel-200 object-cover shadow-xs cursor-pointer hover:opacity-80 transition"
+                            className="h-10 w-10 rounded-xl border border-steel-200 dark:border-slate-700 object-cover shadow-xs cursor-pointer hover:opacity-80 transition"
                             onClick={() => setPreviewModalImg(it.image_url)}
                             title="คลิกเพื่อดูรูปใหญ่"
                           />
                         ) : (
-                          <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-dashed border-steel-200 bg-steel-50 text-[10px] text-steel-400 font-mono">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-dashed border-steel-200 dark:border-slate-700 bg-steel-50 dark:bg-slate-800 text-[10px] text-steel-400 dark:text-slate-500 font-mono">
                             -
                           </div>
                         )}
                       </td>
 
                       {/* 3. ชื่อวัสดุ */}
-                      <td className="font-bold text-steel-900 max-w-[260px] truncate" title={it.item_name}>
+                      <td className="font-bold text-steel-900 dark:text-slate-100 max-w-[260px] truncate" title={it.item_name}>
                         {it.item_name}
                       </td>
 
                       {/* 4. หมวดหมู่ */}
                       <td>
-                        <span className="rounded-md bg-steel-100 px-2 py-0.5 text-xs font-semibold text-steel-700">
+                        <span className="rounded-md bg-steel-100 dark:bg-slate-800 px-2 py-0.5 text-xs font-semibold text-steel-700 dark:text-slate-200 border border-steel-200 dark:border-slate-700">
                           {catObj?.name || it.item_categories?.name || '-'}
                         </span>
                       </td>
@@ -956,42 +977,42 @@ export default function ItemsMaster() {
                         <span
                           className={
                             isOut
-                              ? 'text-rose-600 font-black'
+                              ? 'text-rose-600 dark:text-rose-400 font-black'
                               : isLow
-                              ? 'text-amber-600'
-                              : 'text-steel-900'
+                              ? 'text-amber-600 dark:text-amber-400'
+                              : 'text-steel-900 dark:text-slate-100'
                           }
                         >
                           {formatIntQty(it.qty_on_hand)}
                         </span>
                         {isOut ? (
-                          <span className="ml-1.5 rounded bg-rose-100 px-1.5 py-0.5 text-[10px] font-bold text-rose-800">
+                          <span className="ml-1.5 rounded bg-rose-100 dark:bg-rose-950/80 px-1.5 py-0.5 text-[10px] font-bold text-rose-800 dark:text-rose-300">
                             หมด
                           </span>
                         ) : isLow ? (
-                          <span className="ml-1.5 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">
+                          <span className="ml-1.5 rounded bg-amber-100 dark:bg-amber-950/80 px-1.5 py-0.5 text-[10px] font-bold text-amber-800 dark:text-amber-300">
                             ใกล้หมด
                           </span>
                         ) : null}
                       </td>
 
                       {/* 6. หน่วยนับ */}
-                      <td className="text-steel-600 text-xs">{it.unit || '-'}</td>
+                      <td className="text-steel-600 dark:text-slate-400 text-xs">{it.unit || '-'}</td>
 
                       {/* 7. จุดเตือน */}
-                      <td className="text-right font-mono text-xs text-steel-500">
+                      <td className="text-right font-mono text-xs text-steel-500 dark:text-slate-400">
                         {formatIntQty(it.reorder_point)}
                       </td>
 
                       {/* 8. ราคาเฉลี่ย */}
-                      <td className="text-right font-mono text-xs text-steel-800">
+                      <td className="text-right font-mono text-xs text-steel-800 dark:text-slate-200">
                         {baht(it.avg_unit_cost)} บ.
                       </td>
 
                       {/* 9. อัปเดตล่าสุด (ข้อ 3: แสดงวัน ด.ป. และเวลาที่อัปเดตล่าสุด) */}
-                      <td className="py-3 px-3 text-xs text-steel-500 whitespace-nowrap">
+                      <td className="py-3 px-3 text-xs text-steel-500 dark:text-slate-400 whitespace-nowrap">
                         <div className="flex items-center gap-1 font-mono">
-                          <Clock className="h-3 w-3 text-steel-400" />
+                          <Clock className="h-3 w-3 text-steel-400 dark:text-slate-500" />
                           <span>{it.updated_at ? fmtDateTime(it.updated_at) : it.created_at ? fmtDateTime(it.created_at) : '-'}</span>
                         </div>
                       </td>
@@ -1004,10 +1025,10 @@ export default function ItemsMaster() {
                             <button
                               type="button"
                               onClick={() => openEditModal(it)}
-                              className="rounded-lg bg-steel-100 hover:bg-steel-200 text-steel-800 px-2.5 py-1 text-xs font-bold transition flex items-center gap-1"
+                              className="rounded-lg bg-steel-100 dark:bg-slate-800 hover:bg-steel-200 dark:hover:bg-slate-700 text-steel-800 dark:text-slate-200 border border-steel-200 dark:border-slate-700 px-2.5 py-1 text-xs font-bold transition flex items-center gap-1"
                               title="แก้ไขข้อมูลวัสดุ"
                             >
-                              <Edit2 className="h-3 w-3 text-steel-600" />
+                              <Edit2 className="h-3 w-3 text-steel-600 dark:text-slate-300" />
                               <span>แก้ไข</span>
                             </button>
 
@@ -1015,15 +1036,15 @@ export default function ItemsMaster() {
                             <button
                               type="button"
                               onClick={() => handleDeleteItem(it)}
-                              className="rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 px-2.5 py-1 text-xs font-bold transition flex items-center gap-1"
+                              className="rounded-lg bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900/40 px-2.5 py-1 text-xs font-bold transition flex items-center gap-1"
                               title="ลบรายการนี้"
                             >
-                              <Trash2 className="h-3 w-3 text-rose-600" />
+                              <Trash2 className="h-3 w-3 text-rose-600 dark:text-rose-400" />
                               <span>ลบ</span>
                             </button>
                           </div>
                         ) : (
-                          <span className="text-steel-300 text-xs">-</span>
+                          <span className="text-steel-300 dark:text-slate-600 text-xs">-</span>
                         )}
                       </td>
                     </tr>
@@ -1036,7 +1057,7 @@ export default function ItemsMaster() {
       ) : (
         /* การ์ดวัสดุ (Engineering Grid View) */
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {shownItems.map((it) => {
+          {paginatedItems.map((it) => {
             const isLow =
               Number(it.reorder_point) > 0 &&
               Number(it.qty_on_hand) <= Number(it.reorder_point) &&
@@ -1047,14 +1068,14 @@ export default function ItemsMaster() {
             return (
               <div
                 key={it.id}
-                className="rounded-2xl border border-steel-200 bg-white p-4 shadow-xs flex flex-col justify-between hover:border-steel-400 hover:shadow-md transition space-y-3"
+                className="rounded-2xl border border-steel-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-xs flex flex-col justify-between hover:border-steel-400 dark:hover:border-slate-700 hover:shadow-md transition space-y-3"
               >
                 <div className="space-y-3">
                   <div className="flex items-start justify-between gap-2">
-                    <span className="font-mono text-xs font-bold text-steel-900 bg-steel-100 px-2 py-0.5 rounded">
+                    <span className="font-mono text-xs font-bold text-steel-900 dark:text-amber-400 bg-steel-100 dark:bg-slate-800 border border-steel-200 dark:border-slate-700 px-2 py-0.5 rounded">
                       {it.item_code}
                     </span>
-                    <span className="rounded-md bg-steel-100 px-2 py-0.5 text-[10px] font-semibold text-steel-700">
+                    <span className="rounded-md bg-steel-100 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-semibold text-steel-700 dark:text-slate-200 border border-steel-200 dark:border-slate-700">
                       {catObj?.name || '-'}
                     </span>
                   </div>
@@ -1064,31 +1085,31 @@ export default function ItemsMaster() {
                       <R2Image
                         fileKey={it.image_url}
                         alt={it.item_name}
-                        className="h-14 w-14 rounded-xl border border-steel-200 object-cover shrink-0"
+                        className="h-14 w-14 rounded-xl border border-steel-200 dark:border-slate-700 object-cover shrink-0"
                       />
                     ) : (
-                      <div className="flex h-14 w-14 items-center justify-center rounded-xl border border-dashed border-steel-200 bg-steel-50 text-steel-400 shrink-0 font-mono text-xs">
+                      <div className="flex h-14 w-14 items-center justify-center rounded-xl border border-dashed border-steel-200 dark:border-slate-700 bg-steel-50 dark:bg-slate-800 text-steel-400 dark:text-slate-500 shrink-0 font-mono text-xs">
                         ไร้รูป
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
-                      <h4 className="font-bold text-sm text-steel-900 truncate" title={it.item_name}>
+                      <h4 className="font-bold text-sm text-steel-900 dark:text-slate-100 truncate" title={it.item_name}>
                         {it.item_name}
                       </h4>
-                      <p className="text-xs text-steel-500 mt-0.5">
-                        ราคาเฉลี่ย: <span className="font-mono font-bold text-steel-800">{baht(it.avg_unit_cost)}</span> บ.
+                      <p className="text-xs text-steel-500 dark:text-slate-400 mt-0.5">
+                        ราคาเฉลี่ย: <span className="font-mono font-bold text-steel-800 dark:text-slate-200">{baht(it.avg_unit_cost)}</span> บ.
                       </p>
                     </div>
                   </div>
 
-                  <div className="rounded-xl bg-steel-50 p-2.5 flex items-center justify-between text-xs border border-steel-100">
-                    <span className="text-steel-600 font-semibold">คงเหลือในคลัง:</span>
-                    <span className="font-mono font-bold text-sm text-steel-900">
-                      {formatIntQty(it.qty_on_hand)} <span className="text-xs font-normal text-steel-500">{it.unit}</span>
+                  <div className="rounded-xl bg-steel-50 dark:bg-slate-800/80 p-2.5 flex items-center justify-between text-xs border border-steel-100 dark:border-slate-700">
+                    <span className="text-steel-600 dark:text-slate-300 font-semibold">คงเหลือในคลัง:</span>
+                    <span className="font-mono font-bold text-sm text-steel-900 dark:text-slate-100">
+                      {formatIntQty(it.qty_on_hand)} <span className="text-xs font-normal text-steel-500 dark:text-slate-400">{it.unit}</span>
                     </span>
                   </div>
 
-                  <div className="text-[10px] text-steel-400 flex items-center justify-between">
+                  <div className="text-[10px] text-steel-400 dark:text-slate-500 flex items-center justify-between">
                     <span>อัปเดตล่าสุด:</span>
                     <span className="font-mono">
                       {it.updated_at ? fmtDateTime(it.updated_at) : '-'}
@@ -1098,11 +1119,11 @@ export default function ItemsMaster() {
 
                 {/* CRUD Buttons */}
                 {canEdit && (
-                  <div className="pt-2 border-t border-steel-100 grid grid-cols-2 gap-2">
+                  <div className="pt-2 border-t border-steel-100 dark:border-slate-800 grid grid-cols-2 gap-2">
                     <button
                       type="button"
                       onClick={() => openEditModal(it)}
-                      className="rounded-xl bg-steel-100 hover:bg-steel-200 text-steel-800 py-1.5 text-xs font-bold transition flex items-center justify-center gap-1"
+                      className="rounded-xl bg-steel-100 dark:bg-slate-800 hover:bg-steel-200 dark:hover:bg-slate-700 text-steel-800 dark:text-slate-200 border border-steel-200 dark:border-slate-700 py-1.5 text-xs font-bold transition flex items-center justify-center gap-1"
                     >
                       <Edit2 className="h-3 w-3" />
                       <span>แก้ไข</span>
@@ -1110,7 +1131,7 @@ export default function ItemsMaster() {
                     <button
                       type="button"
                       onClick={() => handleDeleteItem(it)}
-                      className="rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 py-1.5 text-xs font-bold transition flex items-center justify-center gap-1"
+                      className="rounded-xl bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900/40 py-1.5 text-xs font-bold transition flex items-center justify-center gap-1"
                     >
                       <Trash2 className="h-3 w-3" />
                       <span>ลบ</span>
@@ -1123,26 +1144,43 @@ export default function ItemsMaster() {
         </div>
       )}
 
+      {/* 4.1 แถบเปลี่ยนหน้า (Pagination < 1 2 3 4 5 6 >) */}
+      {shownItems.length > 0 && (
+        <div className="rounded-2xl border border-steel-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-5 py-3 shadow-xs">
+          <Pagination
+            currentPage={currentPage}
+            totalItems={shownItems.length}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={(newSize) => {
+              setPageSize(newSize)
+              setCurrentPage(1)
+            }}
+            pageSizeOptions={[10, 20, 50, 100]}
+          />
+        </div>
+      )}
+
       {/* 5. จัดการหมวดหมู่วัสดุ (Category Management - Full CRUD) */}
-      <div id="category-management" className="rounded-2xl border border-steel-200 bg-white p-6 shadow-xs space-y-5">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-steel-100 pb-3">
+      <div id="category-management" className="rounded-2xl border border-steel-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-xs space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-steel-100 dark:border-slate-800 pb-3">
           <div className="flex items-center gap-2">
-            <Layers className="h-5 w-5 text-steel-700" />
+            <Layers className="h-5 w-5 text-steel-700 dark:text-amber-400" />
             <div>
-              <h3 className="font-bold text-sm text-steel-900">จัดการหมวดหมู่วัสดุ (Category Management)</h3>
-              <p className="text-[11px] text-steel-500">
+              <h3 className="font-bold text-sm text-steel-900 dark:text-slate-100">จัดการหมวดหมู่วัสดุ (Category Management)</h3>
+              <p className="text-[11px] text-steel-500 dark:text-slate-400">
                 เพิ่ม แก้ไข หรือลบหมวดหมู่สำหรับจัดกลุ่มพัสดุ พร้อมกำหนดคำนำหน้ารหัสอัตโนมัติ (Prefix)
               </p>
             </div>
           </div>
-          <span className="text-xs font-semibold text-steel-600 bg-steel-100 px-2.5 py-1 rounded-lg">
+          <span className="text-xs font-semibold text-steel-600 dark:text-slate-300 bg-steel-100 dark:bg-slate-800 px-2.5 py-1 rounded-lg border border-steel-200 dark:border-slate-700">
             ทั้งหมด {cats.length} หมวดหมู่
           </span>
         </div>
 
         {/* ฟอร์มเพิ่มหมวดหมู่ใหม่ (Create) */}
         {canEdit && (
-          <form onSubmit={addCategory} className="rounded-xl bg-steel-50/80 p-4 border border-steel-200 flex flex-wrap items-center gap-2.5">
+          <form onSubmit={addCategory} className="rounded-xl bg-steel-50/80 dark:bg-slate-800/60 p-4 border border-steel-200 dark:border-slate-700 flex flex-wrap items-center gap-2.5">
             <div className="flex-1 min-w-[200px]">
               <label className="block text-[11px] font-bold text-steel-700 mb-1">
                 ชื่อหมวดหมู่ใหม่ *
@@ -1246,8 +1284,8 @@ export default function ItemsMaster() {
       {/* Modal แก้ไขหมวดหมู่ (Edit Category Modal) */}
       {editingCatId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
-          <div className="relative w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between border-b border-steel-200 p-4 bg-gradient-to-r from-slate-900 to-steel-900 text-white">
+          <div className="relative w-full max-w-md overflow-hidden rounded-3xl bg-white dark:bg-slate-900 border border-steel-200 dark:border-slate-800 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between border-b border-steel-200 dark:border-slate-800 p-4 bg-gradient-to-r from-slate-900 to-steel-900 text-white">
               <div className="flex items-center gap-2">
                 <Edit2 className="h-4 w-4 text-hivis" />
                 <span className="text-sm font-bold text-white">แก้ไขหมวดหมู่วัสดุ</span>
@@ -1263,13 +1301,13 @@ export default function ItemsMaster() {
 
             <form onSubmit={handleUpdateCategory} className="p-6 space-y-4 text-xs sm:text-sm">
               <div>
-                <label className="block text-xs font-bold text-steel-700 mb-1">
+                <label className="block text-xs font-bold text-steel-700 dark:text-slate-300 mb-1">
                   ชื่อหมวดหมู่ *
                 </label>
                 <input
                   type="text"
                   required
-                  className="input w-full font-semibold text-steel-900"
+                  className="input w-full font-semibold text-steel-900 dark:text-slate-100"
                   value={editingCatForm.name}
                   onChange={(e) => setEditingCatForm({ ...editingCatForm, name: e.target.value })}
                 />
@@ -1277,44 +1315,44 @@ export default function ItemsMaster() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-steel-700 mb-1">
+                  <label className="block text-xs font-bold text-steel-700 dark:text-slate-300 mb-1">
                     รหัสคำนำหน้า (Prefix) *
                   </label>
                   <input
                     type="text"
                     required
-                    className="input w-full font-mono font-bold uppercase text-steel-900"
+                    className="input w-full font-mono font-bold uppercase text-steel-900 dark:text-slate-100"
                     value={editingCatForm.code_prefix}
                     onChange={(e) => setEditingCatForm({ ...editingCatForm, code_prefix: e.target.value.toUpperCase() })}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-steel-700 mb-1">
+                  <label className="block text-xs font-bold text-steel-700 dark:text-slate-300 mb-1">
                     ลำดับการแสดงผล
                   </label>
                   <input
                     type="number"
                     min="0"
-                    className="input w-full font-mono text-steel-900"
+                    className="input w-full font-mono text-steel-900 dark:text-slate-100"
                     value={editingCatForm.sort_order}
                     onChange={(e) => setEditingCatForm({ ...editingCatForm, sort_order: Number(e.target.value) })}
                   />
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-steel-100">
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-steel-100 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={cancelEditCategory}
-                  className="rounded-xl border border-steel-300 bg-white px-4 py-2 text-xs font-bold text-steel-700 hover:bg-steel-50 transition"
+                  className="rounded-xl border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2 text-xs font-bold text-steel-700 dark:text-slate-300 hover:bg-steel-50 dark:hover:bg-slate-700 transition"
                 >
                   ยกเลิก
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
-                  className="rounded-xl bg-steel-900 px-5 py-2 text-xs font-bold text-white hover:bg-steel-800 transition shadow-xs"
+                  className="rounded-xl bg-slate-900 dark:bg-amber-500 hover:bg-slate-800 dark:hover:bg-amber-400 text-white dark:text-slate-950 font-bold px-5 py-2 text-xs transition shadow-xs"
                 >
                   บันทึกการแก้ไข
                 </button>
@@ -1329,9 +1367,9 @@ export default function ItemsMaster() {
       {/* ---------------------------------------------------------------------- */}
       {editingItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
-          <div className="relative w-full max-w-lg overflow-hidden rounded-3xl bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+          <div className="relative w-full max-w-lg overflow-hidden rounded-3xl bg-white dark:bg-slate-900 border border-steel-200 dark:border-slate-800 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
             {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-steel-200 p-4 bg-gradient-to-r from-slate-900 to-steel-900 text-white">
+            <div className="flex items-center justify-between border-b border-steel-200 dark:border-slate-800 p-4 bg-gradient-to-r from-slate-900 to-steel-900 text-white">
               <div className="flex items-center gap-2">
                 <Edit2 className="h-4 w-4 text-hivis" />
                 <span className="text-sm font-bold text-white">
@@ -1350,13 +1388,13 @@ export default function ItemsMaster() {
             {/* Modal Body Form */}
             <form onSubmit={handleSaveEditItem} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto text-xs sm:text-sm">
               <div>
-                <label className="block text-xs font-bold text-steel-700 mb-1">
+                <label className="block text-xs font-bold text-steel-700 dark:text-slate-300 mb-1">
                   ชื่อวัสดุ / อุปกรณ์ *
                 </label>
                 <input
                   type="text"
                   required
-                  className="input w-full font-semibold text-steel-900"
+                  className="input w-full font-semibold text-steel-900 dark:text-slate-100"
                   value={editForm.item_name}
                   onChange={(e) => setEditForm({ ...editForm, item_name: e.target.value })}
                 />
@@ -1364,11 +1402,11 @@ export default function ItemsMaster() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-steel-700 mb-1">
+                  <label className="block text-xs font-bold text-steel-700 dark:text-slate-300 mb-1">
                     หมวดหมู่
                   </label>
                   <select
-                    className="input w-full font-medium text-steel-900"
+                    className="input w-full font-medium text-steel-900 dark:text-slate-100"
                     value={editForm.category_id}
                     onChange={(e) => setEditForm({ ...editForm, category_id: e.target.value })}
                   >
@@ -1382,12 +1420,12 @@ export default function ItemsMaster() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-steel-700 mb-1">
+                  <label className="block text-xs font-bold text-steel-700 dark:text-slate-300 mb-1">
                     หน่วยนับ
                   </label>
                   <input
                     type="text"
-                    className="input w-full"
+                    className="input w-full dark:text-slate-100"
                     value={editForm.unit}
                     onChange={(e) => setEditForm({ ...editForm, unit: e.target.value })}
                   />
@@ -1396,35 +1434,35 @@ export default function ItemsMaster() {
 
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-steel-700 mb-1">
+                  <label className="block text-xs font-bold text-steel-700 dark:text-slate-300 mb-1">
                     จำนวนคงเหลือ *
                   </label>
                   <input
                     type="number"
                     min="0"
-                    step="0.01"
-                    className="input w-full font-mono font-bold text-steel-900"
+                    step="1"
+                    className="input w-full font-mono font-bold text-steel-900 dark:text-slate-100"
                     value={editForm.qty_on_hand}
-                    onChange={(e) => setEditForm({ ...editForm, qty_on_hand: e.target.value })}
+                    onChange={(e) => setEditForm({ ...editForm, qty_on_hand: e.target.value === '' ? '' : String(parseInt(e.target.value, 10) || 0) })}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-steel-700 mb-1">
+                  <label className="block text-xs font-bold text-steel-700 dark:text-slate-300 mb-1">
                     จุดเตือนสั่งซื้อ
                   </label>
                   <input
                     type="number"
                     min="0"
-                    step="0.01"
-                    className="input w-full font-mono text-steel-900"
+                    step="1"
+                    className="input w-full font-mono text-steel-900 dark:text-slate-100"
                     value={editForm.reorder_point}
-                    onChange={(e) => setEditForm({ ...editForm, reorder_point: e.target.value })}
+                    onChange={(e) => setEditForm({ ...editForm, reorder_point: e.target.value === '' ? '' : String(parseInt(e.target.value, 10) || 0) })}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-steel-700 mb-1">
+                  <label className="block text-xs font-bold text-steel-700 dark:text-slate-300 mb-1">
                     ราคาเฉลี่ย (บ.)
                   </label>
                   <input
@@ -1484,18 +1522,18 @@ export default function ItemsMaster() {
               </div>
 
               {/* Action Buttons */}
-              <div className="pt-4 border-t border-steel-100 flex items-center justify-end gap-2.5">
+              <div className="pt-4 border-t border-steel-100 dark:border-slate-800 flex items-center justify-end gap-2.5">
                 <button
                   type="button"
                   onClick={() => setEditingItem(null)}
-                  className="rounded-xl border border-steel-300 bg-white hover:bg-steel-50 px-4 py-2 text-xs font-bold text-steel-700 transition"
+                  className="rounded-xl border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-steel-50 dark:hover:bg-slate-700 px-4 py-2 text-xs font-bold text-steel-700 dark:text-slate-300 transition"
                 >
                   ยกเลิก
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
-                  className="rounded-xl bg-steel-900 hover:bg-steel-800 text-hivis font-black px-5 py-2 text-xs transition shadow-sm disabled:opacity-50"
+                  className="rounded-xl bg-slate-900 dark:bg-amber-500 hover:bg-slate-800 dark:hover:bg-amber-400 text-white dark:text-slate-950 font-bold px-5 py-2 text-xs transition shadow-sm disabled:opacity-50"
                 >
                   {saving ? 'กำลังบันทึก...' : 'บันทึกการแก้ไข (อัปเดตทันที)'}
                 </button>
@@ -1508,8 +1546,8 @@ export default function ItemsMaster() {
       {/* 7. Modal เพิ่มหมวดหมู่ใหม่อย่างรวดเร็ว (Quick Add Category Modal - ไม่ต้องเลื่อนจอ) */}
       {showAddCatModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
-          <div className="relative w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-200 border border-steel-200">
-            <div className="flex items-center justify-between border-b border-steel-200 p-4 bg-gradient-to-r from-slate-900 to-steel-900 text-white">
+          <div className="relative w-full max-w-md overflow-hidden rounded-3xl bg-white dark:bg-slate-900 border border-steel-200 dark:border-slate-800 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between border-b border-steel-200 dark:border-slate-800 p-4 bg-gradient-to-r from-slate-900 to-steel-900 text-white">
               <div className="flex items-center gap-2">
                 <Plus className="h-4 w-4 text-hivis" />
                 <span className="text-sm font-bold text-white">เพิ่มหมวดหมู่วัสดุใหม่</span>
@@ -1528,15 +1566,15 @@ export default function ItemsMaster() {
             </div>
 
             <form onSubmit={handleQuickAddCategory} className="p-6 space-y-4 text-xs sm:text-sm">
-              <div className="rounded-xl bg-amber-50 border border-amber-200 p-3 text-xs text-amber-900 flex items-start gap-2">
-                <Layers className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" />
+              <div className="rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/50 p-3 text-xs text-amber-900 dark:text-amber-200 flex items-start gap-2">
+                <Layers className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
                 <span>
                   เพิ่มหมวดหมู่ใหม่ทันที เมื่อบันทึกแล้วระบบจะเลือกหมวดหมู่นี้ในฟอร์มให้อัตโนมัติ โดยไม่ต้องเลื่อนหน้าจอลงไปล่างสุด
                 </span>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-steel-700 mb-1">
+                <label className="block text-xs font-bold text-steel-700 dark:text-slate-300 mb-1">
                   ชื่อหมวดหมู่ใหม่ *
                 </label>
                 <input
@@ -1544,7 +1582,7 @@ export default function ItemsMaster() {
                   required
                   autoFocus
                   placeholder="เช่น อุปกรณ์งานเชื่อม, น็อตและสกรู..."
-                  className="input w-full font-semibold text-steel-900"
+                  className="input w-full font-semibold text-steel-900 dark:text-slate-100"
                   value={quickCatName}
                   onChange={(e) => {
                     setQuickCatName(e.target.value)
@@ -1556,23 +1594,23 @@ export default function ItemsMaster() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-steel-700 mb-1">
+                <label className="block text-xs font-bold text-steel-700 dark:text-slate-300 mb-1">
                   รหัสคำนำหน้า (Prefix ภาษาอังกฤษ) *
                 </label>
                 <input
                   type="text"
                   required
                   placeholder="เช่น WLD, SCR, TOL"
-                  className="input w-full font-mono font-bold uppercase text-steel-900"
+                  className="input w-full font-mono font-bold uppercase text-steel-900 dark:text-slate-100"
                   value={quickCatPrefix}
                   onChange={(e) => setQuickCatPrefix(e.target.value.toUpperCase())}
                 />
-                <span className="text-[11px] text-steel-400 mt-1 block">
+                <span className="text-[11px] text-steel-400 dark:text-slate-400 mt-1 block">
                   จะใช้เป็นตัวขึ้นต้นรหัสพัสดุอัตโนมัติ (เช่น {quickCatPrefix || 'XXX'}00001)
                 </span>
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-steel-100">
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-steel-100 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={() => {
@@ -1580,14 +1618,14 @@ export default function ItemsMaster() {
                     setQuickCatName('')
                     setQuickCatPrefix('')
                   }}
-                  className="rounded-xl border border-steel-300 bg-white px-4 py-2 text-xs font-bold text-steel-700 hover:bg-steel-50 transition"
+                  className="rounded-xl border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2 text-xs font-bold text-steel-700 dark:text-slate-300 hover:bg-steel-50 dark:hover:bg-slate-700 transition"
                 >
                   ยกเลิก
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
-                  className="rounded-xl bg-steel-900 px-5 py-2 text-xs font-bold text-white hover:bg-steel-800 transition shadow-xs flex items-center gap-1.5"
+                  className="rounded-xl bg-slate-900 dark:bg-amber-500 hover:bg-slate-800 dark:hover:bg-amber-400 text-white dark:text-slate-950 font-bold px-5 py-2 text-xs transition shadow-xs flex items-center gap-1.5"
                 >
                   <Plus className="h-4 w-4" />
                   <span>{saving ? 'กำลังบันทึก...' : 'บันทึกและเลือกทันที'}</span>
@@ -1604,7 +1642,7 @@ export default function ItemsMaster() {
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
           onClick={() => setPreviewModalImg(null)}
         >
-          <div className="relative max-h-[90vh] max-w-2xl overflow-hidden rounded-2xl bg-white p-2">
+          <div className="relative max-h-[90vh] max-w-2xl overflow-hidden rounded-2xl bg-white dark:bg-slate-900 border border-steel-200 dark:border-slate-800 p-2">
             <R2Image fileKey={previewModalImg} alt="Preview" className="max-h-[85vh] min-h-[200px] min-w-[200px] w-auto object-contain rounded-xl" />
             <button
               onClick={() => setPreviewModalImg(null)}
