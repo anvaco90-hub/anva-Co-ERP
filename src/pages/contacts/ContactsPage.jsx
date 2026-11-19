@@ -10,6 +10,7 @@ import ContactFormModal from './ContactFormModal'
 import ContactDetailModal from './ContactDetailModal'
 import EnvelopePrintModal from '../../components/reports/EnvelopePrintModal'
 import Pagination from '../../components/Pagination'
+import TableSortFilter from '../../components/TableSortFilter'
 
 export default function ContactsPage() {
   const [params, setSearchParams] = useSearchParams()
@@ -18,8 +19,18 @@ export default function ContactsPage() {
   const [contacts, setContacts] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
+  const [sortBy, setSortBy] = useState('name_asc')
   const [roleFilter, setRoleFilter] = useState(initialRole)
   const [entityFilter, setEntityFilter] = useState('all') // 'all' | 'corporate' | 'individual'
+
+  const CONTACTS_SORT_OPTIONS = [
+    { value: 'name_asc', label: '🔤 ชื่อคู่ค้า/บริษัท ก ➔ ฮ (A ➔ Z)' },
+    { value: 'name_desc', label: '🔤 ชื่อคู่ค้า/บริษัท ฮ ➔ ก (Z ➔ A)' },
+    { value: 'code_asc', label: '🔢 รหัสคู่ค้า (น้อย ➔ มาก: 0 ➔ 9)' },
+    { value: 'code_desc', label: '🔢 รหัสคู่ค้า (มาก ➔ น้อย: 9 ➔ 0)' },
+    { value: 'date_desc', label: '🕒 เพิ่มล่าสุด (ใหม่ ➔ เก่า)' },
+    { value: 'date_asc', label: '🕒 เพิ่มก่อนหน้า (เก่า ➔ ใหม่)' },
+  ]
   const [showInactive, setShowInactive] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(15) // 10 | 15 | 30 | 50
@@ -162,11 +173,32 @@ export default function ContactsPage() {
     setCurrentPage(1)
   }, [roleFilter, entityFilter, showInactive, search])
 
+  // จัดเรียงรายการผู้ติดต่อตามมาตรฐาน (A-Z / รหัส / วันที่)
+  const sortedContacts = useMemo(() => {
+    return [...filteredContacts].sort((a, b) => {
+      if (sortBy === 'name_asc') {
+        const nameA = a.business_name || a.company_name || ''
+        const nameB = b.business_name || b.company_name || ''
+        return nameA.localeCompare(nameB, 'th')
+      }
+      if (sortBy === 'name_desc') {
+        const nameA = a.business_name || a.company_name || ''
+        const nameB = b.business_name || b.company_name || ''
+        return nameB.localeCompare(nameA, 'th')
+      }
+      if (sortBy === 'code_asc') return (a.contact_code || '').localeCompare(b.contact_code || '', undefined, { numeric: true })
+      if (sortBy === 'code_desc') return (b.contact_code || '').localeCompare(a.contact_code || '', undefined, { numeric: true })
+      if (sortBy === 'date_asc') return (a.created_at || '').localeCompare(b.created_at || '')
+      // date_desc
+      return (b.created_at || '').localeCompare(a.created_at || '')
+    })
+  }, [filteredContacts, sortBy])
+
   // คำนวณรายการเฉพาะหน้าปัจจุบัน
   const paginatedContacts = useMemo(() => {
     const start = (currentPage - 1) * pageSize
-    return filteredContacts.slice(start, start + pageSize)
-  }, [filteredContacts, currentPage, pageSize])
+    return sortedContacts.slice(start, start + pageSize)
+  }, [sortedContacts, currentPage, pageSize])
 
   // ฟังก์ชัน Soft Delete (ระงับการใช้งาน)
   const handleToggleActive = async (contactToToggle) => {
@@ -333,8 +365,15 @@ export default function ContactsPage() {
           )}
         </div>
 
-        {/* ตัวกรองบทบาท & ประเภท */}
+        {/* ตัวกรองบทบาท & ประเภท & เรียงลำดับ */}
         <div className="flex flex-wrap items-center gap-2">
+          {/* Standard Sort Filter Control */}
+          <TableSortFilter
+            value={sortBy}
+            onChange={setSortBy}
+            options={CONTACTS_SORT_OPTIONS}
+          />
+
           {/* Entity Type Filter */}
           <select
             value={entityFilter}

@@ -18,7 +18,18 @@ export default function CustomerPoModal({ quotation, onClose, onSuccess }) {
     if (!file) return
     setUploading(true)
     try {
-      const url = await uploadItemImage(file)
+      let url = null
+      try {
+        url = await uploadItemImage(file)
+      } catch (err) {
+        console.warn('API upload failed, using DataURL fallback:', err)
+        url = await new Promise((resolve, reject) => {
+          const reader = new FileReader()
+          reader.onload = () => resolve(reader.result)
+          reader.onerror = reject
+          reader.readAsDataURL(file)
+        })
+      }
       setCustomerPoFileUrl(url)
     } catch {
       alert('อัปโหลดไฟล์ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง')
@@ -157,15 +168,22 @@ export default function CustomerPoModal({ quotation, onClose, onSuccess }) {
                 />
               </label>
               {customerPoFileUrl ? (
-                <a
-                  href={customerPoFileUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-xs text-emerald-700 hover:underline font-bold truncate max-w-[200px]"
-                >
-                  <FileText className="h-3.5 w-3.5" />
-                  <span>ดูไฟล์ที่แนบไว้</span>
-                </a>
+                customerPoFileUrl.includes('example.com') ? (
+                  <span className="inline-flex items-center gap-1 text-xs text-emerald-800 font-semibold bg-emerald-100/70 px-2.5 py-1 rounded-lg">
+                    <FileText className="h-3.5 w-3.5 text-emerald-600" />
+                    <span>ไฟล์ตัวอย่างจำลองในระบบ</span>
+                  </span>
+                ) : (
+                  <a
+                    href={customerPoFileUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-xs text-emerald-700 hover:underline font-bold truncate max-w-[200px]"
+                  >
+                    <FileText className="h-3.5 w-3.5" />
+                    <span>ดูไฟล์ที่แนบไว้</span>
+                  </a>
+                )
               ) : (
                 <span className="text-[11px] text-steel-400">ยังไม่มีไฟล์แนบ</span>
               )}

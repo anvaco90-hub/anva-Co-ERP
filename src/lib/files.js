@@ -88,19 +88,36 @@ export async function uploadFile(file, kind, { onProgress } = {}) {
     throw new Error("รองรับเฉพาะ PDF, JPG, PNG, WebP");
   if (prepared.size > MAX_SIZE) throw new Error("ไฟล์ใหญ่เกิน 15 MB");
 
-  const { key, uploadUrl, headers } = await api("upload-url", {
-    kind,
-    name: prepared.name,
-    contentType: prepared.type,
-    size: prepared.size,
-  });
-  await putWithProgress(uploadUrl, headers, prepared, onProgress);
-  return {
-    r2Key: key,
-    name: prepared.name,
-    contentType: prepared.type,
-    size: prepared.size,
-  };
+  try {
+    const { key, uploadUrl, headers } = await api("upload-url", {
+      kind,
+      name: prepared.name,
+      contentType: prepared.type,
+      size: prepared.size,
+    });
+    await putWithProgress(uploadUrl, headers, prepared, onProgress);
+    return {
+      r2Key: key,
+      name: prepared.name,
+      contentType: prepared.type,
+      size: prepared.size,
+    };
+  } catch (err) {
+    console.warn("R2 upload API unavailable, using DataURL fallback:", err);
+    // Offline / Local development fallback
+    const dataUrl = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(prepared);
+    });
+    return {
+      r2Key: dataUrl,
+      name: prepared.name,
+      contentType: prepared.type,
+      size: prepared.size,
+    };
+  }
 }
 
 // ---------- ขอ URL สำหรับดูไฟล์ (อายุ 10 นาที) พร้อม cache + รวมคำขอเป็นก้อนเดียว ----------

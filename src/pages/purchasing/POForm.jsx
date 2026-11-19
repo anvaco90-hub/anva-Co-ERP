@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams, useSearchParams, Link } from 'react-router-dom'
+import { Upload, Image as ImageIcon, FileText, CheckCircle2, X, Eye } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
 import { EMPTY_ITEM, itemsValid } from '../../lib/purchasing'
 import { getItemVendorHistory } from '../../lib/purchasingHistory'
 import { baht } from '../../lib/projects'
+import { uploadItemImage } from '../../lib/store'
 import ItemsEditor from './ItemsEditor'
 import ItemProjectUsageModal from '../../components/ItemProjectUsageModal'
 import { FieldError, fieldErrorClass } from '../../components/FieldError'
@@ -69,6 +71,9 @@ export default function POForm() {
   const [paymentChannelRequested, setPaymentChannelRequested] = useState('transfer') // 'transfer' | 'cheque' | 'cash'
   const [quotationNo, setQuotationNo] = useState('')
   const [quotationDate, setQuotationDate] = useState('')
+  const [quotationUrl, setQuotationUrl] = useState('')
+  const [quotationFile, setQuotationFile] = useState(null)
+  const [uploadingQuotation, setUploadingQuotation] = useState(false)
   const [taxType, setTaxType] = useState('vat_included') // 'vat_included' | 'vat_excluded' | 'vat_exempt'
   const [whtRate, setWhtRate] = useState('0') // '0' | '1' | '2' | '3' | '5'
   const [vendorTaxInvoiceNo, setVendorTaxInvoiceNo] = useState('')
@@ -183,6 +188,7 @@ export default function POForm() {
       setPaymentChannelRequested(a.data.payment_channel_requested || 'transfer')
       setQuotationNo(a.data.quotation_no || '')
       setQuotationDate(a.data.quotation_date || '')
+      setQuotationUrl(a.data.quotation_url || '')
       setTaxType(a.data.tax_type || 'vat_included')
       setWhtRate(String(a.data.wht_rate || '0'))
       setVendorTaxInvoiceNo(a.data.vendor_tax_invoice_no || '')
@@ -446,6 +452,19 @@ export default function POForm() {
         }
       })
 
+      // อัปโหลดไฟล์ใบเสนอราคาหากมีไฟล์ใหม่
+      let finalQuotationUrl = quotationUrl
+      if (quotationFile) {
+        setUploadingQuotation(true)
+        try {
+          const upUrl = await uploadItemImage(quotationFile)
+          if (upUrl) finalQuotationUrl = upUrl
+        } catch (err) {
+          console.warn('Error uploading quotation:', err)
+        }
+        setUploadingQuotation(false)
+      }
+
       const extraFields = {
         buyer_name: buyerName,
         payment_type: paymentType,
@@ -457,6 +476,7 @@ export default function POForm() {
         payment_status: sendToAccounting ? 'รอชำระเงิน' : (po?.payment_status || 'รอชำระเงิน'),
         quotation_no: quotationNo || null,
         quotation_date: quotationDate || null,
+        quotation_url: finalQuotationUrl || null,
         tax_type: taxType,
         vat_rate: taxType === 'vat_exempt' ? 0 : 7,
         vat_amount: vatAmount,
@@ -478,6 +498,9 @@ export default function POForm() {
         let payload = { ...extraFields }
         let res = await supabase.from('purchase_orders').update(payload).eq('id', targetId)
         if (res.error && res.error.message?.includes('does not exist')) {
+          if (res.error.message?.includes('quotation_url')) {
+            delete payload.quotation_url
+          }
           delete payload.customer_name
           delete payload.custom_project_name
           delete payload.custom_vendor_name
@@ -1128,6 +1151,75 @@ export default function POForm() {
                 value={quotationDate}
                 onChange={(e) => setQuotationDate(e.target.value)}
               />
+            </div>
+
+            {/* แนบรูปภาพ / ไฟล์ใบเสนอราคาจากผู้ขาย */}
+            <div className="sm:col-span-2 md:col-span-3">
+              <label className="block text-xs font-semibold text-steel-700 dark:text-slate-300 mb-1">
+                แนบรูปภาพ / เอกสารใบเสนอราคาจากผู้ขาย (Quotation Attachment)
+              </label>
+              <div className="flex flex-wrap items-center gap-3">
+                <input
+                  type="file"
+                  id="quotation-upload"
+                  accept="image/*,application/pdf"
+                  className="hidden"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0]
+                    if (file) {
+                      setQuotationFile(file)
+                      setUploadingQuotation(true)
+                      try {
+                        const previewUrl = await uploadItemImage(file)
+                        if (previewUrl) setQuotationUrl(previewUrl)
+                      } catch (err) {
+                        console.warn(err)
+                      } finally {
+                        setUploadingQuotation(false)
+                      }
+                    }
+                  }}
+                />
+                <label
+                  htmlFor="quotation-upload"
+                  className="inline-flex items-center gap-2 rounded-xl border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-steel-50 dark:hover:bg-slate-700 px-3.5 py-2 text-xs font-bold text-steel-700 dark:text-slate-200 transition shadow-2xs cursor-pointer"
+                >
+                  <Upload className="h-4 w-4 text-steel-500" />
+                  <span>{uploadingQuotation ? 'กำลังอัปโหลด...' : (quotationUrl ? 'เปลี่ยนรูป/ไฟล์ใบเสนอราคา' : '📷 คลิกเพื่อแนบรูปภาพ/ไฟล์ใบเสนอราคา')}</span>
+                </label>
+
+                {quotationUrl && (
+                  <div className="flex items-center gap-2 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-xl px-3 py-1.5 text-xs">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                    <span className="font-semibold text-emerald-900 dark:text-emerald-200 truncate max-w-xs">
+                      {quotationFile?.name || 'แนบใบเสนอราคาแล้ว'}
+                    </span>
+                    <a
+                      href={quotationUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1 text-xs text-sky-700 dark:text-sky-400 font-bold hover:underline ml-2"
+                    >
+                      <Eye className="h-3.5 w-3.5" />
+                      <span>เปิดดูเอกสาร</span>
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setQuotationUrl('')
+                        setQuotationFile(null)
+                      }}
+                      className="text-xs text-rose-600 hover:text-rose-800 font-bold ml-2 cursor-pointer"
+                      title="ลบไฟล์แนบ"
+                    >
+                      ✕ ลบ
+                    </button>
+                  </div>
+                )}
+              </div>
+              <p className="text-[11px] text-steel-400 dark:text-slate-500 mt-1">
+                แนบรูปถ่ายใบเสนอราคา หรือสเปกราคาที่ได้จากร้านค้า เพื่อความโปร่งใสและตรวจสอบย้อนหลังได้ 100%
+              </p>
             </div>
           </div>
 

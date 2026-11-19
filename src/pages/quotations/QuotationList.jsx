@@ -8,6 +8,7 @@ import QuotationShareModal from '../../components/quotations/QuotationShareModal
 import CustomerPoModal from '../../components/quotations/CustomerPoModal'
 import PaymentActionModal from '../../components/PaymentActionModal'
 import Pagination from '../../components/Pagination'
+import TableSortFilter from '../../components/TableSortFilter'
 import {
   Printer,
   Mail,
@@ -73,8 +74,21 @@ export default function QuotationList() {
 
   // ตัวกรองแบบกระชับ (Clean Filters)
   const [search, setSearch] = useState('')
+  const [sortBy, setSortBy] = useState('date_desc')
   const [filterProject, setFilterProject] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
+
+  // ตัวเลือกการเรียงลำดับมาตรฐานสำหรับงานขายและเสนอราคา
+  const QUOTATION_SORT_OPTIONS = [
+    { value: 'date_desc', label: '🕒 วันที่สร้างล่าสุด (ใหม่ ➔ เก่า)' },
+    { value: 'date_asc', label: '🕒 วันที่สร้าง (เก่า ➔ ใหม่)' },
+    { value: 'code_desc', label: '🔢 เลขที่ QT (มาก ➔ น้อย)' },
+    { value: 'code_asc', label: '🔢 เลขที่ QT (น้อย ➔ มาก)' },
+    { value: 'name_asc', label: '🔤 ชื่อลูกค้า/โครงการ ก ➔ ฮ (A ➔ Z)' },
+    { value: 'name_desc', label: '🔤 ชื่อลูกค้า/โครงการ ฮ ➔ ก (Z ➔ A)' },
+    { value: 'amount_desc', label: '💰 มูลค่าเสนอราคา (มาก ➔ น้อย)' },
+    { value: 'amount_asc', label: '💰 มูลค่าเสนอราคา (น้อย ➔ มาก)' },
+  ]
 
   // ตัวกรองวันที่แบบ Smart Preset (ไม่รกตา)
   const [datePreset, setDatePreset] = useState('all') // 'all' | 'today' | 'this_week' | 'this_month' | 'next_30' | 'custom'
@@ -273,11 +287,34 @@ export default function QuotationList() {
     setCurrentPage(1)
   }, [activeTab, filterStatus, filterProject, search, dateFrom, dateTo])
 
+  // จัดเรียงรายการตามมาตรฐานที่เลือก (A-Z / ตัวเลข / วันที่ / ยอดเงิน)
+  const sortedQuotations = useMemo(() => {
+    return [...filtered].sort((a, b) => {
+      if (sortBy === 'name_asc') {
+        const nameA = a.customer_name || a.projects?.project_name || ''
+        const nameB = b.customer_name || b.projects?.project_name || ''
+        return nameA.localeCompare(nameB, 'th')
+      }
+      if (sortBy === 'name_desc') {
+        const nameA = a.customer_name || a.projects?.project_name || ''
+        const nameB = b.customer_name || b.projects?.project_name || ''
+        return nameB.localeCompare(nameA, 'th')
+      }
+      if (sortBy === 'code_asc') return (a.quotation_no || '').localeCompare(b.quotation_no || '', undefined, { numeric: true })
+      if (sortBy === 'code_desc') return (b.quotation_no || '').localeCompare(a.quotation_no || '', undefined, { numeric: true })
+      if (sortBy === 'amount_desc') return Number(b.grand_total || b.total_amount || 0) - Number(a.grand_total || a.total_amount || 0)
+      if (sortBy === 'amount_asc') return Number(a.grand_total || a.total_amount || 0) - Number(b.grand_total || b.total_amount || 0)
+      if (sortBy === 'date_asc') return (a.created_at || a.quotation_date || '').localeCompare(b.created_at || b.quotation_date || '')
+      // Default: date_desc
+      return (b.created_at || b.quotation_date || '').localeCompare(a.created_at || a.quotation_date || '')
+    })
+  }, [filtered, sortBy])
+
   // คำนวณรายการเฉพาะหน้าปัจจุบัน
   const paginatedQuotations = useMemo(() => {
     const start = (currentPage - 1) * pageSize
-    return filtered.slice(start, start + pageSize)
-  }, [filtered, currentPage, pageSize])
+    return sortedQuotations.slice(start, start + pageSize)
+  }, [sortedQuotations, currentPage, pageSize])
 
   return (
     <div className="space-y-4">
@@ -419,6 +456,13 @@ export default function QuotationList() {
                 className="w-full rounded-lg border border-slate-300 bg-slate-50/50 pl-8 pr-3 py-1.5 text-xs text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:border-slate-800"
               />
             </div>
+
+            {/* Standard Sort Filter Control */}
+            <TableSortFilter
+              value={sortBy}
+              onChange={setSortBy}
+              options={QUOTATION_SORT_OPTIONS}
+            />
 
             {/* Project Filter */}
             <select

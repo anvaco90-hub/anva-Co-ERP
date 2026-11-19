@@ -33,7 +33,11 @@ import {
   ExternalLink,
   Layers,
   Sparkles,
+  Upload,
+  Eye,
+  X,
 } from 'lucide-react'
+import { uploadItemImage } from '../../lib/store'
 
 // ฟังก์ชันระบุหมวดหมู่วัสดุและสีสันสไตล์ไทวัสดุ & วิศวกรรมโซลาร์เซลล์
 function getMaterialCategory(itemName = '') {
@@ -102,6 +106,29 @@ export default function PODetail() {
   const [showEnvelope, setShowEnvelope] = useState(false)
   const [showShare, setShowShare] = useState(false)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [showCancelModal, setShowCancelModal] = useState(false)
+  const [cancelReason, setCancelReason] = useState('')
+  const [cancelling, setCancelling] = useState(false)
+  const [uploadingQuotation, setUploadingQuotation] = useState(false)
+  const [previewQuotationModal, setPreviewQuotationModal] = useState(null)
+  const [showMoreActions, setShowMoreActions] = useState(false)
+
+  const handleDirectQuotationUpload = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file || !po?.id) return
+    setUploadingQuotation(true)
+    try {
+      const upUrl = await uploadItemImage(file)
+      if (upUrl) {
+        await supabase.from('purchase_orders').update({ quotation_url: upUrl }).eq('id', po.id)
+        setPo((prev) => ({ ...prev, quotation_url: upUrl }))
+      }
+    } catch (err) {
+      console.warn('Failed to upload quotation in detail:', err)
+    } finally {
+      setUploadingQuotation(false)
+    }
+  }
 
   // สลับมุมมองระหว่าง Web Portal กับ Paper A4 และ รูปแบบการแสดงสินค้า (Cards vs Table)
   const [viewStyle, setViewStyle] = useState('portal') // 'portal' | 'paper'
@@ -388,13 +415,55 @@ export default function PODetail() {
     }
   }
 
-  async function cancelPo() {
-    const reason = window.prompt('เหตุผลในการยกเลิกใบสั่งซื้อ:')
-    if (!reason || !reason.trim()) return
+  function cancelPo() {
+    setCancelReason('')
+    setShowCancelModal(true)
+  }
+
+  async function handleConfirmCancelPo() {
+    if (!cancelReason || !cancelReason.trim()) {
+      alert('กรุณาระบุเหตุผลในการยกเลิกใบสั่งซื้อ')
+      return
+    }
+    setCancelling(true)
     setError('')
-    const { error } = await supabase.rpc('cancel_purchase_order', { p_po_id: id, p_reason: reason })
-    if (error) return setError(error.message)
-    load()
+    try {
+      // 1. Try RPC
+      const { error: rpcErr } = await supabase.rpc('cancel_purchase_order', {
+        p_po_id: id,
+        p_reason: cancelReason.trim(),
+      })
+
+      if (rpcErr) {
+        console.warn('cancel_purchase_order RPC failed, running direct fallback:', rpcErr)
+        // 2. Direct Fallback
+        const remarksWithReason = [po.remarks, `[ยกเลิกเมื่อ ${new Date().toLocaleString('th-TH')}]: ${cancelReason.trim()}`].filter(Boolean).join(' | ')
+        const { error: updErr } = await supabase.from('purchase_orders').update({
+          status: 'cancelled',
+          remarks: remarksWithReason,
+          updated_at: new Date().toISOString(),
+        }).eq('id', id)
+
+        if (updErr) throw updErr
+
+        // Release linked PR if any
+        if (po.pr_id) {
+          await supabase.from('purchase_requests').update({
+            status: 'approved',
+            updated_at: new Date().toISOString(),
+          }).eq('id', po.pr_id)
+        }
+      }
+
+      setDone('ยกเลิกใบสั่งซื้อเรียบร้อยแล้ว (สถานะเปลี่ยนเป็นยกเลิก และปลดล็อค PR ให้ใช้งานได้ต่อ)')
+      setShowCancelModal(false)
+      load()
+    } catch (err) {
+      console.error('Cancel PO failed:', err)
+      setError(err.message || 'ยกเลิกใบสั่งซื้อไม่สำเร็จ')
+    } finally {
+      setCancelling(false)
+    }
   }
 
   async function removePo() {
@@ -421,130 +490,160 @@ export default function PODetail() {
     <div className="min-h-screen bg-[#F8FAFC] pb-20 pt-2 font-sans space-y-5">
       <div className="max-w-6xl mx-auto px-4 space-y-4">
 
-        {/* 1. Header Toolbar: Back Link & Action Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-          <Link
-            to="/purchasing?tab=po"
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-sky-700 transition"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            <span>กลับไปศูนย์จัดซื้อและพัสดุ (PO Hub)</span>
-          </Link>
+        {/* 1. Modern Unified Action Bar (เรียบหรู ไม่ซ้ำซ้อน ไม่ตกบรรทัด) */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3 sm:p-4 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs">
+          {/* ซ้าย: Breadcrumb & เอกสาร */}
+          <div className="flex items-center gap-2.5">
+            <Link
+              to="/purchasing?tab=po"
+              className="inline-flex items-center gap-1 text-xs font-bold text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition"
+              title="กลับไปรายการใบสั่งซื้อ"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+              <span>รายการ PO</span>
+            </Link>
+            <span className="text-slate-300 dark:text-slate-700">/</span>
+            <span className="font-mono font-black text-sm text-slate-950 dark:text-white">{po.po_no}</span>
+            <Badge map={PO_STATUS} status={po.status} />
+          </div>
 
-          {/* Action Toolbar */}
+          {/* ขวา: สลับมุมมอง + ปุ่มหลัก (Primary Action) + พิมพ์ PDF + เมนูเพิ่มเติม (...) */}
           <div className="flex flex-wrap items-center gap-2">
-            {/* View Switcher: Web Portal vs Paper Document */}
-            <div className="flex items-center bg-white p-1 rounded-xl border border-slate-200 shadow-xs mr-2">
+            {/* View Segment Switcher */}
+            <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-xl border border-slate-200 dark:border-slate-700">
               <button
                 type="button"
                 onClick={() => setViewStyle('portal')}
-                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+                className={`px-2.5 py-1 text-xs font-bold rounded-lg transition cursor-pointer flex items-center gap-1 ${
                   viewStyle === 'portal'
-                    ? 'bg-slate-900 text-white shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
+                    ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-2xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
                 }`}
               >
-                <span>🌐</span>
-                <span>หน้าเว็บจัดการ (Portal View)</span>
+                <span>🌐 เว็บ</span>
               </button>
               <button
                 type="button"
                 onClick={() => setViewStyle('paper')}
-                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+                className={`px-2.5 py-1 text-xs font-bold rounded-lg transition cursor-pointer flex items-center gap-1 ${
                   viewStyle === 'paper'
-                    ? 'bg-slate-900 text-white shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
+                    ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-2xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
                 }`}
               >
-                <span>📄</span>
-                <span>กระดาษพิมพ์ A4 (Print Sheet)</span>
+                <span>📄 A4</span>
               </button>
             </div>
 
-            {/* Payment Button */}
+            {/* Primary Action Button เด่น 1 อันตามสถานะ */}
             {isPaidInFull ? (
-              <button
-                type="button"
-                disabled
-                className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-50 border border-emerald-300 px-4 py-2 text-xs font-bold text-emerald-800 shadow-xs cursor-not-allowed opacity-95"
-                title="ใบสั่งซื้อนี้ชำระเงินครบถ้วนแล้ว ไม่สามารถชำระเงินซ้ำได้"
-              >
-                <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                <span>ชำระเงินครบแล้ว (Paid)</span>
-              </button>
+              <span className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-300 dark:border-emerald-700 px-3 py-1.5 text-xs font-bold text-emerald-800 dark:text-emerald-300">
+                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                <span>ชำระครบแล้ว ฿{baht(grandTotalVal)} บ.</span>
+              </span>
             ) : po.status !== 'cancelled' ? (
               <button
                 type="button"
                 onClick={() => setShowPaymentModal(true)}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 px-4 py-2 text-xs font-bold text-white shadow-md shadow-emerald-600/20 transition cursor-pointer"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm shadow-emerald-600/30 transition cursor-pointer active:scale-95"
+                title={`คลิกเพื่อจ่ายชำระเงินตามยอดสั่งซื้อ ฿${baht(grandTotalVal)} บ.`}
               >
                 <span>💸</span>
-                <span>จ่ายชำระเงิน (PAY)</span>
+                <span>จ่ายชำระเงิน · ฿{baht(grandTotalVal)} บ.</span>
               </button>
             ) : null}
 
-            {/* PDF Print Button */}
+            {/* Print PDF Button */}
             <button
               type="button"
               onClick={() => setShowPoPdf(true)}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 px-3.5 py-2 text-xs font-bold text-white shadow-xs transition cursor-pointer"
+              className="inline-flex items-center gap-1 rounded-xl bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 text-white px-3 py-1.5 text-xs font-bold shadow-2xs transition cursor-pointer"
             >
-              <span>🖨️</span>
-              <span>พิมพ์ / บันทึก PDF</span>
+              <Printer className="h-3.5 w-3.5" />
+              <span>พิมพ์ PDF</span>
             </button>
 
-            {/* Tools Menu */}
-            <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-slate-200 shadow-xs">
-              {canEdit ? (
-                <Link
-                  to={`/purchasing/po/${po.id}/edit`}
-                  className="rounded-lg bg-slate-50 px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 hover:text-sky-800 transition shadow-xs"
-                >
-                  ✏️ แก้ไข
-                </Link>
-              ) : (
-                <button
-                  type="button"
-                  disabled
-                  className="rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-semibold text-slate-400 cursor-not-allowed shadow-xs"
-                  title="ไม่สามารถแก้ไขได้เนื่องจากชำระเงินหรือรับของแล้ว"
-                >
-                  🔒 แก้ไข
-                </button>
-              )}
-
+            {/* Dropdown เมนูเพิ่มเติม (...) */}
+            <div className="relative">
               <button
                 type="button"
-                onClick={() => navigate(`/purchasing/po/new?duplicate_from=${po.id}`)}
-                className="rounded-lg bg-slate-50 px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 hover:text-sky-800 transition shadow-xs cursor-pointer"
+                onClick={() => setShowMoreActions(!showMoreActions)}
+                className="inline-flex items-center gap-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 transition cursor-pointer shadow-2xs"
+                title="ตัวเลือกและการจัดการเพิ่มเติม"
               >
-                📋 สร้างซ้ำ
+                <span>ตัวเลือก</span>
+                <MoreVertical className="h-3.5 w-3.5 text-slate-400" />
               </button>
 
-              <button
-                type="button"
-                onClick={() => setShowEnvelope(true)}
-                className="rounded-lg bg-slate-50 px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 hover:text-sky-800 transition shadow-xs cursor-pointer"
-              >
-                ✉️ จ่าซอง
-              </button>
+              {showMoreActions && (
+                <>
+                  <div
+                    className="fixed inset-0 z-20"
+                    onClick={() => setShowMoreActions(false)}
+                  />
+                  <div className="absolute right-0 top-full mt-1.5 z-30 w-48 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xl p-1.5 text-xs space-y-0.5 animate-in fade-in zoom-in-95 duration-100">
+                    {canEdit && (
+                      <Link
+                        to={`/purchasing/po/${po.id}/edit`}
+                        onClick={() => setShowMoreActions(false)}
+                        className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 font-semibold transition"
+                      >
+                        <Edit3 className="h-3.5 w-3.5 text-sky-600" />
+                        <span>แก้ไขข้อมูล PO</span>
+                      </Link>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowMoreActions(false)
+                        navigate(`/purchasing/po/new?duplicate_from=${po.id}`)
+                      }}
+                      className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 font-semibold transition cursor-pointer"
+                    >
+                      <Copy className="h-3.5 w-3.5 text-purple-600" />
+                      <span>สร้างซ้ำเป็นใบใหม่</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowMoreActions(false)
+                        setShowEnvelope(true)
+                      }}
+                      className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 font-semibold transition cursor-pointer"
+                    >
+                      <Mail className="h-3.5 w-3.5 text-amber-600" />
+                      <span>พิมพ์หน้าซองจดหมาย</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowMoreActions(false)
+                        setShowShare(true)
+                      }}
+                      className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 font-semibold transition cursor-pointer"
+                    >
+                      <Share2 className="h-3.5 w-3.5 text-blue-600" />
+                      <span>คัดลอกลิงก์ / แชร์</span>
+                    </button>
 
-              <button
-                type="button"
-                onClick={() => setShowShare(true)}
-                className="rounded-lg bg-slate-50 px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 hover:text-sky-800 transition shadow-xs cursor-pointer"
-              >
-                🔗 แชร์
-              </button>
-
-              {canCreatePurchasing(profile.role) && !isPaidInFull && !isFullyReceived && po.status !== 'cancelled' && (
-                <button
-                  type="button"
-                  className="rounded-lg bg-white px-2 py-1.5 text-xs font-medium text-slate-500 hover:bg-rose-50 hover:text-rose-700 transition cursor-pointer"
-                  onClick={cancelPo}
-                >
-                  ยกเลิก
-                </button>
+                    {canCreatePurchasing(profile.role) && !isPaidInFull && !isFullyReceived && po.status !== 'cancelled' && (
+                      <>
+                        <div className="border-t border-slate-100 dark:border-slate-700 my-1" />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowMoreActions(false)
+                            cancelPo()
+                          }}
+                          className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 font-bold transition cursor-pointer"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                          <span>ยกเลิกใบสั่งซื้อ</span>
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </>
               )}
             </div>
           </div>
@@ -945,6 +1044,117 @@ export default function PODetail() {
               </div>
             </div>
 
+            {/* Vendor Quotation Box (เอกสารอ้างอิงใบเสนอราคาผู้ขาย) */}
+            <div className="rounded-2xl border border-sky-200/90 dark:border-sky-800/80 bg-gradient-to-r from-sky-50/70 via-blue-50/40 to-sky-50/70 dark:from-slate-900 dark:via-sky-950/20 dark:to-slate-900 p-5 shadow-xs space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-sky-100 dark:border-sky-900/60 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-600 text-white font-bold text-base shadow-xs">
+                    📄
+                  </span>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-sm font-black text-slate-900 dark:text-slate-100">
+                        เอกสารใบเสนอราคาจากผู้ขาย (Vendor Quotation)
+                      </h3>
+                      {po.quotation_no && (
+                        <span className="font-mono text-xs font-bold text-sky-800 dark:text-sky-300 bg-sky-100 dark:bg-sky-950 px-2 py-0.5 rounded-md border border-sky-300 dark:border-sky-800">
+                          {po.quotation_no}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                      เอกสารยืนยันสเปกและราคาที่ได้รับจากคู่ค้า เพื่อใช้ตรวจสอบเปรียบเทียบก่อนการจัดซื้อ
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {/* Upload/Change Button */}
+                  <input
+                    type="file"
+                    id="po-detail-quotation-upload"
+                    accept="image/*,application/pdf"
+                    className="hidden"
+                    onChange={handleDirectQuotationUpload}
+                  />
+                  <label
+                    htmlFor="po-detail-quotation-upload"
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-sky-300 dark:border-sky-800 bg-white dark:bg-slate-800 hover:bg-sky-50 dark:hover:bg-slate-700 px-3 py-1.5 text-xs font-bold text-sky-800 dark:text-sky-300 transition shadow-2xs cursor-pointer"
+                  >
+                    <Upload className="h-3.5 w-3.5" />
+                    <span>{uploadingQuotation ? 'กำลังอัปโหลด...' : (po.quotation_url ? 'เปลี่ยนรูปใบเสนอราคา' : '+ แนบรูปใบเสนอราคา')}</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Quotation Info & File Preview */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-center">
+                <div className="space-y-1 text-xs text-slate-600 dark:text-slate-300">
+                  <div>เลขที่ใบเสนอราคา: <b className="text-slate-900 dark:text-white font-mono">{po.quotation_no || 'ไม่ระบุ'}</b></div>
+                  <div>วันที่ใบเสนอราคา: <b className="text-slate-900 dark:text-white">{po.quotation_date ? formatThaiDate(po.quotation_date, true) : 'ไม่ระบุ'}</b></div>
+                  <div>ผู้ขาย / ร้านค้า: <b className="text-slate-900 dark:text-white">{po.vendors?.vendor_name || po.custom_vendor_name || '-'}</b></div>
+                </div>
+
+                {po.quotation_url ? (
+                  <div className="sm:col-span-2 flex flex-wrap items-center gap-3 bg-white dark:bg-slate-800/80 p-2.5 rounded-xl border border-sky-200 dark:border-sky-800/60">
+                    {/* Thumbnail if Image */}
+                    {po.quotation_url.match(/\.(jpeg|jpg|png|webp|gif)($|\?)/i) || po.quotation_url.startsWith('data:image') ? (
+                      <div
+                        onClick={() => setPreviewQuotationModal(po.quotation_url)}
+                        className="relative h-14 w-20 shrink-0 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 cursor-pointer group bg-slate-100"
+                        title="คลิกเพื่อดูรูปขนาดเต็ม"
+                      >
+                        <img
+                          src={po.quotation_url}
+                          alt="Vendor Quotation"
+                          className="h-full w-full object-cover group-hover:scale-110 transition duration-200"
+                        />
+                        <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 flex items-center justify-center transition">
+                          <Eye className="h-4 w-4 text-white drop-shadow" />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="h-14 w-14 shrink-0 rounded-lg bg-sky-100 dark:bg-sky-950 flex items-center justify-center text-sky-700 dark:text-sky-300 text-2xl font-bold">
+                        📄
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <div className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
+                        ไฟล์เอกสารใบเสนอราคาจากผู้ขาย
+                      </div>
+                      <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                        ตรวจสอบสเปก รายละเอียด และราคาสินค้าได้ตลอดเวลา
+                      </div>
+                      <div className="flex items-center gap-2 mt-1">
+                        <button
+                          type="button"
+                          onClick={() => setPreviewQuotationModal(po.quotation_url)}
+                          className="text-xs font-bold text-sky-700 dark:text-sky-400 hover:underline flex items-center gap-1 cursor-pointer"
+                        >
+                          <Eye className="h-3.5 w-3.5" />
+                          <span>ดูรูปขนาดใหญ่</span>
+                        </button>
+                        <span className="text-slate-300">|</span>
+                        <a
+                          href={po.quotation_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-xs font-bold text-slate-600 dark:text-slate-300 hover:underline flex items-center gap-1"
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                          <span>เปิดลิงก์ไฟล์</span>
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="sm:col-span-2 text-xs text-slate-400 dark:text-slate-500 italic bg-white/50 dark:bg-slate-800/40 p-3 rounded-xl border border-dashed border-slate-200 dark:border-slate-800 flex items-center gap-2">
+                    <span>💡 ยังไม่ได้แนบไฟล์รูปใบเสนอราคา สามารถคลิกปุ่ม "+ แนบรูปใบเสนอราคา" เพื่ออัปโหลดเอกสารต้นฉบับได้</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* 3. Section: รายการพัสดุและแคตตาล็อกวัสดุ (Thai Watsadu Style Product Showcase) */}
             <div className="rounded-3xl border border-slate-200/90 bg-white p-6 shadow-sm space-y-4">
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
@@ -1051,7 +1261,7 @@ export default function PODetail() {
                             <div className="text-right">
                               <div className="text-[10px] text-slate-400 font-semibold uppercase">สั่งซื้อ</div>
                               <div className="font-mono font-bold text-slate-900 text-sm">
-                                {i.quantity} {i.unit || 'ชิ้น'}
+                                {Math.round(Number(i.quantity) || 0)} {i.unit || 'ชิ้น'}
                               </div>
                             </div>
                           </div>
@@ -1144,7 +1354,7 @@ export default function PODetail() {
                               </button>
                             </td>
                             <td className="py-3 px-3 text-right font-mono font-bold text-slate-900">
-                              {i.quantity}
+                              {Math.round(Number(i.quantity) || 0)}
                             </td>
                             <td className="py-3 px-3 text-center text-slate-600 font-medium">
                               {i.unit || 'ชิ้น'}
@@ -1487,7 +1697,7 @@ export default function PODetail() {
                     <tr key={i.id}>
                       <td className="py-2.5 px-3 text-center font-mono">{idx + 1}</td>
                       <td className="py-2.5 px-3 font-semibold text-slate-900">{i.item_name}</td>
-                      <td className="py-2.5 px-3 text-right font-mono">{i.quantity}</td>
+                      <td className="py-2.5 px-3 text-right font-mono font-bold">{Math.round(Number(i.quantity) || 0)}</td>
                       <td className="py-2.5 px-3 text-center text-slate-600">{i.unit}</td>
                       <td className="py-2.5 px-3 text-right font-mono">{baht(itemUnitPrice)}</td>
                       <td className="py-2.5 px-3 text-right font-mono font-bold">{baht(itemTotal)}</td>
@@ -1541,6 +1751,7 @@ export default function PODetail() {
             docNo={po.po_no}
             vendorId={po.vendor_id}
             contactName={po.vendors?.vendor_name}
+            items={items}
             totalAmount={grandTotalVal}
             alreadyPaid={po.deposit_paid_amount || 0}
             depositAmount={po.deposit_amount || 0}
@@ -1561,6 +1772,138 @@ export default function PODetail() {
 
         {showShare && (
           <POShareModal po={po} onClose={() => setShowShare(false)} />
+        )}
+
+        {/* Modal ยืนยันยกเลิกใบสั่งซื้อ (Cancel PO Modal) */}
+        {showCancelModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+            <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
+              <div className="flex items-center gap-3 border-b border-slate-200 dark:border-slate-800 pb-3">
+                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-400 font-bold text-xl shrink-0">
+                  ❌
+                </span>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                    ยกเลิกใบสั่งซื้อ (Cancel PO)
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">
+                    {po.po_no} · ราคาที่สั่งซื้อ ฿{baht(grandTotalVal)} บ.
+                  </p>
+                </div>
+              </div>
+
+              <div className="text-xs text-slate-600 dark:text-slate-300 space-y-2 bg-rose-50/70 dark:bg-rose-950/20 p-3 rounded-xl border border-rose-200/80 dark:border-rose-900/50">
+                <p className="font-bold text-rose-900 dark:text-rose-300">
+                  ⚠️ สิ่งที่จะเกิดขึ้นเมื่อกดยกเลิก:
+                </p>
+                <ul className="list-disc list-inside space-y-1 text-[11px] text-slate-600 dark:text-slate-400">
+                  <li>สถานะของใบสั่งซื้อนี้จะเปลี่ยนเป็น <strong>"ยกเลิก (Cancelled)"</strong></li>
+                  <li>หากมีใบขอซื้อ (PR) เชื่อมอยู่ ระบบจะปลดล็อค PR ให้สามารถนำไปเปิดจัดซื้อใหม่ได้</li>
+                  <li>ไม่สามารถรับของเข้าสโตร์หรือจ่ายเงินในใบสั่งซื้อนี้ได้อีกต่อไป</li>
+                </ul>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                  ระบุเหตุผลในการยกเลิก *
+                </label>
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {[
+                    'ผู้ขายแจ้งสินค้าหมด / เลิกผลิต',
+                    'เปลี่ยนคู่ค้า / เปรียบเทียบราคาใหม่',
+                    'เปลี่ยนสเปกวัสดุวิศวกรรม',
+                    'ยกเลิกโครงการหรือปรับแผนงาน',
+                  ].map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => setCancelReason(preset)}
+                      className="text-[10px] bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-2.5 py-1 rounded-lg transition cursor-pointer"
+                    >
+                      + {preset}
+                    </button>
+                  ))}
+                </div>
+                <textarea
+                  rows={3}
+                  value={cancelReason}
+                  onChange={(e) => setCancelReason(e.target.value)}
+                  placeholder="กรอกเหตุผล เช่น ร้านค้าของหมด / สเปกไม่ตรงตามวิศวกรต้องการ..."
+                  className="w-full text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 p-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-rose-500"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowCancelModal(false)
+                    setCancelReason('')
+                  }}
+                  disabled={cancelling}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+                >
+                  ปิด / ย้อนกลับ
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmCancelPo}
+                  disabled={cancelling || !cancelReason.trim()}
+                  className="px-4 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white shadow-xs transition disabled:opacity-50 cursor-pointer flex items-center gap-1.5"
+                >
+                  <span>{cancelling ? 'กำลังดำเนินการ...' : '❌ ยืนยันยกเลิกใบสั่งซื้อ'}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal: ขยายดูรูปใบเสนอราคาขนาดเต็ม (Quotation Lightbox Preview) */}
+        {previewQuotationModal && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-xs p-4 animate-in fade-in duration-150"
+            onClick={() => setPreviewQuotationModal(null)}
+          >
+            <div
+              className="relative max-w-4xl max-h-[90vh] bg-white dark:bg-slate-900 rounded-2xl p-4 shadow-2xl overflow-hidden flex flex-col space-y-3"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-base">📄</span>
+                  <span className="font-bold text-sm text-slate-900 dark:text-white">
+                    รูปใบเสนอราคาจากผู้ขาย {po.quotation_no ? `(เลขที่ ${po.quotation_no})` : ''}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <a
+                    href={previewQuotationModal}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition flex items-center gap-1"
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                    <span>เปิดภาพต้นฉบับ</span>
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewQuotationModal(null)}
+                    className="rounded-lg p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition cursor-pointer"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-auto max-h-[75vh] flex items-center justify-center bg-slate-950/20 dark:bg-slate-950 rounded-xl p-2">
+                <img
+                  src={previewQuotationModal}
+                  alt="Full Quotation"
+                  className="max-h-full max-w-full object-contain rounded-lg shadow-md"
+                />
+              </div>
+            </div>
+          </div>
         )}
 
       </div>

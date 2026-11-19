@@ -8,6 +8,7 @@ import ItemProjectUsageModal from '../../components/ItemProjectUsageModal'
 import InventoryReportModal from '../../components/reports/InventoryReportModal'
 import Pagination from '../../components/Pagination'
 import R2Image from '../../components/R2Image'
+import TableSortFilter from '../../components/TableSortFilter'
 import {
   Package,
   Search,
@@ -45,6 +46,7 @@ export default function StockList() {
   const [viewMode, setViewMode] = useState('grid') // 'grid' | 'table'
   const [cat, setCat] = useState('') // category_id filter
   const [search, setSearch] = useState('')
+  const [sortBy, setSortBy] = useState('name_asc')
   const [onlyLow, setOnlyLow] = useState(false)
   const [onlyOut, setOnlyOut] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
@@ -105,11 +107,22 @@ export default function StockList() {
     setCurrentPage(1)
   }, [cat, search, onlyLow, onlyOut])
 
-  // คำนวณรายการที่ผ่านการกรอง (ต้องอยู่ก่อน Early Return)
+  // ตัวเลือกการเรียงลำดับมาตรฐานสำหรับคลังวัสดุ
+  const STOCK_SORT_OPTIONS = [
+    { value: 'name_asc', label: '🔤 ชื่อพัสดุ ก ➔ ฮ (A ➔ Z)' },
+    { value: 'name_desc', label: '🔤 ชื่อพัสดุ ฮ ➔ ก (Z ➔ A)' },
+    { value: 'code_asc', label: '🔢 รหัสพัสดุ (น้อย ➔ มาก: 0 ➔ 9)' },
+    { value: 'code_desc', label: '🔢 รหัสพัสดุ (มาก ➔ น้อย: 9 ➔ 0)' },
+    { value: 'qty_desc', label: '📦 จำนวนคงเหลือ (มาก ➔ น้อย)' },
+    { value: 'qty_asc', label: '📦 จำนวนคงเหลือ (น้อย ➔ มาก)' },
+    { value: 'cost_desc', label: '💰 ต้นทุนเฉลี่ย (มาก ➔ น้อย)' },
+  ]
+
+  // คำนวณรายการที่ผ่านการกรองและการจัดเรียง (ต้องอยู่ก่อน Early Return)
   const shown = useMemo(() => {
     if (!items) return []
     const q = search.trim().toLowerCase()
-    return items.filter((i) => {
+    const filtered = items.filter((i) => {
       if (cat && i.category_id !== cat) return false
       if (onlyLow && !isLow(i)) return false
       if (onlyOut && !isOut(i)) return false
@@ -118,7 +131,18 @@ export default function StockList() {
         .toLowerCase()
         .includes(q)
     })
-  }, [items, cat, onlyLow, onlyOut, search])
+
+    return filtered.sort((a, b) => {
+      if (sortBy === 'name_asc') return (a.item_name || '').localeCompare(b.item_name || '', 'th')
+      if (sortBy === 'name_desc') return (b.item_name || '').localeCompare(a.item_name || '', 'th')
+      if (sortBy === 'code_asc') return (a.item_code || '').localeCompare(b.item_code || '', undefined, { numeric: true })
+      if (sortBy === 'code_desc') return (b.item_code || '').localeCompare(a.item_code || '', undefined, { numeric: true })
+      if (sortBy === 'qty_desc') return Number(b.qty_on_hand || 0) - Number(a.qty_on_hand || 0)
+      if (sortBy === 'qty_asc') return Number(a.qty_on_hand || 0) - Number(b.qty_on_hand || 0)
+      if (sortBy === 'cost_desc') return Number(b.avg_unit_cost || 0) - Number(a.avg_unit_cost || 0)
+      return 0
+    })
+  }, [items, cat, onlyLow, onlyOut, search, sortBy])
 
   // คำนวณรายการเฉพาะหน้าปัจจุบัน (ต้องอยู่ก่อน Early Return)
   const paginatedItems = useMemo(() => {
@@ -334,11 +358,11 @@ export default function StockList() {
       </div>
 
       {/* ---------------------------------------------------------------------- */}
-      {/* 3. Search Bar, Quick Filters & View Toggle (Table vs Grid)            */}
+      {/* 3. Search Bar, Standard Sort Filter & View Toggle (Table vs Grid)     */}
       {/* ---------------------------------------------------------------------- */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div className="flex flex-1 items-center gap-2 max-w-md">
-          <div className="relative w-full">
+        <div className="flex flex-1 flex-wrap items-center gap-2">
+          <div className="relative flex-1 min-w-[220px] max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-steel-400" />
             <input
               type="text"
@@ -357,9 +381,16 @@ export default function StockList() {
               </button>
             )}
           </div>
+
+          {/* Standard Sort Filter Control */}
+          <TableSortFilter
+            value={sortBy}
+            onChange={setSortBy}
+            options={STOCK_SORT_OPTIONS}
+          />
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {/* Status Quick Filter Buttons */}
           <button
             type="button"
