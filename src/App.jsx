@@ -38,6 +38,7 @@ import ExpensesPage from './pages/accounting/ExpensesPage'
 import TaxReportsPage from './pages/accounting/TaxReportsPage'
 import ChartOfAccountsPage from './pages/accounting/ChartOfAccountsPage'
 import HRDashboard from './pages/hr/HRDashboard'
+import ContactsPage from './pages/contacts/ContactsPage'
 import { NAV_ITEMS } from './lib/roles'
 
 const rolesOf = (path) => {
@@ -108,6 +109,7 @@ export default function App() {
           <Route path="dashboard" element={<AccountingDashboard />} />
         </Route>
         <Route path="hr" element={guard('/hr', <HRDashboard />)} />
+        <Route path="contacts" element={guard('/contacts', <ContactsPage />)} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

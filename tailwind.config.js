@@ -1,5 +1,6 @@
 /** สีหลักของระบบ: โทนเหล็ก/คอนกรีต + เหลืองป้ายเตือนงานก่อสร้างเป็นสีเน้น */
 export default {
+  darkMode: 'class',
   content: ['./index.html', './src/**/*.{js,jsx}'],
   theme: {
     extend: {

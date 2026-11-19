@@ -47,7 +47,11 @@ export default function PRDetail() {
       <div className="mt-2 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-xl font-bold">{pr.pr_no}</h2>
-          <div className="text-sm text-steel-500">{pr.projects?.project_code} {pr.projects?.project_name} · {pr.request_date}</div>
+          <div className="text-sm text-steel-500">
+            {pr.custom_project_name || (pr.projects ? `${pr.projects.project_code} ${pr.projects.project_name}` : '🏢 ของกลางบริษัท / สต็อกส่วนกลาง')} · {pr.request_date}
+            {pr.customer_name ? <span className="text-blue-700 font-semibold"> · 👤 ลูกค้า: {pr.customer_name}</span> : ''}
+            {pr.suggested_vendor ? <span className="text-emerald-700 font-semibold"> · 🏪 แนะนำ: {pr.suggested_vendor}</span> : ''}
+          </div>
           <div className="mt-1"><Badge map={PR_STATUS} status={pr.status} /></div>
         </div>
         <div className="flex flex-wrap items-center gap-2">

@@ -458,17 +458,17 @@ export default function ProjectDetail() {
       </div>
 
       {/* 3. Detailed Budget Section: Categories & Itemized Equipment Details */}
-      <div className="rounded-2xl border border-steel-200/90 bg-white p-6 shadow-xs">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-steel-100 pb-4">
+      <div className="rounded-2xl border border-steel-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-xs">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-steel-100 dark:border-slate-800 pb-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-800">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300">
               <Layers className="h-5 w-5" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-steel-900">
+              <h2 className="text-lg font-bold text-steel-900 dark:text-slate-100">
                 รายละเอียดหมวดงบประมาณโครงการ (Project Budget Categories & Equipment Details)
               </h2>
-              <p className="text-xs text-steel-500">
+              <p className="text-xs text-steel-500 dark:text-slate-400">
                 แจกแจงหมวดงบชัดเจน เช่น ค่าอุปกรณ์, ค่าแรง, ค่าเครื่องจักร พร้อมระบุรายการ ชนิด จำนวน และราคาต่อหน่วย
               </p>
             </div>
@@ -476,13 +476,13 @@ export default function ProjectDetail() {
 
           <div className="flex items-center gap-2 self-start sm:self-center flex-wrap">
             {/* Toggle View Mode */}
-            <div className="flex items-center rounded-xl bg-steel-100 p-1 text-xs font-bold">
+            <div className="flex items-center rounded-xl bg-steel-100 dark:bg-slate-800 p-1 text-xs font-bold">
               <button
                 onClick={() => setViewMode("categories")}
                 className={`rounded-lg px-3 py-1.5 transition ${
                   viewMode === "categories"
-                    ? "bg-white text-steel-900 shadow-xs"
-                    : "text-steel-600 hover:text-steel-900"
+                    ? "bg-white dark:bg-slate-700 text-steel-900 dark:text-white shadow-xs"
+                    : "text-steel-600 dark:text-slate-400 hover:text-steel-900 dark:hover:text-white"
                 }`}
               >
                 สรุปภาพรวม 6 หมวด
@@ -491,8 +491,8 @@ export default function ProjectDetail() {
                 onClick={() => setViewMode("itemized")}
                 className={`rounded-lg px-3 py-1.5 transition ${
                   viewMode === "itemized"
-                    ? "bg-white text-steel-900 shadow-xs"
-                    : "text-steel-600 hover:text-steel-900"
+                    ? "bg-white dark:bg-slate-700 text-steel-900 dark:text-white shadow-xs"
+                    : "text-steel-600 dark:text-slate-400 hover:text-steel-900 dark:hover:text-white"
                 }`}
               >
                 แจกแจงรายการอุปกรณ์ย่อย ({items.length})
@@ -513,8 +513,8 @@ export default function ProjectDetail() {
 
         {/* Add New Item Form Drawer */}
         {showAddForm && (
-          <div className="mt-4 rounded-xl border border-amber-300 bg-amber-50/50 p-4 shadow-xs">
-            <div className="font-bold text-xs text-amber-900 mb-3 flex items-center gap-1.5">
+          <div className="mt-4 rounded-xl border border-amber-300 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/30 p-4 shadow-xs">
+            <div className="font-bold text-xs text-amber-900 dark:text-amber-200 mb-3 flex items-center gap-1.5">
               <Plus className="h-4 w-4" />
               <span>เพิ่มรายการอุปกรณ์ / รายการงบประมาณใหม่</span>
             </div>
@@ -638,50 +638,50 @@ export default function ProjectDetail() {
               return (
                 <div
                   key={cat.name}
-                  className="rounded-xl border border-steel-200 bg-slate-50/70 p-4 flex flex-col justify-between transition hover:border-amber-300 hover:bg-white hover:shadow-xs"
+                  className="rounded-xl border border-steel-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/80 p-4 flex flex-col justify-between transition hover:border-amber-300 dark:hover:border-amber-500/60 hover:bg-white dark:hover:bg-slate-800 hover:shadow-xs"
                 >
                   <div>
                     <div className="flex items-start justify-between gap-2">
-                      <span className="font-bold text-xs text-steel-900 line-clamp-1">
+                      <span className="font-bold text-xs text-steel-900 dark:text-slate-100 line-clamp-1">
                         {idx + 1}. {cat.name}
                       </span>
-                      <span className="rounded-full bg-steel-200 px-2 py-0.5 text-[10px] font-bold text-steel-700 shrink-0">
+                      <span className="rounded-full bg-steel-200 dark:bg-slate-700 px-2 py-0.5 text-[10px] font-bold text-steel-700 dark:text-slate-200 shrink-0">
                         {cat.itemsCount} รายการ
                       </span>
                     </div>
 
-                    <div className="mt-3 text-lg font-black font-mono text-steel-900">
-                      {baht(cat.budgeted)} <span className="text-xs font-normal text-steel-500">บาท</span>
+                    <div className="mt-3 text-lg font-black font-mono text-steel-900 dark:text-white">
+                      {baht(cat.budgeted)} <span className="text-xs font-normal text-steel-500 dark:text-slate-400">บาท</span>
                     </div>
-                    <div className="text-[11px] text-steel-500">
+                    <div className="text-[11px] text-steel-500 dark:text-slate-400">
                       สัดส่วน: {catPct}% ของงบโครงการรวม
                     </div>
 
                     {/* Progress Bar of actual spent within this category */}
                     <div className="mt-3 space-y-1">
                       <div className="flex items-center justify-between text-[11px]">
-                        <span className="text-steel-600">ใช้จริง/สั่งซื้อแล้ว:</span>
-                        <span className="font-bold font-mono text-amber-800">{baht(cat.actualSpent)} บ. ({usedPct}%)</span>
+                        <span className="text-steel-600 dark:text-slate-400">ใช้จริง/สั่งซื้อแล้ว:</span>
+                        <span className="font-bold font-mono text-amber-800 dark:text-amber-400">{baht(cat.actualSpent)} บ. ({usedPct}%)</span>
                       </div>
-                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-steel-200">
+                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-steel-200 dark:bg-slate-700">
                         <div
                           className={`h-full ${Number(usedPct) > 90 ? "bg-rose-500" : "bg-amber-500"}`}
                           style={{ width: `${Math.min(Number(usedPct), 100)}%` }}
                         />
                       </div>
-                      <div className="flex items-center justify-between text-[10px] text-steel-500 pt-0.5">
+                      <div className="flex items-center justify-between text-[10px] text-steel-500 dark:text-slate-400 pt-0.5">
                         <span>คงเหลือในหมวด:</span>
-                        <span className={`font-bold ${catRemain >= 0 ? "text-emerald-700" : "text-rose-600"}`}>
+                        <span className={`font-bold ${catRemain >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
                           {baht(catRemain)} บ.
                         </span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="mt-3 pt-2 border-t border-steel-200/60">
+                  <div className="mt-3 pt-2 border-t border-steel-200/60 dark:border-slate-700/60">
                     <button
                       onClick={() => setViewMode("itemized")}
-                      className="text-[11px] font-bold text-amber-800 hover:underline flex items-center justify-between w-full"
+                      className="text-[11px] font-bold text-amber-800 dark:text-amber-400 hover:underline flex items-center justify-between w-full"
                     >
                       <span>ดูแจกแจงอุปกรณ์ในหมวดนี้ ({cat.itemsCount} รายการ)</span>
                       <ArrowRight className="h-3 w-3" />
@@ -693,10 +693,10 @@ export default function ProjectDetail() {
           </div>
         ) : (
           /* View Mode 2: แจกแจงรายการอุปกรณ์ย่อยทั้งหมด (Detailed Itemized Breakdown Table) */
-          <div className="mt-5 overflow-x-auto rounded-xl border border-steel-200">
+          <div className="mt-5 overflow-x-auto rounded-xl border border-steel-200 dark:border-slate-800">
             <table className="w-full text-left text-xs min-w-[840px]">
               <thead>
-                <tr className="border-b border-steel-200 bg-steel-50 text-steel-600 font-bold uppercase tracking-wider">
+                <tr className="border-b border-steel-200 dark:border-slate-800 bg-steel-50 dark:bg-slate-800 text-steel-600 dark:text-slate-300 font-bold uppercase tracking-wider">
                   <th className="py-3 px-3">หมวดงบประมาณ</th>
                   <th className="py-3 px-2 text-center">รหัสพัสดุ</th>
                   <th className="py-3 px-3">รายการอุปกรณ์ / บริการ</th>
@@ -709,40 +709,40 @@ export default function ProjectDetail() {
                   {canEdit && <th className="py-3 px-2 text-center w-16">จัดการ</th>}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-steel-100 bg-white">
+              <tbody className="divide-y divide-steel-100 dark:divide-slate-800 bg-white dark:bg-slate-900">
                 {items.map((item) => (
-                  <tr key={item.id} className="hover:bg-slate-50 transition">
-                    <td className="py-2.5 px-3 font-semibold text-steel-700 max-w-[160px] truncate" title={item.category}>
+                  <tr key={item.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/60 transition">
+                    <td className="py-2.5 px-3 font-semibold text-steel-700 dark:text-slate-300 max-w-[160px] truncate" title={item.category}>
                       {item.category}
                     </td>
-                    <td className="py-2.5 px-2 text-center font-mono text-[11px] text-steel-500 font-bold">
+                    <td className="py-2.5 px-2 text-center font-mono text-[11px] text-steel-500 dark:text-slate-400 font-bold">
                       {item.item_code || "-"}
                     </td>
-                    <td className="py-2.5 px-3 font-bold text-steel-900 max-w-xs truncate" title={item.item_name}>
+                    <td className="py-2.5 px-3 font-bold text-steel-900 dark:text-slate-100 max-w-xs truncate" title={item.item_name}>
                       {item.item_name}
                     </td>
-                    <td className="py-2.5 px-2 text-right font-mono font-medium text-steel-800">
+                    <td className="py-2.5 px-2 text-right font-mono font-medium text-steel-800 dark:text-slate-200">
                       {Number(item.quantity || 1).toLocaleString("th-TH")}
                     </td>
-                    <td className="py-2.5 px-2 text-center text-steel-500">
+                    <td className="py-2.5 px-2 text-center text-steel-500 dark:text-slate-400">
                       {item.unit || "รายการ"}
                     </td>
-                    <td className="py-2.5 px-3 text-right font-mono text-steel-700">
+                    <td className="py-2.5 px-3 text-right font-mono text-steel-700 dark:text-slate-300">
                       {baht(item.unit_cost || item.budgeted_amount)}
                     </td>
-                    <td className="py-2.5 px-3 text-right font-mono font-bold text-steel-900">
+                    <td className="py-2.5 px-3 text-right font-mono font-bold text-steel-900 dark:text-slate-100">
                       {baht(item.budgeted_amount)}
                     </td>
-                    <td className="py-2.5 px-3 text-right font-mono font-bold text-amber-800">
+                    <td className="py-2.5 px-3 text-right font-mono font-bold text-amber-800 dark:text-amber-400">
                       {baht(item.actual_spent || 0)}
                     </td>
                     <td className="py-2.5 px-2 text-center">
                       {item.po_ref && item.po_ref !== "-" ? (
-                        <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-mono font-bold text-amber-800 border border-amber-200">
+                        <span className="rounded bg-amber-50 dark:bg-amber-950/60 px-1.5 py-0.5 text-[10px] font-mono font-bold text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
                           {item.po_ref}
                         </span>
                       ) : (
-                        <span className="text-steel-300">-</span>
+                        <span className="text-steel-300 dark:text-slate-600">-</span>
                       )}
                     </td>
                     {canEdit && (

@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { supabase } from '../../lib/supabase'
 import { baht } from '../../lib/projects'
 import ExpenseFormModal from './ExpenseFormModal'
+import Pagination from '../../components/Pagination'
 import { Plus, Search, Filter, CheckCircle2, Clock, DollarSign, ArrowRightLeft } from 'lucide-react'
 
 export default function ExpensesPage() {
@@ -16,6 +17,8 @@ export default function ExpensesPage() {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all') // 'all' | 'pending_reimburse' | 'paid' | 'pending'
   const [selectedProject, setSelectedProject] = useState('all')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(15) // 10 | 15 | 30 | 50
 
   // Modals
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -183,6 +186,17 @@ export default function ExpensesPage() {
       e.projects?.project_code?.toLowerCase().includes(q)
     )
   })
+
+  // รีเซ็ตหน้ากลับไปหน้าที่ 1 เมื่อตัวกรองหรือคำค้นหาเปลี่ยน
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [search, statusFilter, selectedProject])
+
+  // คำนวณรายการเฉพาะหน้าปัจจุบัน
+  const paginatedExpenses = useMemo(() => {
+    const start = (currentPage - 1) * pageSize
+    return filteredExpenses.slice(start, start + pageSize)
+  }, [filteredExpenses, currentPage, pageSize])
 
   return (
     <div className="space-y-4">
@@ -355,7 +369,7 @@ export default function ExpensesPage() {
                 <td colSpan={9} className="py-8 text-center text-steel-400">ไม่พบรายการค่าใช้จ่ายตามเงื่อนไขที่เลือก</td>
               </tr>
             ) : (
-              filteredExpenses.map((row) => {
+              paginatedExpenses.map((row) => {
                 const isReimbursable = row.status === 'รอคืนเงินสำรองจ่าย' || row.reimbursement_status === 'รอคืนเงินสำรองจ่าย'
                 const isAdvance = row.payment_source === 'advance_payment'
                 const netAmount = Number(row.total_amount) - Number(row.wht_amount || 0)
@@ -472,6 +486,23 @@ export default function ExpensesPage() {
             )}
           </tbody>
         </table>
+
+        {/* แถบเปลี่ยนหน้า (Pagination < 1 2 3 4 5 6 >) */}
+        {!loading && filteredExpenses.length > 0 && (
+          <div className="border-t border-steel-200 bg-white px-4 py-2.5">
+            <Pagination
+              currentPage={currentPage}
+              totalItems={filteredExpenses.length}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={(newSize) => {
+                setPageSize(newSize)
+                setCurrentPage(1)
+              }}
+              pageSizeOptions={[10, 15, 30, 50]}
+            />
+          </div>
+        )}
       </div>
 
       {/* Modal บันทึกค่าใช้จ่ายใหม่ */}

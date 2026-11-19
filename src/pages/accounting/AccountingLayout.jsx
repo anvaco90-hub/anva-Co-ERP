@@ -46,7 +46,7 @@ export default function AccountingLayout() {
   return (
     <div className="space-y-4">
       {/* Top Navigation Bar with FlowAccount ERP Styling */}
-      <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-md rounded-xl border border-steel-200 shadow-sm p-1.5 overflow-x-auto">
+      <div className="sticky top-0 z-20 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-xl border border-steel-200 dark:border-slate-800 shadow-sm p-1.5 overflow-x-auto">
         <nav className="flex items-center gap-1 min-w-max">
           {TABS.map((tab) => {
             const Icon = tab.icon
@@ -57,8 +57,8 @@ export default function AccountingLayout() {
                 className={({ isActive }) =>
                   `flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold transition ${
                     isActive
-                      ? 'bg-sky-700 text-white shadow-sm'
-                      : 'text-steel-600 hover:text-sky-800 hover:bg-steel-50'
+                      ? 'bg-sky-700 dark:bg-amber-500 text-white dark:text-slate-950 shadow-sm'
+                      : 'text-steel-600 dark:text-slate-300 hover:text-sky-800 dark:hover:text-amber-300 hover:bg-steel-50 dark:hover:bg-slate-800'
                   }`
                 }
               >

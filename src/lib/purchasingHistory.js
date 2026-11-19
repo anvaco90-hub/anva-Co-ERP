@@ -61,16 +61,17 @@ export async function getItemVendorHistory(itemName) {
  * @returns {Promise<Object>} สรุปประวัติตามโครงการ
  */
 export async function getItemProjectUsageHistory(itemName, itemId = null) {
-  if (!itemName && !itemId) return { byProject: [], totalPurchased: 0, totalIssued: 0 }
+  if (!itemName && !itemId) return { byProject: [], poTransactions: [], issueTransactions: [], totalPurchased: 0, totalIssued: 0 }
 
   try {
-    // 1. ดึงจากใบสั่งซื้อ (Purchases per project)
+    // 1. ดึงจากใบสั่งซื้อ (Purchases per project & PO List)
     let poQuery = supabase
       .from('purchase_order_items')
       .select(`
         id, quantity, unit, unit_price, qty_received,
         po:purchase_orders!inner (
-          id, po_no, order_date, status,
+          id, po_no, order_date, status, custom_vendor_name, custom_project_name,
+          vendors ( id, vendor_name ),
           project:projects ( id, project_code, project_name )
         )
       `)
@@ -82,7 +83,7 @@ export async function getItemProjectUsageHistory(itemName, itemId = null) {
 
     const { data: poItems } = await poQuery
 
-    // 2. ดึงจากใบเบิกสโตร์ (Issues per project) ถ้ามี itemId
+    // 2. ดึงจากใบเบิกสโตร์ (Issues per project)
     let issueItems = []
     if (itemId) {
       const { data: issues } = await supabase
@@ -90,7 +91,7 @@ export async function getItemProjectUsageHistory(itemName, itemId = null) {
         .select(`
           id, quantity,
           issue:stock_issues!inner (
-            id, issue_no, issue_date,
+            id, issue_no, issue_date, notes,
             project:projects ( id, project_code, project_name )
           )
         `)
@@ -100,15 +101,37 @@ export async function getItemProjectUsageHistory(itemName, itemId = null) {
 
     // รวมข้อมูลตามโครงการ
     const projectMap = new Map()
+    const poTransactions = []
+    const issueTransactions = []
 
     // วนรอบ PO
     ;(poItems ?? []).forEach((pi) => {
       const proj = pi.po?.project
-      if (!proj) return
-      const cur = projectMap.get(proj.id) || {
-        projectId: proj.id,
-        projectCode: proj.project_code,
-        projectName: proj.projectName,
+      const projId = proj?.id || 'general'
+      const projCode = proj?.project_code || 'ของกลาง'
+      const projName = proj?.project_name || pi.po?.custom_project_name || '🏢 ของกลางบริษัท / สต็อกส่วนกลาง'
+      const vendorName = pi.po?.custom_vendor_name || pi.po?.vendors?.vendor_name || 'ไม่ระบุผู้ขาย'
+
+      poTransactions.push({
+        id: pi.id,
+        poId: pi.po?.id,
+        poNo: pi.po?.po_no,
+        date: pi.po?.order_date,
+        vendorName,
+        projectName: projName,
+        projectCode: projCode,
+        quantity: Number(pi.quantity || 0),
+        unit: pi.unit || '',
+        unitPrice: Number(pi.unit_price || 0),
+        totalAmount: Number(pi.quantity || 0) * Number(pi.unit_price || 0),
+        qtyReceived: Number(pi.qty_received || 0),
+        status: pi.po?.status,
+      })
+
+      const cur = projectMap.get(projId) || {
+        projectId: projId,
+        projectCode: projCode,
+        projectName: projName,
         totalPurchased: 0,
         totalReceived: 0,
         totalIssued: 0,
@@ -129,17 +152,31 @@ export async function getItemProjectUsageHistory(itemName, itemId = null) {
       if (!cur.lastDate || new Date(pi.po?.order_date) > new Date(cur.lastDate)) {
         cur.lastDate = pi.po?.order_date
       }
-      projectMap.set(proj.id, cur)
+      projectMap.set(projId, cur)
     })
 
     // วนรอบ Issue
     ;(issueItems ?? []).forEach((ii) => {
       const proj = ii.issue?.project
-      if (!proj) return
-      const cur = projectMap.get(proj.id) || {
-        projectId: proj.id,
-        projectCode: proj.project_code,
-        projectName: proj.project_name,
+      const projId = proj?.id || 'general'
+      const projCode = proj?.project_code || 'ของกลาง'
+      const projName = proj?.project_name || '🏢 ของกลางบริษัท / สต็อกส่วนกลาง'
+
+      issueTransactions.push({
+        id: ii.id,
+        issueId: ii.issue?.id,
+        issueNo: ii.issue?.issue_no,
+        date: ii.issue?.issue_date,
+        projectName: projName,
+        projectCode: projCode,
+        quantity: Number(ii.quantity || 0),
+        notes: ii.issue?.notes || '',
+      })
+
+      const cur = projectMap.get(projId) || {
+        projectId: projId,
+        projectCode: projCode,
+        projectName: projName,
         totalPurchased: 0,
         totalReceived: 0,
         totalIssued: 0,
@@ -158,8 +195,12 @@ export async function getItemProjectUsageHistory(itemName, itemId = null) {
       if (!cur.lastDate || new Date(ii.issue?.issue_date) > new Date(cur.lastDate)) {
         cur.lastDate = ii.issue?.issue_date
       }
-      projectMap.set(proj.id, cur)
+      projectMap.set(projId, cur)
     })
+
+    // จัดเรียงรายการตามวันที่ล่าสุด
+    poTransactions.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0))
+    issueTransactions.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0))
 
     const byProject = Array.from(projectMap.values())
     const totalPurchased = byProject.reduce((s, p) => s + p.totalPurchased, 0)
@@ -167,12 +208,14 @@ export async function getItemProjectUsageHistory(itemName, itemId = null) {
 
     return {
       byProject,
+      poTransactions,
+      issueTransactions,
       totalPurchased,
       totalIssued,
     }
   } catch (err) {
     console.warn('Error fetching item project usage:', err)
-    return { byProject: [], totalPurchased: 0, totalIssued: 0 }
+    return { byProject: [], poTransactions: [], issueTransactions: [], totalPurchased: 0, totalIssued: 0 }
   }
 }
 

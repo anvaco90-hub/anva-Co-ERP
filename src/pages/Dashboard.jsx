@@ -725,25 +725,25 @@ export default function Dashboard() {
 
       {/* Simulation Info Banner */}
       {isDemoMode && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-300/80 bg-gradient-to-r from-amber-50 via-amber-100/70 to-amber-50 p-4 text-xs text-amber-950 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-300/80 dark:border-amber-800/60 bg-gradient-to-r from-amber-50 via-amber-100/70 to-amber-50 dark:from-slate-900 dark:via-amber-950/20 dark:to-slate-900 p-4 text-xs text-amber-950 dark:text-amber-200 shadow-sm">
           <div className="flex items-center gap-3 min-w-0">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-400 text-steel-950 font-black text-base shadow-xs">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-400 dark:bg-amber-500 text-steel-950 font-black text-base shadow-xs">
               📊
             </span>
             <div className="min-w-0">
-              <div className="font-bold text-sm text-steel-900 flex items-center gap-2 flex-wrap">
+              <div className="font-bold text-sm text-steel-900 dark:text-white flex items-center gap-2 flex-wrap">
                 <span>กำลังแสดงผลชุดข้อมูลจำลองสมจริง (Realistic Enterprise Simulation Active)</span>
-                <span className="rounded-md bg-amber-200 px-2 py-0.5 text-[10px] font-black text-amber-900 uppercase">
+                <span className="rounded-md bg-amber-200 dark:bg-amber-900/80 px-2 py-0.5 text-[10px] font-black text-amber-900 dark:text-amber-300 uppercase border border-amber-300 dark:border-amber-700">
                   สำหรับผู้ทดลองระบบ
                 </span>
               </div>
-              <div className="text-steel-700 text-xs mt-0.5 leading-relaxed">
+              <div className="text-steel-700 dark:text-slate-300 text-xs mt-0.5 leading-relaxed">
                 จำลองข้อมูลครบวงจร 6 ด้าน: ยอดขายตามสินค้า, สรุปยอดเก็บเงิน, ยอดค้างรับ (AR), ยอดค้างจ่าย (AP), สรุปยอดชำระเงิน, และรายได้-ค่าใช้จ่ายตามเอกสาร พร้อมเชื่อมโยง ฝ่ายจัดซื้อ ฝ่ายสโตร์ และฝ่ายโครงการ
               </div>
             </div>
           </div>
           <div className="flex items-center gap-2 font-medium shrink-0">
-            <span className="rounded-lg bg-white px-3 py-1.5 text-xs font-bold text-steel-800 border border-amber-200 shadow-xs">
+            <span className="rounded-lg bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-bold text-steel-800 dark:text-slate-200 border border-amber-200 dark:border-slate-700 shadow-xs">
               🎯 ทดสอบตัวกรอง ปี/เดือน/ไตรมาส ได้แบบเรียลไทม์
             </span>
           </div>
@@ -753,17 +753,17 @@ export default function Dashboard() {
       {/* ------------------------------------------------------------------------ */}
       {/* 2. Sticky Master Bar (แผงเลือกช่วงเวลา & ทางลัดโมดูลแบบคงที่ ไม่ต้องเลื่อนหา) */}
       {/* ------------------------------------------------------------------------ */}
-      <div className="sticky top-0 z-30 rounded-2xl border border-steel-200/90 bg-white/95 backdrop-blur-md p-4 shadow-md transition-all">
+      <div className="sticky top-0 z-30 rounded-2xl border border-steel-200/90 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md p-4 shadow-md transition-all">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400">
               <Calendar className="h-5 w-5" />
             </div>
             <div className="min-w-0">
-              <div className="text-[10px] font-bold uppercase tracking-wider text-steel-500">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-steel-500 dark:text-slate-400">
                 ตัวกรองระยะเวลา & ทางลัด (Persistent Control Bar)
               </div>
-              <div className="text-xs sm:text-sm font-bold text-steel-900 truncate">
+              <div className="text-xs sm:text-sm font-bold text-steel-900 dark:text-white truncate">
                 {periodPreset === 'all' && 'แสดงข้อมูลทั้งหมด (All Time)'}
                 {periodPreset === '2026' && 'ปี พ.ศ. 2569 (2026 ทั้งปี)'}
                 {periodPreset === 'Q4' && 'ไตรมาสที่ 4 / 2569 (ต.ค. - ธ.ค. 2026)'}
@@ -787,54 +787,54 @@ export default function Dashboard() {
               <button
                 key={preset.id}
                 onClick={() => handlePresetChange(preset.id)}
-                className={`rounded-lg px-2.5 py-1 text-xs font-bold transition ${
+                className={`rounded-lg px-2.5 py-1 text-xs font-bold transition cursor-pointer ${
                   periodPreset === preset.id
-                    ? 'bg-steel-900 text-white shadow-xs'
-                    : 'bg-steel-100 text-steel-700 hover:bg-steel-200'
+                    ? 'bg-steel-900 dark:bg-amber-500 text-white dark:text-slate-950 shadow-xs'
+                    : 'bg-steel-100 dark:bg-slate-800 text-steel-700 dark:text-slate-300 hover:bg-steel-200 dark:hover:bg-slate-700'
                 }`}
               >
                 {preset.label}
               </button>
             ))}
 
-            <div className="h-4 w-px bg-steel-200 mx-1 hidden sm:block" />
+            <div className="h-4 w-px bg-steel-200 dark:bg-slate-700 mx-1 hidden sm:block" />
 
-            {/* Direct Module Jump Shortcuts (ไม่ต้องเลื่อนลงล่างสุด ค่อยเจอ) */}
+            {/* Direct Module Jump Shortcuts */}
             <Link
               to="/purchasing"
-              className="rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 px-2 py-1 text-xs font-bold transition flex items-center gap-1"
+              className="rounded-lg bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/50 text-amber-900 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60 px-2 py-1 text-xs font-bold transition flex items-center gap-1"
               title="ฝ่ายจัดซื้อ (PO/PR)"
             >
-              <ShoppingCart className="h-3 w-3 text-amber-700" />
+              <ShoppingCart className="h-3 w-3 text-amber-700 dark:text-amber-400" />
               <span>จัดซื้อ</span>
             </Link>
             <Link
               to="/store"
-              className="rounded-lg bg-teal-50 hover:bg-teal-100 text-teal-900 border border-teal-200 px-2 py-1 text-xs font-bold transition flex items-center gap-1"
+              className="rounded-lg bg-teal-50 dark:bg-emerald-950/40 hover:bg-teal-100 dark:hover:bg-emerald-900/50 text-teal-900 dark:text-emerald-300 border border-teal-200 dark:border-emerald-800/60 px-2 py-1 text-xs font-bold transition flex items-center gap-1"
               title="ฝ่ายคลังสินค้าและสโตร์"
             >
-              <Boxes className="h-3 w-3 text-teal-700" />
+              <Boxes className="h-3 w-3 text-teal-700 dark:text-emerald-400" />
               <span>สโตร์</span>
             </Link>
             <Link
               to="/projects"
-              className="rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 px-2 py-1 text-xs font-bold transition flex items-center gap-1"
+              className="rounded-lg bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/50 text-blue-900 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60 px-2 py-1 text-xs font-bold transition flex items-center gap-1"
               title="ฝ่ายบริหารโครงการ"
             >
-              <Briefcase className="h-3 w-3 text-blue-700" />
+              <Briefcase className="h-3 w-3 text-blue-700 dark:text-blue-400" />
               <span>โครงการ</span>
             </Link>
             <Link
               to="/accounting/journals"
-              className="rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-900 border border-indigo-200 px-2 py-1 text-xs font-bold transition flex items-center gap-1"
+              className="rounded-lg bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 text-indigo-900 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/60 px-2 py-1 text-xs font-bold transition flex items-center gap-1"
               title="สมุดรายวันทั่วไป (GL)"
             >
-              <BookOpen className="h-3 w-3 text-indigo-700" />
+              <BookOpen className="h-3 w-3 text-indigo-700 dark:text-indigo-400" />
               <span>บัญชี GL</span>
             </Link>
             <Link
               to="/accounting/tax-reports"
-              className="rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-900 border border-sky-200 px-2 py-1 text-xs font-bold transition flex items-center gap-1"
+              className="rounded-lg bg-sky-50 dark:bg-sky-950/40 hover:bg-sky-100 dark:hover:bg-sky-900/50 text-sky-900 dark:text-sky-300 border border-sky-200 dark:border-sky-800/60 px-2 py-1 text-xs font-bold transition flex items-center gap-1"
               title="ระบบภาษี ภ.พ.30"
             >
               <span>ภ.พ.30</span>
@@ -843,16 +843,16 @@ export default function Dashboard() {
         </div>
 
         {/* Detailed Dropdown & Date Picker Controls */}
-        <div className="mt-3 grid grid-cols-1 gap-2.5 border-t border-steel-100 pt-3 sm:grid-cols-2 md:grid-cols-4">
+        <div className="mt-3 grid grid-cols-1 gap-2.5 border-t border-steel-100 dark:border-slate-800 pt-3 sm:grid-cols-2 md:grid-cols-4">
           <div>
-            <label className="block text-[10px] font-bold text-steel-600 mb-0.5">เลือกปี (พ.ศ. / ค.ศ.)</label>
+            <label className="block text-[10px] font-bold text-steel-600 dark:text-slate-400 mb-0.5">เลือกปี (พ.ศ. / ค.ศ.)</label>
             <select
               value={filterYear}
               onChange={(e) => {
                 setFilterYear(e.target.value)
                 setPeriodPreset('custom')
               }}
-              className="w-full rounded-lg border border-steel-300 bg-white px-2.5 py-1 text-xs font-semibold text-steel-900 focus:border-hivis focus:outline-none"
+              className="w-full rounded-lg border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 py-1 text-xs font-semibold text-steel-900 dark:text-slate-100 focus:border-hivis focus:outline-none"
             >
               <option value="all">ทุกปี (All Years)</option>
               <option value="2026">2569 (2026) - ปัจจุบัน</option>
@@ -862,14 +862,14 @@ export default function Dashboard() {
           </div>
 
           <div>
-            <label className="block text-[10px] font-bold text-steel-600 mb-0.5">เลือกเดือน</label>
+            <label className="block text-[10px] font-bold text-steel-600 dark:text-slate-400 mb-0.5">เลือกเดือน</label>
             <select
               value={filterMonth}
               onChange={(e) => {
                 setFilterMonth(e.target.value)
                 setPeriodPreset('custom')
               }}
-              className="w-full rounded-lg border border-steel-300 bg-white px-2.5 py-1 text-xs font-semibold text-steel-900 focus:border-hivis focus:outline-none"
+              className="w-full rounded-lg border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 py-1 text-xs font-semibold text-steel-900 dark:text-slate-100 focus:border-hivis focus:outline-none"
             >
               <option value="all">ทุกเดือน (All Months)</option>
               {THAI_MONTHS.map((m, idx) => (
@@ -881,7 +881,7 @@ export default function Dashboard() {
           </div>
 
           <div>
-            <label className="block text-[10px] font-bold text-steel-600 mb-0.5">ตั้งแต่วันที่</label>
+            <label className="block text-[10px] font-bold text-steel-600 dark:text-slate-400 mb-0.5">ตั้งแต่วันที่</label>
             <input
               type="date"
               value={customStartDate}
@@ -889,12 +889,12 @@ export default function Dashboard() {
                 setCustomStartDate(e.target.value)
                 setPeriodPreset('custom')
               }}
-              className="w-full rounded-lg border border-steel-300 bg-white px-2.5 py-1 text-xs font-semibold text-steel-900 focus:border-hivis focus:outline-none"
+              className="w-full rounded-lg border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 py-1 text-xs font-semibold text-steel-900 dark:text-slate-100 focus:border-hivis focus:outline-none"
             />
           </div>
 
           <div>
-            <label className="block text-[10px] font-bold text-steel-600 mb-0.5">ถึงวันที่</label>
+            <label className="block text-[10px] font-bold text-steel-600 dark:text-slate-400 mb-0.5">ถึงวันที่</label>
             <input
               type="date"
               value={customEndDate}
@@ -902,7 +902,7 @@ export default function Dashboard() {
                 setCustomEndDate(e.target.value)
                 setPeriodPreset('custom')
               }}
-              className="w-full rounded-lg border border-steel-300 bg-white px-2.5 py-1 text-xs font-semibold text-steel-900 focus:border-hivis focus:outline-none"
+              className="w-full rounded-lg border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 py-1 text-xs font-semibold text-steel-900 dark:text-slate-100 focus:border-hivis focus:outline-none"
             />
           </div>
         </div>

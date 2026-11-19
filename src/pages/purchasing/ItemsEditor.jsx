@@ -21,12 +21,20 @@ export default function ItemsEditor({ items, onChange, priceLabel, showErrors = 
     const updated = items.map((it, idx) => {
       if (idx !== i) return it
       const next = { ...it, [k]: v }
-      // ถ้าเลือกหรือพิมพ์ชื่อที่ตรงกับ catalog ให้ช่วยดึงหน่วยและราคาเฉลี่ยมาอัตโนมัติ
+      // บังคับจำนวนพัสดุให้เป็นจำนวนเต็ม (Integer)
+      if (k === 'quantity') {
+        const cleanInt = v === '' ? '' : String(Math.max(0, parseInt(v, 10) || 0))
+        next.quantity = cleanInt
+      }
+      // ถ้าเลือกหรือพิมพ์ชื่อที่ตรงกับ catalog ให้ช่วยดึงหน่วย ราคาเฉลี่ย และรหัสสินค้ามาอัตโนมัติ
       if (k === 'item_name') {
         const found = catalog.find((c) => c.item_name.toLowerCase() === String(v || '').trim().toLowerCase())
         if (found) {
+          next.item_id = found.id
           if (!next.unit && found.unit) next.unit = found.unit
           if (!next.price && found.avg_unit_cost) next.price = String(found.avg_unit_cost)
+        } else {
+          next.item_id = null
         }
       }
       return next
@@ -39,6 +47,7 @@ export default function ItemsEditor({ items, onChange, priceLabel, showErrors = 
       if (idx !== index) return it
       return {
         ...it,
+        item_id: catalogItem.id,
         item_name: catalogItem.item_name,
         unit: catalogItem.unit || it.unit || '',
         price: catalogItem.avg_unit_cost ? String(catalogItem.avg_unit_cost) : it.price || '',
@@ -91,11 +100,11 @@ export default function ItemsEditor({ items, onChange, priceLabel, showErrors = 
               {/* ช่องจำนวน */}
               <div>
                 <input
-                  className={fieldErrorClass(qtyEmpty, 'input w-full')}
+                  className={fieldErrorClass(qtyEmpty, 'input w-full font-mono font-bold')}
                   type="number"
-                  min={locked ? it.received : 0}
-                  step="0.01"
-                  placeholder="จำนวน"
+                  min={locked ? it.received : 1}
+                  step="1"
+                  placeholder="จำนวน (ตัวเลข)"
                   value={it.quantity}
                   onChange={(e) => upd(i, 'quantity', e.target.value)}
                 />

@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { baht } from '../../lib/projects'
+import Pagination from '../../components/Pagination'
 import {
   FileSpreadsheet,
   Plus,
@@ -28,6 +29,8 @@ export default function BOQList() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10) // 10 | 20 | 50
 
   const fetchBOQs = async () => {
     setLoading(true)
@@ -64,6 +67,15 @@ export default function BOQList() {
     const matchStatus = filterStatus === 'all' || b.status === filterStatus
     return matchSearch && matchStatus
   })
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [search, filterStatus])
+
+  const paginatedBoqs = useMemo(() => {
+    const start = (currentPage - 1) * pageSize
+    return filtered.slice(start, start + pageSize)
+  }, [filtered, currentPage, pageSize])
 
   // สรุปยอด
   const totalValue = boqs.reduce((s, b) => s + Number(b.grand_total || 0), 0)
@@ -204,7 +216,7 @@ export default function BOQList() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-steel-100">
-                {filtered.map((b) => {
+                {paginatedBoqs.map((b) => {
                   const st = STATUS_MAP[b.status] || {
                     label: b.status,
                     color: 'bg-steel-100 text-steel-700 border-steel-200',
@@ -269,6 +281,23 @@ export default function BOQList() {
                 })}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {/* แถบเปลี่ยนหน้า (Pagination < 1 2 3 4 5 6 >) */}
+        {!loading && filtered.length > 0 && (
+          <div className="rounded-2xl border border-steel-200 bg-white px-5 py-3 shadow-xs mt-4">
+            <Pagination
+              currentPage={currentPage}
+              totalItems={filtered.length}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={(newSize) => {
+                setPageSize(newSize)
+                setCurrentPage(1)
+              }}
+              pageSizeOptions={[10, 20, 50]}
+            />
           </div>
         )}
       </div>

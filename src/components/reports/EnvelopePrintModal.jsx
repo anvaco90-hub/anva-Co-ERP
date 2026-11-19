@@ -1,23 +1,50 @@
 import { useState } from 'react'
 
-export default function EnvelopePrintModal({ po, quotation, onClose }) {
-  const doc = quotation || po
+export default function EnvelopePrintModal({ po, quotation, contact, onClose }) {
+  const doc = quotation || po || contact
   if (!doc) return null
 
   const isQuotation = Boolean(quotation)
-  const docBadge = isQuotation ? `QT: ${quotation.quotation_no || ''}` : `PO: ${po?.po_no || ''}`
+  const isContact = Boolean(contact)
+  const docBadge = isQuotation
+    ? `QT: ${quotation.quotation_no || ''}`
+    : isContact
+    ? `คู่ค้า: ${contact.contact_code || contact.business_name || ''}`
+    : `PO: ${po?.po_no || ''}`
+
   const docSubtitle = isQuotation
     ? 'จ่าหน้าซองจดหมายส่งใบเสนอราคา สัญญาจ้าง หรือเอกสารวางบิลถึงลูกค้า'
+    : isContact
+    ? 'จ่าหน้าซองจดหมายส่งเอกสาร สัญญา หรือจดหมายทางการถึงคู่ค้า'
     : 'จ่าหน้าซองจดหมายส่งใบสั่งซื้อ เช็คชำระเงิน หรือเอกสารสัญญาถึงคู่ค้า'
 
   const [envelopeSize, setEnvelopeSize] = useState('c5') // 'c5' | 'dl' | 'label'
   const [senderName, setSenderName] = useState('บริษัท แอนวา คอนสตรัคชั่น แอนด์ เอ็นจิเนียริ่ง จำกัด')
   const [senderAddress, setSenderAddress] = useState('อาคารเอ็นจิเนียริ่ง คอมเพล็กซ์ ถ.วิภาวดีรังสิต แขวงลาดยาว เขตจตุจักร กรุงเทพมหานคร 10900 โทร. 02-555-8888')
   
-  const defaultRecipientName = isQuotation ? (quotation.customer_name || 'ชื่อลูกค้า / บริษัทลูกค้า') : (po?.vendors?.vendor_name || 'ชื่อผู้ขาย / บริษัทคู่ค้า')
-  const defaultContactPerson = isQuotation ? (quotation.customer_signer_name || quotation.contact_person || '') : (po?.vendors?.contact_person || '')
-  const defaultRecipientAddress = isQuotation ? (quotation.customer_address || 'ตามที่อยู่จดทะเบียนของลูกค้า') : (po?.vendors?.address || 'ตามที่อยู่ที่ลงทะเบียนไว้กับบริษัท')
-  const defaultRecipientPhone = isQuotation ? (quotation.customer_phone || '-') : (po?.vendors?.phone || '-')
+  const defaultRecipientName = isContact
+    ? (contact.business_name || contact.company_name || 'ชื่อบริษัทคู่ค้า / ลูกค้า')
+    : isQuotation
+    ? (quotation.customer_name || 'ชื่อลูกค้า / บริษัทลูกค้า')
+    : (po?.custom_vendor_name || po?.vendors?.vendor_name || 'ชื่อผู้ขาย / บริษัทคู่ค้า')
+
+  const defaultContactPerson = isContact
+    ? (contact.contact_person_name || contact.contact_person || '')
+    : isQuotation
+    ? (quotation.customer_signer_name || quotation.contact_person || '')
+    : (po?.vendors?.contact_person || '')
+
+  const defaultRecipientAddress = isContact
+    ? (contact.shipping_address || contact.registered_address || contact.address || 'ตามที่อยู่จดทะเบียน')
+    : isQuotation
+    ? (quotation.customer_address || 'ตามที่อยู่จดทะเบียนของลูกค้า')
+    : (po?.vendors?.address || 'ตามที่อยู่ที่ลงทะเบียนไว้กับบริษัท')
+
+  const defaultRecipientPhone = isContact
+    ? (contact.contact_person_mobile || contact.office_phone || contact.phone || '-')
+    : isQuotation
+    ? (quotation.customer_phone || '-')
+    : (po?.vendors?.phone || '-')
 
   const [recipientName, setRecipientName] = useState(defaultRecipientName)
   const [contactPerson, setContactPerson] = useState(defaultContactPerson)

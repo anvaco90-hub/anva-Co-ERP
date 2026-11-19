@@ -1,4 +1,6 @@
+import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { supabase } from '../../lib/supabase'
 import {
   Package,
   Layers,
@@ -27,7 +29,7 @@ const storeNavGroups = [
       { to: '/store/receipts', label: 'รับของเข้า', icon: ArrowDownToLine },
       { to: '/store/issue/new', label: 'เบิกของ', icon: ArrowUpFromLine },
       { to: '/store/adjust', label: 'คืนของ', icon: RotateCcw },
-      { to: '/store/issues', label: 'ประวัติการเบิก', icon: History },
+      { to: '/store/issues', label: 'ประวัติเบิก-คืน', icon: History },
     ],
   },
   {
@@ -41,9 +43,18 @@ const storeNavGroups = [
 export default function StoreLayout() {
   const location = useLocation()
   const navigate = useNavigate()
+  const [pendingPoCount, setPendingPoCount] = useState(0)
+
+  useEffect(() => {
+    supabase
+      .from('purchase_orders')
+      .select('id', { count: 'exact', head: true })
+      .in('status', ['open', 'partial', 'pending_receipt'])
+      .then(({ count }) => setPendingPoCount(count || 0))
+  }, [location.pathname])
 
   return (
-    <div className="min-h-screen bg-slate-50/70 pb-12 font-sans">
+    <div className="min-h-screen bg-slate-100/60 dark:!bg-[#0B0F19] text-slate-900 dark:text-slate-100 pb-12 font-sans transition-colors duration-200">
       {/* 1. ANVA & Co. Engineering Brand Header (Navy & Solar Gold Theme) */}
       <div className="sticky top-0 z-30 bg-gradient-to-r from-slate-900 via-steel-900 to-slate-800 text-white shadow-md border-b border-steel-700">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-3.5">
@@ -54,21 +65,16 @@ export default function StoreLayout() {
                 <Sun className="h-6 w-6 text-steel-900 fill-steel-900" />
               </div>
               <div>
-                <div className="flex items-center gap-2">
-                  <h1 className="text-lg sm:text-xl font-black tracking-tight text-white">
-                    ANVA & CO. — ระบบบริหารคลังและพัสดุวิศวกรรม
-                  </h1>
-                  <span className="rounded-md bg-hivis/20 text-hivis px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider border border-hivis/40">
-                    Solar Standard
-                  </span>
-                </div>
+                <h1 className="text-lg sm:text-xl font-black tracking-tight text-white">
+                  ANVA & CO. — ระบบบริหารคลังและพัสดุวิศวกรรม
+                </h1>
                 <p className="text-xs text-steel-400">
                   ระบบคลังวัสดุและอุปกรณ์มาตรฐานวิศวกรรม บริษัท อันวาแอนด์โค จำกัด
                 </p>
               </div>
             </div>
 
-            {/* Actions & Engineering Highlights */}
+            {/* Actions */}
             <div className="flex items-center gap-2 text-xs">
               <button
                 type="button"
@@ -79,15 +85,6 @@ export default function StoreLayout() {
                 <ArrowLeft className="h-3.5 w-3.5" />
                 <span>ย้อนกลับ</span>
               </button>
-
-              <span className="hidden md:flex items-center gap-1.5 rounded-lg bg-steel-800/80 px-3 py-1 text-steel-300 border border-steel-700">
-                <ShieldCheck className="h-4 w-4 text-emerald-400" />
-                <span>มาตรฐานวิศวกรรม</span>
-              </span>
-              <span className="hidden lg:flex items-center gap-1.5 rounded-lg bg-steel-800/80 px-3 py-1 text-steel-300 border border-steel-700">
-                <Building2 className="h-4 w-4 text-hivis" />
-                <span>เชื่อมโยงโครงการ 100%</span>
-              </span>
             </div>
           </div>
 
@@ -116,6 +113,11 @@ export default function StoreLayout() {
                     >
                       <Icon className="h-3.5 w-3.5 shrink-0" />
                       <span>{t.label}</span>
+                      {t.to === '/store/receipts' && pendingPoCount > 0 && (
+                        <span className="rounded-full bg-amber-400 text-slate-900 px-1.5 py-0.2 text-[10px] font-black font-mono">
+                          {pendingPoCount}
+                        </span>
+                      )}
                     </NavLink>
                   )
                 })}

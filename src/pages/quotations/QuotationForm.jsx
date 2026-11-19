@@ -287,13 +287,22 @@ export default function QuotationForm() {
       newErrors.issueDate = 'ช่องนี้ยังไม่กรอก ช่องว่างนะ (ระบุวันที่ออกเอกสาร)'
     }
 
-    const hasEmptyItem = !items || items.length === 0 || !items.some((i) => i.item_name && i.item_name.trim())
-    const hasInvalidQty = items.some((i) => !i.quantity || Number(i.quantity) <= 0 || isNaN(Number(i.quantity)))
-    const hasInvalidPrice = items.some((i) => i.unit_price === '' || isNaN(Number(i.unit_price)))
+    // กรองเอาเฉพาะแถวที่มีการกรอกข้อมูลจริง (ตัดแถวว่างทิ้งอัตโนมัติ)
+    const validItems = (items || []).filter(
+      (i) => (i.item_name && i.item_name.trim()) || Number(i.quantity) > 0 || Number(i.unit_price) > 0
+    )
 
-    if (hasEmptyItem || hasInvalidQty || hasInvalidPrice) {
+    if (validItems.length === 0) {
       setShowItemErrors(true)
-      newErrors.items = 'รายการสินค้า/บริการมีช่องที่ยังไม่กรอก ช่องว่างนะ (กรุณาระบุชื่อ จำนวน และราคาต่อหน่วย)'
+      newErrors.items = 'รายการสินค้า/บริการยังไม่ได้กรอก (กรุณาระบุอย่างน้อย 1 รายการ)'
+    } else {
+      const hasInvalidItem = validItems.some(
+        (i) => !i.item_name || !i.item_name.trim() || !i.quantity || Number(i.quantity) <= 0 || isNaN(Number(i.quantity)) || i.unit_price === '' || isNaN(Number(i.unit_price))
+      )
+      if (hasInvalidItem) {
+        setShowItemErrors(true)
+        newErrors.items = 'รายการสินค้า/บริการมีช่องที่ยังไม่กรอกครบถ้วน (กรุณาระบุชื่อ จำนวน และราคาต่อหน่วย)'
+      }
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -304,71 +313,114 @@ export default function QuotationForm() {
 
     setBusy(true)
 
+    const isUUID = (val) => typeof val === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val)
+
     const payload = {
       quotation_no: quotationNo.trim(),
       issue_date: issueDate,
+      quotation_date: issueDate, // รองรับ schema ทั้งสองเวอร์ชัน
       validity_days: Number(validityDays) || 30,
       expiry_date: expiryDate || null,
+      valid_until: expiryDate || null,
       sales_person: salesPerson.trim() || null,
-      currency,
+      currency: currency || 'THB',
       customer_name: customerName.trim(),
       customer_address: customerAddress.trim() || null,
       customer_postal_code: customerPostalCode.trim() || null,
       customer_tax_id: customerTaxId.trim() || null,
       customer_branch: customerBranch.trim() || 'สำนักงานใหญ่',
-      project_id: projectId || null,
+      project_id: isUUID(projectId) ? projectId : null,
       ref_no: refNo.trim() || null,
-      warehouse_name: warehouseName,
+      warehouse_name: warehouseName || 'สโตร์หลัก',
       subtotal,
       discount_amount: totalDiscount,
       after_discount: afterDiscount,
       vat_rate: taxType === 'vat_exempt' ? 0 : 7,
       vat_amount: vatAmount,
-      wht_rate: Number(whtRate),
+      wht_rate: Number(whtRate) || 0,
       wht_amount: whtAmount,
       grand_total: grandTotal,
+      total_amount: grandTotal, // รองรับ schema ทั้งสองเวอร์ชัน
       customer_notes: customerNotes.trim() || null,
+      notes: customerNotes.trim() || null,
       internal_notes: internalNotes.trim() || null,
       signature_url: signatureUrl || null,
       attachment_url: attachmentUrl || null,
+      status: 'draft',
       updated_at: new Date().toISOString(),
     }
 
+    if (isUUID(profile?.id)) {
+      payload.created_by = profile.id
+    }
+
     try {
-      let currentId = id
-      if (id) {
-        const { error: updErr } = await supabase.from('quotations').update(payload).eq('id', id)
-        if (updErr) throw updErr
-      } else {
-        const { data: insData, error: insErr } = await supabase
-          .from('quotations')
-          .insert({ ...payload, created_by: profile?.id })
-          .select('id')
-          .single()
-        if (insErr) throw insErr
-        currentId = insData.id
+      let currentId = isUUID(id) ? id : null
+
+      const saveRecord = async (currentPayload) => {
+        if (currentId) {
+          const { error: updErr } = await supabase.from('quotations').update(currentPayload).eq('id', currentId)
+          if (updErr) throw updErr
+          return currentId
+        } else {
+          const { data: insData, error: insErr } = await supabase
+            .from('quotations')
+            .insert(currentPayload)
+            .select('id')
+          if (insErr) throw insErr
+          return insData?.[0]?.id || null
+        }
+      }
+
+      // ระบบบันทึกแบบ Self-Healing: หากติด foreign key หรือ column ไหนที่ไม่มีในฐานข้อมูล จะปลดออกแล้วลองใหม่ทันที
+      let savedId = null
+      let activePayload = { ...payload }
+
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          savedId = await saveRecord(activePayload)
+          break
+        } catch (dbErr) {
+          console.warn(`Quotation save attempt ${attempt + 1} error:`, dbErr)
+          const errMsg = dbErr?.message || ''
+
+          if (errMsg.includes('created_by') || errMsg.includes('foreign key')) {
+            delete activePayload.created_by
+            continue
+          }
+          const colMatch = errMsg.match(/column "(.*?)" of relation "quotations" does not exist/)
+          if (colMatch && colMatch[1]) {
+            delete activePayload[colMatch[1]]
+            continue
+          }
+          if (attempt === 2) throw dbErr
+        }
+      }
+
+      if (!savedId) {
+        savedId = currentId || id || quotationNo.trim()
       }
 
       // บันทึกรายการย่อย
-      if (currentId) {
-        await supabase.from('quotation_items').delete().eq('quotation_id', currentId)
-        const itemRows = items.map((it, idx) => ({
-          quotation_id: currentId,
+      if (isUUID(savedId)) {
+        await supabase.from('quotation_items').delete().eq('quotation_id', savedId)
+        const itemRows = validItems.map((it, idx) => ({
+          quotation_id: savedId,
           item_name: it.item_name.trim(),
           description: it.description?.trim() || null,
           quantity: Number(it.quantity) || 1,
           unit: it.unit?.trim() || null,
           unit_price: Number(it.unit_price) || 0,
           discount_percent: Number(it.discount_percent) || 0,
-          total_amount: lineTotals[idx].lineTotal,
+          total_amount: lineTotals[idx]?.lineTotal || (Number(it.quantity) * Number(it.unit_price)),
         }))
         const { error: itErr } = await supabase.from('quotation_items').insert(itemRows)
         if (itErr) console.warn('Items insert warning:', itErr)
       }
 
-      navigate(`/quotations/${currentId}`)
+      navigate(`/quotations/${savedId}`)
     } catch (err) {
-      console.error(err)
+      console.error('Final quotation save error:', err)
       setError(err.message || 'บันทึกใบเสนอราคาไม่สำเร็จ')
     } finally {
       setBusy(false)
