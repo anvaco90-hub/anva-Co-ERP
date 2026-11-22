@@ -88,7 +88,8 @@ export default function Dashboard() {
 
   // UI view toggles
   const [productViewTab, setProductViewTab] = useState('products') // 'products' | 'projects'
-  const [recentDocTab, setRecentDocTab] = useState('all') // 'all' | 'revenue' | 'expenses' | 'purchasing'
+  const [recentDocTab, setRecentDocTab] = useState('all') // 'all' | 'revenue' | 'receivables' | 'expenses' | 'purchasing'
+  const [showReceivablesInChart, setShowReceivablesInChart] = useState(true)
 
   // Helper to switch to Simulation Demo Data
   const applyDemoData = () => {
@@ -153,7 +154,7 @@ export default function Dashboard() {
       ] = await Promise.all([
         supabase
           .from('sales_invoices')
-          .select('id, invoice_no, issue_date, due_date, subtotal, vat_rate, vat_amount, total_amount, paid_amount, remaining_amount, is_opening_balance, status, notes, customer_id, project_id, customers(customer_name, company_name), projects(project_code, project_name)')
+          .select('id, invoice_no, issue_date, due_date, subtotal, vat_rate, vat_amount, total_amount, paid_amount, remaining_amount, is_opening_balance, status, notes, customer_id, project_id, projects(project_code, project_name)')
           .order('issue_date', { ascending: false }),
 
         supabase
@@ -172,7 +173,7 @@ export default function Dashboard() {
 
         supabase
           .from('expenses')
-          .select('id, expense_no, expense_date, due_date, expense_category, account_code, description, payment_method, payment_source, company_bank_account, advance_payer_name, reimbursement_status, subtotal, vat_amount, wht_amount, total_amount, is_asset, accounting_status, status, project_id, projects(project_name), vendor_id, vendors(vendor_name)')
+          .select('id, expense_no, expense_date, due_date, expense_category, account_code, description, payment_method, payment_source, company_bank_account, advance_payer_name, reimbursement_status, subtotal, vat_amount, wht_amount, total_amount, is_asset, accounting_status, status, project_id, projects(project_name), vendor_id')
           .order('expense_date', { ascending: false }),
 
         supabase
@@ -489,18 +490,18 @@ export default function Dashboard() {
   const monthlyTrend = useMemo(() => {
     const targetYear = filterYear !== 'all' ? Number(filterYear) : 2026
     const demoBaseline = [
-      { rev: 350000, exp: 210000 },
-      { rev: 420000, exp: 260000 },
-      { rev: 580000, exp: 320000 },
-      { rev: 490000, exp: 280000 },
-      { rev: 620000, exp: 350000 },
-      { rev: 550000, exp: 310000 },
-      { rev: 374500, exp: 210000 },
-      { rev: 535000, exp: 290000 },
-      { rev: 428000, exp: 270000 },
-      { rev: 1572900, exp: 783000 },
-      { rev: 1915300, exp: 1047500 },
-      { rev: 650000, exp: 350000 },
+      { rev: 350000, exp: 210000, rec: 50000 },
+      { rev: 420000, exp: 260000, rec: 70000 },
+      { rev: 580000, exp: 320000, rec: 90000 },
+      { rev: 490000, exp: 280000, rec: 80000 },
+      { rev: 620000, exp: 350000, rec: 120000 },
+      { rev: 550000, exp: 310000, rec: 95000 },
+      { rev: 374500, exp: 210000, rec: 60000 },
+      { rev: 535000, exp: 290000, rec: 85000 },
+      { rev: 428000, exp: 270000, rec: 75000 },
+      { rev: 1572900, exp: 783000, rec: 320000 },
+      { rev: 1915300, exp: 1047500, rec: 450000 },
+      { rev: 650000, exp: 350000, rec: 110000 },
     ]
 
     const months = Array.from({ length: 12 }, (_, i) => ({
@@ -509,6 +510,7 @@ export default function Dashboard() {
       shortName: ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'][i],
       revenue: isDemoMode && targetYear === 2026 ? demoBaseline[i].rev : 0,
       expense: isDemoMode && targetYear === 2026 ? demoBaseline[i].exp : 0,
+      receivable: isDemoMode && targetYear === 2026 ? demoBaseline[i].rec : 0,
     }))
 
     if (!isDemoMode) {
@@ -518,6 +520,7 @@ export default function Dashboard() {
         if (d.getFullYear() === targetYear) {
           const m = d.getMonth()
           months[m].revenue += Number(inv.subtotal || inv.total_amount || 0)
+          months[m].receivable += Number(inv.remaining_amount || 0)
         }
       })
 
@@ -532,7 +535,7 @@ export default function Dashboard() {
     }
 
     const maxVal = Math.max(
-      ...months.map((m) => Math.max(m.revenue, m.expense)),
+      ...months.map((m) => Math.max(m.revenue, m.expense, m.receivable)),
       100000
     )
 
@@ -581,19 +584,29 @@ export default function Dashboard() {
     const list = []
 
     filteredInvoices.forEach((inv) => {
+      const remAmt = Number(inv.remaining_amount || 0)
+      const isUnpaid = remAmt > 0
       list.push({
         id: inv.id,
         docNo: inv.invoice_no,
         date: inv.issue_date,
+        dueDate: inv.due_date,
         type: 'INV',
         typeName: 'ใบแจ้งหนี้ / ส่งมอบงาน',
         dept: 'ฝ่ายขาย / AR',
         category: 'revenue',
+        isReceivable: isUnpaid,
+        remainingAmount: remAmt,
+        paidAmount: Number(inv.paid_amount || 0),
         party: inv.customers?.company_name || inv.customers?.customer_name || 'ลูกค้าโครงการ',
         project: inv.projects?.project_name || inv.notes || '-',
         amount: Number(inv.total_amount || 0),
-        statusText: inv.status || 'รอเก็บเงิน',
-        statusColor: inv.status === 'เก็บเงินแล้ว' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800',
+        statusText: inv.status || (isUnpaid ? 'รอเก็บเงิน' : 'เก็บเงินแล้ว'),
+        statusColor: !isUnpaid
+          ? 'bg-emerald-100 text-emerald-800'
+          : remAmt < Number(inv.total_amount || 0)
+          ? 'bg-sky-100 text-sky-800'
+          : 'bg-amber-100 text-amber-800',
       })
     })
 
@@ -652,6 +665,7 @@ export default function Dashboard() {
     list.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0))
 
     if (recentDocTab === 'revenue') return list.filter((d) => d.category === 'revenue')
+    if (recentDocTab === 'receivables') return list.filter((d) => d.type === 'INV' && d.remainingAmount > 0)
     if (recentDocTab === 'expenses') return list.filter((d) => d.category === 'expense')
     if (recentDocTab === 'purchasing') return list.filter((d) => d.category === 'purchasing')
     return list
@@ -1453,6 +1467,17 @@ export default function Dashboard() {
                 </div>
               </div>
 
+              {/* ยอดค้างรับและเงินสดรับจริง */}
+              <div className="rounded-lg bg-amber-50/80 p-2 border border-amber-200/80 flex items-center justify-between text-xs">
+                <span className="text-amber-900 font-semibold flex items-center gap-1">
+                  <Clock className="h-3.5 w-3.5 text-amber-700" />
+                  <span>ยอดค้างรับ (Uncollected AR):</span>
+                </span>
+                <span className="font-mono font-bold text-amber-900">
+                  {baht(totalArRemaining)} บ. <span className="text-[10px] font-normal text-amber-700">({arInvoicesCount} ฉบับ)</span>
+                </span>
+              </div>
+
               {/* Visual Balance Bar */}
               <div className="pt-1">
                 <div className="flex items-center justify-between text-[10px] text-steel-500 mb-1">
@@ -1672,56 +1697,112 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Three Key Summary Mini Cards */}
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          {/* Key Summary Mini Cards: 4 Cards รวมยอดค้างรับ (Uncollected AR) */}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <div className="rounded-xl border border-emerald-100 bg-emerald-50/50 p-4">
-              <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-800">
-                <ArrowDownRight className="h-4 w-4" />
-                <span>รายได้รวมตามเอกสาร (Revenue)</span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-800">
+                  <ArrowDownRight className="h-4 w-4" />
+                  <span>รายได้ตามเอกสาร (Revenue)</span>
+                </div>
+                <span className="rounded-full bg-emerald-100 px-1.5 py-0.2 text-[10px] font-bold text-emerald-800">
+                  {filteredInvoices.length} INV
+                </span>
               </div>
               <div className="mt-2 text-xl font-black text-emerald-800 truncate">
                 {baht(totalRevenueDoc)} <span className="text-xs font-normal text-emerald-600">บ.</span>
               </div>
-              <div className="mt-1 text-[11px] text-emerald-600">
-                จากใบแจ้งหนี้ INV ทั้งหมด {filteredInvoices.length} ฉบับ
+              <div className="mt-1 flex items-center justify-between text-[11px] text-emerald-700">
+                <span>เก็บเงินแล้ว: {baht(totalCollected)} บ.</span>
+                <span className="font-bold">({collectionRate}%)</span>
+              </div>
+            </div>
+
+            {/* การ์ดยอดค้างรับ (Uncollected AR) - ฟีเจอร์ใหม่ */}
+            <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-4 relative overflow-hidden">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-amber-900">
+                  <Clock className="h-4 w-4 text-amber-700" />
+                  <span>ยอดค้างรับ (Uncollected AR)</span>
+                </div>
+                <span className="rounded-full bg-amber-100 px-1.5 py-0.2 text-[10px] font-bold text-amber-800">
+                  {arInvoicesCount} บิลรอเก็บ
+                </span>
+              </div>
+              <div className="mt-2 text-xl font-black text-amber-900 truncate">
+                {baht(totalArRemaining)} <span className="text-xs font-normal text-amber-700">บ.</span>
+              </div>
+              <div className="mt-1 flex items-center justify-between text-[11px]">
+                <span className="text-amber-700">
+                  {totalRevenueDoc > 0 ? ((totalArRemaining / totalRevenueDoc) * 100).toFixed(1) : 0}% ของรายได้รวม
+                </span>
+                <Link
+                  to="/accounting/ar-aging"
+                  className="font-bold text-amber-800 hover:text-amber-900 hover:underline flex items-center gap-0.5 text-[11px]"
+                >
+                  วิเคราะห์อายุ ➔
+                </Link>
               </div>
             </div>
 
             <div className="rounded-xl border border-rose-100 bg-rose-50/50 p-4">
-              <div className="flex items-center gap-1.5 text-xs font-bold text-rose-800">
-                <ArrowUpRight className="h-4 w-4" />
-                <span>ค่าใช้จ่ายตามเอกสาร (Expenses)</span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-rose-800">
+                  <ArrowUpRight className="h-4 w-4" />
+                  <span>ค่าใช้จ่ายตามเอกสาร (Expenses)</span>
+                </div>
+                <span className="rounded-full bg-rose-100 px-1.5 py-0.2 text-[10px] font-bold text-rose-800">
+                  {filteredExpenses.length} EXP
+                </span>
               </div>
               <div className="mt-2 text-xl font-black text-rose-800 truncate">
                 {baht(totalExpenseDoc)} <span className="text-xs font-normal text-rose-600">บ.</span>
               </div>
               <div className="mt-1 text-[11px] text-rose-600">
-                จากใบสำคัญจ่าย EXP {filteredExpenses.length} ฉบับ
+                จ่ายจริงแล้ว {baht(expensesPaidAmount)} บ.
               </div>
             </div>
 
             <div className="rounded-xl border border-indigo-100 bg-indigo-50/50 p-4">
-              <div className="flex items-center gap-1.5 text-xs font-bold text-indigo-800">
-                <TrendingUp className="h-4 w-4" />
-                <span>ผลต่างสุทธิ (Net Margin)</span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-indigo-800">
+                  <TrendingUp className="h-4 w-4" />
+                  <span>ผลต่างสุทธิ (Net Margin)</span>
+                </div>
+                <span className="rounded-full bg-indigo-100 px-1.5 py-0.2 text-[10px] font-bold text-indigo-800">
+                  {netMarginPct}%
+                </span>
               </div>
               <div className={`mt-2 text-xl font-black truncate ${netCashMargin >= 0 ? 'text-indigo-900' : 'text-rose-700'}`}>
                 {baht(netCashMargin)} <span className="text-xs font-normal text-indigo-600">บ.</span>
               </div>
-              <div className="mt-1 text-[11px] text-indigo-600 font-bold">
-                อัตรากำไรเบื้องต้น: {netMarginPct}%
+              <div className="mt-1 text-[11px] text-indigo-700">
+                เงินสดสุทธิรับจริง: {baht(totalCollected - totalExpenseDoc)} บ.
               </div>
             </div>
           </div>
 
-          {/* Visual SVG Bar Chart for 12 Months */}
+          {/* Visual SVG Bar Chart for 12 Months (เปรียบเทียบ รายได้ vs ค้างรับ vs ค่าใช้จ่าย) */}
           <div>
             <div className="flex items-center justify-between text-xs font-bold text-steel-700 mb-3 flex-wrap gap-2">
-              <span>กราฟเปรียบเทียบ รายได้ (เขียว) vs ค่าใช้จ่าย (แดง) รายเดือน</span>
-              <div className="flex items-center gap-4 text-[11px]">
+              <span>กราฟเปรียบเทียบ รายได้ (เขียว) vs ค้างรับ (ส้ม) vs ค่าใช้จ่าย (แดง) รายเดือน</span>
+              <div className="flex items-center gap-3 text-[11px] flex-wrap">
                 <span className="flex items-center gap-1.5 text-emerald-700 font-bold">
                   <span className="h-2.5 w-2.5 rounded-sm bg-emerald-500" /> รายได้ (Revenue)
                 </span>
+                <button
+                  type="button"
+                  onClick={() => setShowReceivablesInChart(!showReceivablesInChart)}
+                  className={`flex items-center gap-1.5 font-bold transition px-1.5 py-0.5 rounded cursor-pointer ${
+                    showReceivablesInChart
+                      ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                      : 'text-steel-400 hover:text-steel-600 line-through'
+                  }`}
+                  title="คลิกเพื่อเปิด/ปิดแท่งค้างรับ"
+                >
+                  <span className={`h-2.5 w-2.5 rounded-sm ${showReceivablesInChart ? 'bg-amber-400' : 'bg-steel-300'}`} />
+                  <span>ค้างรับ (Uncollected)</span>
+                </button>
                 <span className="flex items-center gap-1.5 text-rose-700 font-bold">
                   <span className="h-2.5 w-2.5 rounded-sm bg-rose-400" /> ค่าใช้จ่าย (Expenses)
                 </span>
@@ -1731,27 +1812,37 @@ export default function Dashboard() {
             <div className="h-48 w-full flex items-end justify-between gap-1 sm:gap-2 border-b border-steel-200 pb-2 pt-4 px-2">
               {monthlyTrend.months.map((m) => {
                 const revHeight = (m.revenue / monthlyTrend.maxVal) * 100
+                const recHeight = (m.receivable / monthlyTrend.maxVal) * 100
                 const expHeight = (m.expense / monthlyTrend.maxVal) * 100
 
                 return (
                   <div key={m.monthIndex} className="flex-1 flex flex-col items-center h-full justify-end group relative">
                     {/* Tooltip on hover */}
-                    <div className="absolute -top-12 z-20 hidden group-hover:flex flex-col items-center bg-steel-900 text-white text-[10px] rounded px-2 py-1 shadow-lg pointer-events-none whitespace-nowrap">
-                      <span>{m.monthName}</span>
-                      <span className="text-emerald-300">รายได้: {baht(m.revenue)} บ.</span>
-                      <span className="text-rose-300">จ่าย: {baht(m.expense)} บ.</span>
+                    <div className="absolute -top-16 z-20 hidden group-hover:flex flex-col items-start bg-steel-900 text-white text-[10px] rounded px-2.5 py-1.5 shadow-lg pointer-events-none whitespace-nowrap">
+                      <span className="font-bold border-b border-steel-700 pb-0.5 mb-0.5 w-full">{m.monthName}</span>
+                      <span className="text-emerald-300">🟢 รายได้: {baht(m.revenue)} บ.</span>
+                      <span className="text-amber-300">🟡 ค้างรับ: {baht(m.receivable)} บ.</span>
+                      <span className="text-rose-300">🔴 จ่าย: {baht(m.expense)} บ.</span>
                     </div>
 
                     <div className="w-full flex items-end justify-center gap-0.5 sm:gap-1 h-36">
                       {/* Revenue Bar */}
                       <div
-                        className="w-1/2 max-w-[14px] bg-emerald-500 rounded-t transition-all duration-300 hover:brightness-110"
+                        className="flex-1 max-w-[12px] bg-emerald-500 rounded-t transition-all duration-300 hover:brightness-110"
                         style={{ height: `${Math.max(revHeight, 2)}%` }}
                         title={`รายได้: ${baht(m.revenue)} บ.`}
                       />
+                      {/* Receivable Bar */}
+                      {showReceivablesInChart && (
+                        <div
+                          className="flex-1 max-w-[12px] bg-amber-400 rounded-t transition-all duration-300 hover:brightness-110"
+                          style={{ height: `${Math.max(recHeight, 2)}%` }}
+                          title={`ยอดค้างรับ: ${baht(m.receivable)} บ.`}
+                        />
+                      )}
                       {/* Expense Bar */}
                       <div
-                        className="w-1/2 max-w-[14px] bg-rose-400 rounded-t transition-all duration-300 hover:brightness-110"
+                        className="flex-1 max-w-[12px] bg-rose-400 rounded-t transition-all duration-300 hover:brightness-110"
                         style={{ height: `${Math.max(expHeight, 2)}%` }}
                         title={`ค่าใช้จ่าย: ${baht(m.expense)} บ.`}
                       />
@@ -1776,29 +1867,46 @@ export default function Dashboard() {
             <span className="text-xs font-semibold text-steel-500">{recentDocuments.length} รายการ</span>
           </div>
 
-          {/* Subtabs for Documents Feed */}
+          {/* Subtabs for Documents Feed (เพิ่มแท็บค้างรับ AR) */}
           <div className="flex items-center gap-1 mt-3 border-b border-steel-100 pb-2 text-[11px] font-bold flex-wrap">
             <button
               onClick={() => setRecentDocTab('all')}
-              className={`px-2.5 py-1 rounded-md transition ${recentDocTab === 'all' ? 'bg-steel-900 text-white' : 'text-steel-600 hover:bg-steel-100'}`}
+              className={`px-2 py-1 rounded-md transition ${recentDocTab === 'all' ? 'bg-steel-900 text-white' : 'text-steel-600 hover:bg-steel-100'}`}
             >
               ทั้งหมด
             </button>
             <button
               onClick={() => setRecentDocTab('revenue')}
-              className={`px-2.5 py-1 rounded-md transition ${recentDocTab === 'revenue' ? 'bg-emerald-700 text-white' : 'text-emerald-700 hover:bg-emerald-50'}`}
+              className={`px-2 py-1 rounded-md transition ${recentDocTab === 'revenue' ? 'bg-emerald-700 text-white' : 'text-emerald-700 hover:bg-emerald-50'}`}
             >
               รายได้ (INV)
             </button>
             <button
+              onClick={() => setRecentDocTab('receivables')}
+              className={`px-2 py-1 rounded-md transition flex items-center gap-1 ${
+                recentDocTab === 'receivables'
+                  ? 'bg-amber-600 text-white shadow-xs'
+                  : 'text-amber-800 hover:bg-amber-50'
+              }`}
+            >
+              <span>ค้างรับ (AR)</span>
+              {arInvoicesCount > 0 && (
+                <span className={`px-1 py-0.2 rounded-full text-[9px] font-black ${
+                  recentDocTab === 'receivables' ? 'bg-white text-amber-800' : 'bg-amber-200 text-amber-900'
+                }`}>
+                  {arInvoicesCount}
+                </span>
+              )}
+            </button>
+            <button
               onClick={() => setRecentDocTab('expenses')}
-              className={`px-2.5 py-1 rounded-md transition ${recentDocTab === 'expenses' ? 'bg-rose-700 text-white' : 'text-rose-700 hover:bg-rose-50'}`}
+              className={`px-2 py-1 rounded-md transition ${recentDocTab === 'expenses' ? 'bg-rose-700 text-white' : 'text-rose-700 hover:bg-rose-50'}`}
             >
               รายจ่าย (EXP)
             </button>
             <button
               onClick={() => setRecentDocTab('purchasing')}
-              className={`px-2.5 py-1 rounded-md transition ${recentDocTab === 'purchasing' ? 'bg-amber-700 text-white' : 'text-amber-700 hover:bg-amber-50'}`}
+              className={`px-2 py-1 rounded-md transition ${recentDocTab === 'purchasing' ? 'bg-amber-700 text-white' : 'text-amber-700 hover:bg-amber-50'}`}
             >
               จัดซื้อ (PO)
             </button>
@@ -1834,9 +1942,16 @@ export default function Dashboard() {
                 </div>
 
                 <div className="mt-2 flex items-center justify-between border-t border-steel-50 pt-1.5">
-                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${doc.statusColor}`}>
-                    {doc.statusText}
-                  </span>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${doc.statusColor}`}>
+                      {doc.statusText}
+                    </span>
+                    {doc.type === 'INV' && doc.remainingAmount > 0 && (
+                      <span className="rounded-md bg-amber-50 border border-amber-200 text-amber-800 font-mono text-[10px] font-bold px-1.5 py-0.5">
+                        ค้างรับ {baht(doc.remainingAmount)} บ.
+                      </span>
+                    )}
+                  </div>
                   <span className="font-mono font-bold text-xs text-steel-900">
                     {baht(doc.amount)} บ.
                   </span>

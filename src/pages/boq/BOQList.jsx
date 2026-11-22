@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { baht } from '../../lib/projects'
 import Pagination from '../../components/Pagination'
+import SkeletonTable from '../../components/common/SkeletonTable'
 import {
   FileSpreadsheet,
   Plus,
@@ -35,15 +36,23 @@ export default function BOQList() {
   const fetchBOQs = async () => {
     setLoading(true)
     try {
-      const { data, error } = await supabase
-        .from('boqs')
-        .select('*, projects(id, project_code, project_name)')
-        .order('created_at', { ascending: false })
+      // ดึงข้อมูล boqs และ projects ควบคู่กัน (แก้ปัญหา PostgREST Foreign Key Relationship Error: PGRST200)
+      const [boqsRes, projectsRes] = await Promise.all([
+        supabase.from('boqs').select('*').order('created_at', { ascending: false }),
+        supabase.from('projects').select('id, project_code, project_name'),
+      ])
 
-      if (error && error.code !== '42P01') {
-        console.error(error)
+      if (boqsRes.error && boqsRes.error.code !== '42P01') {
+        console.error(boqsRes.error)
       }
-      setBoqs(data || [])
+
+      const projMap = new Map((projectsRes.data || []).map((p) => [p.id, p]))
+      const merged = (boqsRes.data || []).map((b) => ({
+        ...b,
+        projects: projMap.get(b.project_id) || null,
+      }))
+
+      setBoqs(merged)
     } catch (err) {
       console.error('Failed to load BOQs:', err)
     } finally {
@@ -186,8 +195,8 @@ export default function BOQList() {
 
         {/* Table List */}
         {loading ? (
-          <div className="py-12 text-center text-xs text-steel-400">
-            กำลังโหลดข้อมูล BOQ...
+          <div className="rounded-xl border border-steel-200 overflow-hidden">
+            <SkeletonTable rows={5} cols={9} />
           </div>
         ) : filtered.length === 0 ? (
           <div className="py-12 text-center text-xs text-steel-400 border border-dashed border-steel-200 rounded-xl space-y-2">

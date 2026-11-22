@@ -1,25 +1,63 @@
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================================== */
+/* ANVA & CO. SOLAR ERP DESIGN TOKENS (LIGHT & DARK THEMES)      */
+/* ============================================================== */
+:root {
+  --bg: #F6F8F7;
+  --surface: #FFFFFF;
+  --surface-2: #EEF3F0;
+  --border: #DDE5E0;
+  --text: #14201A;
+  --text-muted: #5B6B63;
+  --primary: #16A34A;
+  --primary-hover: #15803D;
+  --primary-soft: #E3F5EA;
+  --warning: #D97706;
+  --danger: #DC2626;
+  --info: #0284C7;
+}
+
+html.dark, .dark {
+  --bg: #0E1512;
+  --surface: #16201B;
+  --surface-2: #1D2A24;
+  --border: #2A3A33;
+  --text: #E6EFEA;
+  --text-muted: #8FA399;
+  --primary: #22C55E;
+  --primary-hover: #4ADE80;
+  --primary-soft: #173A28;
+  --warning: #F59E0B;
+  --danger: #F87171;
+  --info: #38BDF8;
+}
+
 html {
-  font-family: 'IBM Plex Sans Thai', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'IBM Plex Sans Thai', 'Noto Sans Thai', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 body {
-  @apply bg-[#F8FAFC] text-slate-900 font-sans antialiased transition-colors duration-200;
+  background-color: var(--bg);
+  color: var(--text);
+  font-feature-settings: "tnum";
+  font-variant-numeric: tabular-nums;
+  @apply font-sans antialiased transition-colors duration-150;
 }
 
 html.dark body {
-  @apply bg-[#0B0F19] text-slate-100;
+  background-color: var(--bg);
+  color: var(--text);
 }
 
 :focus-visible {
-  outline: 2px solid #059669;
+  outline: 2px solid var(--primary);
   outline-offset: 2px;
 }
 

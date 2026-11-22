@@ -10,6 +10,7 @@ export default function SearchableItemSelect({
   placeholder = 'พิมพ์ค้นหารหัส หรือชื่อพัสดุ...',
   required = false,
   filterAvailableOnly = false,
+  onCreateNew,
 }) {
   const [query, setQuery] = useState('')
   const [isOpen, setIsOpen] = useState(false)
@@ -114,39 +115,67 @@ export default function SearchableItemSelect({
               </div>
 
               {filtered.length === 0 ? (
-                <div className="p-4 text-center text-xs text-steel-400 dark:text-slate-400">
-                  ไม่พบรายการวัสดุที่ค้นหา
+                <div className="p-4 text-center text-xs text-steel-400 dark:text-slate-400 space-y-2">
+                  <p>ไม่พบรายการวัสดุที่ค้นหา {query ? `"${query}"` : ''}</p>
+                  {onCreateNew && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsOpen(false)
+                        onCreateNew(query)
+                      }}
+                      className="inline-flex items-center gap-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3 py-1.5 transition shadow-xs cursor-pointer"
+                    >
+                      <span>+ ลงทะเบียนเป็นพัสดุใหม่ในสโตร์</span>
+                    </button>
+                  )}
                 </div>
               ) : (
-                filtered.slice(0, 60).map((it) => (
-                  <button
-                    key={it.id}
-                    type="button"
-                    onClick={() => {
-                      onChange(it.id)
-                      setIsOpen(false)
-                      setQuery('')
-                    }}
-                    className="w-full text-left p-2.5 hover:bg-steel-50 dark:hover:bg-slate-800 transition border-b border-steel-50 dark:border-slate-800 last:border-b-0 flex items-center justify-between group cursor-pointer"
-                  >
-                    <div className="min-w-0 pr-2">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="font-mono text-xs font-bold text-steel-700 dark:text-slate-300 bg-steel-100 dark:bg-slate-800 px-1.5 py-0.5 rounded group-hover:bg-steel-900 group-hover:text-white dark:group-hover:bg-amber-400 dark:group-hover:text-slate-950 transition">
-                          {it.item_code}
-                        </span>
-                        <span className="text-xs font-bold text-steel-900 dark:text-slate-100 truncate">
-                          {it.item_name}
-                        </span>
+                <>
+                  {filtered.slice(0, 60).map((it) => (
+                    <button
+                      key={it.id}
+                      type="button"
+                      onClick={() => {
+                        onChange(it.id)
+                        setIsOpen(false)
+                        setQuery('')
+                      }}
+                      className="w-full text-left p-2.5 hover:bg-steel-50 dark:hover:bg-slate-800 transition border-b border-steel-50 dark:border-slate-800 last:border-b-0 flex items-center justify-between group cursor-pointer"
+                    >
+                      <div className="min-w-0 pr-2">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-mono text-xs font-bold text-steel-700 dark:text-slate-300 bg-steel-100 dark:bg-slate-800 px-1.5 py-0.5 rounded group-hover:bg-steel-900 group-hover:text-white dark:group-hover:bg-amber-400 dark:group-hover:text-slate-950 transition">
+                            {it.item_code}
+                          </span>
+                          <span className="text-xs font-bold text-steel-900 dark:text-slate-100 truncate">
+                            {it.item_name}
+                          </span>
+                        </div>
+                        <div className="text-[11px] text-steel-500 dark:text-slate-400 font-mono mt-0.5">
+                          คงเหลือ: <b>{formatIntQty(it.qty_on_hand)}</b> {it.unit || ''}
+                        </div>
                       </div>
-                      <div className="text-[11px] text-steel-500 dark:text-slate-400 font-mono mt-0.5">
-                        คงเหลือ: <b>{formatIntQty(it.qty_on_hand)}</b> {it.unit || ''}
-                      </div>
+                      <span className="text-[11px] text-emerald-700 dark:text-emerald-400 font-bold group-hover:text-emerald-900 dark:group-hover:text-emerald-300 shrink-0">
+                        เลือก ↵
+                      </span>
+                    </button>
+                  ))}
+                  {onCreateNew && (
+                    <div className="p-2 border-t border-steel-100 dark:border-slate-800 bg-steel-50/70 dark:bg-slate-800/60 flex justify-center">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsOpen(false)
+                          onCreateNew(query)
+                        }}
+                        className="text-xs font-bold text-emerald-700 dark:text-emerald-400 hover:underline flex items-center gap-1 cursor-pointer py-1"
+                      >
+                        <span>+ ลงทะเบียนเป็นพัสดุใหม่ในสโตร์</span>
+                      </button>
                     </div>
-                    <span className="text-[11px] text-emerald-700 dark:text-emerald-400 font-bold group-hover:text-emerald-900 dark:group-hover:text-emerald-300 shrink-0">
-                      เลือก ↵
-                    </span>
-                  </button>
-                ))
+                  )}
+                </>
               )}
             </div>
           )}

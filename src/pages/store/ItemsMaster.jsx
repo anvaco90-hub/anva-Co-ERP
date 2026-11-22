@@ -3,11 +3,12 @@ import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
 import { canManageStore, getCategoryPrefix, uploadItemImage, formatIntQty, toIntQty } from '../../lib/store'
-import { fmtDateTime } from '../../lib/purchasing'
+import { fmtDateTime, formatDateTimeParts } from '../../lib/purchasing'
 import { baht } from '../../lib/projects'
 import { FieldError, fieldErrorClass } from '../../components/FieldError'
 import Pagination from '../../components/Pagination'
 import R2Image from '../../components/R2Image'
+import TableSortFilter from '../../components/TableSortFilter'
 import { discardFile } from '../../lib/files'
 import {
   Package,
@@ -30,6 +31,7 @@ import {
   List,
   ArrowLeft,
   Coins,
+  ExternalLink,
 } from 'lucide-react'
 
 const NEW_ITEM = {
@@ -38,9 +40,27 @@ const NEW_ITEM = {
   category_id: '',
   qty_on_hand: '10',
   reorder_point: '5',
-  avg_unit_cost: '0',
+  avg_unit_cost: '',
   image_url: '',
 }
+
+const STOCK_SORT_OPTIONS = [
+  { value: 'name_asc', label: '🔤 ชื่อพัสดุ ก ➔ ฮ (A ➔ Z)' },
+  { value: 'name_desc', label: '🔤 ชื่อพัสดุ ฮ ➔ ก (Z ➔ A)' },
+  { value: 'code_asc', label: '🔢 รหัสพัสดุ (น้อย ➔ มาก: 0 ➔ 9)' },
+  { value: 'code_desc', label: '🔢 รหัสพัสดุ (มาก ➔ น้อย: 9 ➔ 0)' },
+  { value: 'qty_desc', label: '📦 จำนวนคงเหลือ (มาก ➔ น้อย)' },
+  { value: 'qty_asc', label: '📦 จำนวนคงเหลือ (น้อย ➔ มาก)' },
+  { value: 'cost_desc', label: '💰 ต้นทุนเฉลี่ย (มาก ➔ น้อย)' },
+]
+
+const isLow = (item) => {
+  const q = Number(item.qty_on_hand || 0)
+  const rop = Number(item.reorder_point || 0)
+  return q > 0 && q <= rop
+}
+
+const isOut = (item) => Number(item.qty_on_hand || 0) <= 0
 
 export default function ItemsMaster() {
   const navigate = useNavigate()
@@ -66,6 +86,9 @@ export default function ItemsMaster() {
   const [success, setSuccess] = useState('')
   const [previewModalImg, setPreviewModalImg] = useState(null)
   const [search, setSearch] = useState('')
+  const [sortBy, setSortBy] = useState('name_asc')
+  const [onlyLow, setOnlyLow] = useState(false)
+  const [onlyOut, setOnlyOut] = useState(false)
 
   // View Mode: 'table' (ตารางมาตรฐาน - ค่าเริ่มต้น) | 'grid' (การ์ดวิศวกรรม)
   const [viewMode, setViewMode] = useState('table')
@@ -107,13 +130,23 @@ export default function ItemsMaster() {
     load()
   }, [load])
 
-  // คำนวณรหัสพัสดุถัดไปตามหมวดหมู่
+  // คำนวณรหัสพัสดุถัดไปตามหมวดหมู่ (หาเลขสูงสุดจริง ไม่นับแค่จำนวนแถว เพื่อป้องกันรหัสชนกัน 409 Conflict)
   const selectedCategoryObj = cats.find((c) => c.id === newItem.category_id)
-  const nextEstimatedCode = selectedCategoryObj
-    ? `${selectedCategoryObj.code_prefix || 'MAT'}-${String(
-        items.filter((it) => it.category_id === selectedCategoryObj.id).length + 1
-      ).padStart(3, '0')}`
-    : 'โปรดเลือกหมวดหมู่ก่อน'
+  const nextEstimatedCode = useMemo(() => {
+    if (!selectedCategoryObj) return 'โปรดเลือกหมวดหมู่ก่อน'
+    const prefix = selectedCategoryObj.code_prefix || 'MAT'
+    const rx = new RegExp(`^${prefix}[-_]?(\\d+)$`, 'i')
+    let maxNum = 0
+    items.forEach((it) => {
+      const code = it.item_code || ''
+      const m = code.match(rx)
+      if (m && m[1]) {
+        const n = parseInt(m[1], 10)
+        if (!isNaN(n) && n > maxNum) maxNum = n
+      }
+    })
+    return `${prefix}-${String(maxNum + 1).padStart(3, '0')}`
+  }, [selectedCategoryObj, items])
 
   // อัปโหลดรูปภาพวัสดุใหม่
   const handleImageSelect = (e) => {
@@ -146,6 +179,13 @@ export default function ItemsMaster() {
     if (!newItem.category_id) {
       newErrors.category_id = 'ช่องนี้ยังไม่กรอก ช่องว่างนะ (บังคับเลือกหมวดหมู่วัสดุ)'
     }
+    if (!newItem.unit?.trim()) {
+      newErrors.unit = 'ช่องนี้ยังไม่กรอก ช่องว่างนะ (กรุณาระบุหน่วยนับ)'
+    }
+    const costVal = parseFloat(newItem.avg_unit_cost)
+    if (newItem.avg_unit_cost === '' || newItem.avg_unit_cost === null || isNaN(costVal) || costVal <= 0) {
+      newErrors.avg_unit_cost = 'ช่องนี้ยังไม่กรอก ช่องว่างนะ (บังคับใส่ราคา/ต้นทุนของรายการ ต้องมากกว่า 0 บาท)'
+    }
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)
@@ -162,27 +202,83 @@ export default function ItemsMaster() {
         setUploading(false)
       }
 
-      const itemCodeToUse = nextEstimatedCode
+      // ตรวจสอบเลขรหัสพัสดุสูงสุดจากฐานข้อมูลโดยตรง ป้องกันข้อผิดพลาด 409 Conflict จากการชนรหัสเดิม
+      const prefix = selectedCategoryObj?.code_prefix || 'MAT'
+      let itemCodeToUse = nextEstimatedCode
+
+      try {
+        const { data: dbItems } = await supabase
+          .from('inventory_items')
+          .select('item_code')
+          .ilike('item_code', `${prefix}%`)
+          .order('item_code', { ascending: false })
+          .limit(30)
+
+        if (dbItems && dbItems.length > 0) {
+          const rx = new RegExp(`^${prefix}[-_]?(\\d+)$`, 'i')
+          let dbMax = 0
+          dbItems.forEach((it) => {
+            const m = (it.item_code || '').match(rx)
+            if (m && m[1]) {
+              const n = parseInt(m[1], 10)
+              if (!isNaN(n) && n > dbMax) dbMax = n
+            }
+          })
+          if (dbMax >= 1) {
+            itemCodeToUse = `${prefix}-${String(dbMax + 1).padStart(3, '0')}`
+          }
+        }
+      } catch (checkErr) {
+        console.warn('Check code max notice:', checkErr)
+      }
+
       const initialQty = toIntQty(newItem.qty_on_hand)
       const cost = Number(newItem.avg_unit_cost) || 0
 
-      const { error: insertErr } = await supabase.from('inventory_items').insert({
-        item_code: itemCodeToUse,
-        item_name: newItem.item_name.trim(),
-        unit: newItem.unit.trim() || 'ชิ้น',
-        category_id: newItem.category_id,
-        qty_on_hand: initialQty,
-        reorder_point: toIntQty(newItem.reorder_point),
-        avg_unit_cost: cost,
-        image_url: uploadedUrl,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
+      // ทำการบันทึกแบบ Self-Healing Retry ในกรณีที่รหัสพัสดุชนกับข้อมูลเดิมในตาราง
+      let finalCode = itemCodeToUse
+      let insertSuccess = false
+      let insertErr = null
 
-      if (insertErr) throw insertErr
+      for (let attempt = 0; attempt < 5; attempt++) {
+        const res = await supabase.from('inventory_items').insert({
+          item_code: finalCode,
+          item_name: newItem.item_name.trim(),
+          unit: newItem.unit.trim() || 'ชิ้น',
+          category_id: newItem.category_id,
+          qty_on_hand: initialQty,
+          reorder_point: toIntQty(newItem.reorder_point),
+          avg_unit_cost: cost,
+          image_url: uploadedUrl,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+
+        if (!res.error) {
+          insertSuccess = true
+          break
+        }
+
+        insertErr = res.error
+        // ถ้าเกิด code ชนกัน (unique constraint violation บน item_code 409)
+        if (
+          res.error.code === '23505' &&
+          (res.error.message?.includes('item_code') || res.error.details?.includes('item_code'))
+        ) {
+          const m = finalCode.match(/(\d+)$/)
+          if (m) {
+            const nextVal = parseInt(m[1], 10) + 1
+            finalCode = finalCode.replace(/\d+$/, String(nextVal).padStart(m[1].length, '0'))
+            continue
+          }
+        }
+        break
+      }
+
+      if (!insertSuccess && insertErr) throw insertErr
 
       setSuccess(
-        `เพิ่มวัสดุ "${newItem.item_name}" เรียบร้อยแล้ว (รหัส: ${itemCodeToUse}, ยอดตั้งต้น: ${initialQty} ${newItem.unit})`
+        `เพิ่มวัสดุ "${newItem.item_name}" เรียบร้อยแล้ว (รหัส: ${finalCode}, ยอดตั้งต้น: ${initialQty} ${newItem.unit}, ราคา: ${cost} บาท)`
       )
       setTimeout(() => setSuccess(''), 4000)
       setNewItem({
@@ -191,15 +287,21 @@ export default function ItemsMaster() {
         category_id: newItem.category_id,
         qty_on_hand: '10',
         reorder_point: '5',
-        avg_unit_cost: '0',
+        avg_unit_cost: '',
         image_url: '',
       })
       clearNewImage()
       setErrors({})
       load()
     } catch (err) {
-      if (err.message && err.message.includes('inventory_items_name_unique')) {
-        setError('ชื่อวัสดุนี้มีอยู่ในระบบแล้ว (หากต้องการเพิ่มชื่อเดียวกันในต่างหมวดหมู่ กรุณาระบุชื่อเพิ่ม เช่น "(งานโซล่าร์)" หรือรัน Migration 022 เพื่อปลดล็อกชื่อซ้ำข้ามหมวดหมู่)')
+      if (
+        err.message &&
+        (err.message.includes('inventory_items_name_unique') ||
+          (err.message.includes('duplicate key') && err.message.includes('item_name')))
+      ) {
+        setError(`ชื่อวัสดุ "${newItem.item_name}" มีอยู่ในระบบแล้ว (หากต้องการเพิ่มชื่อเดียวกันในต่างหมวดหมู่ กรุณาระบุชื่อเพิ่ม เช่น "(งานโซล่าร์)" หรือรันคำสั่งปลดล็อกชื่อซ้ำข้ามหมวดหมู่ใน Supabase)`)
+      } else if (err.code === '23505') {
+        setError(`ข้อมูลรหัสพัสดุหรือชื่อซ้ำกับรายการที่มีอยู่แล้วในระบบ กรุณาลองใหม่อีกครั้ง`)
       } else {
         setError(err.message || 'บันทึกวัสดุไม่สำเร็จ')
       }
@@ -232,6 +334,12 @@ export default function ItemsMaster() {
 
     if (!editForm.item_name?.trim()) {
       setError('กรุณาระบุชื่อวัสดุ')
+      return
+    }
+
+    const editCost = Number(editForm.avg_unit_cost)
+    if (editForm.avg_unit_cost === '' || editForm.avg_unit_cost === null || isNaN(editCost) || editCost <= 0) {
+      setError('กรุณาระบุราคา/ต้นทุนของรายการ (ต้องมากกว่า 0 บาท)')
       return
     }
 
@@ -500,24 +608,37 @@ export default function ItemsMaster() {
     load()
   }
 
-  const q = search.trim().toLowerCase()
-  const filteredByCat =
-    selectedCatFilter === 'all'
-      ? items
-      : items.filter((it) => it.category_id === selectedCatFilter)
+  const lowCount = items.filter(isLow).length
+  const outCount = items.filter(isOut).length
 
-  const shownItems = filteredByCat.filter(
-    (it) =>
-      !q ||
-      `${it.item_code} ${it.item_name} ${it.unit || ''} ${it.item_categories?.name || ''}`
+  const shownItems = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    const filtered = items.filter((it) => {
+      if (selectedCatFilter !== 'all' && it.category_id !== selectedCatFilter) return false
+      if (onlyLow && !isLow(it)) return false
+      if (onlyOut && !isOut(it)) return false
+      if (!q) return true
+      return `${it.item_code} ${it.item_name} ${it.unit || ''} ${it.item_categories?.name || ''}`
         .toLowerCase()
         .includes(q)
-  )
+    })
+
+    return filtered.sort((a, b) => {
+      if (sortBy === 'name_asc') return (a.item_name || '').localeCompare(b.item_name || '', 'th')
+      if (sortBy === 'name_desc') return (b.item_name || '').localeCompare(a.item_name || '', 'th')
+      if (sortBy === 'code_asc') return (a.item_code || '').localeCompare(b.item_code || '', undefined, { numeric: true })
+      if (sortBy === 'code_desc') return (b.item_code || '').localeCompare(a.item_code || '', undefined, { numeric: true })
+      if (sortBy === 'qty_desc') return Number(b.qty_on_hand || 0) - Number(a.qty_on_hand || 0)
+      if (sortBy === 'qty_asc') return Number(a.qty_on_hand || 0) - Number(b.qty_on_hand || 0)
+      if (sortBy === 'cost_desc') return Number(b.avg_unit_cost || 0) - Number(a.avg_unit_cost || 0)
+      return 0
+    })
+  }, [items, selectedCatFilter, onlyLow, onlyOut, search, sortBy])
 
   // รีเซ็ตหน้ากลับไปหน้าที่ 1 เมื่อตัวกรองหรือคำค้นหาเปลี่ยน
   useEffect(() => {
     setCurrentPage(1)
-  }, [search, selectedCatFilter, viewMode])
+  }, [search, selectedCatFilter, viewMode, sortBy, onlyLow, onlyOut])
 
   // คำนวณรายการเฉพาะหน้าปัจจุบัน
   const paginatedItems = useMemo(() => {
@@ -548,50 +669,12 @@ export default function ItemsMaster() {
           </div>
 
           <div className="flex items-center gap-2 self-start sm:self-center">
-            {/* ปุ่มย้อนกลับ (ข้อ 4) */}
-            <button
-              type="button"
-              onClick={() => navigate(-1)}
-              className="rounded-xl bg-steel-800 hover:bg-steel-700 text-steel-200 border border-steel-600 px-3.5 py-2 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              <span>ย้อนกลับ</span>
-            </button>
-
-            {/* View Mode Toggle */}
-            <div className="flex rounded-xl bg-steel-800 p-1 text-xs font-bold border border-steel-700">
-              <button
-                type="button"
-                onClick={() => setViewMode('table')}
-                className={`rounded-lg px-3 py-1.5 transition flex items-center gap-1.5 ${
-                  viewMode === 'table'
-                    ? 'bg-hivis text-steel-950 font-black shadow-xs'
-                    : 'text-steel-300 hover:text-white'
-                }`}
-              >
-                <List className="h-3.5 w-3.5" />
-                <span>ตารางพัสดุ</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewMode('grid')}
-                className={`rounded-lg px-3 py-1.5 transition flex items-center gap-1.5 ${
-                  viewMode === 'grid'
-                    ? 'bg-hivis text-steel-950 font-black shadow-xs'
-                    : 'text-steel-300 hover:text-white'
-                }`}
-              >
-                <Grid className="h-3.5 w-3.5" />
-                <span>การ์ดวัสดุ</span>
-              </button>
-            </div>
-
             <button
               type="button"
               onClick={() => {
                 document.getElementById('category-management')?.scrollIntoView({ behavior: 'smooth' })
               }}
-              className="rounded-xl bg-steel-800 hover:bg-steel-700 text-steel-200 border border-steel-700 px-3 py-2 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+              className="rounded-xl bg-steel-800 hover:bg-steel-700 text-steel-200 border border-steel-700 px-3.5 py-2 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-xs"
               title="เลื่อนไปจัดการหมวดหมู่ทั้งหมด"
             >
               <Layers className="h-4 w-4 text-hivis" />
@@ -600,7 +683,7 @@ export default function ItemsMaster() {
 
             <Link
               to="/store/adjust"
-              className="rounded-xl bg-steel-800 hover:bg-steel-700 text-steel-200 border border-steel-700 px-3.5 py-2 text-xs font-bold transition flex items-center gap-1"
+              className="rounded-xl bg-hivis text-steel-950 hover:bg-amber-400 font-black px-3.5 py-2 text-xs transition shadow-xs flex items-center gap-1.5"
             >
               <span>ปรับปรุงสต็อก / รับคืน</span>
             </Link>
@@ -746,13 +829,20 @@ export default function ItemsMaster() {
                 <input
                   type="text"
                   placeholder="เช่น แผง, ตัว, เมตร, ชุด"
-                  className="input w-full text-xs text-steel-900"
+                  className={fieldErrorClass(
+                    errors.unit,
+                    'input w-full text-xs text-steel-900'
+                  )}
                   value={newItem.unit}
-                  onChange={(e) => setNewItem({ ...newItem, unit: e.target.value })}
+                  onChange={(e) => {
+                    setNewItem({ ...newItem, unit: e.target.value })
+                    if (errors.unit) setErrors((prev) => ({ ...prev, unit: '' }))
+                  }}
                 />
+                <FieldError error={errors.unit} />
               </div>
 
-              {/* ข้อ 1: ต้นทุนต่อหน่วย (บาท) */}
+              {/* ข้อ 1: ต้นทุนต่อหน่วย (บาท) - บังคับใส่ราคา */}
               <div>
                 <label className="block text-xs font-bold text-steel-700 mb-1 flex items-center gap-1">
                   <Coins className="h-3 w-3 text-amber-600" />
@@ -760,13 +850,21 @@ export default function ItemsMaster() {
                 </label>
                 <input
                   type="number"
-                  min="0"
+                  min="0.01"
                   step="0.01"
-                  placeholder="0.00"
-                  className="input w-full text-xs font-mono font-bold text-steel-900 bg-amber-50/40 border-amber-300 focus:bg-white"
+                  required
+                  placeholder="ระบุราคาต้นทุน เช่น 150.00"
+                  className={fieldErrorClass(
+                    errors.avg_unit_cost,
+                    'input w-full text-xs font-mono font-bold text-steel-900 bg-amber-50/40 border-amber-300 focus:bg-white'
+                  )}
                   value={newItem.avg_unit_cost}
-                  onChange={(e) => setNewItem({ ...newItem, avg_unit_cost: e.target.value })}
+                  onChange={(e) => {
+                    setNewItem({ ...newItem, avg_unit_cost: e.target.value })
+                    if (errors.avg_unit_cost) setErrors((prev) => ({ ...prev, avg_unit_cost: '' }))
+                  }}
                 />
+                <FieldError error={errors.avg_unit_cost} />
               </div>
 
               {/* จุดเตือนสั่งซื้อ */}
@@ -848,17 +946,99 @@ export default function ItemsMaster() {
         </div>
       )}
 
-      {/* 3. แถบตัวกรองและค้นหา (Filters & Search) */}
+      {/* 2.5 Category Filter Pills (เลือกตามหมวดหมู่ - สไตล์มาตรฐานเดียวกับหน้าสต็อก) */}
+      <div className="rounded-2xl border border-steel-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-xs space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-3 text-xs font-bold text-steel-700 dark:text-slate-300">
+          <span className="flex items-center gap-1.5 text-steel-900 dark:text-slate-100">
+            <Layers className="h-4 w-4 text-steel-700 dark:text-amber-400" />
+            <span>เลือกดูตามหมวดหมู่วัสดุและอุปกรณ์</span>
+          </span>
+
+          <div className="flex items-center gap-2">
+            <span className="text-steel-400 dark:text-slate-300 font-normal hidden sm:inline">
+              แสดง {shownItems.length} จาก {items.length} รายการ
+            </span>
+            {/* Dropdown เลือกหมวดหมู่ (สำหรับกรณีหมวดหมู่เยอะหรือค้นหาทาง Dropdown) */}
+            <select
+              value={selectedCatFilter}
+              onChange={(e) => setSelectedCatFilter(e.target.value)}
+              className="h-8 rounded-lg border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 text-xs font-bold text-steel-800 dark:text-slate-200 focus:outline-none focus:border-amber-500 cursor-pointer shadow-2xs"
+            >
+              <option value="all">📂 หมวดหมู่ทั้งหมด ({items.length} รายการ)</option>
+              {cats.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name} ({items.filter((it) => it.category_id === c.id).length})
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setSelectedCatFilter('all')}
+            className={`rounded-lg px-3 py-1.5 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+              selectedCatFilter === 'all'
+                ? 'bg-steel-900 dark:bg-amber-500 text-hivis dark:text-slate-950 font-black shadow-xs'
+                : 'bg-steel-100 dark:bg-slate-800 text-steel-700 dark:text-slate-200 hover:bg-steel-200 dark:hover:bg-slate-700'
+            }`}
+          >
+            <span>ทั้งหมด</span>
+            <span
+              className={`rounded-full px-1.5 py-0.2 text-[10px] ${
+                selectedCatFilter === 'all'
+                  ? 'bg-steel-800 dark:bg-amber-600 text-hivis dark:text-slate-950'
+                  : 'bg-steel-200 dark:bg-slate-700 text-steel-800 dark:text-slate-200'
+              }`}
+            >
+              {items.length}
+            </span>
+          </button>
+
+          {cats.map((c) => {
+            const count = items.filter((it) => it.category_id === c.id).length
+            const isSelected = selectedCatFilter === c.id
+
+            return (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => setSelectedCatFilter(c.id)}
+                className={`rounded-lg px-3 py-1.5 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                  isSelected
+                    ? 'bg-steel-900 dark:bg-amber-500 text-hivis dark:text-slate-950 font-black shadow-xs'
+                    : 'bg-steel-100 dark:bg-slate-800 text-steel-700 dark:text-slate-200 hover:bg-steel-200 dark:hover:bg-slate-700'
+                }`}
+              >
+                <span>{c.name}</span>
+                <span
+                  className={`rounded-full px-1.5 py-0.2 text-[10px] ${
+                    isSelected
+                      ? 'bg-steel-800 dark:bg-amber-600 text-hivis dark:text-slate-950'
+                      : 'bg-steel-200 dark:bg-slate-700 text-steel-800 dark:text-slate-200'
+                  }`}
+                >
+                  {count}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* 3. แถบตัวกรองและค้นหามาตรฐาน (Filters, Sort, Status & View Toggle) */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div className="flex flex-1 items-center gap-2 max-w-md">
-          <div className="relative w-full">
+        <div className="flex flex-1 flex-wrap items-center gap-2">
+          {/* ช่องค้นหา */}
+          <div className="relative flex-1 min-w-[220px] max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-steel-400" />
             <input
               type="text"
               placeholder="ค้นหารหัส, ชื่อวัสดุ, หมวดหมู่, หน่วยนับ..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full rounded-xl border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-900 pl-9 pr-4 py-2 text-xs sm:text-sm text-steel-900 dark:text-slate-100 placeholder:text-steel-400 dark:placeholder:text-slate-500 focus:border-steel-900 dark:focus:border-amber-500 focus:outline-none shadow-xs"
+              className="w-full h-10 rounded-xl border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-900 pl-9 pr-4 text-xs sm:text-sm text-steel-900 dark:text-slate-100 placeholder:text-steel-400 dark:placeholder:text-slate-500 focus:border-steel-900 dark:focus:border-amber-500 focus:outline-none shadow-xs"
             />
             {search && (
               <button
@@ -870,54 +1050,109 @@ export default function ItemsMaster() {
               </button>
             )}
           </div>
+
+          {/* Standard Sort Filter Control */}
+          <TableSortFilter
+            value={sortBy}
+            onChange={setSortBy}
+            options={STOCK_SORT_OPTIONS}
+          />
         </div>
 
-        {/* หมวดหมู่ Filter Dropdown & ปุ่มล้างข้อมูลจำลอง */}
-        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-          <select
-            className="rounded-xl border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-semibold text-steel-800 dark:text-slate-200 focus:border-steel-900 dark:focus:border-amber-500 focus:outline-none"
-            value={selectedCatFilter}
-            onChange={(e) => setSelectedCatFilter(e.target.value)}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Quick Status Filter: ใกล้หมด */}
+          <button
+            type="button"
+            onClick={() => {
+              setOnlyLow(!onlyLow)
+              setOnlyOut(false)
+            }}
+            className={`h-10 rounded-xl px-3 py-1.5 text-xs font-bold transition flex items-center gap-1.5 border cursor-pointer ${
+              onlyLow
+                ? 'bg-amber-500 text-slate-950 font-black border-amber-600 shadow-xs'
+                : 'bg-white dark:bg-slate-900 text-steel-700 dark:text-slate-200 border-steel-300 dark:border-slate-700 hover:bg-steel-50 dark:hover:bg-slate-800'
+            }`}
           >
-            <option value="all">หมวดหมู่ทั้งหมด ({items.length} รายการ)</option>
-            {cats.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name} ({items.filter((it) => it.category_id === c.id).length})
-              </option>
-            ))}
-          </select>
+            <span>⚠️</span>
+            <span>ใกล้หมด ({lowCount})</span>
+          </button>
+
+          {/* Quick Status Filter: หมดสต็อก */}
+          <button
+            type="button"
+            onClick={() => {
+              setOnlyOut(!onlyOut)
+              setOnlyLow(false)
+            }}
+            className={`h-10 rounded-xl px-3 py-1.5 text-xs font-bold transition flex items-center gap-1.5 border cursor-pointer ${
+              onlyOut
+                ? 'bg-rose-600 text-white border-rose-700 shadow-xs'
+                : 'bg-white dark:bg-slate-900 text-steel-700 dark:text-slate-200 border-steel-300 dark:border-slate-700 hover:bg-steel-50 dark:hover:bg-slate-800'
+            }`}
+          >
+            <span>🚨</span>
+            <span>หมดสต็อก ({outCount})</span>
+          </button>
+
+          {/* View Mode Toggle: Table vs Cards */}
+          <div className="flex h-10 rounded-xl bg-steel-100 dark:bg-slate-800 p-1 text-xs font-bold border border-steel-200 dark:border-slate-700">
+            <button
+              type="button"
+              onClick={() => setViewMode('table')}
+              className={`rounded-lg px-3 py-1 transition flex items-center gap-1.5 cursor-pointer ${
+                viewMode === 'table'
+                  ? 'bg-white dark:bg-slate-900 text-steel-900 dark:text-amber-400 font-bold shadow-xs'
+                  : 'text-steel-600 dark:text-slate-400 hover:text-steel-900 dark:hover:text-slate-200'
+              }`}
+            >
+              <List className="h-3.5 w-3.5" />
+              <span>ตารางพัสดุ</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('grid')}
+              className={`rounded-lg px-3 py-1 transition flex items-center gap-1.5 cursor-pointer ${
+                viewMode === 'grid'
+                  ? 'bg-white dark:bg-slate-900 text-steel-900 dark:text-amber-400 font-bold shadow-xs'
+                  : 'text-steel-600 dark:text-slate-400 hover:text-steel-900 dark:hover:text-slate-200'
+              }`}
+            >
+              <Grid className="h-3.5 w-3.5" />
+              <span>การ์ดวัสดุ</span>
+            </button>
+          </div>
 
           {items.length > 0 && (
             <button
               type="button"
               onClick={handleClearAllMockItems}
               disabled={saving}
-              className="rounded-xl border border-rose-300 dark:border-rose-900/50 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 px-3 py-2 text-xs font-bold transition flex items-center gap-1.5 shadow-xs whitespace-nowrap"
+              className="h-10 rounded-xl border border-rose-300 dark:border-rose-900/50 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 px-3 py-1.5 text-xs font-bold transition flex items-center gap-1.5 shadow-xs whitespace-nowrap cursor-pointer"
               title="ลบรายการจำลองทั้งหมดในสโตร์ เพื่อเตรียมป้อนข้อมูลจริง"
             >
               <Trash2 className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400" />
-              <span>ล้างข้อมูลจำลองทั้งหมด</span>
+              <span>ล้างข้อมูลจำลอง</span>
             </button>
           )}
         </div>
       </div>
 
-      {/* 4. ตารางพัสดุวิศวกรรม (ข้อ 3 & 4: แสดงผลเป็นข้อความเรียบร้อย ไม่แก้ในตาราง พร้อมคอลัมน์ อัปเดตล่าสุด & การจัดการ) */}
+      {/* 4. ตารางพัสดุวิศวกรรม (แสดงผลสวยงาม สมดุล ข้อความไม่ซ้อนกัน วันที่และเวลามาตรฐานระดับสากล) */}
       {viewMode === 'table' ? (
         <div className="overflow-x-auto rounded-2xl border border-steel-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs">
           <table className="w-full text-xs sm:text-sm">
             <thead>
               <tr className="border-b border-steel-200 dark:border-slate-800 bg-steel-50/90 dark:bg-slate-800 text-left text-steel-600 dark:text-slate-200 text-xs font-bold uppercase tracking-wider">
-                <th className="py-3.5 pl-4">รหัสพัสดุ</th>
-                <th>รูปภาพ</th>
-                <th>ชื่อวัสดุ / อุปกรณ์</th>
-                <th>หมวดหมู่</th>
-                <th className="text-right">คงเหลือในคลัง</th>
-                <th>หน่วย</th>
-                <th className="text-right">จุดเตือน</th>
-                <th className="text-right">ราคาเฉลี่ย</th>
-                <th className="py-3.5 px-3">อัปเดตล่าสุด</th>
-                <th className="text-center pr-4">การจัดการ (CRUD)</th>
+                <th className="py-3.5 pl-4 pr-3 whitespace-nowrap">รหัสพัสดุ</th>
+                <th className="py-3.5 px-2 text-center whitespace-nowrap">รูปภาพ</th>
+                <th className="py-3.5 px-3 whitespace-nowrap min-w-[200px]">ชื่อวัสดุ / อุปกรณ์</th>
+                <th className="py-3.5 px-3 whitespace-nowrap">หมวดหมู่</th>
+                <th className="py-3.5 px-3 text-right whitespace-nowrap">คงเหลือในคลัง</th>
+                <th className="py-3.5 px-3 text-center whitespace-nowrap">หน่วย</th>
+                <th className="py-3.5 px-3 text-right whitespace-nowrap">จุดเตือน</th>
+                <th className="py-3.5 px-3 text-right whitespace-nowrap">ราคาเฉลี่ย</th>
+                <th className="py-3.5 px-4 whitespace-nowrap">อัปเดตล่าสุด</th>
+                <th className="py-3.5 pl-3 pr-4 text-center whitespace-nowrap">การจัดการ</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-steel-100 dark:divide-slate-800">
@@ -935,90 +1170,107 @@ export default function ItemsMaster() {
                     Number(it.qty_on_hand) > 0
                   const isOut = Number(it.qty_on_hand) <= 0
                   const catObj = cats.find((c) => c.id === it.category_id)
+                  const ts = it.updated_at || it.created_at
+                  const { date, time } = formatDateTimeParts(ts)
 
                   return (
                     <tr key={it.id} className="hover:bg-steel-50/80 dark:hover:bg-slate-800/60 transition">
                       {/* 1. รหัส */}
-                      <td className="py-3 pl-4 font-mono font-bold text-steel-900 dark:text-amber-400">
+                      <td className="py-3.5 pl-4 pr-3 font-mono font-bold text-steel-900 dark:text-amber-400 whitespace-nowrap">
                         {it.item_code}
                       </td>
 
                       {/* 2. รูปภาพ */}
-                      <td>
+                      <td className="py-3.5 px-2 text-center whitespace-nowrap">
                         {it.image_url ? (
-                          <R2Image
-                            fileKey={it.image_url}
-                            alt={it.item_name}
-                            className="h-10 w-10 rounded-xl border border-steel-200 dark:border-slate-700 object-cover shadow-xs cursor-pointer hover:opacity-80 transition"
-                            onClick={() => setPreviewModalImg(it.image_url)}
-                            title="คลิกเพื่อดูรูปใหญ่"
-                          />
+                          <div className="flex justify-center">
+                            <R2Image
+                              fileKey={it.image_url}
+                              alt={it.item_name}
+                              className="h-10 w-10 rounded-xl border border-steel-200 dark:border-slate-700 object-cover shadow-xs cursor-pointer hover:opacity-80 transition"
+                              onClick={() => setPreviewModalImg(it.image_url)}
+                              title="คลิกเพื่อดูรูปใหญ่"
+                            />
+                          </div>
                         ) : (
-                          <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-dashed border-steel-200 dark:border-slate-700 bg-steel-50 dark:bg-slate-800 text-[10px] text-steel-400 dark:text-slate-500 font-mono">
+                          <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl border border-dashed border-steel-200 dark:border-slate-700 bg-steel-50 dark:bg-slate-800 text-[10px] text-steel-400 dark:text-slate-500 font-mono">
                             -
                           </div>
                         )}
                       </td>
 
                       {/* 3. ชื่อวัสดุ */}
-                      <td className="font-bold text-steel-900 dark:text-slate-100 max-w-[260px] truncate" title={it.item_name}>
-                        {it.item_name}
+                      <td className="py-3.5 px-3 font-bold text-steel-900 dark:text-slate-100 max-w-[280px]" title={it.item_name}>
+                        <div className="line-clamp-2 leading-snug">{it.item_name}</div>
                       </td>
 
                       {/* 4. หมวดหมู่ */}
-                      <td>
-                        <span className="rounded-md bg-steel-100 dark:bg-slate-800 px-2 py-0.5 text-xs font-semibold text-steel-700 dark:text-slate-200 border border-steel-200 dark:border-slate-700">
+                      <td className="py-3.5 px-3 whitespace-nowrap">
+                        <span className="inline-block whitespace-nowrap rounded-lg bg-steel-100 dark:bg-slate-800 px-2.5 py-1 text-xs font-semibold text-steel-700 dark:text-slate-200 border border-steel-200 dark:border-slate-700">
                           {catObj?.name || it.item_categories?.name || '-'}
                         </span>
                       </td>
 
                       {/* 5. คงเหลือในคลัง */}
-                      <td className="text-right font-mono font-bold">
-                        <span
-                          className={
-                            isOut
-                              ? 'text-rose-600 dark:text-rose-400 font-black'
-                              : isLow
-                              ? 'text-amber-600 dark:text-amber-400'
-                              : 'text-steel-900 dark:text-slate-100'
-                          }
-                        >
-                          {formatIntQty(it.qty_on_hand)}
-                        </span>
-                        {isOut ? (
-                          <span className="ml-1.5 rounded bg-rose-100 dark:bg-rose-950/80 px-1.5 py-0.5 text-[10px] font-bold text-rose-800 dark:text-rose-300">
-                            หมด
+                      <td className="py-3.5 px-3 text-right font-mono whitespace-nowrap">
+                        <div className="inline-flex items-center justify-end gap-1.5">
+                          <span
+                            className={`font-bold text-sm ${
+                              isOut
+                                ? 'text-rose-600 dark:text-rose-400 font-black'
+                                : isLow
+                                ? 'text-amber-600 dark:text-amber-400'
+                                : 'text-steel-900 dark:text-slate-100'
+                            }`}
+                          >
+                            {formatIntQty(it.qty_on_hand)}
                           </span>
-                        ) : isLow ? (
-                          <span className="ml-1.5 rounded bg-amber-100 dark:bg-amber-950/80 px-1.5 py-0.5 text-[10px] font-bold text-amber-800 dark:text-amber-300">
-                            ใกล้หมด
-                          </span>
-                        ) : null}
+                          {isOut ? (
+                            <span className="rounded-md bg-rose-100 dark:bg-rose-950/80 px-1.5 py-0.5 text-[10px] font-bold text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-900">
+                              หมด
+                            </span>
+                          ) : isLow ? (
+                            <span className="rounded-md bg-amber-100 dark:bg-amber-950/80 px-1.5 py-0.5 text-[10px] font-bold text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-900">
+                              ใกล้หมด
+                            </span>
+                          ) : null}
+                        </div>
                       </td>
 
                       {/* 6. หน่วยนับ */}
-                      <td className="text-steel-600 dark:text-slate-400 text-xs">{it.unit || '-'}</td>
+                      <td className="py-3.5 px-3 text-center whitespace-nowrap text-steel-600 dark:text-slate-400 text-xs font-medium">
+                        {it.unit || '-'}
+                      </td>
 
                       {/* 7. จุดเตือน */}
-                      <td className="text-right font-mono text-xs text-steel-500 dark:text-slate-400">
+                      <td className="py-3.5 px-3 text-right font-mono text-xs text-steel-500 dark:text-slate-400 whitespace-nowrap">
                         {formatIntQty(it.reorder_point)}
                       </td>
 
                       {/* 8. ราคาเฉลี่ย */}
-                      <td className="text-right font-mono text-xs text-steel-800 dark:text-slate-200">
+                      <td className="py-3.5 px-3 text-right font-mono text-xs font-semibold text-steel-800 dark:text-slate-200 whitespace-nowrap">
                         {baht(it.avg_unit_cost)} บ.
                       </td>
 
-                      {/* 9. อัปเดตล่าสุด (ข้อ 3: แสดงวัน ด.ป. และเวลาที่อัปเดตล่าสุด) */}
-                      <td className="py-3 px-3 text-xs text-steel-500 dark:text-slate-400 whitespace-nowrap">
-                        <div className="flex items-center gap-1 font-mono">
-                          <Clock className="h-3 w-3 text-steel-400 dark:text-slate-500" />
-                          <span>{it.updated_at ? fmtDateTime(it.updated_at) : it.created_at ? fmtDateTime(it.created_at) : '-'}</span>
-                        </div>
+                      {/* 9. อัปเดตล่าสุด (จัดเลย์เอาต์ 2 บรรทัดมาตรฐาน ERP: วันที่ชัดเจน เวลาไม่เบียด) */}
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        {date === '-' ? (
+                          <span className="text-steel-400 dark:text-slate-500 text-xs font-mono">-</span>
+                        ) : (
+                          <div className="flex flex-col text-xs leading-tight">
+                            <span className="font-semibold text-steel-800 dark:text-slate-200">
+                              {date}
+                            </span>
+                            <span className="flex items-center gap-1 text-[11px] text-steel-500 dark:text-slate-400 font-mono mt-0.5">
+                              <Clock className="h-3 w-3 text-steel-400 dark:text-slate-500 shrink-0" />
+                              {time ? `${time} น.` : ''}
+                            </span>
+                          </div>
+                        )}
                       </td>
 
-                      {/* 10. การจัดการ (CRUD: ปุ่มแก้ไข และปุ่มลบ) */}
-                      <td className="text-center pr-4">
+                      {/* 10. การจัดการ (ปุ่มแก้ไข และปุ่มลบ สัดส่วนสมดุล) */}
+                      <td className="py-3.5 pl-3 pr-4 text-center whitespace-nowrap">
                         {canEdit ? (
                           <div className="flex items-center justify-center gap-1.5">
                             {/* ปุ่มแก้ไข */}
@@ -1026,7 +1278,7 @@ export default function ItemsMaster() {
                               type="button"
                               onClick={() => openEditModal(it)}
                               className="rounded-lg bg-steel-100 dark:bg-slate-800 hover:bg-steel-200 dark:hover:bg-slate-700 text-steel-800 dark:text-slate-200 border border-steel-200 dark:border-slate-700 px-2.5 py-1 text-xs font-bold transition flex items-center gap-1"
-                              title="แก้ไขข้อมูลวัสดุ"
+                              title="แก้ไขข้อมูลพัสดุ"
                             >
                               <Edit2 className="h-3 w-3 text-steel-600 dark:text-slate-300" />
                               <span>แก้ไข</span>
@@ -1463,13 +1715,15 @@ export default function ItemsMaster() {
 
                 <div>
                   <label className="block text-xs font-bold text-steel-700 dark:text-slate-300 mb-1">
-                    ราคาเฉลี่ย (บ.)
+                    ราคาเฉลี่ย / ต้นทุน (บาท) *
                   </label>
                   <input
                     type="number"
-                    min="0"
+                    min="0.01"
                     step="0.01"
-                    className="input w-full font-mono text-steel-900"
+                    required
+                    placeholder="ระบุราคาต้นทุน เช่น 150.00"
+                    className="input w-full font-mono text-steel-900 bg-amber-50/20 border-amber-300 focus:bg-white"
                     value={editForm.avg_unit_cost}
                     onChange={(e) => setEditForm({ ...editForm, avg_unit_cost: e.target.value })}
                   />

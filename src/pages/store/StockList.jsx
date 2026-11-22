@@ -30,6 +30,7 @@ import {
   Sun,
   ShieldCheck,
   Building2,
+  ExternalLink,
 } from 'lucide-react'
 
 export default function StockList() {
@@ -298,14 +299,30 @@ export default function StockList() {
       {/* 2. Category Filter Pills (เลือกตามหมวดหมู่ - ไม่เลื่อน ไม่ล้น)          */}
       {/* ---------------------------------------------------------------------- */}
       <div className="rounded-2xl border border-steel-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-xs space-y-3">
-        <div className="flex items-center justify-between text-xs font-bold text-steel-700 dark:text-slate-300">
+        <div className="flex flex-wrap items-center justify-between gap-3 text-xs font-bold text-steel-700 dark:text-slate-300">
           <span className="flex items-center gap-1.5 text-steel-900 dark:text-slate-100">
             <Layers className="h-4 w-4 text-steel-700 dark:text-amber-400" />
             <span>เลือกดูตามหมวดหมู่วัสดุและอุปกรณ์</span>
           </span>
-          <span className="text-steel-400 dark:text-slate-300 font-normal">
-            แสดง {shown.length} จาก {items.length} รายการ
-          </span>
+
+          <div className="flex items-center gap-2">
+            <span className="text-steel-400 dark:text-slate-300 font-normal hidden sm:inline">
+              แสดง {shown.length} จาก {items.length} รายการ
+            </span>
+            {/* Dropdown เลือกหมวดหมู่ (สำหรับกรณีหมวดหมู่เยอะหรือเลือกผ่าน Dropdown) */}
+            <select
+              value={cat}
+              onChange={(e) => setCat(e.target.value)}
+              className="h-8 rounded-lg border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 text-xs font-bold text-steel-800 dark:text-slate-200 focus:outline-none focus:border-amber-500 cursor-pointer shadow-2xs"
+            >
+              <option value="">📂 หมวดหมู่ทั้งหมด ({items.length} รายการ)</option>
+              {cats.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name} ({items.filter((it) => it.category_id === c.id).length})
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -1043,7 +1060,9 @@ export default function StockList() {
         <InventoryReportModal
           items={items}
           lots={lots}
+          categories={cats}
           cats={cats}
+          selectedCategory={cat}
           onClose={() => setShowReport(false)}
         />
       )}

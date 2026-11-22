@@ -37,10 +37,11 @@ export default function BOQDetail() {
   const fetchDetail = async () => {
     setLoading(true)
     try {
+      // ดึงข้อมูล boq และ boq_items ควบคู่กัน (แก้ปัญหา PostgREST Foreign Key Relationship Error: PGRST200)
       const [bRes, itemsRes] = await Promise.all([
         supabase
           .from('boqs')
-          .select('*, projects(id, project_code, project_name, client_name)')
+          .select('*')
           .eq('id', id)
           .single(),
         supabase
@@ -51,7 +52,18 @@ export default function BOQDetail() {
       ])
 
       if (bRes.error) throw bRes.error
-      setBoq(bRes.data)
+
+      let boqData = bRes.data
+      if (boqData?.project_id) {
+        const { data: proj } = await supabase
+          .from('projects')
+          .select('id, project_code, project_name, client_name')
+          .eq('id', boqData.project_id)
+          .maybeSingle()
+        if (proj) boqData = { ...boqData, projects: proj }
+      }
+
+      setBoq(boqData)
       setItems(itemsRes.data || [])
     } catch (err) {
       console.error('Failed to load BOQ detail:', err)

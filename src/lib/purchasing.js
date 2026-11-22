@@ -21,3 +21,12 @@ export const itemsTotal = (items) =>
 
 export const fmtDateTime = (ts) =>
   ts ? new Date(ts).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' }) : '-'
+
+export const formatDateTimeParts = (ts) => {
+  if (!ts) return { date: '-', time: '' }
+  const d = new Date(ts)
+  if (isNaN(d.getTime())) return { date: '-', time: '' }
+  const date = d.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' })
+  const time = d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', hour12: false })
+  return { date, time }
+}

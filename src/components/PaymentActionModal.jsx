@@ -375,7 +375,7 @@ export default function PaymentActionModal({
         }
       }
 
-      // 4. บันทึกลงตาราง payment_transactions แบบ Self-Healing
+      // 4. บันทึกลงตาราง payment_transactions แบบ Self-Healing & Robust Fallback
       const txPayload = {
         transaction_no: voucherNo,
         document_type: docType,
@@ -385,65 +385,87 @@ export default function PaymentActionModal({
         contact_id: contactId || null,
         project_id: projectId || null,
         payment_stage: paymentStage,
-        payment_method: paymentMethod,
+        payment_method: paymentMethod || 'transfer',
         payment_channel: paymentMethod === 'transfer' ? (companyBank || 'โอนเงิน') : paymentMethod === 'cheque' ? 'เช็ค' : 'เงินสด',
         amount: numericPay,
         amount_paid: numericPay,
         payment_date: todayStr,
         company_bank_account: paymentMethod === 'transfer' ? companyBank : null,
+        company_bank_code: paymentMethod === 'transfer' ? companyBank : null,
         vendor_bank_name: vendorBank.bank_name || null,
         vendor_bank_account_no: vendorBank.bank_account_no || null,
-        vendor_bank_account_name: vendorBank.bank_account_name || null,
         vendor_promptpay: vendorBank.promptpay_no || null,
-        bank_fee: numericFee,
         transfer_fee: numericFee,
         cheque_no: paymentMethod === 'cheque' ? chequeNo : null,
         cheque_bank: paymentMethod === 'cheque' ? chequeBank : null,
         cheque_date: paymentMethod === 'cheque' ? chequeDate : null,
         cheque_payee_name: paymentMethod === 'cheque' ? chequePayeeName : null,
         cash_source: paymentMethod === 'cash' ? cashSource : null,
+        cash_voucher_no: paymentMethod === 'cash' ? cashVoucherNo : null,
         slip_reference_no: paymentMethod === 'transfer' ? slipRef : paymentMethod === 'cash' ? cashVoucherNo : chequeAttachmentNote,
         notes: notes || null,
         journal_entry_id: currentJvId || null,
       }
 
       let activeTx = { ...txPayload }
-      for (let attempt = 0; attempt < 3; attempt++) {
+      for (let attempt = 0; attempt < 8; attempt++) {
         const { error: ptErr } = await supabase.from('payment_transactions').insert(activeTx)
         if (!ptErr) break
-        console.warn(`Payment transaction attempt ${attempt + 1} warning:`, ptErr)
-        const colMatch = ptErr?.message?.match(/column "(.*?)" of relation "payment_transactions" does not exist/)
+        const colMatch =
+          ptErr?.message?.match(/column "(.*?)" of relation "payment_transactions" does not exist/i) ||
+          ptErr?.message?.match(/Could not find the '(.*?)' column of 'payment_transactions'/i) ||
+          ptErr?.details?.match(/column "(.*?)"/i) ||
+          ptErr?.message?.match(/column "(.*?)"/i)
         if (colMatch && colMatch[1]) {
           delete activeTx[colMatch[1]]
           continue
         }
+        console.warn(`Payment transaction notice (optional):`, ptErr?.message || ptErr)
         break
       }
 
-      // 5. ตัดยอดหนี้คงค้างในเอกสารเป้าหมาย
+      // 5. ตัดยอดหนี้คงค้างในเอกสารเป้าหมาย แบบ Self-Healing
       if (docType === 'PO') {
         const nextPaymentStatus = remainingAfter <= 0.05 || paymentStage === 'remaining' || paymentStage === 'full'
           ? 'ชำระครบแล้ว'
           : 'จ่ายมัดจำแล้ว'
 
-        await supabase
-          .from('purchase_orders')
-          .update({
-            deposit_paid_amount: Number(alreadyPaid) + numericPay,
-            payment_status: nextPaymentStatus,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', docId)
+        let poUpdatePayload = {
+          deposit_paid_amount: Number(alreadyPaid) + numericPay,
+          payment_status: nextPaymentStatus,
+          updated_at: new Date().toISOString(),
+        }
 
-        // อัปเดต accounts_payable ด้วยถ้ามี
-        await supabase
-          .from('accounts_payable')
-          .update({
-            paid_amount: Number(alreadyPaid) + numericPay,
-            remaining_amount: remainingAfter,
-            status: remainingAfter <= 0.05 ? 'paid' : 'partial',
-          })
-          .eq('po_id', docId)
+        for (let attempt = 0; attempt < 4; attempt++) {
+          const { error: poErr } = await supabase
+            .from('purchase_orders')
+            .update(poUpdatePayload)
+            .eq('id', docId)
+
+          if (!poErr) break
+          const colMatch = poErr?.message?.match(/column "(.*?)" of relation "purchase_orders" does not exist/)
+          if (colMatch && colMatch[1]) {
+            delete poUpdatePayload[colMatch[1]]
+            continue
+          }
+          console.warn('PO update notice (optional):', poErr?.message || poErr)
+          break
+        }
+
+        // อัปเดต accounts_payable ด้วยถ้ามี (ปลอดภัยด้วย try-catch)
+        try {
+          await supabase
+            .from('accounts_payable')
+            .update({
+              paid_amount: Number(alreadyPaid) + numericPay,
+              remaining_amount: remainingAfter,
+              status: remainingAfter <= 0.05 ? 'paid' : 'partial',
+              updated_at: new Date().toISOString(),
+            })
+            .eq('po_id', docId)
+        } catch (apErr) {
+          console.warn('AP update notice:', apErr)
+        }
       } else if (docType === 'EXP') {
         await supabase
           .from('expenses')

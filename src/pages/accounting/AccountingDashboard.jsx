@@ -32,7 +32,7 @@ export default function AccountingDashboard() {
         supabase.from('fleet_card_expenses').select('*, projects(project_code, project_name)').order('transaction_date', { ascending: false }),
         supabase
           .from('expenses')
-          .select('*, projects(project_code, project_name), vendors(vendor_name, tax_id)')
+          .select('*, projects(project_code, project_name)')
           .order('expense_date', { ascending: false }),
         supabase.from('projects').select('id, project_code, project_name').order('project_code'),
         supabase.from('vendors').select('id, vendor_code, vendor_name, tax_id').order('vendor_name'),

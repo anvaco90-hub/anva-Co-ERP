@@ -34,8 +34,7 @@ export default function JournalEntriesPage() {
             projects(project_code, project_name),
             journal_entry_lines(
               id, account_id, contact_id, debit, credit, line_description,
-              chart_of_accounts(account_code, account_name_th, account_category),
-              contacts(company_name)
+              chart_of_accounts(account_code, account_name_th, account_category)
             )
           `)
           .order('entry_date', { ascending: false })
@@ -45,7 +44,16 @@ export default function JournalEntriesPage() {
         supabase.from('contacts').select('id, company_name, contact_type').order('company_name'),
       ])
 
-      setEntries(jvRes.data || [])
+      const cntMap = new Map((cntRes.data || []).map((c) => [c.id, c]))
+      const enrichedEntries = (jvRes.data || []).map((e) => ({
+        ...e,
+        journal_entry_lines: (e.journal_entry_lines || []).map((l) => ({
+          ...l,
+          contacts: l.contact_id ? cntMap.get(l.contact_id) || null : null,
+        })),
+      }))
+
+      setEntries(enrichedEntries)
       setCoaList(coaRes.data || [])
       setProjects(prjRes.data || [])
       setContacts(cntRes.data || [])

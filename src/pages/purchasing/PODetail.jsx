@@ -4,7 +4,7 @@ import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
 import { PO_STATUS, canCreatePurchasing, canReceiveGoods } from '../../lib/purchasing'
 import { baht } from '../../lib/projects'
-import Badge from './Badge'
+import StatusBadge from '../../components/common/StatusBadge'
 import AuditPanel from './AuditPanel'
 import ItemProjectUsageModal from '../../components/ItemProjectUsageModal'
 import PODocumentModal from '../../components/reports/PODocumentModal'
@@ -35,7 +35,13 @@ import {
   Sparkles,
   Upload,
   Eye,
+  Printer,
   X,
+  MoreVertical,
+  Edit3,
+  Copy,
+  Mail,
+  Share2,
 } from 'lucide-react'
 import { uploadItemImage } from '../../lib/store'
 
@@ -143,15 +149,22 @@ export default function PODetail() {
     try {
       const [a, b, c] = await Promise.all([
         supabase.from('purchase_orders')
-          .select('*, vendors(vendor_name, tax_id, contact_person, phone, address), projects(project_code, project_name), creator:profiles!created_by(full_name), updater:profiles!updated_by(full_name)')
+          .select('*, vendors(id, vendor_code, vendor_name, tax_id, contact_person, phone, address), projects(id, project_code, project_name)')
           .eq('id', id).single(),
         supabase.from('purchase_order_items').select('*').eq('po_id', id).order('item_name'),
         supabase.from('goods_receipts').select('id, grn_no, received_date').eq('po_id', id).order('received_date', { ascending: false }),
       ])
 
-      if (a.error) return setError('ไม่พบใบสั่งซื้อ')
-      const poData = a.data
-      setPo(poData)
+      if (a.error) {
+        console.warn('Load purchase_orders warning:', a.error)
+        // Fallback: ดึงเฉพาะข้อมูลหลักของ purchase_orders หาก foreign table ติดปัญหา
+        const fbRes = await supabase.from('purchase_orders').select('*').eq('id', id).single()
+        if (fbRes.error) return setError('ไม่พบใบสั่งซื้อ')
+        setPo(fbRes.data)
+      } else {
+        setPo(a.data)
+      }
+      const poData = a.data || (await supabase.from('purchase_orders').select('*').eq('id', id).single()).data
 
       if (poData?.pr_id) {
         const { data: prRow } = await supabase
@@ -165,14 +178,19 @@ export default function PODetail() {
       }
 
       try {
-        const { data: txList } = await supabase
+        const { data: txList, error: txErr } = await supabase
           .from('payment_transactions')
           .select('*')
-          .or(`document_id.eq.${id},document_no.eq.${poData.po_no}`)
+          .eq('document_id', id)
           .order('payment_date', { ascending: false })
-        setPayments(txList ?? [])
+        if (!txErr && txList) {
+          setPayments(txList)
+        } else {
+          setPayments([])
+        }
       } catch (ptErr) {
         console.warn('Cannot load payment_transactions:', ptErr)
+        setPayments([])
       }
 
       const rawItems = b.data ?? []
@@ -448,7 +466,7 @@ export default function PODetail() {
 
         // Release linked PR if any
         if (po.pr_id) {
-          await supabase.from('purchase_requests').update({
+          await supabase.from('purchase_requisitions').update({
             status: 'approved',
             updated_at: new Date().toISOString(),
           }).eq('id', po.pr_id)
@@ -504,7 +522,7 @@ export default function PODetail() {
             </Link>
             <span className="text-slate-300 dark:text-slate-700">/</span>
             <span className="font-mono font-black text-sm text-slate-950 dark:text-white">{po.po_no}</span>
-            <Badge map={PO_STATUS} status={po.status} />
+            <StatusBadge status={po.status} />
           </div>
 
           {/* ขวา: สลับมุมมอง + ปุ่มหลัก (Primary Action) + พิมพ์ PDF + เมนูเพิ่มเติม (...) */}
@@ -703,7 +721,7 @@ export default function PODetail() {
 
                   {/* Status Badges Row */}
                   <div className="flex flex-wrap items-center gap-2 pt-1">
-                    <Badge map={PO_STATUS} status={po.status} />
+                    <StatusBadge status={po.status} />
 
                     {isPaidInFull ? (
                       <span className="text-xs px-3 py-1 rounded-xl font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 inline-flex items-center gap-1.5 backdrop-blur-md">
@@ -911,31 +929,31 @@ export default function PODetail() {
             {/* 2. Bento Grid: 4 Interactive Feature Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Card 1: ผู้ขายและคู่ค้า (Vendor Card) */}
-              <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs space-y-3 hover:border-amber-400/50 transition">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+              <div className="rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs space-y-3 hover:border-amber-400/50 transition">
+                <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
                   <div className="flex items-center gap-2">
-                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-50 text-amber-700 text-base font-bold">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 text-base font-bold">
                       🏢
                     </span>
-                    <span className="font-bold text-xs text-slate-800">ผู้ขาย / ร้านค้า</span>
+                    <span className="font-bold text-xs text-slate-800 dark:text-slate-200">ผู้ขาย / ร้านค้า</span>
                   </div>
                   <span className="text-[10px] font-mono text-slate-400">VEND</span>
                 </div>
                 <div>
-                  <div className="font-black text-sm text-slate-900 truncate" title={po.custom_vendor_name || po.vendors?.vendor_name}>
+                  <div className="font-black text-sm text-slate-900 dark:text-white truncate" title={po.custom_vendor_name || po.vendors?.vendor_name}>
                     {po.custom_vendor_name || po.vendors?.vendor_name || 'ไม่ระบุชื่อร้านค้า'}
                   </div>
-                  <div className="text-xs text-slate-500 mt-0.5 line-clamp-2">
+                  <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2">
                     {po.vendors?.address || 'ไม่ได้ระบุที่อยู่ผู้ขาย'}
                   </div>
                 </div>
-                <div className="pt-2 border-t border-slate-100 text-xs space-y-1 text-slate-600">
+                <div className="pt-2 border-t border-slate-100 dark:border-slate-800 text-xs space-y-1 text-slate-600 dark:text-slate-400">
                   <div className="flex justify-between">
                     <span>เลขผู้เสียภาษี:</span>
-                    <b className="font-mono text-slate-900">{po.vendors?.tax_id || '-'}</b>
+                    <b className="font-mono text-slate-900 dark:text-slate-200">{po.vendors?.tax_id || '-'}</b>
                   </div>
                   {po.vendors?.phone && (
-                    <div className="flex justify-between items-center text-sky-700">
+                    <div className="flex justify-between items-center text-sky-700 dark:text-sky-400">
                       <span>โทรศัพท์:</span>
                       <a href={`tel:${po.vendors.phone}`} className="font-bold hover:underline">
                         📞 {po.vendors.phone}
@@ -946,96 +964,96 @@ export default function PODetail() {
               </div>
 
               {/* Card 2: โครงการ & หน้างานติดตั้ง (Project & Site) */}
-              <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs space-y-3 hover:border-sky-400/50 transition">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+              <div className="rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs space-y-3 hover:border-sky-400/50 transition">
+                <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
                   <div className="flex items-center gap-2">
-                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-sky-50 text-sky-700 text-base font-bold">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-400 text-base font-bold">
                       📍
                     </span>
-                    <span className="font-bold text-xs text-slate-800">หน้างาน / โครงการ</span>
+                    <span className="font-bold text-xs text-slate-800 dark:text-slate-200">หน้างาน / โครงการ</span>
                   </div>
-                  <span className="text-[10px] font-bold text-sky-800 bg-sky-50 px-2 py-0.5 rounded-full">
+                  <span className="text-[10px] font-bold text-sky-800 dark:text-sky-300 bg-sky-50 dark:bg-sky-950 px-2 py-0.5 rounded-full border border-sky-200 dark:border-sky-800">
                     SITE
                   </span>
                 </div>
                 <div>
                   <div className="text-[11px] text-slate-400">โครงการติดตั้ง:</div>
-                  <div className="font-black text-sm text-slate-900 truncate" title={po.custom_project_name || po.projects?.project_name}>
+                  <div className="font-black text-sm text-slate-900 dark:text-white truncate" title={po.custom_project_name || po.projects?.project_name}>
                     {po.custom_project_name || (po.projects ? `${po.projects.project_code} ${po.projects.project_name}` : 'ของกลางบริษัท')}
                   </div>
                   {po.customer_name && (
-                    <div className="text-xs text-sky-800 font-semibold mt-0.5">
+                    <div className="text-xs text-sky-800 dark:text-sky-400 font-semibold mt-0.5">
                       👤 ลูกค้า: {po.customer_name}
                     </div>
                   )}
                 </div>
-                <div className="pt-2 border-t border-slate-100 text-xs text-slate-600">
+                <div className="pt-2 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-400">
                   <div className="text-[11px] text-slate-400">สถานที่ส่งมอบ:</div>
-                  <div className="font-medium text-slate-800 truncate" title={po.delivery_address || 'สโตร์หลัก'}>
+                  <div className="font-medium text-slate-800 dark:text-slate-200 truncate" title={po.delivery_address || 'สโตร์หลัก'}>
                     {po.delivery_address || 'สโตร์หลัก / สำนักงาน'}
                   </div>
                 </div>
               </div>
 
               {/* Card 3: การเงิน & ใบกำกับภาษี (Financial & Tax) */}
-              <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs space-y-3 hover:border-emerald-400/50 transition">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+              <div className="rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs space-y-3 hover:border-emerald-400/50 transition">
+                <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
                   <div className="flex items-center gap-2">
-                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 text-base font-bold">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 text-base font-bold">
                       💳
                     </span>
-                    <span className="font-bold text-xs text-slate-800">การเงิน & ภาษี</span>
+                    <span className="font-bold text-xs text-slate-800 dark:text-slate-200">การเงิน & ภาษี</span>
                   </div>
-                  <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full">
+                  <span className="text-[10px] font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
                     FINANCE
                   </span>
                 </div>
                 <div>
                   <div className="text-[11px] text-slate-400">ใบกำกับภาษีผู้ขาย:</div>
-                  <div className="font-mono font-bold text-xs text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded inline-block mt-0.5">
+                  <div className="font-mono font-bold text-xs text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950 px-2 py-0.5 rounded inline-block mt-0.5 border border-emerald-200 dark:border-emerald-800">
                     {po.vendor_tax_invoice_no || 'ยังไม่ระบุ'}
                   </div>
                 </div>
-                <div className="pt-2 border-t border-slate-100 text-xs space-y-1 text-slate-600">
+                <div className="pt-2 border-t border-slate-100 dark:border-slate-800 text-xs space-y-1 text-slate-600 dark:text-slate-400">
                   <div className="flex justify-between">
                     <span>เงื่อนไขชำระ:</span>
-                    <b className="text-slate-900">{PAYMENT_TYPES.find((p) => p.value === po.payment_type)?.label?.split(' ')[0] || 'เครดิตเทอม'}</b>
+                    <b className="text-slate-900 dark:text-slate-100">{PAYMENT_TYPES.find((p) => p.value === po.payment_type)?.label?.split(' ')[0] || 'เครดิตเทอม'}</b>
                   </div>
                   <div className="flex justify-between">
                     <span>ช่องทางเบิก:</span>
-                    <b className="text-slate-900">{po.payment_channel_requested === 'cheque' ? 'เช็ค' : po.payment_channel_requested === 'cash' ? 'เงินสด' : 'โอนเงิน'}</b>
+                    <b className="text-slate-900 dark:text-slate-100">{po.payment_channel_requested === 'cheque' ? 'เช็ค' : po.payment_channel_requested === 'cash' ? 'เงินสด' : 'โอนเงิน'}</b>
                   </div>
                 </div>
               </div>
 
               {/* Card 4: การขนส่ง & ตรวจรับ (Logistics & GRN) */}
-              <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs space-y-3 hover:border-purple-400/50 transition">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+              <div className="rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs space-y-3 hover:border-purple-400/50 transition">
+                <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
                   <div className="flex items-center gap-2">
-                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-purple-50 text-purple-700 text-base font-bold">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-400 text-base font-bold">
                       🚚
                     </span>
-                    <span className="font-bold text-xs text-slate-800">กำหนดส่ง & รับของ</span>
+                    <span className="font-bold text-xs text-slate-800 dark:text-slate-200">กำหนดส่ง & รับของ</span>
                   </div>
-                  <span className="text-[10px] font-bold text-purple-800 bg-purple-50 px-2 py-0.5 rounded-full">
+                  <span className="text-[10px] font-bold text-purple-800 dark:text-purple-300 bg-purple-50 dark:bg-purple-950 px-2 py-0.5 rounded-full border border-purple-200 dark:border-purple-800">
                     LOGISTICS
                   </span>
                 </div>
                 <div>
                   <div className="text-[11px] text-slate-400">วันกำหนดส่ง (Due Date):</div>
-                  <div className="font-bold text-xs text-slate-900">
+                  <div className="font-bold text-xs text-slate-900 dark:text-slate-100">
                     {po.expected_delivery_date ? formatThaiDate(po.expected_delivery_date, true) : 'ตามตกลง'}
                   </div>
                 </div>
-                <div className="pt-2 border-t border-slate-100 text-xs space-y-1 text-slate-600">
+                <div className="pt-2 border-t border-slate-100 dark:border-slate-800 text-xs space-y-1 text-slate-600 dark:text-slate-400">
                   <div className="flex justify-between items-center">
                     <span>การตรวจรับเข้าคลัง:</span>
                     <span className={`px-2 py-0.5 rounded text-[11px] font-bold ${
                       isFullyReceived
-                        ? 'bg-emerald-100 text-emerald-800'
+                        ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800'
                         : grns.length > 0
-                        ? 'bg-amber-100 text-amber-800'
-                        : 'bg-slate-100 text-slate-600'
+                        ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-800'
+                        : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
                     }`}>
                       {isFullyReceived ? 'รับครบแล้ว 100%' : grns.length > 0 ? `รับแล้ว (${grns.length} ครั้ง)` : 'รอของมาส่ง'}
                     </span>
@@ -1156,31 +1174,31 @@ export default function PODetail() {
             </div>
 
             {/* 3. Section: รายการพัสดุและแคตตาล็อกวัสดุ (Thai Watsadu Style Product Showcase) */}
-            <div className="rounded-3xl border border-slate-200/90 bg-white p-6 shadow-sm space-y-4">
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
+            <div className="rounded-3xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
                 <div className="flex items-center gap-2.5">
                   <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-500 text-slate-950 font-black text-xl shadow-sm">
                     📦
                   </span>
                   <div>
-                    <h2 className="text-lg font-black text-slate-900 tracking-tight">
+                    <h2 className="text-lg font-black text-slate-900 dark:text-slate-100 tracking-tight">
                       รายการพัสดุและอุปกรณ์สั่งซื้อ ({items.length} รายการ)
                     </h2>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
                       แสดงรายการสินค้า ราคาต่อหน่วย ยอดรวม และประวัติการรับเข้าสโตร์
                     </p>
                   </div>
                 </div>
 
                 {/* View Switcher: Product Cards vs Compact Table */}
-                <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
+                <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700">
                   <button
                     type="button"
                     onClick={() => setItemsLayout('cards')}
                     className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
                       itemsLayout === 'cards'
-                        ? 'bg-white text-slate-900 shadow-xs'
-                        : 'text-slate-600 hover:text-slate-900'
+                        ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                     }`}
                   >
                     <Grid className="h-3.5 w-3.5" />
@@ -1191,8 +1209,8 @@ export default function PODetail() {
                     onClick={() => setItemsLayout('table')}
                     className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
                       itemsLayout === 'table'
-                        ? 'bg-white text-slate-900 shadow-xs'
-                        : 'text-slate-600 hover:text-slate-900'
+                        ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                     }`}
                   >
                     <List className="h-3.5 w-3.5" />
@@ -1422,13 +1440,15 @@ export default function PODetail() {
             </div>
 
             {/* 4. Tab Navigation for Connected Features */}
-            <div className="rounded-3xl border border-slate-200/90 bg-white p-6 shadow-sm space-y-4">
-              <div className="flex items-center gap-2 border-b border-slate-100 pb-3 text-xs overflow-x-auto">
+            <div className="rounded-3xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm space-y-4">
+              <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3 text-xs overflow-x-auto">
                 <button
                   type="button"
                   onClick={() => setActiveTab('items')}
                   className={`px-4 py-2 font-bold rounded-xl transition cursor-pointer flex items-center gap-2 ${
-                    activeTab === 'items' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'
+                    activeTab === 'items'
+                      ? 'bg-slate-900 dark:bg-amber-500 text-white dark:text-slate-950 shadow-xs'
+                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
                   }`}
                 >
                   <span>💰</span>
@@ -1439,7 +1459,9 @@ export default function PODetail() {
                   type="button"
                   onClick={() => setActiveTab('receiving')}
                   className={`px-4 py-2 font-bold rounded-xl transition cursor-pointer flex items-center gap-2 ${
-                    activeTab === 'receiving' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'
+                    activeTab === 'receiving'
+                      ? 'bg-slate-900 dark:bg-amber-500 text-white dark:text-slate-950 shadow-xs'
+                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
                   }`}
                 >
                   <span>📥</span>
@@ -1450,7 +1472,9 @@ export default function PODetail() {
                   type="button"
                   onClick={() => setActiveTab('payments')}
                   className={`px-4 py-2 font-bold rounded-xl transition cursor-pointer flex items-center gap-2 ${
-                    activeTab === 'payments' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'
+                    activeTab === 'payments'
+                      ? 'bg-slate-900 dark:bg-amber-500 text-white dark:text-slate-950 shadow-xs'
+                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
                   }`}
                 >
                   <span>💸</span>
@@ -1461,7 +1485,9 @@ export default function PODetail() {
                   type="button"
                   onClick={() => setActiveTab('lifecycle')}
                   className={`px-4 py-2 font-bold rounded-xl transition cursor-pointer flex items-center gap-2 ${
-                    activeTab === 'lifecycle' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'
+                    activeTab === 'lifecycle'
+                      ? 'bg-slate-900 dark:bg-amber-500 text-white dark:text-slate-950 shadow-xs'
+                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
                   }`}
                 >
                   <span>🔗</span>
@@ -1472,7 +1498,9 @@ export default function PODetail() {
                   type="button"
                   onClick={() => setActiveTab('audit')}
                   className={`px-4 py-2 font-bold rounded-xl transition cursor-pointer flex items-center gap-2 ${
-                    activeTab === 'audit' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'
+                    activeTab === 'audit'
+                      ? 'bg-slate-900 dark:bg-amber-500 text-white dark:text-slate-950 shadow-xs'
+                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
                   }`}
                 >
                   <span>🛡️</span>
@@ -1484,15 +1512,15 @@ export default function PODetail() {
               {activeTab === 'items' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2 text-xs">
                   <div className="space-y-3">
-                    <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/90 space-y-2">
-                      <div className="font-bold text-slate-900 border-b border-slate-200 pb-1">
+                    <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/90 dark:border-slate-700/80 space-y-2">
+                      <div className="font-bold text-slate-900 dark:text-slate-100 border-b border-slate-200 dark:border-slate-700 pb-1">
                         💳 เงื่อนไขและกำหนดการชำระเงิน
                       </div>
-                      <div className="space-y-1 text-slate-700">
+                      <div className="space-y-1 text-slate-700 dark:text-slate-300">
                         <div>รูปแบบ: <b>{PAYMENT_TYPES.find((p) => p.value === po.payment_type)?.label || 'เครดิตเทอม'}</b></div>
                         <div>ช่องทาง: <b>{po.payment_channel_requested === 'cheque' ? 'เช็ค' : po.payment_channel_requested === 'cash' ? 'เงินสด' : 'โอนเงิน'}</b></div>
                         {po.deposit_type === 'deposit' && (
-                          <div className="text-amber-800 font-semibold">
+                          <div className="text-amber-800 dark:text-amber-300 font-semibold">
                             มัดจำ {po.deposit_percent}% = <b>{baht(po.deposit_amount)} บาท</b> (คงเหลือ: {baht(po.remaining_amount)} บาท)
                           </div>
                         )}
@@ -1500,39 +1528,39 @@ export default function PODetail() {
                     </div>
 
                     {po.notes && (
-                      <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/90 space-y-1">
-                        <div className="font-bold text-slate-900">📝 หมายเหตุเพิ่มเติม</div>
-                        <p className="text-slate-700 whitespace-pre-wrap">{po.notes}</p>
+                      <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/90 dark:border-slate-700/80 space-y-1">
+                        <div className="font-bold text-slate-900 dark:text-slate-100">📝 หมายเหตุเพิ่มเติม</div>
+                        <p className="text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{po.notes}</p>
                       </div>
                     )}
                   </div>
 
-                  <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200/90 space-y-2.5">
-                    <div className="flex justify-between py-1 border-b border-slate-200 text-slate-600">
+                  <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/90 dark:border-slate-700/80 space-y-2.5">
+                    <div className="flex justify-between py-1 border-b border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400">
                       <span>มูลค่าสินค้ารวม:</span>
-                      <span className="font-mono font-bold text-slate-900 text-sm">{baht(totalAmountVal)} บาท</span>
+                      <span className="font-mono font-bold text-slate-900 dark:text-slate-100 text-sm">{baht(totalAmountVal)} บาท</span>
                     </div>
 
                     {Number(po.vat_amount) > 0 && (
-                      <div className="flex justify-between py-1 border-b border-slate-200 text-slate-600">
+                      <div className="flex justify-between py-1 border-b border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400">
                         <span>ภาษีมูลค่าเพิ่ม 7% (VAT):</span>
-                        <span className="font-mono font-semibold text-slate-800">{baht(po.vat_amount)} บาท</span>
+                        <span className="font-mono font-semibold text-slate-800 dark:text-slate-200">{baht(po.vat_amount)} บาท</span>
                       </div>
                     )}
 
                     {Number(po.wht_rate) > 0 && (
-                      <div className="flex justify-between py-1 border-b border-slate-200 text-purple-800">
+                      <div className="flex justify-between py-1 border-b border-slate-200 dark:border-slate-700 text-purple-800 dark:text-purple-300">
                         <span>หักภาษี ณ ที่จ่าย {po.wht_rate}%:</span>
-                        <span className="font-mono font-bold text-purple-900">-{baht(po.wht_amount)} บาท</span>
+                        <span className="font-mono font-bold text-purple-900 dark:text-purple-300">-{baht(po.wht_amount)} บาท</span>
                       </div>
                     )}
 
-                    <div className="flex justify-between items-center py-2.5 px-3 bg-white rounded-xl border border-slate-200 shadow-xs">
-                      <span className="font-bold text-slate-900 text-sm">ยอดเงินสุทธิทั้งสิ้น:</span>
-                      <span className="font-mono font-black text-xl text-emerald-800">{baht(grandTotalVal)} บาท</span>
+                    <div className="flex justify-between items-center py-2.5 px-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-xs">
+                      <span className="font-bold text-slate-900 dark:text-slate-100 text-sm">ยอดเงินสุทธิทั้งสิ้น:</span>
+                      <span className="font-mono font-black text-xl text-emerald-800 dark:text-emerald-400">{baht(grandTotalVal)} บาท</span>
                     </div>
 
-                    <div className="text-[11px] text-slate-500 text-right italic font-medium">
+                    <div className="text-[11px] text-slate-500 dark:text-slate-400 text-right italic font-medium">
                       ({thaiBahtText(grandTotalVal)})
                     </div>
                   </div>

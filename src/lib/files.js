@@ -88,6 +88,23 @@ export async function uploadFile(file, kind, { onProgress } = {}) {
     throw new Error("รองรับเฉพาะ PDF, JPG, PNG, WebP");
   if (prepared.size > MAX_SIZE) throw new Error("ไฟล์ใหญ่เกิน 15 MB");
 
+  // หากไม่มีการระบุ VITE_UPLOAD_WORKER_URL ใน .env (โหมด Dev หรือไม่ได้ต่อ Cloudflare R2)
+  // ให้แปลงเป็น DataURL อัตโนมัติ เพื่อให้แสดงรูปได้ทันทีและไม่เกิด Error 404 ใน Console
+  if (!import.meta.env.VITE_UPLOAD_WORKER_URL) {
+    const dataUrl = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(prepared);
+    });
+    return {
+      r2Key: dataUrl,
+      name: prepared.name,
+      contentType: prepared.type,
+      size: prepared.size,
+    };
+  }
+
   try {
     const { key, uploadUrl, headers } = await api("upload-url", {
       kind,
@@ -125,7 +142,7 @@ const cache = new Map(); // key -> { url, exp }
 let pending = new Map(); // key -> [{ resolve, reject }]
 let timer = null;
 
-const isDirectUrl = (k) => /^(https?:|blob:|data:)/i.test(k);
+const isDirectUrl = (k) => /^(\/|https?:|blob:|data:)/i.test(k);
 
 export function invalidateFileUrl(key) {
   cache.delete(key);
@@ -163,7 +180,13 @@ async function flush() {
             : p.reject(new Error(data.errors?.[k] || "เปิดไฟล์ไม่ได้"));
       }
     } catch (err) {
-      for (const k of chunk) for (const p of batch.get(k)) p.reject(err);
+      console.warn("View URLs API unavailable:", err.message);
+      for (const k of chunk) {
+        for (const p of (batch.get(k) || [])) {
+          // Fallback: หากเป็น key ธรรมดา ให้ resolve เป็น null แทนที่จะ reject ให้เว็บแฮงก์
+          p.resolve(null);
+        }
+      }
     }
   }
 }

@@ -35,7 +35,7 @@ export default function ExpensesPage() {
       const [expRes, projRes, venRes] = await Promise.all([
         supabase
           .from('expenses')
-          .select('*, projects(id, project_code, project_name), vendors(id, vendor_code, vendor_name)')
+          .select('*, projects(id, project_code, project_name)')
           .order('expense_date', { ascending: false })
           .order('created_at', { ascending: false }),
         supabase.from('projects').select('id, project_code, project_name').order('project_code'),

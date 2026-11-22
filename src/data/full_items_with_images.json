@@ -1,0 +1,5342 @@
+[
+  {
+    "item_code": "ANCT00001",
+    "item_name": "สกรูยิงเมทัลชีท แปไม้",
+    "unit": "แท่ง",
+    "qty_on_hand": 80,
+    "avg_unit_cost": 1.5,
+    "image_url": "https://images.unsplash.com/photo-1586864387789-628af9feed72?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00002",
+    "item_name": "สกรูยิงเมทัลชีท แปเหล็ก",
+    "unit": "แท่ง",
+    "qty_on_hand": 357,
+    "avg_unit_cost": 1.5,
+    "image_url": "https://images.unsplash.com/photo-1586864387789-628af9feed72?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00003",
+    "item_name": "สกรู ยิงแปเหล็ก ขนาด 10-16+16",
+    "unit": "ตัว",
+    "qty_on_hand": 6200,
+    "avg_unit_cost": 1.2,
+    "image_url": "https://images.unsplash.com/photo-1586864387789-628af9feed72?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00004",
+    "item_name": "กาวตะปู",
+    "unit": "อัน",
+    "qty_on_hand": 24,
+    "avg_unit_cost": 95,
+    "image_url": "https://images.unsplash.com/photo-1586864387789-628af9feed72?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00005",
+    "item_name": "ซิลิโคน ซีลแลนท์",
+    "unit": "อัน",
+    "qty_on_hand": 6,
+    "avg_unit_cost": 85,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00006",
+    "item_name": "บอสนี่ กาวอคริลิค",
+    "unit": "อัน",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 45,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00007",
+    "item_name": "3DI กาวอะคริลิค",
+    "unit": "อัน",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 45,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00008",
+    "item_name": "น้ำยาประสาน",
+    "unit": "กระป๋อง",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 65,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00009",
+    "item_name": "ก้ามปู ท่อน้ำ 1/2\"",
+    "unit": "อัน",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 3,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00010",
+    "item_name": "ข้องอ ท่อน้ำ 1/2\"",
+    "unit": "อัน",
+    "qty_on_hand": 5,
+    "avg_unit_cost": 6,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00011",
+    "item_name": "ข้องอ ท่อน้ำ 1\"",
+    "unit": "อัน",
+    "qty_on_hand": 3,
+    "avg_unit_cost": 12,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00012",
+    "item_name": "ข้องอ 45 ท่อน้ำ 4\"",
+    "unit": "อัน",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 65,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00013",
+    "item_name": "ข้องอ 90 ท่อน้ำ 4\"",
+    "unit": "อัน",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 75,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00014",
+    "item_name": "3ทาง ท่อน้ำ 1/2\"",
+    "unit": "อัน",
+    "qty_on_hand": 7,
+    "avg_unit_cost": 8,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00015",
+    "item_name": "3ทางโหลด 100×25 ท่อน้ำ",
+    "unit": "อัน",
+    "qty_on_hand": 5,
+    "avg_unit_cost": 85,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00016",
+    "item_name": "ท่อต่อตรง 1/2\"",
+    "unit": "อัน",
+    "qty_on_hand": 5,
+    "avg_unit_cost": 5,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00017",
+    "item_name": "ท่อต่อตรง โหลด 100×55 ท่อน้ำ",
+    "unit": "อัน",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 55,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00018",
+    "item_name": "วาวน้ำ 1/2\"",
+    "unit": "อัน",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 35,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00019",
+    "item_name": "ตะปูคอนกรีต",
+    "unit": "กล่อง",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 65,
+    "image_url": "https://images.unsplash.com/photo-1586864387789-628af9feed72?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00020",
+    "item_name": "ตะขอ ป.ปลา",
+    "unit": "แท่ง",
+    "qty_on_hand": 116,
+    "avg_unit_cost": 4,
+    "image_url": "https://images.unsplash.com/photo-1586864387789-628af9feed72?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00021",
+    "item_name": "กิ๊บ ล็อคซีลาย",
+    "unit": "อัน",
+    "qty_on_hand": 39,
+    "avg_unit_cost": 3.5,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00022",
+    "item_name": "ก๊อกน้ำ",
+    "unit": "ตัว",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 120,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00023",
+    "item_name": "ที่ฉีดชำระ",
+    "unit": "ชุด",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 180,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00024",
+    "item_name": "ชุดลูกบิดก้านโยก",
+    "unit": "ชุด",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 350,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00025",
+    "item_name": "สายน้ำดี ยาว 80 ซ.ม",
+    "unit": "เส้น",
+    "qty_on_hand": 2,
+    "avg_unit_cost": 85,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00026",
+    "item_name": "สายน้ำดี สแตนเลส",
+    "unit": "เส้น",
+    "qty_on_hand": 2,
+    "avg_unit_cost": 75,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00027",
+    "item_name": "รังผึ้ง 2.1/2",
+    "unit": "ชิ้น",
+    "qty_on_hand": 3,
+    "avg_unit_cost": 35,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00028",
+    "item_name": "บูทมีปีก 1\" ชุบทอง",
+    "unit": "ชิ้น",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 15,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00029",
+    "item_name": "ลูกกลิ้ง 10 นิ้ว",
+    "unit": "อัน",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 85,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00030",
+    "item_name": "ลูกกลิ้ง 4 นิ้ว",
+    "unit": "อัน",
+    "qty_on_hand": 4,
+    "avg_unit_cost": 35,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00031",
+    "item_name": "ผ้าเทปยิปซั่ม",
+    "unit": "ม้วน",
+    "qty_on_hand": 6,
+    "avg_unit_cost": 35,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00032",
+    "item_name": "กระทิง สีทาเหล็กกัลวาไนซ์ และโลหะ 3 ลิตร",
+    "unit": "ถัง",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 690,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00033",
+    "item_name": "Wall Putty เคมีโป๊ว ฉาบทารองพื้นฝาผนัง 5 kg.",
+    "unit": "ถัง",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 220,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00034",
+    "item_name": "Lobster สีพ่นอุตสาหกรรม 3.4ลิตร",
+    "unit": "ถัง",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 580,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00035",
+    "item_name": "เชอวู้ด99 5ลิตร",
+    "unit": "ถัง",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 450,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00036",
+    "item_name": "ทินเนอร์ตราไซโก้ 9.3ลิตร",
+    "unit": "ถัง",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 520,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00037",
+    "item_name": "รูฟ ซิลด์ ตรา จระเข้ 4 kg.",
+    "unit": "ถัง",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 590,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00038",
+    "item_name": "รูฟ ซิลด์ ตรา จระเข้ 1.2 kg.",
+    "unit": "ถัง",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 220,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00039",
+    "item_name": "TOA สีเคลือบ 3.304 ลิตร",
+    "unit": "ถัง",
+    "qty_on_hand": 4,
+    "avg_unit_cost": 680,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00040",
+    "item_name": "TOA QUICK DRIMER สีรองพื้นสำหรับปูนฉาบ",
+    "unit": "ถัง",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 620,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00041",
+    "item_name": "TOA Shield-1 สำหรับภายนอก 9.274 kg.",
+    "unit": "ถัง",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 1250,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00042",
+    "item_name": "SEASONS รองพื้นปูนใหม่",
+    "unit": "ถัง",
+    "qty_on_hand": 2,
+    "avg_unit_cost": 420,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00043",
+    "item_name": "สี ยูนิ มารีน100 3.026 ลิตร",
+    "unit": "ถัง",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 750,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00044",
+    "item_name": "สี ยูนิ มารีน100 0.759 ลิตร",
+    "unit": "ถัง",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 230,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00045",
+    "item_name": "ดราก้า วอลล์พัตตี้ 2 kg.",
+    "unit": "ถัง",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 110,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00046",
+    "item_name": "แผ่นปิดรอยต่อ โปรฟาส์ท ขนาด 20×300 ซม.",
+    "unit": "ม้วน",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 290,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00047",
+    "item_name": "แผ่นปิดรอยต่อ Aerofix ขนาด 20×10ซม.",
+    "unit": "ม้วน",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 150,
+    "image_url": "https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00048",
+    "item_name": "พุกเหล็ก 5/16\"",
+    "unit": "อัน",
+    "qty_on_hand": 38,
+    "avg_unit_cost": 6,
+    "image_url": "https://images.unsplash.com/photo-1586864387789-628af9feed72?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00049",
+    "item_name": "พุกเหล็ก 1/2\"",
+    "unit": "อัน",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 15,
+    "image_url": "https://images.unsplash.com/photo-1586864387789-628af9feed72?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00050",
+    "item_name": "แร็คไฟฟ้า 3ช่อง",
+    "unit": "อัน",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 85,
+    "image_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00051",
+    "item_name": "แร็คไฟฟ้า 5ช่อง",
+    "unit": "อัน",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 135,
+    "image_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00052",
+    "item_name": "ลูกถ้วย",
+    "unit": "ลูก",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 15,
+    "image_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00053",
+    "item_name": "สายไฟ THW. 16 SQ.MM.16m./5m.",
+    "unit": "เมตร",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 48,
+    "image_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00054",
+    "item_name": "สายไฟ THW. 10 SQ.MM.",
+    "unit": "เมตร",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 32,
+    "image_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00055",
+    "item_name": "สายไฟ THW-A อลูมิเนียม 35 SQ.MM.",
+    "unit": "เมตร",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 28,
+    "image_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00056",
+    "item_name": "ท่อน้ำ PVC 1 1/2\"",
+    "unit": "เส้น",
+    "qty_on_hand": 2,
+    "avg_unit_cost": 135,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00057",
+    "item_name": "ท่อน้ำ PVC 2\"",
+    "unit": "เส้น",
+    "qty_on_hand": 2,
+    "avg_unit_cost": 185,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00058",
+    "item_name": "รางน้ำ PVC",
+    "unit": "เส้น",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 280,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00059",
+    "item_name": "ตะข้อรางน้ำ PVC",
+    "unit": "เส้น",
+    "qty_on_hand": 5,
+    "avg_unit_cost": 25,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00060",
+    "item_name": "ปิดหัวท้ายรางน้ำ PVC",
+    "unit": "ชิ้น",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 35,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00061",
+    "item_name": "แฟลชชิ่ง",
+    "unit": "ชิ้น",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 180,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00062",
+    "item_name": "กระเบื้อง Cotto floor tile 60×60cm.",
+    "unit": "แพ็ค",
+    "qty_on_hand": 5,
+    "avg_unit_cost": 320,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00063",
+    "item_name": "กระเบื้อง Duragres floor tiles 30×30 cm.",
+    "unit": "แพ็ค",
+    "qty_on_hand": 2,
+    "avg_unit_cost": 210,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00064",
+    "item_name": "กระเบื้อง Family floor tiles 40×40cm.",
+    "unit": "แพ็ค",
+    "qty_on_hand": 4,
+    "avg_unit_cost": 195,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00065",
+    "item_name": "แผ่นพื้น lycan oak 18178 15×60cm.",
+    "unit": "แพ็ค",
+    "qty_on_hand": 5,
+    "avg_unit_cost": 290,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00066",
+    "item_name": "แผ่นพื้น Lunar oak 116 18×122cm.",
+    "unit": "แพ็ค",
+    "qty_on_hand": 2,
+    "avg_unit_cost": 450,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00067",
+    "item_name": "โฟมรองพื้นสำหรับติดตั้ง W 1.3m.× L 150m.",
+    "unit": "ม้วน",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 1450,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00068",
+    "item_name": "ลวดเหล็ก",
+    "unit": "ม้วน",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 120,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00069",
+    "item_name": "วงกบ PVC ยูนิกซ์รุ่น Super series L ขนาด 70×180 cm.",
+    "unit": "ชุด",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 590,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00070",
+    "item_name": "ลูกลอยควบคุมระดับน้ำ",
+    "unit": "อัน",
+    "qty_on_hand": 14,
+    "avg_unit_cost": 165,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00071",
+    "item_name": "บานพับ เบอร์ 69",
+    "unit": "ชุด",
+    "qty_on_hand": 10,
+    "avg_unit_cost": 45,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00072",
+    "item_name": "กลอนประตู",
+    "unit": "ชุด",
+    "qty_on_hand": 2,
+    "avg_unit_cost": 45,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00073",
+    "item_name": "ลูกบิดประตู",
+    "unit": "ชุด",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 185,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00074",
+    "item_name": "เหล็กซีลายทำฝ้า",
+    "unit": "เส้น",
+    "qty_on_hand": 75,
+    "avg_unit_cost": 38,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00075",
+    "item_name": "โครงผนังเบาตัวซี",
+    "unit": "เส้น",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 65,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00076",
+    "item_name": "สมาร์ทบอร์ด 18 มิล",
+    "unit": "แผ่น",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 680,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00077",
+    "item_name": "โครงผนังเบา ตัวยู",
+    "unit": "เส้น",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 58,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00078",
+    "item_name": "ซีไลน์",
+    "unit": "เส้น",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 38,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00079",
+    "item_name": "ท่อ PVC 4นิ้ว",
+    "unit": "เส้น",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 390,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00080",
+    "item_name": "ท่อ PVC 3นิ้ว",
+    "unit": "เส้น",
+    "qty_on_hand": 3,
+    "avg_unit_cost": 260,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00081",
+    "item_name": "ท่อ PVC 4หุน 1/2",
+    "unit": "เส้น",
+    "qty_on_hand": 3,
+    "avg_unit_cost": 48,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00082",
+    "item_name": "ท่อ PVC 1/2",
+    "unit": "เส้น",
+    "qty_on_hand": 2,
+    "avg_unit_cost": 48,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00083",
+    "item_name": "ท่อ PVC 1 นิ้ว",
+    "unit": "เส้น",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 88,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00084",
+    "item_name": "เมทัลชีท อลูซิงค์ หนา 0.30 ยาว 6 เมตร",
+    "unit": "เส้น",
+    "qty_on_hand": 5,
+    "avg_unit_cost": 480,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00085",
+    "item_name": "เมทัลชีท อลูซิงค์ หนา 0.30 ยาว 4 เมตร",
+    "unit": "เส้น",
+    "qty_on_hand": 26,
+    "avg_unit_cost": 320,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00086",
+    "item_name": "เมทัลชีท อลูซิงค์ หนา 0.30 ยาว 1 เมตร",
+    "unit": "เส้น",
+    "qty_on_hand": 5,
+    "avg_unit_cost": 80,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00087",
+    "item_name": "เมทัลชีท สีแดงสด หนา 0.30 ยาว 2.10 เมตร",
+    "unit": "เส้น",
+    "qty_on_hand": 5,
+    "avg_unit_cost": 210,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00088",
+    "item_name": "วายเมช #25 ลวด 3.4 มิล",
+    "unit": "เมตร",
+    "qty_on_hand": 9,
+    "avg_unit_cost": 45,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00089",
+    "item_name": "รถขนทราย",
+    "unit": "เครื่อง",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 1850,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00090",
+    "item_name": "ข้องอ 3 ทาง 4 นิ้ว",
+    "unit": "ตัว",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 95,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00091",
+    "item_name": "ข้องอ 30 องศา บาง",
+    "unit": "ตัว",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 15,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00092",
+    "item_name": "ข้องอ 90 องศา บาง 2 นิ้ว",
+    "unit": "ตัว",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 22,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00093",
+    "item_name": "ข้องอ 90 องศา หนา 2 นิ้ว",
+    "unit": "ตัว",
+    "qty_on_hand": 3,
+    "avg_unit_cost": 32,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00094",
+    "item_name": "สามทาง 2 นิ้ว บาง",
+    "unit": "ตัว",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 28,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00095",
+    "item_name": "ข้องอ 1 นิ้ว บาง",
+    "unit": "ตัว",
+    "qty_on_hand": 3,
+    "avg_unit_cost": 10,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00096",
+    "item_name": "สามทางเกลียวในธรรมดา 4หุน",
+    "unit": "ตัว",
+    "qty_on_hand": 3,
+    "avg_unit_cost": 12,
+    "image_url": "https://images.unsplash.com/photo-1586864387789-628af9feed72?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00097",
+    "item_name": "ข้องอเกลียวในธรรมดา 4หุน",
+    "unit": "ตัว",
+    "qty_on_hand": 2,
+    "avg_unit_cost": 10,
+    "image_url": "https://images.unsplash.com/photo-1586864387789-628af9feed72?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00098",
+    "item_name": "ต่อตรง 1 นิ้ว เกลียวในธรรมดา",
+    "unit": "ตัว",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 14,
+    "image_url": "https://images.unsplash.com/photo-1586864387789-628af9feed72?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00099",
+    "item_name": "ต่อตรง 2 หุน เกลียวในธรรมดา",
+    "unit": "ตัว",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 8,
+    "image_url": "https://images.unsplash.com/photo-1586864387789-628af9feed72?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00100",
+    "item_name": "ก้ามปู 4หุน",
+    "unit": "ตัว",
+    "qty_on_hand": 10,
+    "avg_unit_cost": 3,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00101",
+    "item_name": "แผ่นสมาร์ทบอร์ด 4 มิล",
+    "unit": "แผ่น",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 155,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00102",
+    "item_name": "ปูนก่อ",
+    "unit": "ลูก",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 115,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00103",
+    "item_name": "ปูนกาว",
+    "unit": "ลูก",
+    "qty_on_hand": 2,
+    "avg_unit_cost": 145,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00104",
+    "item_name": "ปูนขาว",
+    "unit": "ถุง",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 85,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00105",
+    "item_name": "สีขาวภายใน 9ลิตร",
+    "unit": "ถัง",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 690,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00106",
+    "item_name": "สีรองพื้น ปูนเก่า 18 ลิตร",
+    "unit": "ถัง",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 1850,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00107",
+    "item_name": "เหล็ก 2*4 หนา 1.8",
+    "unit": "เส้น",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 380,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00108",
+    "item_name": "แผ่นสมาร์ทบอร์ด 18 มิล",
+    "unit": "เมตร",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 680,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00109",
+    "item_name": "กระเบื้องพื้น ดูร่าไวท์",
+    "unit": "กล่อง",
+    "qty_on_hand": 2,
+    "avg_unit_cost": 210,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00110",
+    "item_name": "กระเบื้อง 40*40",
+    "unit": "กล่อง",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 195,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00111",
+    "item_name": "อิฐบล็อค",
+    "unit": "ก้อน",
+    "qty_on_hand": 20,
+    "avg_unit_cost": 8.5,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00112",
+    "item_name": "เครื่องวัดระดับเส้นสีเขียว",
+    "unit": "เครื่อง",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 1890,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00113",
+    "item_name": "เครื่องสูบน้ำ",
+    "unit": "เครื่อง",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 2450,
+    "image_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00114",
+    "item_name": "กล้องวัดระดับ",
+    "unit": "ตัว",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 5900,
+    "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00115",
+    "item_name": "ขาตั้งกล้องวัดระดับ",
+    "unit": "ตัว",
+    "qty_on_hand": 2,
+    "avg_unit_cost": 1250,
+    "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00116",
+    "item_name": "ไม้สตาฟ Bosch",
+    "unit": "อัน",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 1450,
+    "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00117",
+    "item_name": "ไม้สตาฟ (งานโยธา)",
+    "unit": "อัน",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 950,
+    "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00118",
+    "item_name": "เครื่องตบหน้าดิน",
+    "unit": "ตัว",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 14500,
+    "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANCT00119",
+    "item_name": "กระบะผสมปูน",
+    "unit": "กระบะ",
+    "qty_on_hand": 2,
+    "avg_unit_cost": 220,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANCT",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00001",
+    "item_name": "L-Feet หลังคาเมทัลชีท",
+    "unit": "อัน",
+    "qty_on_hand": 36,
+    "avg_unit_cost": 28,
+    "image_url": "https://images.unsplash.com/photo-1509391365360-2e959784a276?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00002",
+    "item_name": "L-Feet หลังคาแฮงเกิลโบท ลอนคู่ แปไม้",
+    "unit": "อัน",
+    "qty_on_hand": 224,
+    "avg_unit_cost": 45,
+    "image_url": "https://images.unsplash.com/photo-1509391365360-2e959784a276?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00003",
+    "item_name": "L-Feet หลังคาแฮงเกิลโบท ลอนคู่ แปเหล็ก",
+    "unit": "อัน",
+    "qty_on_hand": 174,
+    "avg_unit_cost": 48,
+    "image_url": "https://images.unsplash.com/photo-1509391365360-2e959784a276?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00004",
+    "item_name": "L-Feet หลังคา ซี แพค แบบตรง",
+    "unit": "อัน",
+    "qty_on_hand": 78,
+    "avg_unit_cost": 55,
+    "image_url": "https://images.unsplash.com/photo-1509391365360-2e959784a276?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00005",
+    "item_name": "L-Feet หลังคา ซี แพค แบบเบี้ยว",
+    "unit": "อัน",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 55,
+    "image_url": "https://images.unsplash.com/photo-1509391365360-2e959784a276?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00006",
+    "item_name": "Mid clamp แบบเก่า",
+    "unit": "อัน",
+    "qty_on_hand": 318,
+    "avg_unit_cost": 22,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00007",
+    "item_name": "Mid clamp แบบใหม่",
+    "unit": "อัน",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 25,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00008",
+    "item_name": "End clamp แบบเก่า",
+    "unit": "อัน",
+    "qty_on_hand": 70,
+    "avg_unit_cost": 22,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00009",
+    "item_name": "End clamp แบบใหม่",
+    "unit": "อัน",
+    "qty_on_hand": 317,
+    "avg_unit_cost": 25,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00010",
+    "item_name": "คอนเน็คเตอร์ 1\"",
+    "unit": "อัน",
+    "qty_on_hand": 74,
+    "avg_unit_cost": 28,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00011",
+    "item_name": "คอนเน็คเตอร์ 3/4\"",
+    "unit": "อัน",
+    "qty_on_hand": 70,
+    "avg_unit_cost": 18,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00012",
+    "item_name": "คอนเน็คเตอร์ ท่อเหล็ก 3/4\"",
+    "unit": "อัน",
+    "qty_on_hand": 191,
+    "avg_unit_cost": 18,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00013",
+    "item_name": "ข้อต่อตรง IMC 1\"",
+    "unit": "อัน",
+    "qty_on_hand": 133,
+    "avg_unit_cost": 25,
+    "image_url": "https://images.unsplash.com/photo-1586864387789-628af9feed72?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00014",
+    "item_name": "ข้อต่อตรง IMC 1 1/2\"",
+    "unit": "อัน",
+    "qty_on_hand": 162,
+    "avg_unit_cost": 45,
+    "image_url": "https://images.unsplash.com/photo-1586864387789-628af9feed72?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00015",
+    "item_name": "ข้อต่อตรง IMC 1 1/4\"",
+    "unit": "อัน",
+    "qty_on_hand": 12,
+    "avg_unit_cost": 38,
+    "image_url": "https://images.unsplash.com/photo-1586864387789-628af9feed72?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00016",
+    "item_name": "ข้อต่อตรง EMT 1 1/2\"",
+    "unit": "อัน",
+    "qty_on_hand": 29,
+    "avg_unit_cost": 32,
+    "image_url": "https://images.unsplash.com/photo-1586864387789-628af9feed72?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00017",
+    "item_name": "ท่อโค้ง EMT 1\"",
+    "unit": "เส้น",
+    "qty_on_hand": 24,
+    "avg_unit_cost": 45,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00018",
+    "item_name": "ท่อIMC 3/4 \"",
+    "unit": "เส้น",
+    "qty_on_hand": 6,
+    "avg_unit_cost": 240,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00019",
+    "item_name": "ท่อIMC 2\"",
+    "unit": "เส้น",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 680,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00020",
+    "item_name": "ท่อEMT 1/2\"",
+    "unit": "เส้น",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 95,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00021",
+    "item_name": "ท่อEMT 1\"",
+    "unit": "เส้น",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 185,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00022",
+    "item_name": "เคเบิ้ลแกลน PG.29",
+    "unit": "อัน",
+    "qty_on_hand": 119,
+    "avg_unit_cost": 25,
+    "image_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00023",
+    "item_name": "เคเบิ้ลแกลน PG.13.5",
+    "unit": "อัน",
+    "qty_on_hand": 119,
+    "avg_unit_cost": 12,
+    "image_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00024",
+    "item_name": "เคเบิ้ลแกลน PG.19",
+    "unit": "อัน",
+    "qty_on_hand": 5,
+    "avg_unit_cost": 18,
+    "image_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00025",
+    "item_name": "กันบาดท่อเฟล็ก 2\"",
+    "unit": "อัน",
+    "qty_on_hand": 80,
+    "avg_unit_cost": 18,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00026",
+    "item_name": "กันบาดท่อเฟล็ก 1 1/4\"",
+    "unit": "อัน",
+    "qty_on_hand": 100,
+    "avg_unit_cost": 12,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00027",
+    "item_name": "กันบาดท่อเฟล็ก 1\"",
+    "unit": "อัน",
+    "qty_on_hand": 60,
+    "avg_unit_cost": 10,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00028",
+    "item_name": "กันบาดท่อเฟล็ก 1 1/2\"",
+    "unit": "อัน",
+    "qty_on_hand": 50,
+    "avg_unit_cost": 15,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00029",
+    "item_name": "กันบาดท่อเฟล็ก 3/4\"",
+    "unit": "อัน",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 8,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00030",
+    "item_name": "กันบาดท่อเฟล็ก 1/2\"",
+    "unit": "อัน",
+    "qty_on_hand": 50,
+    "avg_unit_cost": 6,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00031",
+    "item_name": "คุปปิ้งSc 1\" ท่อ EMT",
+    "unit": "อัน",
+    "qty_on_hand": 100,
+    "avg_unit_cost": 18,
+    "image_url": "https://images.unsplash.com/photo-1586864387789-628af9feed72?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00032",
+    "item_name": "คุปปิ้งSc 3/4\" ท่อ EMT",
+    "unit": "อัน",
+    "qty_on_hand": 168,
+    "avg_unit_cost": 12,
+    "image_url": "https://images.unsplash.com/photo-1586864387789-628af9feed72?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00033",
+    "item_name": "คุปปิ้งSc 1 1/4\" ท่อ EMT",
+    "unit": "อัน",
+    "qty_on_hand": 9,
+    "avg_unit_cost": 25,
+    "image_url": "https://images.unsplash.com/photo-1586864387789-628af9feed72?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00034",
+    "item_name": "ท่อเฟล็กซ์กันน้ำ 1\"",
+    "unit": "เมตร",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 48,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00035",
+    "item_name": "ท่อเฟล็กซ์กันน้ำ 1/4\"",
+    "unit": "เมตร",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 25,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00036",
+    "item_name": "ท่อเฟล็กซ์กันน้ำ 1/2\"",
+    "unit": "เมตร",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 30,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00037",
+    "item_name": "ท่อเฟล็กซ์กันน้ำ 1 1/2 \"",
+    "unit": "เมตร",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 75,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00038",
+    "item_name": "ท่อเฟล็กซ์กันน้ำ 1 1/4 \"",
+    "unit": "เมตร",
+    "qty_on_hand": 20,
+    "avg_unit_cost": 62,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00039",
+    "item_name": "ท่อเฟล็กซ์กันน้ำ อลูมิเนียม",
+    "unit": "ถุง",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 350,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00040",
+    "item_name": "ท่อเฟล็กซ์กันน้ำสีดำ",
+    "unit": "เมตร",
+    "qty_on_hand": 12,
+    "avg_unit_cost": 35,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00041",
+    "item_name": "ข้อต่อRail",
+    "unit": "อัน",
+    "qty_on_hand": 248,
+    "avg_unit_cost": 28,
+    "image_url": "https://images.unsplash.com/photo-1509391365360-2e959784a276?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00042",
+    "item_name": "Rail 4.2m.",
+    "unit": "เส้น",
+    "qty_on_hand": 61,
+    "avg_unit_cost": 360,
+    "image_url": "https://images.unsplash.com/photo-1509391365360-2e959784a276?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00043",
+    "item_name": "กราวด์แพลท (Ground Plate)",
+    "unit": "ชิ้น",
+    "qty_on_hand": 865,
+    "avg_unit_cost": 12,
+    "image_url": "https://images.unsplash.com/photo-1509391365360-2e959784a276?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00044",
+    "item_name": "กราวด์ลัก(Ground lug)",
+    "unit": "ตัว",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 35,
+    "image_url": "https://images.unsplash.com/photo-1509391365360-2e959784a276?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00045",
+    "item_name": "เกลียวเร่ง",
+    "unit": "ตัว",
+    "qty_on_hand": 90,
+    "avg_unit_cost": 25,
+    "image_url": "https://images.unsplash.com/photo-1586864387789-628af9feed72?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00046",
+    "item_name": "คลิปสลิง เบอร์ 6",
+    "unit": "อัน",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 10,
+    "image_url": "https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00047",
+    "item_name": "อายโบลท์",
+    "unit": "อัน",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 22,
+    "image_url": "https://images.unsplash.com/photo-1586864387789-628af9feed72?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00049",
+    "item_name": "ประกับ EMT 1\"",
+    "unit": "คู่",
+    "qty_on_hand": 101,
+    "avg_unit_cost": 14,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00050",
+    "item_name": "ประกับ EMT 1 1/2",
+    "unit": "คู่",
+    "qty_on_hand": 215,
+    "avg_unit_cost": 20,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00051",
+    "item_name": "ประกับ IMC 1\"",
+    "unit": "คู่",
+    "qty_on_hand": 15,
+    "avg_unit_cost": 16,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00052",
+    "item_name": "ประกับ IMC 1/2\"",
+    "unit": "อัน",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 10,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00053",
+    "item_name": "ประกับ IMC 1\"1/2",
+    "unit": "คู่",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 22,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00054",
+    "item_name": "ประกับ IMC 1 2\"",
+    "unit": "คู่",
+    "qty_on_hand": 10,
+    "avg_unit_cost": 10,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00055",
+    "item_name": "ประกับ IMC 2\"",
+    "unit": "คู่",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 28,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00056",
+    "item_name": "ประกับ IMC 3/4 \"",
+    "unit": "คู่",
+    "qty_on_hand": 30,
+    "avg_unit_cost": 12,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00057",
+    "item_name": "เครื่องเทสกราวด์ (งานโซล่าเซลล์)",
+    "unit": "ตัว",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 4800,
+    "image_url": "https://images.unsplash.com/photo-1509391365360-2e959784a276?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00058",
+    "item_name": "เครื่องต๊าปเกลียว (งานโซล่าเซลล์)",
+    "unit": "เครื่อง",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 12500,
+    "image_url": "https://images.unsplash.com/photo-1586864387789-628af9feed72?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00059",
+    "item_name": "ลูกหมูไร้สาย MAKITA (งานโซล่าเซลล์)",
+    "unit": "เครื่อง",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 4900,
+    "image_url": "https://images.unsplash.com/photo-1509391365360-2e959784a276?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00060",
+    "item_name": "ชุดดอกสว่าน Milwaukee (งานโซล่าเซลล์)",
+    "unit": "กล่อง",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 1350,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00061",
+    "item_name": "ชุดสว่าน +ไขควงกระแทกไร้สาย Osuka OCK152 - D2 (งานโซล่าเซลล์)",
+    "unit": "ชุด",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 3290,
+    "image_url": "https://images.unsplash.com/photo-1509391365360-2e959784a276?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00062",
+    "item_name": "ล็อคนัท 3/4\"",
+    "unit": "อัน",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 5,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00063",
+    "item_name": "บุชชิ่ง 3/4\"",
+    "unit": "อัน",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 6,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00064",
+    "item_name": "แคล้มแขวนท่อ 1 1/2 \"",
+    "unit": "อัน",
+    "qty_on_hand": 26,
+    "avg_unit_cost": 18,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00065",
+    "item_name": "แคล้มแขวนท่อ 1\"",
+    "unit": "อัน",
+    "qty_on_hand": 7,
+    "avg_unit_cost": 14,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00066",
+    "item_name": "แคล้มแขวนท่อ 2\"",
+    "unit": "อัน",
+    "qty_on_hand": 8,
+    "avg_unit_cost": 22,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00067",
+    "item_name": "Walkway 3m.",
+    "unit": "เส้น",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 1450,
+    "image_url": "https://images.unsplash.com/photo-1509391365360-2e959784a276?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00068",
+    "item_name": "Walkway 4m.",
+    "unit": "เส้น",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 1850,
+    "image_url": "https://images.unsplash.com/photo-1509391365360-2e959784a276?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00069",
+    "item_name": "ข้อต่อ Walkway แบบที่ 1",
+    "unit": "ชิ้น",
+    "qty_on_hand": 110,
+    "avg_unit_cost": 45,
+    "image_url": "https://images.unsplash.com/photo-1509391365360-2e959784a276?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00070",
+    "item_name": "ข้อต่อ Walkway แบบที่ 2",
+    "unit": "ชิ้น",
+    "qty_on_hand": 11,
+    "avg_unit_cost": 45,
+    "image_url": "https://images.unsplash.com/photo-1509391365360-2e959784a276?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00071",
+    "item_name": "รางวายเวย์ 50×100 2\"×4\"×8",
+    "unit": "เส้น",
+    "qty_on_hand": 8,
+    "avg_unit_cost": 240,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00072",
+    "item_name": "รางวายเวย์ 100×100",
+    "unit": "เส้น",
+    "qty_on_hand": 10,
+    "avg_unit_cost": 320,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00073",
+    "item_name": "ฝารางวายเวย์ 100×100",
+    "unit": "อัน",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 110,
+    "image_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00074",
+    "item_name": "Pull Box 8×8×4",
+    "unit": "กล่อง",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 220,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00075",
+    "item_name": "ข้อต่อโค้งวายเวย์ 2×4\"",
+    "unit": "อัน",
+    "qty_on_hand": 4,
+    "avg_unit_cost": 95,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00076",
+    "item_name": "รางเคเบิ้ลเทรย์ 100",
+    "unit": "เส้น",
+    "qty_on_hand": 22,
+    "avg_unit_cost": 290,
+    "image_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00077",
+    "item_name": "ฝารางเคเบิ้ลเทรย์ 100 ขนาด 3 เมตร",
+    "unit": "อัน",
+    "qty_on_hand": 20,
+    "avg_unit_cost": 160,
+    "image_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00078",
+    "item_name": "ฝารางเคเบิ้ลเทรย์ 100 ขนาด 2.5 เมตร",
+    "unit": "อัน",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 140,
+    "image_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00079",
+    "item_name": "รางเคเบิ้ลเทรย์ 200",
+    "unit": "เส้น",
+    "qty_on_hand": 4,
+    "avg_unit_cost": 390,
+    "image_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00080",
+    "item_name": "ฝารางเคเบิ้ลเทรย์ 200 ขนาด 2.44 เมตร",
+    "unit": "อัน",
+    "qty_on_hand": 6,
+    "avg_unit_cost": 210,
+    "image_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00081",
+    "item_name": "รางเคเบิ้ลเทรย์ 300",
+    "unit": "เส้น",
+    "qty_on_hand": 3,
+    "avg_unit_cost": 490,
+    "image_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00082",
+    "item_name": "ฝารางเคเบิ้ลเทรย์300 ขนาด 3 เมตร",
+    "unit": "อัน",
+    "qty_on_hand": 5,
+    "avg_unit_cost": 280,
+    "image_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00083",
+    "item_name": "รางเคเบิ้ลแลดเดอร์ 200",
+    "unit": "เส้น",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 450,
+    "image_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00084",
+    "item_name": "เคเบิ้ลเทรย์ โค้ง 100*100",
+    "unit": "อัน",
+    "qty_on_hand": 2,
+    "avg_unit_cost": 180,
+    "image_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00085",
+    "item_name": "รางเคเบิ้ลเทรย์ 3ทาง",
+    "unit": "เส้น",
+    "qty_on_hand": 2,
+    "avg_unit_cost": 220,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00086",
+    "item_name": "รางเคเบิ้ลเทรย์ งอ 100",
+    "unit": "เส้น",
+    "qty_on_hand": 5,
+    "avg_unit_cost": 180,
+    "image_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00087",
+    "item_name": "เคเบิ้ลเทรย์ งอ 100*100",
+    "unit": "อัน",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 180,
+    "image_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00088",
+    "item_name": "ฝาเคเบิ้ลเทรย์งอ",
+    "unit": "อัน",
+    "qty_on_hand": 2,
+    "avg_unit_cost": 95,
+    "image_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00089",
+    "item_name": "ข้อต่อตรงเคเบิ้ลเทรย์",
+    "unit": "อัน",
+    "qty_on_hand": 26,
+    "avg_unit_cost": 25,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00090",
+    "item_name": "ปิดหัวท้ายเค้บิ้ลเทรย์",
+    "unit": "อัน",
+    "qty_on_hand": 25,
+    "avg_unit_cost": 45,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00091",
+    "item_name": "รีเวทนัท ผู้ เมีย",
+    "unit": "ตัว",
+    "qty_on_hand": 155,
+    "avg_unit_cost": 6,
+    "image_url": "https://images.unsplash.com/photo-1586864387789-628af9feed72?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00092",
+    "item_name": "ราง 3ทาง 4×4 )",
+    "unit": "เส้น",
+    "qty_on_hand": 2,
+    "avg_unit_cost": 145,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00093",
+    "item_name": "ท่อ HDPE 50\" แถบส้ม (HITEX)",
+    "unit": "เมตร",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 45,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00094",
+    "item_name": "ท่อ HDPE 50\"แถบแดง (DIN 8074/75)",
+    "unit": "เมตร",
+    "qty_on_hand": 62,
+    "avg_unit_cost": 48,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00095",
+    "item_name": "ท่อโค้ง HDPE 50\"",
+    "unit": "อัน",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 85,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00096",
+    "item_name": "ข้อต่อตรง HDPE 40\"",
+    "unit": "อัน",
+    "qty_on_hand": 2,
+    "avg_unit_cost": 38,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00097",
+    "item_name": "ข้อต่อตรง HDPE 50\"",
+    "unit": "อัน",
+    "qty_on_hand": 2,
+    "avg_unit_cost": 48,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00098",
+    "item_name": "Clamp โอม 1\"",
+    "unit": "ตัว",
+    "qty_on_hand": 452,
+    "avg_unit_cost": 5,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00099",
+    "item_name": "Clamp โอม 3/4\"",
+    "unit": "ตัว",
+    "qty_on_hand": 465,
+    "avg_unit_cost": 4,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00100",
+    "item_name": "Clamp โอม 1/4\"",
+    "unit": "ตัว",
+    "qty_on_hand": 33,
+    "avg_unit_cost": 3,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00101",
+    "item_name": "Z น็อต (งานโซล่าเซลล์)",
+    "unit": "ตัว",
+    "qty_on_hand": 170,
+    "avg_unit_cost": 12,
+    "image_url": "https://images.unsplash.com/photo-1586864387789-628af9feed72?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00102",
+    "item_name": "แหวน 3/8\"",
+    "unit": "ชิ้น",
+    "qty_on_hand": 238,
+    "avg_unit_cost": 1.5,
+    "image_url": "https://images.unsplash.com/photo-1586864387789-628af9feed72?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00103",
+    "item_name": "แหวน 1/2\"",
+    "unit": "ชิ้น",
+    "qty_on_hand": 58,
+    "avg_unit_cost": 2,
+    "image_url": "https://images.unsplash.com/photo-1586864387789-628af9feed72?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00104",
+    "item_name": "แหวน 5/16\"",
+    "unit": "ชิ้น",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 1.2,
+    "image_url": "https://images.unsplash.com/photo-1586864387789-628af9feed72?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00105",
+    "item_name": "MC4 ยี่ห้อ Link",
+    "unit": "คู่",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 45,
+    "image_url": "https://images.unsplash.com/photo-1509391365360-2e959784a276?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00106",
+    "item_name": "MC4 ยี่ห้อ Lumira",
+    "unit": "ชุด",
+    "qty_on_hand": 148,
+    "avg_unit_cost": 38,
+    "image_url": "https://images.unsplash.com/photo-1509391365360-2e959784a276?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00107",
+    "item_name": "หัวงูเห่า 3/4\"",
+    "unit": "อัน",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 35,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00108",
+    "item_name": "หัวงูเห่า 1/2\"",
+    "unit": "อัน",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 28,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00109",
+    "item_name": "พรีฟอร์ม",
+    "unit": "แท่ง",
+    "qty_on_hand": 7,
+    "avg_unit_cost": 45,
+    "image_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00110",
+    "item_name": "ข้อต่อเข้ากล่องขนาด6หุน(สีเหลือง)",
+    "unit": "ตัว",
+    "qty_on_hand": 68,
+    "avg_unit_cost": 6,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00111",
+    "item_name": "ข้อต่อตรงขนาด6หุน(สีเหลือง)",
+    "unit": "ตัว",
+    "qty_on_hand": 60,
+    "avg_unit_cost": 5,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00112",
+    "item_name": "แคล้มประกับIMC 1 1/4",
+    "unit": "คู่",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 18,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00113",
+    "item_name": "แคล้มประกับIMC 3/4",
+    "unit": "คู่",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 12,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00114",
+    "item_name": "แคล้มประกับIMC 1/2",
+    "unit": "คู่",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 10,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00115",
+    "item_name": "แคล้มประกับEMT 3/4",
+    "unit": "คู่",
+    "qty_on_hand": 6,
+    "avg_unit_cost": 11,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00116",
+    "item_name": "ข้อยึดราง เคเบิ้ลเทรย์",
+    "unit": "ตัว",
+    "qty_on_hand": 600,
+    "avg_unit_cost": 15,
+    "image_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00117",
+    "item_name": "สลิง",
+    "unit": "เมตร",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 18,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00118",
+    "item_name": "สายไฟ VCT",
+    "unit": "เมตร",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 45,
+    "image_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00119",
+    "item_name": "สายไฟ THW. 50 SQ.MM.",
+    "unit": "เมตร",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 165,
+    "image_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00120",
+    "item_name": "แผ่นเพลท 8*8*2",
+    "unit": "แผ่น",
+    "qty_on_hand": 2,
+    "avg_unit_cost": 145,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00121",
+    "item_name": "สายไฟฝังดิน NYY-G 4×2.5/2.5 SQ.MM. 16M./ 34M.",
+    "unit": "เมตร",
+    "qty_on_hand": 50,
+    "avg_unit_cost": 68,
+    "image_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00122",
+    "item_name": "สาย AC 1×150 SQ.MM. 100M./ 30M. / 20M.",
+    "unit": "เมตร",
+    "qty_on_hand": 150,
+    "avg_unit_cost": 520,
+    "image_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00123",
+    "item_name": "สาย AC 1×250 SQ.MM.",
+    "unit": "เมตร",
+    "qty_on_hand": 82,
+    "avg_unit_cost": 890,
+    "image_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00124",
+    "item_name": "สาย AC 1×185 SQ.MM.",
+    "unit": "เมตร",
+    "qty_on_hand": 175,
+    "avg_unit_cost": 650,
+    "image_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00125",
+    "item_name": "สาย DC (ดำ) 6 SQ.MM. 28 M. / 15M.",
+    "unit": "เมตร",
+    "qty_on_hand": 601,
+    "avg_unit_cost": 32,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00126",
+    "item_name": "สาย DC (แดง) 6SQ.MM. 19M./20M",
+    "unit": "เมตร",
+    "qty_on_hand": 189,
+    "avg_unit_cost": 32,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00127",
+    "item_name": "THW. 1×2.5 SQ.MM. 450/750V",
+    "unit": "เมตร",
+    "qty_on_hand": 14,
+    "avg_unit_cost": 11,
+    "image_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00128",
+    "item_name": "สายNYX 1×2×2.5 25M./ 24M.",
+    "unit": "เมตร",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 42,
+    "image_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00129",
+    "item_name": "สายNYX 10 SQ.MM.",
+    "unit": "เมตร",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 55,
+    "image_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00130",
+    "item_name": "ไฟUFO โซล่าเซลล์",
+    "unit": "ตัว",
+    "qty_on_hand": 3,
+    "avg_unit_cost": 890,
+    "image_url": "https://images.unsplash.com/photo-1509391365360-2e959784a276?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00131",
+    "item_name": "น็อตตัวผู้ M6",
+    "unit": "ตัว",
+    "qty_on_hand": 967,
+    "avg_unit_cost": 2,
+    "image_url": "https://images.unsplash.com/photo-1586864387789-628af9feed72?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00133",
+    "item_name": "ตู้คอนโทรล",
+    "unit": "ตัว",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 1450,
+    "image_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00134",
+    "item_name": "Smartlogger 3000 1 ตัว",
+    "unit": "ตัว",
+    "qty_on_hand": 3,
+    "avg_unit_cost": 18500,
+    "image_url": "https://images.unsplash.com/photo-1509391365360-2e959784a276?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00135",
+    "item_name": "DAKO DP-58 15 ตัว",
+    "unit": "ตัว",
+    "qty_on_hand": 15,
+    "avg_unit_cost": 120,
+    "image_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00136",
+    "item_name": "PVC MARKING TUBE 6.5 mm.",
+    "unit": "เมตร",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 8,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00137",
+    "item_name": "PVC MARKING TUBE 3.2mm.",
+    "unit": "เมตร",
+    "qty_on_hand": 100,
+    "avg_unit_cost": 5,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00138",
+    "item_name": "เหล็กฉาก 40×40×3 37 แท่ง",
+    "unit": "แท่ง",
+    "qty_on_hand": 37,
+    "avg_unit_cost": 260,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00139",
+    "item_name": "เครื่องวัดกราวด์",
+    "unit": "ตัว",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 4800,
+    "image_url": "https://images.unsplash.com/photo-1509391365360-2e959784a276?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00140",
+    "item_name": "PV Sheck pro",
+    "unit": "ตัว",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 19500,
+    "image_url": "https://images.unsplash.com/photo-1509391365360-2e959784a276?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00141",
+    "item_name": "เครื่องปริ้นวายมาร์ค",
+    "unit": "ตัว",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 14900,
+    "image_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00142",
+    "item_name": "ประแจทอร์ค",
+    "unit": "ตัว",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 1650,
+    "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00143",
+    "item_name": "เครื่องวัดลม Habotest",
+    "unit": "ตัว",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 690,
+    "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00144",
+    "item_name": "เครื่องวัด แสง Mini light Meter",
+    "unit": "ตัว",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 550,
+    "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00145",
+    "item_name": "Thermal Imager",
+    "unit": "ตัว",
+    "qty_on_hand": 2,
+    "avg_unit_cost": 8900,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00146",
+    "item_name": "ท่อ PVC เหลือง 3/4\" (20\")",
+    "unit": "เส้น",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 35,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00147",
+    "item_name": "ท่อ PVC เหลือง 3/8\" (15\")",
+    "unit": "เส้น",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 25,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00148",
+    "item_name": "ข้อต่อตรง ท่อ PVC 3/4\" (20\")",
+    "unit": "ชิ้น",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 5,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00149",
+    "item_name": "คอนเน็คเตอร์ ท่อ PVC 3/4\" (20\")",
+    "unit": "ชิ้น",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 6,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00150",
+    "item_name": "ท่อโค้ง IMC 1 1/2",
+    "unit": "อัน",
+    "qty_on_hand": 3,
+    "avg_unit_cost": 95,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00151",
+    "item_name": "ท่อเฟล็กซ์กันน้ำ สีเทา 2\"",
+    "unit": "เมตร",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 95,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00152",
+    "item_name": "น็อตต่อราง แลดเดอร์ ตัวผู้",
+    "unit": "ตัว",
+    "qty_on_hand": 174,
+    "avg_unit_cost": 4,
+    "image_url": "https://images.unsplash.com/photo-1586864387789-628af9feed72?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00153",
+    "item_name": "ท่อEMT 3/4\"",
+    "unit": "เส้น",
+    "qty_on_hand": 4,
+    "avg_unit_cost": 130,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00154",
+    "item_name": "คอนเน็คเตอร์ เฟล็ก1-1/2",
+    "unit": "ตัว",
+    "qty_on_hand": 18,
+    "avg_unit_cost": 55,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00155",
+    "item_name": "คอนเน็คเตอร์ เฟล็ก1/2",
+    "unit": "ตัว",
+    "qty_on_hand": 10,
+    "avg_unit_cost": 22,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00156",
+    "item_name": "คอนเน็คเตอร์ เฟล็ก1\"",
+    "unit": "ตัว",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 35,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00157",
+    "item_name": "ไวนัทตัวเปล่า",
+    "unit": "ตัว",
+    "qty_on_hand": 185,
+    "avg_unit_cost": 12,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00158",
+    "item_name": "ไวนัทมีสกรู",
+    "unit": "ตัว",
+    "qty_on_hand": 226,
+    "avg_unit_cost": 16,
+    "image_url": "https://images.unsplash.com/photo-1586864387789-628af9feed72?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00159",
+    "item_name": "แคล้มประกับIMC 1-1/2",
+    "unit": "คู่",
+    "qty_on_hand": 15,
+    "avg_unit_cost": 22,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00160",
+    "item_name": "แคล้มประกับIMC 1\"",
+    "unit": "คู่",
+    "qty_on_hand": 5,
+    "avg_unit_cost": 16,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00161",
+    "item_name": "คลิปล็อคหลังคา",
+    "unit": "ตัว",
+    "qty_on_hand": 43,
+    "avg_unit_cost": 35,
+    "image_url": "https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00163",
+    "item_name": "ท่อ IMC 1/2\"",
+    "unit": "เส้น",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 180,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00164",
+    "item_name": "Rail 4.8m.",
+    "unit": "เส้น",
+    "qty_on_hand": 296,
+    "avg_unit_cost": 410,
+    "image_url": "https://images.unsplash.com/photo-1509391365360-2e959784a276?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00165",
+    "item_name": "ท่อเฟล็กซ์กันน้ำ 3/4",
+    "unit": "เมตร",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 38,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00166",
+    "item_name": "ท่องอ IMC 1\"",
+    "unit": "อัน",
+    "qty_on_hand": 2,
+    "avg_unit_cost": 55,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00167",
+    "item_name": "ท่องอ IMC 1 1/2\"",
+    "unit": "อัน",
+    "qty_on_hand": 3,
+    "avg_unit_cost": 95,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00168",
+    "item_name": "ท่องอ รางวายเวย์",
+    "unit": "อัน",
+    "qty_on_hand": 3,
+    "avg_unit_cost": 95,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00169",
+    "item_name": "สามทาง รางวายเวย์",
+    "unit": "อัน",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 125,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00170",
+    "item_name": "Pull Box กาวาไนท์ 8x8x4",
+    "unit": "กล่อง",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 260,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00171",
+    "item_name": "Pull Box กาวาไนท์ 8x8x6",
+    "unit": "กล่อง",
+    "qty_on_hand": 3,
+    "avg_unit_cost": 320,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00172",
+    "item_name": "คอนเน็คเตอร์ 1 1/2\"",
+    "unit": "อัน",
+    "qty_on_hand": 6,
+    "avg_unit_cost": 42,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00173",
+    "item_name": "LB ข้อต่อ 1 1/2\"",
+    "unit": "อัน",
+    "qty_on_hand": 2,
+    "avg_unit_cost": 115,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00174",
+    "item_name": "สกรูยิงเมทัลชีท",
+    "unit": "ตัว",
+    "qty_on_hand": 400,
+    "avg_unit_cost": 1.5,
+    "image_url": "https://images.unsplash.com/photo-1586864387789-628af9feed72?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00175",
+    "item_name": "สกรูอเนประสงค์",
+    "unit": "ตัว",
+    "qty_on_hand": 100,
+    "avg_unit_cost": 1.2,
+    "image_url": "https://images.unsplash.com/photo-1586864387789-628af9feed72?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00176",
+    "item_name": "หัวงูเห่า ขนาด 1 1/2\"",
+    "unit": "อัน",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 85,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00177",
+    "item_name": "ข้อต่อท่อเหลือง 3/4",
+    "unit": "อัน",
+    "qty_on_hand": 60,
+    "avg_unit_cost": 5,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00178",
+    "item_name": "คอนเน็คเตอร์ ท่อเหลือง",
+    "unit": "อัน",
+    "qty_on_hand": 60,
+    "avg_unit_cost": 6,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00179",
+    "item_name": "Rail 4.5m.",
+    "unit": "เส้น",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 385,
+    "image_url": "https://images.unsplash.com/photo-1509391365360-2e959784a276?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00180",
+    "item_name": "ท่อ HDPE 3/4",
+    "unit": "เมตร",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 16,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00181",
+    "item_name": "ข้อต่อรางแลดเดอร์",
+    "unit": "อัน",
+    "qty_on_hand": 8,
+    "avg_unit_cost": 35,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00182",
+    "item_name": "โค้ง90 รางแลดเดอร์",
+    "unit": "อัน",
+    "qty_on_hand": 4,
+    "avg_unit_cost": 260,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00183",
+    "item_name": "งอ90 รางเคเบิ้ลเทรย์",
+    "unit": "อัน",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 180,
+    "image_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00184",
+    "item_name": "ท่อโค้ง Imc 90 2\"",
+    "unit": "เส้น",
+    "qty_on_hand": 2,
+    "avg_unit_cost": 165,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00185",
+    "item_name": "เกลียวตลอด",
+    "unit": "เส้น",
+    "qty_on_hand": 23,
+    "avg_unit_cost": 35,
+    "image_url": "https://images.unsplash.com/photo-1586864387789-628af9feed72?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00186",
+    "item_name": "บุชชิ่ง 1\"",
+    "unit": "อัน",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 8,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00187",
+    "item_name": "Milwaukee แบตเตอรี่ M18 B5 (งานโซล่าเซลล์)",
+    "unit": "ตัว",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 2850,
+    "image_url": "https://images.unsplash.com/photo-1509391365360-2e959784a276?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00188",
+    "item_name": "Milwaukee แบตเตอรี่ M12 HB5 (งานโซล่าเซลล์)",
+    "unit": "ตัว",
+    "qty_on_hand": 3,
+    "avg_unit_cost": 2290,
+    "image_url": "https://images.unsplash.com/photo-1509391365360-2e959784a276?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00189",
+    "item_name": "คอนเน็คเตอร์ 2\"",
+    "unit": "อัน",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 65,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00190",
+    "item_name": "คอนเน็คเตอร์ 1 1/2\"",
+    "unit": "อัน",
+    "qty_on_hand": 2,
+    "avg_unit_cost": 42,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00191",
+    "item_name": "ข้อต่อตรง 2\"",
+    "unit": "อัน",
+    "qty_on_hand": 2,
+    "avg_unit_cost": 48,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00192",
+    "item_name": "รูฟ ชิลด์ 20 กก.",
+    "unit": "ถัง",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 2150,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00193",
+    "item_name": "พุกตะกั่ว 3/8\"×3/4\"",
+    "unit": "ชุด",
+    "qty_on_hand": 77,
+    "avg_unit_cost": 12,
+    "image_url": "https://images.unsplash.com/photo-1586864387789-628af9feed72?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00194",
+    "item_name": "ท่อเหลือง ข้องอ 90 3/4\"",
+    "unit": "อัน",
+    "qty_on_hand": 13,
+    "avg_unit_cost": 8,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00195",
+    "item_name": "ท่อเหลือง ข้องอ90 1\"",
+    "unit": "อัน",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 12,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00196",
+    "item_name": "ท่อเหลือง ข้อต่อ 1\"",
+    "unit": "อัน",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 8,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00197",
+    "item_name": "ท่อPVC โค้ง90 1\"",
+    "unit": "อัน",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 18,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00198",
+    "item_name": "ท่อPVC โหลด 2\"เป็น1\"",
+    "unit": "อัน",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 22,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00199",
+    "item_name": "บล็อก 2×4",
+    "unit": "กล่อง",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 18,
+    "image_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00200",
+    "item_name": "กิ๊บล็อกสาย",
+    "unit": "อัน",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 2,
+    "image_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00201",
+    "item_name": "สายกราวด์ เบอร์ 50",
+    "unit": "เมตร",
+    "qty_on_hand": 25,
+    "avg_unit_cost": 175,
+    "image_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00202",
+    "item_name": "ตลับเมตรใหญ่",
+    "unit": "อัน",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 180,
+    "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00203",
+    "item_name": "ท่อ HDPE 25\" แถบส้ม",
+    "unit": "เมตร",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 18,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00204",
+    "item_name": "ข้อต่อท่อ HDPE เกลียวนอก",
+    "unit": "อัน",
+    "qty_on_hand": 4,
+    "avg_unit_cost": 28,
+    "image_url": "https://images.unsplash.com/photo-1586864387789-628af9feed72?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00205",
+    "item_name": "ท่อ IMC 1\"",
+    "unit": "เส้น",
+    "qty_on_hand": 6,
+    "avg_unit_cost": 320,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00206",
+    "item_name": "ก้ามปู PVC สีเหลือง 3/4\"",
+    "unit": "ชิ้น",
+    "qty_on_hand": 20,
+    "avg_unit_cost": 4,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00207",
+    "item_name": "ชุดคีมมินิ HMPS06115",
+    "unit": "ชุด",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 350,
+    "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00208",
+    "item_name": "คีมปอกสายไฟ TOTAL รุ่น THT15606",
+    "unit": "ตัว",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 220,
+    "image_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00209",
+    "item_name": "OSUKA แบตเตอรี่ 20v (สีเทา) Supreme 5A",
+    "unit": "ตัว",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 1290,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00210",
+    "item_name": "OSUKA แบตเตอรี่ OCB-205 (20V 5.0Ah)",
+    "unit": "ตัว",
+    "qty_on_hand": 2,
+    "avg_unit_cost": 1190,
+    "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00211",
+    "item_name": "OSUKA แท่นชาร์จ 20v",
+    "unit": "ตัว",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 450,
+    "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00212",
+    "item_name": "OSUKA กล่องเก็บเครื่องมือช่าง ล้อลาก OSMMS23101-05",
+    "unit": "ชุด",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 2490,
+    "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00213",
+    "item_name": "OSUKA ไฟฉายไร้สาย 2IN1 OCK153-D1",
+    "unit": "ตัว",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 690,
+    "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00214",
+    "item_name": "OSUKA รวมเซ็ท ช่างไฟ OCK156",
+    "unit": "ชุด",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 4590,
+    "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00215",
+    "item_name": "TOTAL ชุด คีมหุ้มฉนวน + ไขควง รุ่น THKIST3062",
+    "unit": "ชุด",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 650,
+    "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00216",
+    "item_name": "Milwaukee M18 2855-20 ประแจผลกระทบไร้สาย",
+    "unit": "ชุด",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 5900,
+    "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00217",
+    "item_name": "คีมย้ำสายไฟ HS-16 ย้ำสาย คีมย้ำ หางปลา 1.25-16mm",
+    "unit": "ชิ้น",
+    "qty_on_hand": 2,
+    "avg_unit_cost": 390,
+    "image_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00218",
+    "item_name": "Deli คีมปอกสายไฟ 5 นิ้ว",
+    "unit": "ตัว",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 120,
+    "image_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00219",
+    "item_name": "Deli คีมปากจิ้งจก คีมปากแหลม",
+    "unit": "ตัว",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 140,
+    "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00220",
+    "item_name": "Deli กล่องเครื่องมือช่าง",
+    "unit": "กล่อง",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 350,
+    "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00221",
+    "item_name": "แท่นชาร์จแบตเตอรี่ Milwaukee 12V (งานโซล่าเซลล์)",
+    "unit": "เครื่อง",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 1150,
+    "image_url": "https://images.unsplash.com/photo-1509391365360-2e959784a276?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00222",
+    "item_name": "แท่นชาร์จแบตไร้สาย 21V แบบ fast charge (งานโซล่าเซลล์)",
+    "unit": "เครื่อง",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 290,
+    "image_url": "https://images.unsplash.com/photo-1509391365360-2e959784a276?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00223",
+    "item_name": "แท่นชาร์จแบตเตอรี่ 2 พอร์ต Osuka 4 Ah (งานโซล่าเซลล์)",
+    "unit": "เครื่อง",
+    "qty_on_hand": 2,
+    "avg_unit_cost": 890,
+    "image_url": "https://images.unsplash.com/photo-1509391365360-2e959784a276?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00224",
+    "item_name": "แบตเตอรี่ 2.0Ah OSUKA (งานโซล่าเซลล์)",
+    "unit": "ตัว",
+    "qty_on_hand": 6,
+    "avg_unit_cost": 650,
+    "image_url": "https://images.unsplash.com/photo-1509391365360-2e959784a276?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00225",
+    "item_name": "แบตเตอรี่ 4.0Ah OSUKA (งานโซล่าเซลล์)",
+    "unit": "ตัว",
+    "qty_on_hand": 10,
+    "avg_unit_cost": 990,
+    "image_url": "https://images.unsplash.com/photo-1509391365360-2e959784a276?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00226",
+    "item_name": "แบตเตอรี่ 5.0Ah OSUKA (งานโซล่าเซลล์)",
+    "unit": "ตัว",
+    "qty_on_hand": 6,
+    "avg_unit_cost": 1190,
+    "image_url": "https://images.unsplash.com/photo-1509391365360-2e959784a276?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00227",
+    "item_name": "OSUKA แท่นชาร์จ 1.5 Ah 1 ช่อง (งานโซล่าเซลล์)",
+    "unit": "ตัว",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 350,
+    "image_url": "https://images.unsplash.com/photo-1509391365360-2e959784a276?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00228",
+    "item_name": "แท่นตัดไฟเบอร์ Dewalt (งานโซล่าเซลล์)",
+    "unit": "เครื่อง",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 3890,
+    "image_url": "https://images.unsplash.com/photo-1509391365360-2e959784a276?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00229",
+    "item_name": "OSUKA เครื่องเป่าลมไร้สายไร้แปรงถ่าน (งานโซล่าเซลล์)",
+    "unit": "เครื่อง",
+    "qty_on_hand": 2,
+    "avg_unit_cost": 1290,
+    "image_url": "https://images.unsplash.com/photo-1509391365360-2e959784a276?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00230",
+    "item_name": "เครื่องเชื่อม pumpkin (งานโซล่าเซลล์)",
+    "unit": "เครื่อง",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 2690,
+    "image_url": "https://images.unsplash.com/photo-1509391365360-2e959784a276?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00231",
+    "item_name": "แท่นชาร์จแบตเตอรี่ 2 พอร์ต Osuka 2 Ah (งานโซล่าเซลล์)",
+    "unit": "อัน",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 690,
+    "image_url": "https://images.unsplash.com/photo-1509391365360-2e959784a276?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00232",
+    "item_name": "OSUKA ไฟฉายไร้สาย OCL303-D1 (งานโซล่าเซลล์)",
+    "unit": "อัน",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 590,
+    "image_url": "https://images.unsplash.com/photo-1509391365360-2e959784a276?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00233",
+    "item_name": "OSUKA สว่านไขควงคลัชไร้สาย OCSD756 (งานโซล่าเซลล์)",
+    "unit": "เครื่อง",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 1590,
+    "image_url": "https://images.unsplash.com/photo-1509391365360-2e959784a276?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00234",
+    "item_name": "แผงโซล่าเซลล์ Longi Himo x10 650W",
+    "unit": "แผง",
+    "qty_on_hand": 248,
+    "avg_unit_cost": 3450,
+    "image_url": "https://images.unsplash.com/photo-1509391365360-2e959784a276?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00235",
+    "item_name": "ตาข่ายกันนก (งานโซล่าเซลล์)",
+    "unit": "เมตร",
+    "qty_on_hand": 30,
+    "avg_unit_cost": 85,
+    "image_url": "https://images.unsplash.com/photo-1509391365360-2e959784a276?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00236",
+    "item_name": "MCB-DC 2P 800v 25A (งานโซล่าเซลล์)",
+    "unit": "EA",
+    "qty_on_hand": 4,
+    "avg_unit_cost": 280,
+    "image_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00237",
+    "item_name": "MCB-DC 4P 1000v 25A (งานโซล่าเซลล์)",
+    "unit": "EA",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 490,
+    "image_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00238",
+    "item_name": "SPD - DC 2P 800v (งานโซล่าเซลล์)",
+    "unit": "EA",
+    "qty_on_hand": 2,
+    "avg_unit_cost": 450,
+    "image_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00239",
+    "item_name": "SPD - DC 3P 1000v (งานโซล่าเซลล์)",
+    "unit": "EA",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 650,
+    "image_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00240",
+    "item_name": "SPD - AC 2P 275V (งานโซล่าเซลล์)",
+    "unit": "EA",
+    "qty_on_hand": 8,
+    "avg_unit_cost": 390,
+    "image_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00241",
+    "item_name": "SPD - AC 4P 420v (งานโซล่าเซลล์)",
+    "unit": "EA",
+    "qty_on_hand": 10,
+    "avg_unit_cost": 690,
+    "image_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00242",
+    "item_name": "RCBO 2P 32A 100 mA (งานโซล่าเซลล์)",
+    "unit": "EA",
+    "qty_on_hand": 4,
+    "avg_unit_cost": 550,
+    "image_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00243",
+    "item_name": "RCBO 4P 32A 100 mA (งานโซล่าเซลล์)",
+    "unit": "EA",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 1250,
+    "image_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00244",
+    "item_name": "RCBO 4P 50A 100 mA (งานโซล่าเซลล์)",
+    "unit": "EA",
+    "qty_on_hand": 4,
+    "avg_unit_cost": 1350,
+    "image_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00245",
+    "item_name": "หางปลาลวด ก้านไม้ขีด เบอร์ 6 (งานโซล่าเซลล์)",
+    "unit": "ตัว",
+    "qty_on_hand": 100,
+    "avg_unit_cost": 3.5,
+    "image_url": "https://images.unsplash.com/photo-1509391365360-2e959784a276?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00246",
+    "item_name": "OSUKA เครื่องดูดฝุ่นไร้สาย OCVC882-M1 (งานโซล่าเซลล์)",
+    "unit": "เครื่อง",
+    "qty_on_hand": 2,
+    "avg_unit_cost": 1890,
+    "image_url": "https://images.unsplash.com/photo-1509391365360-2e959784a276?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00247",
+    "item_name": "OSUKA ชุดสว่านไร้สาย OCK152-D2 (งานโซล่าเซลล์)",
+    "unit": "ชุด",
+    "qty_on_hand": 2,
+    "avg_unit_cost": 3290,
+    "image_url": "https://images.unsplash.com/photo-1509391365360-2e959784a276?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00248",
+    "item_name": "KOVEX ฉากสามเหลี่ยม 7 นิ้ว",
+    "unit": "อัน",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 145,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00249",
+    "item_name": "OSUKA แท่นชาร์จ 2 พอร์ต OSCBC106",
+    "unit": "อัน",
+    "qty_on_hand": 2,
+    "avg_unit_cost": 890,
+    "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00250",
+    "item_name": "สายคล้อง สว่าน/กันตก",
+    "unit": "เส้น",
+    "qty_on_hand": 6,
+    "avg_unit_cost": 120,
+    "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00251",
+    "item_name": "OSUKA เครื่องเจียรไร้สาย OCAG746-K1",
+    "unit": "เครื่อง",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 2190,
+    "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00252",
+    "item_name": "OSUKA บล็อกไฟฟ้าไร้สาย OSID831-M1",
+    "unit": "ชุด",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 2890,
+    "image_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00253",
+    "item_name": "OSUKA บล็อกไฟฟ้าไร้สาย OSID830-N",
+    "unit": "เครื่อง",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 2490,
+    "image_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00254",
+    "item_name": "OSUKA ชุดกล่องเครื่องมือ 3 ชิ้น OSMMS23101-05",
+    "unit": "ชุด",
+    "qty_on_hand": 2,
+    "avg_unit_cost": 2490,
+    "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00255",
+    "item_name": "STANLEY ระดับน้ำ 12 นิ้ว S351-42072",
+    "unit": "อัน",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 195,
+    "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00256",
+    "item_name": "STANLEY ระดับน้ำ 24 นิ้ว S351-4207420058",
+    "unit": "อัน",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 295,
+    "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00257",
+    "item_name": "UNI-T แคลมป์มิเตอร์ UT207B",
+    "unit": "เครื่อง",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 2650,
+    "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANSL00258",
+    "item_name": "สายเบลท์ขนาด 3 ตัน สลิงยกของ (งานโซล่าเซลล์)",
+    "unit": "ม้วน",
+    "qty_on_hand": 2,
+    "avg_unit_cost": 280,
+    "image_url": "https://images.unsplash.com/photo-1509391365360-2e959784a276?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANSL",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00001",
+    "item_name": "โดรน",
+    "unit": "ตัว",
+    "qty_on_hand": 3,
+    "avg_unit_cost": 15900,
+    "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00002",
+    "item_name": "ตู้เชื่อม เสีย2ตัว",
+    "unit": "ตัว",
+    "qty_on_hand": 4,
+    "avg_unit_cost": 2500,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00003",
+    "item_name": "วิทยุ สื่อสาร",
+    "unit": "ตัว",
+    "qty_on_hand": 4,
+    "avg_unit_cost": 1250,
+    "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00004",
+    "item_name": "สว่านไร้สาย Osuka บล็อกกระแทกไร้สาย",
+    "unit": "ตัว",
+    "qty_on_hand": 2,
+    "avg_unit_cost": 2290,
+    "image_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00005",
+    "item_name": "เครื่องเป่าไร้สาย Osuka",
+    "unit": "ตัว",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 1290,
+    "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00006",
+    "item_name": "เครื่องเป่า MAXMA",
+    "unit": "ตัว",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 650,
+    "image_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00007",
+    "item_name": "สว่านไร้สาย Milwaukee M18 บล็อกกระแทกไร้สาย",
+    "unit": "ตัว",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 5900,
+    "image_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00008",
+    "item_name": "สว่านไร้สาย Milwaukee M12 บล็อกกระแทกไร้สาย",
+    "unit": "ตัว",
+    "qty_on_hand": 2,
+    "avg_unit_cost": 4200,
+    "image_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00009",
+    "item_name": "สว่านไร้สาย Milwaukee สว่านเจาะแทกไร้สาย 12v",
+    "unit": "ตัว",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 3900,
+    "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00010",
+    "item_name": "สว่านไร้สาย Milwaukee สว่านเจาะกระแทกไร้สาย M18",
+    "unit": "ตัว",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 5500,
+    "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00011",
+    "item_name": "กระแทกPumpkin",
+    "unit": "ตัว",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 3800,
+    "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00012",
+    "item_name": "กระแทกBosch 6 kg.",
+    "unit": "ตัว",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 7900,
+    "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00013",
+    "item_name": "เครื่องจี้ปูน Rowel",
+    "unit": "ตัว",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 2850,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00014",
+    "item_name": "ลูกหมู Bosch 7นิ้ว",
+    "unit": "ตัว",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 3200,
+    "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00015",
+    "item_name": "ลูกหมู pumpkin 4 นิ้ว (เสีย)",
+    "unit": "ตัว",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 1150,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00016",
+    "item_name": "ลูกหมู Bosch 4 นิ้ว",
+    "unit": "ตัว",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 1490,
+    "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00017",
+    "item_name": "ไฟเบอร์pumpkin",
+    "unit": "ตัว",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 2950,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00018",
+    "item_name": "วงเดือน Bosch",
+    "unit": "ตัว",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 2890,
+    "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00019",
+    "item_name": "กล่องเครื่องมือ",
+    "unit": "กล่อง",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 450,
+    "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00020",
+    "item_name": "เครื่องเจาะเหล็ก MHP-20C",
+    "unit": "ตัว",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 14500,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00021",
+    "item_name": "เครื่องตัดเหล็ก MARTON",
+    "unit": "ตัว",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 18500,
+    "image_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00022",
+    "item_name": "เครื่องดัดเหล็ก ไฮดรอลิค SWG-1",
+    "unit": "ตัว",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 4900,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00023",
+    "item_name": "เครื่องดัดเหล็ก-ปลอกคาน",
+    "unit": "ตัว",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 16500,
+    "image_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00024",
+    "item_name": "เครื่องอัดฉีด PUMPKIN",
+    "unit": "ตัว",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 2690,
+    "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00025",
+    "item_name": "นั่งร้าน (Office)",
+    "unit": "ชุด",
+    "qty_on_hand": 8,
+    "avg_unit_cost": 1850,
+    "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00026",
+    "item_name": "บันไดนั่งร้าน (Office)",
+    "unit": "อัน",
+    "qty_on_hand": 10,
+    "avg_unit_cost": 650,
+    "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00027",
+    "item_name": "ชานพักนั่งร้าน (Office)",
+    "unit": "อัน",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 550,
+    "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00029",
+    "item_name": "ถังน้ำยาแอร์ R-32",
+    "unit": "ถัง",
+    "qty_on_hand": 2,
+    "avg_unit_cost": 2450,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00031",
+    "item_name": "เครื่องต๊าปเกลียวท่อ แบบมือ",
+    "unit": "ตัว",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 2200,
+    "image_url": "https://images.unsplash.com/photo-1586864387789-628af9feed72?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00032",
+    "item_name": "เสื้อช่างหน้างาน (Office)",
+    "unit": "ตัว",
+    "qty_on_hand": 33,
+    "avg_unit_cost": 220,
+    "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00033",
+    "item_name": "เครื่องน็อคเอาท์ไฮดรอลิค",
+    "unit": "ตัว",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 3450,
+    "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00034",
+    "item_name": "เครื่องย้ำไฮดรอลิค",
+    "unit": "ตัว",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 1890,
+    "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00035",
+    "item_name": "ปากกามาร์คเกอร์ (สีชมพู) (Office)",
+    "unit": "ด้าม",
+    "qty_on_hand": 10,
+    "avg_unit_cost": 18,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00036",
+    "item_name": "เครื่องปั่นไฟ",
+    "unit": "เครื่อง",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 12500,
+    "image_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00037",
+    "item_name": "ฟิชเทป",
+    "unit": "ม้วน",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 290,
+    "image_url": "https://images.unsplash.com/photo-1542013936693-884638332954?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00038",
+    "item_name": "บันไดอลูมิเนียม",
+    "unit": "ตัว",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 1450,
+    "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00039",
+    "item_name": "บันไดสไลด์ 20m",
+    "unit": "ตัว",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 8900,
+    "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00040",
+    "item_name": "บันไดพับได้ (เสีย)",
+    "unit": "ตัว",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 2200,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00041",
+    "item_name": "คีมตัดเหล็กเส้น",
+    "unit": "ตัว",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 650,
+    "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00042",
+    "item_name": "ปลั๊กพ่วง",
+    "unit": "ชุด",
+    "qty_on_hand": 2,
+    "avg_unit_cost": 390,
+    "image_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00043",
+    "item_name": "ไม้กรีด ถนน",
+    "unit": "ตัว",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 650,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00044",
+    "item_name": "เกรียงปาดถนน",
+    "unit": "ตัว",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 850,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00045",
+    "item_name": "พลั่ว",
+    "unit": "อัน",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 165,
+    "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00046",
+    "item_name": "จอบ",
+    "unit": "อัน",
+    "qty_on_hand": 2,
+    "avg_unit_cost": 185,
+    "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00047",
+    "item_name": "ค้อน ปอนด์",
+    "unit": "อัน",
+    "qty_on_hand": 2,
+    "avg_unit_cost": 240,
+    "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00048",
+    "item_name": "ประแจดัดเหล็กเส้น",
+    "unit": "เส้น",
+    "qty_on_hand": 4,
+    "avg_unit_cost": 180,
+    "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00049",
+    "item_name": "ชะแลง",
+    "unit": "เส้น",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 220,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00050",
+    "item_name": "ถังปูนพลาสติก",
+    "unit": "ถัง",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 25,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00051",
+    "item_name": "เกรียงโบกปูน",
+    "unit": "อัน",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 45,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00052",
+    "item_name": "เกรียงก่อแหลม",
+    "unit": "อัน",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 40,
+    "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00053",
+    "item_name": "บุ้งกี้",
+    "unit": "อัน",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 35,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00054",
+    "item_name": "รถเข็นยกโฟล์คลิฟ",
+    "unit": "คัน",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 8900,
+    "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00055",
+    "item_name": "รถเข็นปูน 1ล้อ",
+    "unit": "คัน",
+    "qty_on_hand": 2,
+    "avg_unit_cost": 1350,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00056",
+    "item_name": "หน้ากาก เชื่อม",
+    "unit": "อัน",
+    "qty_on_hand": 2,
+    "avg_unit_cost": 350,
+    "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00057",
+    "item_name": "เลื่อย เหล็ก",
+    "unit": "อัน",
+    "qty_on_hand": 2,
+    "avg_unit_cost": 120,
+    "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00058",
+    "item_name": "ปืนยิงซิลิโคน",
+    "unit": "อัน",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 65,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00059",
+    "item_name": "บันไดนั่งร้าน",
+    "unit": "ตัว",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 650,
+    "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00060",
+    "item_name": "หมวก เหลือง 7",
+    "unit": "ใบ",
+    "qty_on_hand": 23,
+    "avg_unit_cost": 85,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00061",
+    "item_name": "หมวก ขาว 3",
+    "unit": "ใบ",
+    "qty_on_hand": 3,
+    "avg_unit_cost": 95,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00062",
+    "item_name": "เข็มขัดนิรภัย 7 ชุด",
+    "unit": "เส้น",
+    "qty_on_hand": 7,
+    "avg_unit_cost": 590,
+    "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00063",
+    "item_name": "เสื้อกั๊กคนงาน",
+    "unit": "ตัว",
+    "qty_on_hand": 14,
+    "avg_unit_cost": 65,
+    "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00064",
+    "item_name": "เครื่องเคลือบบัตร",
+    "unit": "ตัว",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 890,
+    "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00065",
+    "item_name": "สก็อตเทปใส 24 mm.",
+    "unit": "ชิ้น",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 15,
+    "image_url": "https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00066",
+    "item_name": "สก็อตเทปขุ่น เทปกาวย่น ขนาด 1.5 นิ้ว",
+    "unit": "อัน",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 28,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00068",
+    "item_name": "ลวดเย็บกระดาษ ขนาด10 mm. (ไส้แม็ก)",
+    "unit": "กล่อง",
+    "qty_on_hand": 6,
+    "avg_unit_cost": 12,
+    "image_url": "https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00069",
+    "item_name": "หมึกเติมแท่งปั้น",
+    "unit": "ขวด",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 25,
+    "image_url": "https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00070",
+    "item_name": "ป้ายชื่อใสอคิลิค แนวตั้ง",
+    "unit": "อัน",
+    "qty_on_hand": 9,
+    "avg_unit_cost": 15,
+    "image_url": "https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00071",
+    "item_name": "คลิปหนีบบัตรพลาสติกขาว",
+    "unit": "อัน",
+    "qty_on_hand": 6,
+    "avg_unit_cost": 5,
+    "image_url": "https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00072",
+    "item_name": "สายคล้องป้ายชื่อ",
+    "unit": "เส้น",
+    "qty_on_hand": 7,
+    "avg_unit_cost": 12,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00073",
+    "item_name": "ป้ายบัตร",
+    "unit": "แผ่น",
+    "qty_on_hand": 16,
+    "avg_unit_cost": 10,
+    "image_url": "https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00074",
+    "item_name": "สก็อตเทปใส 48 mm. (Office)",
+    "unit": "อัน",
+    "qty_on_hand": 6,
+    "avg_unit_cost": 25,
+    "image_url": "https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00075",
+    "item_name": "ถุงซิปล็อก ขนาด 6*8.5 นิ้ว",
+    "unit": "แผ่น",
+    "qty_on_hand": 18,
+    "avg_unit_cost": 2,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00076",
+    "item_name": "ซองน้ำตาล ขนาด A4 เปิดข้าง",
+    "unit": "ซอง",
+    "qty_on_hand": 39,
+    "avg_unit_cost": 4,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00077",
+    "item_name": "ซองน้ำตาลครึ่ง A4 ขนาด26.7*16 cm (9*6.7 นิ้ว)",
+    "unit": "ซอง",
+    "qty_on_hand": 8,
+    "avg_unit_cost": 3,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00078",
+    "item_name": "ซองถนอมเอกสาร ขนาด A4",
+    "unit": "ซอง",
+    "qty_on_hand": 76,
+    "avg_unit_cost": 3.5,
+    "image_url": "https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00079",
+    "item_name": "แฟ้มซองขนาด F4",
+    "unit": "เล่ม",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 12,
+    "image_url": "https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00080",
+    "item_name": "แฟ้มพลาสติกผูกเชือกสีขาว",
+    "unit": "เล่ม",
+    "qty_on_hand": 12,
+    "avg_unit_cost": 22,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00081",
+    "item_name": "แฟ้มพลาสติกผูกเชือกสีเขียว",
+    "unit": "เล่ม",
+    "qty_on_hand": 12,
+    "avg_unit_cost": 22,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00082",
+    "item_name": "แฟ้มพลาสติกผูกเชือกสีฟ้า",
+    "unit": "เล่ม",
+    "qty_on_hand": 12,
+    "avg_unit_cost": 22,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00083",
+    "item_name": "แฟ้มพลาสติกผูกเชือกสีส้ม",
+    "unit": "เล่ม",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 22,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00084",
+    "item_name": "สมุดทะเบียนหนังสือส่ง",
+    "unit": "เล่ม",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 65,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00085",
+    "item_name": "Wireless USB D-Link",
+    "unit": "ชิ้น",
+    "qty_on_hand": 2,
+    "avg_unit_cost": 390,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00086",
+    "item_name": "ซิม GOMO",
+    "unit": "ชิ้น",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 99,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00087",
+    "item_name": "แฟลชไดร์ฟ 64 Gb",
+    "unit": "อัน",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 190,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00088",
+    "item_name": "กระดาษอิงค์เจ็ก 180 แกรม",
+    "unit": "แพ็ค",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 120,
+    "image_url": "https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00089",
+    "item_name": "กระดาษสติ๊กเกอร์",
+    "unit": "แผ่น",
+    "qty_on_hand": 9,
+    "avg_unit_cost": 5,
+    "image_url": "https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00090",
+    "item_name": "กระดาษการ์ดคละสี A4 120 แกรม",
+    "unit": "แผ่น",
+    "qty_on_hand": 9,
+    "avg_unit_cost": 3,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00091",
+    "item_name": "แผ่นเคลือบ",
+    "unit": "แผ่น",
+    "qty_on_hand": 37,
+    "avg_unit_cost": 4,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00092",
+    "item_name": "กระดาษดับเบิ้ลA ขนาด A4 ยี่ห้อ DOUBLE A",
+    "unit": "รีม",
+    "qty_on_hand": 3,
+    "avg_unit_cost": 135,
+    "image_url": "https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00093",
+    "item_name": "กระดาษA4",
+    "unit": "รีม",
+    "qty_on_hand": 8,
+    "avg_unit_cost": 110,
+    "image_url": "https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00094",
+    "item_name": "กระดาษดับเบิ้ลA ขนาด A3",
+    "unit": "รีม",
+    "qty_on_hand": 9,
+    "avg_unit_cost": 275,
+    "image_url": "https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00095",
+    "item_name": "คลิปหนีบดำ2ขา 25mm No.E108",
+    "unit": "อัน",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 3,
+    "image_url": "https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00096",
+    "item_name": "คลิปหนีบดำ2ขา 50mm",
+    "unit": "อัน",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 8,
+    "image_url": "https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00097",
+    "item_name": "สีหมึกปริ้น Epson 003 สี Y",
+    "unit": "ขวด",
+    "qty_on_hand": 4,
+    "avg_unit_cost": 250,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00098",
+    "item_name": "สีหมึกปริ้น Epson 003 สี M",
+    "unit": "ขวด",
+    "qty_on_hand": 5,
+    "avg_unit_cost": 250,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00099",
+    "item_name": "สีหมึกปริ้น Epson 003 สี C",
+    "unit": "ขวด",
+    "qty_on_hand": 4,
+    "avg_unit_cost": 250,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00100",
+    "item_name": "สีหมึกปริ้น Epson 003 สี BK",
+    "unit": "ขวด",
+    "qty_on_hand": 4,
+    "avg_unit_cost": 250,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00101",
+    "item_name": "สีหมึกปริ้น Epson 057 สี M",
+    "unit": "ขวด",
+    "qty_on_hand": 2,
+    "avg_unit_cost": 490,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00102",
+    "item_name": "สีหมึกปริ้น Epson 057 สี LM",
+    "unit": "ขวด",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 490,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00103",
+    "item_name": "สีหมึกปริ้น Epson 057 สี C",
+    "unit": "ขวด",
+    "qty_on_hand": 2,
+    "avg_unit_cost": 490,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00104",
+    "item_name": "สีหมึกปริ้น Epson 057 สี LC",
+    "unit": "ขวด",
+    "qty_on_hand": 2,
+    "avg_unit_cost": 490,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00105",
+    "item_name": "สีหมึกปริ้น Epson 057 สี Y",
+    "unit": "ขวด",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 490,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00106",
+    "item_name": "สีหมึกปริ้น Epson 057 สี BK",
+    "unit": "ขวด",
+    "qty_on_hand": 2,
+    "avg_unit_cost": 490,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00107",
+    "item_name": "เทปกาว 3M",
+    "unit": "ม้วน",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 85,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00108",
+    "item_name": "แผ่นใส ขนาด A4",
+    "unit": "แผ่น",
+    "qty_on_hand": 85,
+    "avg_unit_cost": 3.5,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00109",
+    "item_name": "สันแฟ้ม ขนาด 3 มม.",
+    "unit": "อัน",
+    "qty_on_hand": 33,
+    "avg_unit_cost": 6,
+    "image_url": "https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00110",
+    "item_name": "สันแฟ้ม ขนาด 7 มม.",
+    "unit": "อัน",
+    "qty_on_hand": 106,
+    "avg_unit_cost": 8,
+    "image_url": "https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00111",
+    "item_name": "สันแฟ้ม ขนาด 10 มม.",
+    "unit": "อัน",
+    "qty_on_hand": 11,
+    "avg_unit_cost": 10,
+    "image_url": "https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00112",
+    "item_name": "สันแฟ้ม ขนาด 15 มม.",
+    "unit": "อัน",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 12,
+    "image_url": "https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00113",
+    "item_name": "สันแฟ้ม ขนาด 17 มม.",
+    "unit": "อัน",
+    "qty_on_hand": 9,
+    "avg_unit_cost": 14,
+    "image_url": "https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00114",
+    "item_name": "สันแฟ้ม ขนาด 22 มม.",
+    "unit": "อัน",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 16,
+    "image_url": "https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00115",
+    "item_name": "คลิปดำ 15 mm.",
+    "unit": "ชิ้น",
+    "qty_on_hand": 40,
+    "avg_unit_cost": 1.5,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00116",
+    "item_name": "คลิปดำ 25 mm.",
+    "unit": "ชิ้น",
+    "qty_on_hand": 24,
+    "avg_unit_cost": 3,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00117",
+    "item_name": "คลิปดำ 32 mm.",
+    "unit": "ชิ้น",
+    "qty_on_hand": 185,
+    "avg_unit_cost": 4.5,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00118",
+    "item_name": "คลิปดำ 41 mm.",
+    "unit": "ชิ้น",
+    "qty_on_hand": 18,
+    "avg_unit_cost": 6,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00119",
+    "item_name": "คลิปดำ 51 mm.",
+    "unit": "ชิ้น",
+    "qty_on_hand": 60,
+    "avg_unit_cost": 8,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00120",
+    "item_name": "ลวดเย็บกระดาษ ขนาด 23 mm. (ไส้แม็ก)",
+    "unit": "แถว",
+    "qty_on_hand": 10,
+    "avg_unit_cost": 15,
+    "image_url": "https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00121",
+    "item_name": "สเปรย์ปรับอากาศอัตโนมัติ",
+    "unit": "เครื่อง",
+    "qty_on_hand": 4,
+    "avg_unit_cost": 240,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00122",
+    "item_name": "รีฟิวสเปรย์ปรับอากาศ",
+    "unit": "ขวด",
+    "qty_on_hand": 2,
+    "avg_unit_cost": 135,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00123",
+    "item_name": "แฟ้มสันกว้างเอลเฟ่น Alfen 3 นิ้ว สีดำ",
+    "unit": "แฟ้ม",
+    "qty_on_hand": 12,
+    "avg_unit_cost": 55,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00124",
+    "item_name": "แฟ้มสันกว้างเอลเฟ่น Alfen 3 นิ้ว สีเขียว",
+    "unit": "แฟ้ม",
+    "qty_on_hand": 6,
+    "avg_unit_cost": 55,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00125",
+    "item_name": "แฟ้มสันกว้างเอลเฟ่น Alfen 3 นิ้ว สีส้ม",
+    "unit": "แฟ้ม",
+    "qty_on_hand": 6,
+    "avg_unit_cost": 55,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00126",
+    "item_name": "แฟ้มสันกว้างเอลเฟ่น Alfen 3 นิ้ว สีน้ำเงิน",
+    "unit": "แฟ้ม",
+    "qty_on_hand": 6,
+    "avg_unit_cost": 55,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00127",
+    "item_name": "กระดาษ A3 70 แกรม",
+    "unit": "รีม",
+    "qty_on_hand": 10,
+    "avg_unit_cost": 230,
+    "image_url": "https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00128",
+    "item_name": "ซองน้ำตาล ขนาด A4",
+    "unit": "ชิ้น",
+    "qty_on_hand": 40,
+    "avg_unit_cost": 3.5,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00129",
+    "item_name": "ลวดเสียบกระดาษ 32 มม.",
+    "unit": "กล่อง",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 12,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00130",
+    "item_name": "สีหมึกปริ้น MFC-J3940DW สี Black ดำ LC462XLBK (Office)",
+    "unit": "กล่อง",
+    "qty_on_hand": 2,
+    "avg_unit_cost": 1190,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00131",
+    "item_name": "สีหมึกปริ้น MFC-J3940DW สี Cyan น้ำเงิน LC462XLC (Office)",
+    "unit": "กล่อง",
+    "qty_on_hand": 2,
+    "avg_unit_cost": 790,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00132",
+    "item_name": "สีหมึกปริ้น MFC-J3940DW สี Magenta ชมพู LC462XLM (Office)",
+    "unit": "กล่อง",
+    "qty_on_hand": 2,
+    "avg_unit_cost": 790,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00133",
+    "item_name": "สีหมึกปริ้น MFC-J3940DW สี Yellow เหลือง LC462XLY (Office)",
+    "unit": "กล่อง",
+    "qty_on_hand": 2,
+    "avg_unit_cost": 790,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00134",
+    "item_name": "เครื่องปั้มน้ำ",
+    "unit": "ตัว",
+    "qty_on_hand": 2,
+    "avg_unit_cost": 3500,
+    "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00135",
+    "item_name": "เทปลาเบล Label-Tape 12 มม. (Office)",
+    "unit": "ตลับ",
+    "qty_on_hand": 7,
+    "avg_unit_cost": 320,
+    "image_url": "https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00136",
+    "item_name": "เครื่องพิมพ์ฉลาก Label Brother (Office)",
+    "unit": "เครื่อง",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 1590,
+    "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00137",
+    "item_name": "เครื่องพิมพ์ปลอกสายไฟและฉลาก Brother (Office)",
+    "unit": "เครื่อง",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 14900,
+    "image_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00138",
+    "item_name": "ตลับหมึก ปลอกสายไฟและฉลาก Brotherดำ (Office)",
+    "unit": "ตลับ",
+    "qty_on_hand": 0,
+    "avg_unit_cost": 450,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00139",
+    "item_name": "ห่วงร้อยเอกสาร (Office)",
+    "unit": "ชิ้น",
+    "qty_on_hand": 8,
+    "avg_unit_cost": 5,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00140",
+    "item_name": "Xiaomi Pad 8 แท็บเล็ต (Office)",
+    "unit": "เครื่อง",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 12900,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00141",
+    "item_name": "กระเป๋าเดินทางล้อลาก ขนาด 20 นิ้ว (Office)",
+    "unit": "ใบ",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 1450,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00142",
+    "item_name": "Xiaomi ปากกา (Office)",
+    "unit": "อัน",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 2490,
+    "image_url": "https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00143",
+    "item_name": "ลำโพงบลูทูธ Soundbar SP-07 (Office)",
+    "unit": "เครื่อง",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 490,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00144",
+    "item_name": "Power Bank 10000 mAh (Office)",
+    "unit": "อัน",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 450,
+    "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00145",
+    "item_name": "หูฟัง ไร้สาย 7degree bt-17 (Office)",
+    "unit": "อัน",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 390,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00146",
+    "item_name": "พัดลมพกพา 7 Degrees Mini Fan (F31) (Office)",
+    "unit": "อัน",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 250,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00147",
+    "item_name": "กระติกน้ำแข็งแบรนด์ TOA (Office)",
+    "unit": "ถัง",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 350,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00148",
+    "item_name": "เสื้อสะท้อนแสง ช่างหน้างาน (Office)",
+    "unit": "ตัว",
+    "qty_on_hand": 9,
+    "avg_unit_cost": 85,
+    "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00149",
+    "item_name": "สก็อตเทปใส 18 mm. (Office)",
+    "unit": "ม้วน",
+    "qty_on_hand": 7,
+    "avg_unit_cost": 12,
+    "image_url": "https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00150",
+    "item_name": "ปากกาไวท์บอร์ด สีดำ (Office)",
+    "unit": "แท่ง",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 22,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00151",
+    "item_name": "ปากกาไวท์บอร์ด สีแดง (Office)",
+    "unit": "แท่ง",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 22,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00152",
+    "item_name": "ปากกาไวท์บอร์ด สีน้ำเงิน (Office)",
+    "unit": "แท่ง",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 22,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00153",
+    "item_name": "หมึกเติม ปากกาไวท์บอร์ด สีแดง (Office)",
+    "unit": "ขวด",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 38,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00154",
+    "item_name": "หมึกเติม ปากกาไวท์บอร์ด สีน้ำเงิน (Office)",
+    "unit": "ขวด",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 38,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00155",
+    "item_name": "หมึกเติม ปากกาไวท์บอร์ด สีดำ (Office)",
+    "unit": "ขวด",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 38,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00156",
+    "item_name": "ถ่านแบตเตอรี่ AA (Office)",
+    "unit": "ก้อน",
+    "qty_on_hand": 20,
+    "avg_unit_cost": 18,
+    "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00157",
+    "item_name": "ถ่านแบตเตอรี่ AAA (Office)",
+    "unit": "ก้อน",
+    "qty_on_hand": 11,
+    "avg_unit_cost": 18,
+    "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00158",
+    "item_name": "เครื่องไล่ยุงไฟฟ้า อาท โนแมทพลัส (Office)",
+    "unit": "เครื่อง",
+    "qty_on_hand": 1,
+    "avg_unit_cost": 115,
+    "image_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00159",
+    "item_name": "ทิชชู่เปียก (Office)",
+    "unit": "ห่อ",
+    "qty_on_hand": 7,
+    "avg_unit_cost": 25,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00160",
+    "item_name": "ชุดกระเป๋าพยาบาล",
+    "unit": "ใบ",
+    "qty_on_hand": 2,
+    "avg_unit_cost": 450,
+    "image_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00161",
+    "item_name": "ป้ายกุญแจ",
+    "unit": "อัน",
+    "qty_on_hand": 47,
+    "avg_unit_cost": 3,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00162",
+    "item_name": "ปากกาตรวจแบงค์ปลอม",
+    "unit": "แท่ง",
+    "qty_on_hand": 3,
+    "avg_unit_cost": 45,
+    "image_url": "https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  },
+  {
+    "item_code": "ANVA00163",
+    "item_name": "ซองจดหมายสีขาว",
+    "unit": "ซอง",
+    "qty_on_hand": 35,
+    "avg_unit_cost": 1.5,
+    "image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=60",
+    "code_prefix": "ANVA",
+    "reorder_point": 5
+  }
+]

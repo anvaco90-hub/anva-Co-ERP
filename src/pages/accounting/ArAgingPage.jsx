@@ -29,7 +29,7 @@ export default function ArAgingPage() {
       const [invRes, custRes] = await Promise.all([
         supabase
           .from('sales_invoices')
-          .select('*, customers(id, company_name, tax_id), projects(project_code, project_name)')
+          .select('*, projects(project_code, project_name)')
           .order('issue_date', { ascending: false }),
         supabase.from('customers').select('id, company_name, tax_id').order('company_name'),
       ])

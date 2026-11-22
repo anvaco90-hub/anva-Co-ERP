@@ -1,12 +1,35 @@
-/** สีหลักของระบบ: ปรับตามธีม Figma Finance & Green Energy (กลางวันเน้นสีเขียว Emerald / Mint) */
+/** สีหลักของระบบ: ANVA & Co Solar Engineering ERP Design System */
 export default {
   darkMode: 'class',
   content: ['./index.html', './src/**/*.{js,jsx}'],
   theme: {
     extend: {
-      fontFamily: { sans: ['"IBM Plex Sans Thai"', 'system-ui', 'sans-serif'] },
+      fontFamily: {
+        sans: ['"IBM Plex Sans Thai"', '"Noto Sans Thai"', 'system-ui', 'sans-serif'],
+      },
+      borderRadius: {
+        button: '8px',
+        input: '8px',
+        card: '12px',
+      },
       colors: {
         ink: '#1B2430',
+        anva: {
+          bg: 'var(--bg)',
+          surface: 'var(--surface)',
+          'surface-2': 'var(--surface-2)',
+          border: 'var(--border)',
+          text: 'var(--text)',
+          'text-muted': 'var(--text-muted)',
+          primary: {
+            DEFAULT: 'var(--primary)',
+            hover: 'var(--primary-hover)',
+            soft: 'var(--primary-soft)',
+          },
+          warning: 'var(--warning)',
+          danger: 'var(--danger)',
+          info: 'var(--info)',
+        },
         steel: {
           50: '#F8FAFC',
           100: '#F1F5F9',
@@ -20,19 +43,19 @@ export default {
           900: '#0F172A',
           950: '#020617',
         },
-        hivis: { DEFAULT: '#10B981', dark: '#059669' },
+        hivis: { DEFAULT: '#16A34A', dark: '#22C55E' },
         brand: {
-          50: '#ECFDF5',
-          100: '#D1FAE5',
-          200: '#A7F3D0',
-          300: '#6EE7B7',
-          400: '#34D399',
-          500: '#10B981',
-          600: '#059669',
-          700: '#047857',
-          800: '#065F46',
-          900: '#064E3B',
-          950: '#022C22',
+          50: '#E3F5EA',
+          100: '#C7EBD5',
+          200: '#94D9AE',
+          300: '#5EC384',
+          400: '#34AC61',
+          500: '#16A34A',
+          600: '#15803D',
+          700: '#116430',
+          800: '#0E4F26',
+          900: '#0A3B1D',
+          950: '#052210',
         },
       },
     },

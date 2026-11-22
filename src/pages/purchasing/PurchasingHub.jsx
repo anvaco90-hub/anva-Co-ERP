@@ -2,10 +2,9 @@ import { useCallback, useEffect, useState, useMemo } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
-import { PR_STATUS, PO_STATUS, canCreatePurchasing, canReceiveGoods } from '../../lib/purchasing'
+import { PR_STATUS, PO_STATUS, canCreatePurchasing, canReceiveGoods, formatDateTimeParts } from '../../lib/purchasing'
 import { baht } from '../../lib/projects'
 import { getPoDueStatus, formatThaiDate } from '../../lib/poDueStatus'
-import Badge from './Badge'
 import PaymentActionModal from '../../components/PaymentActionModal'
 import PODocumentModal from '../../components/reports/PODocumentModal'
 import EnvelopePrintModal from '../../components/reports/EnvelopePrintModal'
@@ -14,6 +13,10 @@ import ItemProjectUsageModal from '../../components/ItemProjectUsageModal'
 import SearchableSelect from '../../components/SearchableSelect'
 import Pagination from '../../components/Pagination'
 import TableSortFilter from '../../components/TableSortFilter'
+import Button from '../../components/common/Button'
+import StatusBadge from '../../components/common/StatusBadge'
+import ListToolbar from '../../components/common/ListToolbar'
+import SkeletonTable from '../../components/common/SkeletonTable'
 import {
   Printer,
   Mail,
@@ -37,6 +40,14 @@ import {
   FileText,
   Calendar,
   X,
+  XCircle,
+  List,
+  Grid,
+  ArrowRight,
+  Layers,
+  Boxes,
+  ExternalLink,
+  Workflow,
 } from 'lucide-react'
 
 export default function PurchasingHub() {
@@ -55,7 +66,9 @@ export default function PurchasingHub() {
   const [selectedPoForEnvelope, setSelectedPoForEnvelope] = useState(null)
   const [selectedPoForShare, setSelectedPoForShare] = useState(null)
   const [selectedUsageItem, setSelectedUsageItem] = useState(null)
-  const [actionMenuPoId, setActionMenuPoId] = useState(null)
+  const [activeDropdown, setActiveDropdown] = useState(null) // { type: 'po' | 'pr', id, item, top, right, openUpward }
+  const [viewMode, setViewMode] = useState('table') // 'table' | 'cards'
+  const [pipelineViewMode, setPipelineViewMode] = useState('flow') // 'flow' | 'table'
 
   const [prs, setPrs] = useState([])
   const [pos, setPos] = useState([])
@@ -85,6 +98,70 @@ export default function PurchasingHub() {
     { value: 'amount_asc', label: '💰 มูลค่าสั่งซื้อ (น้อย ➔ มาก)' },
   ]
 
+  const [showFilterDrawer, setShowFilterDrawer] = useState(false)
+  const [poColumns, setPoColumns] = useState([
+    { key: 'po_no', label: 'เลขที่ PO / วันที่', visible: true },
+    { key: 'vendor', label: 'ผู้ขาย / ร้านค้า', visible: true },
+    { key: 'project', label: 'โครงการ / ลูกค้า', visible: true },
+    { key: 'amount', label: 'ยอดรวม (บาท)', visible: true },
+    { key: 'due_date', label: 'วันครบกำหนด', visible: true },
+    { key: 'status', label: 'สถานะวงจรเอกสาร', visible: true },
+  ])
+  const togglePoColumn = (key) => {
+    setPoColumns((prev) =>
+      prev.map((c) => (c.key === key ? { ...c, visible: !c.visible } : c))
+    )
+  }
+
+  const [prColumns, setPrColumns] = useState([
+    { key: 'pr_no', label: 'เลขที่ PR / วันที่ขอ', visible: true },
+    { key: 'project', label: 'โครงการ / ลูกค้า', visible: true },
+    { key: 'items', label: 'จำนวนรายการ', visible: true },
+    { key: 'status', label: 'สถานะ', visible: true },
+    { key: 'linked_po', label: 'ใบสั่งซื้อที่เกี่ยวข้อง', visible: true },
+  ])
+  const togglePrColumn = (key) => {
+    setPrColumns((prev) =>
+      prev.map((c) => (c.key === key ? { ...c, visible: !c.visible } : c))
+    )
+  }
+
+  // ตัวช่วยตรวจสอบการแสดงผลคอลัมน์ตามการตั้งค่าของผู้ใช้
+  const isPoColVisible = (key) => poColumns.find((c) => c.key === key)?.visible !== false
+  const isPrColVisible = (key) => prColumns.find((c) => c.key === key)?.visible !== false
+
+  // ส่งออกข้อมูล CSV / Excel / PDF พร้อม UTF-8 BOM รองรับภาษาไทยใน Microsoft Excel
+  const handleExport = (format) => {
+    if (format === 'pdf') {
+      window.print()
+      return
+    }
+    const dataToExport = activeTab === 'po' ? filteredPos : filteredPrs
+    if (dataToExport.length === 0) {
+      alert('ไม่มีข้อมูลสำหรับส่งออก')
+      return
+    }
+    let csv = '\uFEFF'
+    if (activeTab === 'po') {
+      csv += 'เลขที่ PO,วันที่สั่งซื้อ,ผู้ขาย,โครงการ,ยอดรวมสุทธิ,วันครบกำหนดส่งมอบ,สถานะ\n'
+      dataToExport.forEach((r) => {
+        csv += `"${r.po_no || ''}","${r.order_date || ''}","${(r.custom_vendor_name || r.vendors?.vendor_name || '').replace(/"/g, '""')}","${(r.custom_project_name || r.projects?.project_code || '').replace(/"/g, '""')}",${r.total_amount || 0},"${r.expected_delivery_date || ''}","${r.status || ''}"\n`
+      })
+    } else {
+      csv += 'เลขที่ PR,วันที่ขอ,โครงการ,จำนวนรายการ,สถานะ\n'
+      dataToExport.forEach((r) => {
+        csv += `"${r.pr_no || ''}","${r.request_date || ''}","${(r.custom_project_name || r.projects?.project_code || '').replace(/"/g, '""')}",${r.purchase_requisition_items?.length || 0},"${r.status || ''}"\n`
+      })
+    }
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${activeTab === 'po' ? 'PO' : 'PR'}_Export_${new Date().toISOString().split('T')[0]}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   // ตัวกรองวันที่ (Date Search & Filters)
   const [dateType, setDateType] = useState('expected_delivery_date') // 'expected_delivery_date' | 'order_date' | 'request_date'
   const [dateFrom, setDateFrom] = useState('')
@@ -94,6 +171,44 @@ export default function PurchasingHub() {
   const [pageSize, setPageSize] = useState(15) // 10 | 15 | 30 | 50
 
   const canCreate = canCreatePurchasing(profile.role)
+
+  const activeChips = useMemo(() => {
+    const chips = []
+    if (filterProject) {
+      const proj = projects.find((p) => p.id === filterProject)
+      chips.push({
+        key: 'project',
+        label: `โครงการ: ${proj?.project_code || 'โครงการที่เลือก'}`,
+        onRemove: () => setFilterProject(''),
+      })
+    }
+    if (filterDueStatus !== 'all') {
+      chips.push({
+        key: 'due',
+        label: `กำหนดส่ง: ${filterDueStatus}`,
+        onRemove: () => setFilterDueStatus('all'),
+      })
+    }
+    if (filterStatus) {
+      chips.push({
+        key: 'status',
+        label: `สถานะ: ${filterStatus}`,
+        onRemove: () => setFilterStatus(''),
+      })
+    }
+    if (dateFrom || dateTo) {
+      chips.push({
+        key: 'date',
+        label: `วันที่: ${dateFrom || '...'} ถึง ${dateTo || '...'}`,
+        onRemove: () => {
+          setDateFrom('')
+          setDateTo('')
+          setDatePreset('all')
+        },
+      })
+    }
+    return chips
+  }, [filterProject, filterDueStatus, filterStatus, dateFrom, dateTo, projects])
   const canReceive = canReceiveGoods(profile.role)
 
   const loadData = useCallback(async () => {
@@ -149,7 +264,7 @@ export default function PurchasingHub() {
   const changeTab = (tab) => {
     setActiveTab(tab)
     setSearchParams({ tab })
-    setActionMenuPoId(null)
+    setActiveDropdown(null)
     if (tab === 'pr') {
       setDateType('request_date')
     } else if (tab === 'po') {
@@ -161,12 +276,54 @@ export default function PurchasingHub() {
     }
   }
 
-  // ปิดเมนู action เมื่อคลิกที่อื่น
+  // ปิดเมนู dropdown เมื่อคลิกที่อื่น หรือเมื่อ scroll หน้าจอ
   useEffect(() => {
-    const handleOutsideClick = () => setActionMenuPoId(null)
+    const handleOutsideClick = () => setActiveDropdown(null)
     window.addEventListener('click', handleOutsideClick)
-    return () => window.removeEventListener('click', handleOutsideClick)
+    window.addEventListener('scroll', handleOutsideClick, true)
+    return () => {
+      window.removeEventListener('click', handleOutsideClick)
+      window.removeEventListener('scroll', handleOutsideClick, true)
+    }
   }, [])
+
+  // ฟังก์ชันสลับเปิด-ปิด Floating Dropdown โดยคำนวณพิกัดให้ไม่ล้นจอและไม่โดนขอบตารางตัด
+  const toggleDropdown = (e, type, item) => {
+    e.stopPropagation()
+    if (activeDropdown && activeDropdown.id === item.id && activeDropdown.type === type) {
+      setActiveDropdown(null)
+      return
+    }
+    const rect = e.currentTarget.getBoundingClientRect()
+    const spaceBelow = window.innerHeight - rect.bottom
+    const openUpward = spaceBelow < 300
+    setActiveDropdown({
+      type,
+      id: item.id,
+      item,
+      top: openUpward ? rect.top - 6 : rect.bottom + 6,
+      right: window.innerWidth - rect.right,
+      openUpward,
+    })
+  }
+
+  // ฟังก์ชันลบ PR จากหน้ารายการ
+  const handleDeletePr = async (prToDelete) => {
+    const linked = poByPrId[prToDelete.id] || []
+    if (linked.length > 0) {
+      alert(`ไม่สามารถลบใบขอซื้อ ${prToDelete.pr_no} ได้ เนื่องจากมีใบสั่งซื้อ (PO) อ้างอิงอยู่ (${linked.map((p) => p.po_no).join(', ')})`)
+      return
+    }
+    if (!confirm(`ยืนยันการลบใบขอซื้อ ${prToDelete.pr_no}? รายการขอซื้อจะถูกลบออกจากระบบ`)) return
+    try {
+      const { error } = await supabase.from('purchase_requisitions').delete().eq('id', prToDelete.id)
+      if (error) throw error
+      setPrs((prev) => prev.filter((p) => p.id !== prToDelete.id))
+      setActiveDropdown(null)
+    } catch (err) {
+      alert('ไม่สามารถลบใบขอซื้อได้: ' + (err.message || 'โปรดตรวจสอบสิทธิ์'))
+    }
+  }
 
   // ฟังก์ชันคำนวณและตั้งค่าปุ่มลัดวันที่ด่วน
   const applyDatePreset = (preset) => {
@@ -275,7 +432,7 @@ export default function PurchasingHub() {
         if (directErr) throw directErr
       }
       setPos((prev) => prev.filter((p) => p.id !== poToDelete.id))
-      setActionMenuPoId(null)
+      setActiveDropdown(null)
     } catch (err) {
       alert('ไม่สามารถลบใบสั่งซื้อได้: ' + (err.message || 'โปรดตรวจสอบสิทธิ์หรือรายการตรวจรับของ'))
     }
@@ -303,7 +460,7 @@ export default function PurchasingHub() {
         if (updErr) throw updErr
 
         if (poToCancel.pr_id) {
-          await supabase.from('purchase_requests').update({
+          await supabase.from('purchase_requisitions').update({
             status: 'approved',
             updated_at: new Date().toISOString(),
           }).eq('id', poToCancel.pr_id)
@@ -626,49 +783,118 @@ export default function PurchasingHub() {
     return filteredPipelinePrs.slice(start, start + pageSize)
   }, [filteredPipelinePrs, currentPage, pageSize])
 
+  const totalPoNetValue = useMemo(() => {
+    return pos.reduce((s, p) => s + Number(p.net_amount || p.total_amount || 0), 0)
+  }, [pos])
+
   return (
     <div className="space-y-5">
       
-      {/* 1. ส่วนหัวและปุ่มสร้างงานหลัก */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="text-xl font-bold text-ink">
-            {activeTab === 'po'
-              ? '🛒 รายการใบสั่งซื้อ & รายงานครบกำหนด (PO Hub)'
-              : activeTab === 'pr'
-              ? '📋 รายการใบขอซื้อ (PR)'
-              : activeTab === 'receipts'
-              ? '📦 ตรวจรับสินค้าเข้าสโตร์ (GR)'
-              : 'PR ➔ PO (สายงานจัดซื้อ)'}
-          </h2>
-          <p className="text-xs sm:text-sm text-steel-500">
-            {activeTab === 'po'
-              ? 'จัดการใบสั่งซื้อ ติดตามวันครบกำหนดส่งของ พิมพ์เอกสาร A4 จ่าหน้าซอง และส่งต่อบัญชี'
-              : activeTab === 'pr'
-              ? 'จัดการคำขอจัดซื้อจากหน้างาน อนุมัติ และส่งต่อเพื่อออกใบสั่งซื้อ'
-              : activeTab === 'receipts'
-              ? 'ตรวจรับสินค้าจากคู่ค้า บันทึกเข้าสต็อก และลงบัญชีสินค้าคงคลัง'
-              : 'ภาพรวมวงจรจัดซื้อตั้งแต่ขอซื้อ (PR) ออกคำสั่งซื้อ (PO) จนถึงตรวจรับสินค้าเข้าสต็อก (GR)'}
-          </p>
+      {/* 1. ANVA & Co. Engineering Procurement Brand Hero Banner (สไตล์เดียวกับสโตร์) */}
+      <div className="rounded-2xl bg-gradient-to-r from-slate-900 via-steel-900 to-slate-800 p-6 sm:p-7 text-white shadow-md border border-steel-700">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2">
+              <span className="rounded-md bg-hivis text-steel-950 font-black px-2.5 py-0.5 text-xs uppercase tracking-wider">
+                ENGINEERING PROCUREMENT
+              </span>
+              <span className="text-xs text-steel-300">
+                บริษัท อันวาแอนด์โค จำกัด (ANVA & CO., LTD.)
+              </span>
+            </div>
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight text-white">
+              ฝ่ายจัดซื้อและพัสดุวิศวกรรม (Purchasing Hub)
+            </h1>
+            <p className="text-xs sm:text-sm text-steel-300 max-w-2xl">
+              ระบบบริหารวงจรจัดซื้อ ออกใบขอซื้อ (PR) อนุมัติออกคำสั่งซื้อ (PO) ตรวจรับสินค้าเข้าสต็อก และควบคุมต้นทุนโครงการ
+            </p>
+          </div>
+
+          {/* Core Metrics Boxes (4 กล่องสถิติสไตล์เดียวกับสโตร์) */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 shrink-0">
+            <div
+              onClick={() => changeTab('pr')}
+              className={`rounded-xl p-3 border cursor-pointer transition text-center ${
+                activeTab === 'pr'
+                  ? 'bg-hivis text-steel-950 font-bold border-hivis shadow-md scale-105'
+                  : 'bg-steel-800/80 hover:bg-steel-800 border-steel-700 text-steel-300'
+              }`}
+            >
+              <div className="text-[11px] font-medium text-steel-400">📋 ใบขอซื้อ (PR)</div>
+              <div className="mt-0.5 text-xl font-black font-mono text-sky-400">{prs.length}</div>
+              <div className="text-[10px] text-steel-400">รายการ</div>
+            </div>
+
+            <div
+              onClick={() => changeTab('po')}
+              className={`rounded-xl p-3 border cursor-pointer transition text-center ${
+                activeTab === 'po'
+                  ? 'bg-hivis text-steel-950 font-bold border-hivis shadow-md scale-105'
+                  : 'bg-steel-800/80 hover:bg-steel-800 border-steel-700 text-steel-300'
+              }`}
+            >
+              <div className="text-[11px] font-medium text-steel-400">🛒 ใบสั่งซื้อ (PO)</div>
+              <div className="mt-0.5 text-xl font-black font-mono text-amber-300">{pos.length}</div>
+              <div className="text-[10px] text-steel-400">รายการ</div>
+            </div>
+
+            <div
+              onClick={() => changeTab('receipts')}
+              className={`rounded-xl p-3 border cursor-pointer transition text-center ${
+                activeTab === 'receipts'
+                  ? 'bg-hivis text-steel-950 font-bold border-hivis shadow-md scale-105'
+                  : 'bg-steel-800/80 hover:bg-steel-800 border-steel-700 text-steel-300'
+              }`}
+            >
+              <div className="text-[11px] font-medium text-steel-400">📦 รอตรวจรับ</div>
+              <div className="mt-0.5 text-xl font-black font-mono text-rose-400">{pendingReceipts.length}</div>
+              <div className="text-[10px] text-steel-400">ค้างรับเข้าสโตร์</div>
+            </div>
+
+            <div
+              onClick={() => changeTab('pipeline')}
+              className={`rounded-xl p-3 border cursor-pointer transition text-center ${
+                activeTab === 'pipeline'
+                  ? 'bg-hivis text-steel-950 font-bold border-hivis shadow-md scale-105'
+                  : 'bg-steel-800/80 hover:bg-steel-800 border-steel-700 text-steel-300'
+              }`}
+            >
+              <div className="text-[11px] font-medium text-steel-400">🔄 วงจรเอกสาร</div>
+              <div className="mt-0.5 text-xl font-black font-mono text-emerald-400">{completedPos.length}</div>
+              <div className="text-[10px] text-steel-400">ปิดวงจรสมบูรณ์</div>
+            </div>
+          </div>
         </div>
 
-        {canCreate && (
-          <div className="flex flex-wrap gap-2">
-            <Link
-              to="/purchasing/pr/new"
-              className="inline-flex items-center gap-1.5 rounded-xl border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-steel-50 dark:hover:bg-slate-700 px-3.5 py-2 text-xs sm:text-sm font-bold text-steel-800 dark:text-slate-200 shadow-xs transition"
-            >
-              <span>+ ออกใบขอซื้อ (PR)</span>
-            </Link>
-            <Link
-              to="/purchasing/po/new"
-              className="inline-flex items-center gap-1.5 rounded-xl bg-steel-900 hover:bg-steel-800 dark:bg-amber-400 dark:hover:bg-amber-500 px-3.5 py-2 text-xs sm:text-sm font-bold text-hivis dark:text-slate-950 shadow-md transition"
-            >
-              <Plus className="h-4 w-4" />
-              <span>สร้างใบสั่งซื้อ (PO)</span>
-            </Link>
+        {/* Bottom Bar: Total Value & Actions */}
+        <div className="mt-5 pt-4 border-t border-steel-700/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-steel-300">มูลค่าสั่งซื้อรวม (ที่แสดง):</span>
+            <span className="text-lg font-black font-mono text-emerald-400">
+              {baht(totalPoNetValue)} บาท
+            </span>
           </div>
-        )}
+
+          <div className="flex flex-wrap items-center gap-2.5">
+            {canCreate && (
+              <>
+                <Link
+                  to="/purchasing/pr/new"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-steel-600 bg-steel-800 hover:bg-steel-700 px-3.5 py-2 text-xs font-bold text-white transition shadow-xs cursor-pointer"
+                >
+                  <span>📋 + ออกใบขอซื้อ (PR)</span>
+                </Link>
+                <Link
+                  to="/purchasing/po/new"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-hivis hover:brightness-110 text-steel-950 px-4 py-2 text-xs font-black shadow-md transition cursor-pointer"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>+ สร้างใบสั่งซื้อ (PO)</span>
+                </Link>
+              </>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* 2. รายงานวันครบกำหนดส่งมอบ (Due Date & Delivery Report Banner) สำหรับหน้า PO */}
@@ -777,271 +1003,172 @@ export default function PurchasingHub() {
         </div>
       )}
 
-      {/* 3. แถบตัวกรองและควบคุมการแสดงผล (Filters & Search) */}
-      <div className="rounded-2xl bg-white dark:bg-slate-900 p-4 shadow-xs border border-steel-200 dark:border-slate-800 space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-steel-100 dark:border-slate-800 pb-3">
-          
-          {/* ข้อมูลหัวตารางตาม Tab ที่เลือก */}
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-black text-slate-900 dark:text-slate-100">
-              {activeTab === 'po'
-                ? `🛒 รายการใบสั่งซื้อ (PO) · ${pos.length} รายการ`
-                : activeTab === 'pr'
-                ? `📋 รายการใบขอซื้อ (PR) · ${prs.length} รายการ`
-                : activeTab === 'receipts'
-                ? `📦 ตรวจรับสินค้าเข้าสโตร์ · ${pendingReceipts.length} รายการรอรับ`
-                : '🔄 ภาพรวมไปป์ไลน์ PR ➔ PO (สายงานจัดซื้อ)'}
-            </span>
+      {/* 3. แถบเครื่องมือรายการมาตรฐาน (Universal List Toolbar) */}
+      <ListToolbar
+        search={search}
+        onSearchChange={setSearch}
+        searchPlaceholder={
+          activeTab === 'po'
+            ? 'ค้นหาเลขที่ PO, ร้านค้า, โครงการ (กด / เพื่อค้นหา)...'
+            : activeTab === 'pr'
+            ? 'ค้นหาเลขที่ PR, ร้านค้าแนะนำ, โครงการ (กด / เพื่อค้นหา)...'
+            : 'ค้นหารายการจัดซื้อ...'
+        }
+        filterCount={
+          (filterProject ? 1 : 0) +
+          (filterStatus ? 1 : 0) +
+          (filterDueStatus !== 'all' ? 1 : 0) +
+          (dateFrom || dateTo ? 1 : 0)
+        }
+        onToggleFilters={() => setShowFilterDrawer(!showFilterDrawer)}
+        datePresets={[
+          { value: 'all', label: 'ทุกช่วงเวลา' },
+          { value: 'today', label: 'วันนี้' },
+          { value: 'this_week', label: 'สัปดาห์นี้' },
+          { value: 'this_month', label: 'เดือนนี้' },
+          { value: 'next_7_days', label: '7 วันข้างหน้า' },
+          { value: 'next_30_days', label: '30 วันข้างหน้า' },
+          { value: 'last_month', label: 'เดือนที่แล้ว' },
+        ]}
+        activeDatePreset={datePreset}
+        onDatePresetChange={(preset) => applyDatePreset(preset)}
+        statusOptions={
+          activeTab === 'po'
+            ? [
+                { value: 'open', label: '🚚 รอรับของ (Open)' },
+                { value: 'partial', label: '⚡ รับบางส่วน (Partial)' },
+                { value: 'received', label: '📦 รับของครบแล้ว' },
+                { value: 'cancelled', label: '❌ ยกเลิก (Cancelled)' },
+              ]
+            : activeTab === 'pr'
+            ? [
+                { value: 'pending', label: '⏳ รอสั่งซื้อ' },
+                { value: 'ordered', label: '✅ สั่งซื้อแล้ว' },
+                { value: 'cancelled', label: '❌ ยกเลิก' },
+              ]
+            : []
+        }
+        activeStatus={filterStatus}
+        onStatusChange={setFilterStatus}
+        viewModes={activeTab === 'po' ? ['table', 'cards'] : null}
+        activeViewMode={viewMode}
+        onViewModeChange={setViewMode}
+        onExport={handleExport}
+        columns={activeTab === 'po' ? poColumns : activeTab === 'pr' ? prColumns : null}
+        onToggleColumn={activeTab === 'po' ? togglePoColumn : togglePrColumn}
+        activeChips={activeChips}
+        onClearAllFilters={clearAllFilters}
+        primaryAction={
+          canCreate
+            ? activeTab === 'po'
+              ? { label: '+ สร้างใบสั่งซื้อ', to: '/purchasing/po/new' }
+              : activeTab === 'pr'
+              ? { label: '+ ออกใบขอซื้อ (PR)', to: '/purchasing/pr/new' }
+              : null
+            : null
+        }
+      />
+
+      {/* แผงตัวกรองเสริมแบบพับได้ (Collapsible Secondary Filter Panel) */}
+      {showFilterDrawer && (
+        <div className="rounded-card bg-[var(--surface)] border border-[var(--border)] p-4 shadow-sm space-y-3 animate-in fade-in duration-150">
+          <div className="flex items-center justify-between border-b border-[var(--border)] pb-2.5">
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-[var(--primary)]" />
+              <span className="text-xs font-bold text-[var(--text)]">ตัวกรองละเอียด (Advanced Filters)</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowFilterDrawer(false)}
+              className="p-1 rounded-full text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--surface-2)] transition cursor-pointer"
+            >
+              <X className="h-4 w-4" />
+            </button>
           </div>
 
-          {/* ช่องค้นหา & ตัวเลือกการเรียงลำดับมาตรฐาน */}
-          <div className="flex flex-1 flex-wrap items-center justify-end gap-2">
-            <div className="relative w-full sm:w-64">
-              <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-steel-400 dark:text-slate-400" />
-              <input
-                type="text"
-                placeholder="ค้นหาเลขที่, ร้านค้า, โครงการ..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full rounded-xl border border-steel-200 dark:border-slate-700 bg-steel-50/50 dark:bg-slate-800 pl-8 pr-3 py-1.5 text-xs text-steel-900 dark:text-slate-100 placeholder:text-steel-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-steel-800 dark:focus:border-amber-400"
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+            {/* 1. โครงการ / ไซต์งาน */}
+            <div>
+              <label className="block text-[11px] font-bold text-[var(--text-muted)] mb-1">
+                โครงการ / ไซต์งาน
+              </label>
+              <SearchableSelect
+                options={[
+                  { value: '', label: 'ทุกโครงการ', badge: 'ทั้งหมด' },
+                  ...projects.map((p) => ({
+                    value: p.id,
+                    badge: p.project_code,
+                    label: `${p.project_code} ${p.project_name}`,
+                    subLabel: p.project_name,
+                    keywords: `${p.project_code} ${p.project_name}`,
+                  })),
+                ]}
+                value={filterProject}
+                onChange={(val) => setFilterProject(val)}
+                placeholder="พิมพ์ค้นหาโครงการ..."
               />
             </div>
 
-            <TableSortFilter
-              value={sortBy}
-              onChange={setSortBy}
-              options={PURCHASING_SORT_OPTIONS}
-            />
-
-            {hasActiveFilter && (
-              <button
-                type="button"
-                onClick={clearAllFilters}
-                className="whitespace-nowrap text-xs text-rose-600 dark:text-rose-400 hover:underline font-semibold cursor-pointer"
-              >
-                ล้างตัวกรองทั้งหมด
-              </button>
+            {/* 2. สถานะกำหนดส่งมอบ (PO) */}
+            {activeTab === 'po' && (
+              <div>
+                <label className="block text-[11px] font-bold text-[var(--text-muted)] mb-1">
+                  กำหนดส่งมอบ
+                </label>
+                <select
+                  className="w-full h-9 rounded-input border border-[var(--border)] bg-[var(--surface-2)] px-2.5 text-xs text-[var(--text)] focus:border-[var(--primary)] focus:outline-none"
+                  value={filterDueStatus}
+                  onChange={(e) => setFilterDueStatus(e.target.value)}
+                >
+                  <option value="all">ทุกกำหนดส่ง ({pos.length})</option>
+                  <option value="overdue">🚨 เกินกำหนดส่งมอบ ({overduePos.length})</option>
+                  <option value="urgent">⏰ ใกล้ครบกำหนด 7 วัน ({dueSoonPos.length})</option>
+                  <option value="on_track">🚚 รอนำส่งตามกำหนด ({onTrackPos.length})</option>
+                  <option value="completed">✅ ส่งมอบครบแล้ว ({completedPos.length})</option>
+                  <option value="no_date">⏳ ไม่ระบุวันส่งมอบ</option>
+                </select>
+              </div>
             )}
+
+            {/* 3. วันที่เริ่มต้น */}
+            <div>
+              <label className="block text-[11px] font-bold text-[var(--text-muted)] mb-1">
+                ตั้งแต่วันที่
+              </label>
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => {
+                  setDateFrom(e.target.value)
+                  setDatePreset('custom')
+                }}
+                className="w-full h-9 rounded-input border border-[var(--border)] bg-[var(--surface-2)] px-2.5 text-xs text-[var(--text)] focus:border-[var(--primary)] focus:outline-none"
+              />
+            </div>
+
+            {/* 4. ถึงวันที่ */}
+            <div>
+              <label className="block text-[11px] font-bold text-[var(--text-muted)] mb-1">
+                ถึงวันที่
+              </label>
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => {
+                  setDateTo(e.target.value)
+                  setDatePreset('custom')
+                }}
+                className="w-full h-9 rounded-input border border-[var(--border)] bg-[var(--surface-2)] px-2.5 text-xs text-[var(--text)] focus:border-[var(--primary)] focus:outline-none"
+              />
+            </div>
           </div>
         </div>
-
-        {/* ตัวกรองรอง */}
-        <div className="flex flex-wrap items-center gap-3 text-xs">
-          <div className="flex items-center gap-1.5 min-w-[220px] max-w-xs">
-            <span className="font-semibold text-steel-600 dark:text-slate-300 shrink-0">โครงการ:</span>
-            <SearchableSelect
-              options={[
-                { value: '', label: 'ทุกโครงการ', badge: 'ทั้งหมด' },
-                ...projects.map((p) => ({
-                  value: p.id,
-                  badge: p.project_code,
-                  label: `${p.project_code} ${p.project_name}`,
-                  subLabel: p.project_name,
-                  keywords: `${p.project_code} ${p.project_name}`,
-                })),
-              ]}
-              value={filterProject}
-              onChange={(val) => setFilterProject(val)}
-              placeholder="พิมพ์ค้นหาโครงการ..."
-            />
-          </div>
-
-          {activeTab === 'po' && (
-            <div className="flex items-center gap-1.5">
-              <span className="font-semibold text-steel-600 dark:text-slate-300">สถานะกำหนดส่ง:</span>
-              <select
-                className="rounded-lg border border-steel-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 py-1 text-xs text-steel-800 dark:text-slate-200 focus:outline-none"
-                value={filterDueStatus}
-                onChange={(e) => setFilterDueStatus(e.target.value)}
-              >
-                <option value="all">ทุกกำหนดส่ง ({pos.length})</option>
-                <option value="overdue">🚨 เกินกำหนดส่งมอบ ({overduePos.length})</option>
-                <option value="urgent">⏰ ใกล้ครบกำหนด 7 วัน ({dueSoonPos.length})</option>
-                <option value="on_track">🚚 รอนำส่งตามกำหนด ({onTrackPos.length})</option>
-                <option value="completed">✅ ส่งมอบครบแล้ว ({completedPos.length})</option>
-                <option value="no_date">⏳ ไม่ระบุวันส่งมอบ</option>
-              </select>
-            </div>
-          )}
-
-          <div className="flex items-center gap-1.5">
-            <span className="font-semibold text-steel-600 dark:text-slate-300">สถานะวงจร/การรับของ:</span>
-            <select
-              className="rounded-lg border border-steel-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 py-1 text-xs text-steel-800 dark:text-slate-200 focus:outline-none"
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-            >
-              <option value="">ทุกสถานะ</option>
-              <option value="open">🚚 รอรับของ (Open)</option>
-              <option value="partial">⚡ รับบางส่วน (Partial)</option>
-              <option value="received_unpaid">📦 รับของแล้ว · รอจ่ายเงิน (เครดิตเทอม)</option>
-              <option value="completed_paid">✅ รับครบ & จ่ายเงินแล้ว (ปิดวงจร)</option>
-              <option value="received">📦 รับของครบแล้วทั้งหมด</option>
-              <option value="cancelled">❌ ยกเลิก (Cancelled)</option>
-            </select>
-          </div>
-        </div>
-
-        {/* แถบตัวกรองวันที่ (Date Range Filter & Quick Presets) สำหรับทุกแท็บจัดซื้อ */}
-        <div className="rounded-xl border border-steel-200/90 dark:border-slate-800 bg-steel-50/70 dark:bg-slate-800/60 p-3 space-y-2.5">
-          <div className="flex flex-wrap items-center justify-between gap-2.5">
-            
-            {/* ด้านซ้าย: ประเภทวันที่ + Input จากวันที่ - ถึงวันที่ */}
-            <div className="flex flex-wrap items-center gap-2 text-xs">
-              <div className="flex items-center gap-1.5 font-bold text-steel-800 dark:text-slate-100 bg-white dark:bg-slate-800 px-2.5 py-1 rounded-lg border border-steel-200 dark:border-slate-700 shadow-2xs">
-                <Calendar className="h-3.5 w-3.5 text-sky-600 dark:text-sky-400" />
-                <span>ค้นหาวันที่:</span>
-              </div>
-
-              {/* เลือกประเภทวันที่ที่ต้องการค้นหา */}
-              {activeTab === 'po' && (
-                <select
-                  value={dateType}
-                  onChange={(e) => setDateType(e.target.value)}
-                  className="rounded-lg border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 py-1 text-xs font-semibold text-steel-800 dark:text-slate-200 focus:outline-none focus:border-steel-800 dark:focus:border-amber-400 shadow-2xs"
-                >
-                  <option value="expected_delivery_date">🚚 วันครบกำหนดส่งมอบ (Due Date)</option>
-                  <option value="order_date">📅 วันที่สั่งซื้อ (Order Date)</option>
-                </select>
-              )}
-
-              {activeTab === 'receipts' && (
-                <select
-                  value={dateType}
-                  onChange={(e) => setDateType(e.target.value)}
-                  className="rounded-lg border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 py-1 text-xs font-semibold text-steel-800 dark:text-slate-200 focus:outline-none focus:border-steel-800 dark:focus:border-amber-400 shadow-2xs"
-                >
-                  <option value="expected_delivery_date">🚚 วันครบกำหนดส่งของ (Due Date)</option>
-                  <option value="order_date">📅 วันที่สั่งซื้อ (Order Date)</option>
-                </select>
-              )}
-
-              {activeTab === 'pr' && (
-                <div className="rounded-lg border border-steel-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 py-1 text-xs font-semibold text-steel-800 dark:text-slate-200 shadow-2xs">
-                  📋 วันที่ขอซื้อ (Request Date)
-                </div>
-              )}
-
-              {activeTab === 'pipeline' && (
-                <select
-                  value={dateType}
-                  onChange={(e) => setDateType(e.target.value)}
-                  className="rounded-lg border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 py-1 text-xs font-semibold text-steel-800 dark:text-slate-200 focus:outline-none focus:border-steel-800 dark:focus:border-amber-400 shadow-2xs"
-                >
-                  <option value="request_date">📋 วันที่ขอซื้อ (PR Date)</option>
-                  <option value="order_date">🛒 วันที่สั่งซื้อ (PO Date)</option>
-                </select>
-              )}
-
-              {/* ช่องเลือกวันที่เริ่มต้นและสิ้นสุด */}
-              <div className="flex items-center gap-1.5 bg-white dark:bg-slate-800 border border-steel-300 dark:border-slate-700 rounded-lg px-2.5 py-1 shadow-2xs">
-                <span className="text-[11px] font-medium text-steel-500 dark:text-slate-400">เริ่ม:</span>
-                <input
-                  type="date"
-                  value={dateFrom}
-                  onChange={(e) => {
-                    setDateFrom(e.target.value)
-                    setDatePreset('custom')
-                  }}
-                  className="rounded border-0 p-0 text-xs font-medium text-steel-900 dark:text-slate-100 bg-transparent focus:outline-none dark:[color-scheme:dark]"
-                />
-                <span className="text-steel-300 dark:text-slate-600 px-0.5 font-bold">―</span>
-                <span className="text-[11px] font-medium text-steel-500 dark:text-slate-400">ถึง:</span>
-                <input
-                  type="date"
-                  value={dateTo}
-                  onChange={(e) => {
-                    setDateTo(e.target.value)
-                    setDatePreset('custom')
-                  }}
-                  className="rounded border-0 p-0 text-xs font-medium text-steel-900 dark:text-slate-100 bg-transparent focus:outline-none dark:[color-scheme:dark]"
-                />
-                {(dateFrom || dateTo) && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setDateFrom('')
-                      setDateTo('')
-                      setDatePreset('all')
-                    }}
-                    className="ml-1 text-steel-400 hover:text-rose-600 dark:hover:text-rose-400 rounded p-0.5 transition cursor-pointer"
-                    title="ล้างช่วงวันที่"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* ด้านขวา: ปุ่มลัดช่วงเวลายอดนิยม (Presets) */}
-            <div className="flex flex-wrap items-center gap-1 text-[11px]">
-              <span className="text-steel-600 dark:text-slate-300 font-bold mr-1 hidden sm:inline">ลัดช่วงเวลา:</span>
-              {[
-                { id: 'today', label: 'วันนี้' },
-                { id: 'this_week', label: 'สัปดาห์นี้' },
-                { id: 'this_month', label: 'เดือนนี้' },
-                { id: 'next_7_days', label: '7 วันข้างหน้า', highlight: true },
-                { id: 'next_30_days', label: '30 วันข้างหน้า' },
-                { id: 'last_month', label: 'เดือนที่แล้ว' },
-                { id: 'all', label: 'ทุกช่วงเวลา' },
-              ].map((p) => {
-                const isSelected = datePreset === p.id && (p.id !== 'all' || (!dateFrom && !dateTo))
-                return (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => applyDatePreset(p.id)}
-                    className={`px-2 py-0.5 rounded-md font-semibold transition cursor-pointer ${
-                      isSelected
-                        ? 'bg-slate-900 dark:bg-amber-400 text-amber-400 dark:text-slate-950 font-bold shadow-xs border border-transparent dark:border-amber-300'
-                        : p.highlight
-                        ? 'bg-amber-100 dark:bg-amber-500/20 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-500/40 hover:bg-amber-200 dark:hover:bg-amber-500/30'
-                        : 'bg-white dark:bg-slate-800 text-steel-600 dark:text-slate-300 border border-steel-200 dark:border-slate-700 hover:bg-steel-100 dark:hover:bg-slate-700 hover:text-steel-900 dark:hover:text-white'
-                    }`}
-                  >
-                    {p.label}
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-
-          {/* แถบสรุปผลลัพธ์การกรองวันที่ (ถ้ามีการระบุวันที่) */}
-          {(dateFrom || dateTo) && (
-            <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-steel-200/60 text-xs text-sky-900 bg-sky-50/70 px-3 py-1.5 rounded-lg border border-sky-200/70">
-              <div className="flex items-center gap-1.5">
-                <span>🔍</span>
-                <span>
-                  กรองตาม <strong>{getDateTypeLabel()}</strong>:
-                  {dateFrom && dateTo ? (
-                    <span> ตั้งแต่วันที่ <strong>{formatThaiDate(dateFrom)}</strong> ถึง <strong>{formatThaiDate(dateTo)}</strong></span>
-                  ) : dateFrom ? (
-                    <span> ตั้งแต่วันที่ <strong>{formatThaiDate(dateFrom)}</strong> เป็นต้นไป</span>
-                  ) : (
-                    <span> จนถึงวันที่ <strong>{formatThaiDate(dateTo)}</strong></span>
-                  )}
-                </span>
-                <span className="ml-1 text-[11px] font-bold text-sky-800 bg-sky-100 px-2 py-0.5 rounded-full">
-                  พบ {activeTab === 'po' ? filteredPos.length : activeTab === 'pr' ? filteredPrs.length : activeTab === 'receipts' ? pendingReceipts.length : filteredPipelinePrs.length} รายการ
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={() => applyDatePreset('all')}
-                className="text-[11px] text-rose-600 hover:underline font-bold cursor-pointer"
-              >
-                ✕ ยกเลิกการกรองวันที่
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
+      )}
 
       {/* 4. เนื้อหาตามแท็บที่เลือก */}
       {loading ? (
-        <div className="rounded-2xl border border-steel-200 bg-white p-12 text-center text-steel-500">
-          <RefreshCw className="mx-auto h-6 w-6 animate-spin text-steel-400 mb-2" />
-          <p className="text-xs font-semibold">กำลังโหลดข้อมูลระบบจัดซื้อ...</p>
+        <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-xs overflow-hidden">
+          <SkeletonTable rows={6} cols={6} />
         </div>
       ) : error ? (
         <div className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-center text-rose-800 text-xs font-semibold">
@@ -1068,364 +1195,395 @@ export default function PurchasingHub() {
                 </div>
               </div>
 
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs divide-y divide-steel-200 dark:divide-slate-800 min-w-[1050px]">
-                  <thead className="bg-steel-50/90 dark:bg-slate-800 text-steel-700 dark:text-slate-200 font-bold uppercase tracking-wider text-[11px]">
-                    <tr>
-                      <th className="py-3 px-3.5 w-36">เลขที่ PO / วันที่</th>
-                      <th className="py-3 px-3.5 min-w-[180px]">ผู้ขาย / ร้านค้า</th>
-                      <th className="py-3 px-3.5 min-w-[170px]">โครงการ</th>
-                      <th className="py-3 px-3.5 w-32 text-right">ยอดรวม (บาท)</th>
-                      <th className="py-3 px-3.5 min-w-[160px]">วันครบกำหนด (Due Date)</th>
-                      <th className="py-3 px-3 w-36 text-center">สถานะวงจรเอกสาร</th>
-                      <th className="py-3 px-3.5 w-48 text-right">การจัดการ</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-steel-100 dark:divide-slate-800/60 bg-white dark:bg-slate-900">
-                    {filteredPos.length === 0 ? (
-                      <tr>
-                        <td colSpan={7} className="py-12 text-center text-steel-400 dark:text-slate-500">
-                          <Package className="mx-auto h-8 w-8 text-steel-300 dark:text-slate-600 mb-2" />
-                          <p className="font-semibold text-xs">ไม่พบใบสั่งซื้อตามเงื่อนไขที่เลือก</p>
-                          {canCreate && (
-                            <Link
-                              to="/purchasing/po/new"
-                              className="mt-3 inline-flex items-center gap-1 rounded-xl bg-steel-900 dark:bg-amber-500 px-3.5 py-1.5 text-xs font-bold text-hivis dark:text-slate-950 hover:bg-steel-800 dark:hover:bg-amber-400 transition"
-                            >
-                              + สร้างใบสั่งซื้อใหม่
-                            </Link>
-                          )}
-                        </td>
-                      </tr>
-                    ) : (
-                      paginatedPos.map((r) => {
-                        const dueStatus = getPoDueStatus(r)
-                        const isMenuOpen = actionMenuPoId === r.id
+              {filteredPos.length === 0 ? (
+                <div className="py-12 text-center text-steel-400 dark:text-slate-500">
+                  <Package className="mx-auto h-8 w-8 text-steel-300 dark:text-slate-600 mb-2" />
+                  <p className="font-semibold text-xs">ไม่พบใบสั่งซื้อตามเงื่อนไขที่เลือก</p>
+                  {canCreate && (
+                    <Link
+                      to="/purchasing/po/new"
+                      className="mt-3 inline-flex items-center gap-1 rounded-xl bg-steel-900 dark:bg-amber-500 px-3.5 py-1.5 text-xs font-bold text-hivis dark:text-slate-950 hover:bg-steel-800 dark:hover:bg-amber-400 transition"
+                    >
+                      + สร้างใบสั่งซื้อใหม่
+                    </Link>
+                  )}
+                </div>
+              ) : viewMode === 'cards' ? (
+                /* มุมมองการ์ด (Card View): เหมาะกับหน้าจอขนาดกะทัดรัด ไม่ต้องเลื่อนแนวนอน */
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 p-4 bg-steel-50/40 dark:bg-slate-900/40">
+                  {paginatedPos.map((r) => {
+                    const dueStatus = getPoDueStatus(r)
+                    const isPaid = r.payment_status === 'ชำระครบแล้ว' || (Number(r.remaining_amount) <= 0.05 && Number(r.deposit_paid_amount) > 0)
 
-                        return (
-                          <tr key={r.id} className="hover:bg-steel-50/70 dark:hover:bg-slate-800/50 transition-colors">
-                            {/* 1. เลขที่ PO + วันที่สั่งซื้อ */}
-                            <td className="py-3 px-3.5 align-top whitespace-nowrap">
+                    return (
+                      <div
+                        key={r.id}
+                        className="rounded-2xl border border-steel-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-xs hover:shadow-md transition-shadow flex flex-col justify-between gap-3 relative"
+                      >
+                        {/* ส่วนหัวการ์ด: เลขที่ PO + วันที่ + สถานะวงจร */}
+                        <div className="flex items-start justify-between gap-2 border-b border-steel-100 dark:border-slate-800 pb-2.5">
+                          <div>
+                            <Link
+                              to={`/purchasing/po/${r.id}`}
+                              className="font-bold text-sm text-emerald-700 dark:text-emerald-400 hover:underline flex items-center gap-1"
+                            >
+                              <span>📄</span>
+                              <span>{r.po_no}</span>
+                            </Link>
+                            <div className="text-[11px] text-steel-500 dark:text-slate-400 mt-0.5">
+                              สั่งซื้อ: {formatThaiDate(r.order_date)}
+                              {r.pr?.pr_no && <span className="ml-1.5 font-mono text-sky-700 dark:text-sky-400">({r.pr.pr_no})</span>}
+                            </div>
+                          </div>
+
+                          <div className="shrink-0 text-right">
+                            {(() => {
+                              if (r.status === 'cancelled') {
+                                return (
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 dark:bg-rose-950/70 text-rose-800 dark:text-rose-300 border border-rose-300 dark:border-rose-700">
+                                    <span>❌</span> ยกเลิก
+                                  </span>
+                                )
+                              }
+                              if (r.status === 'received' && isPaid) {
+                                return (
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
+                                    <span>✅</span> รับครบ & จ่ายแล้ว
+                                  </span>
+                                )
+                              }
+                              if (r.status === 'received') {
+                                return (
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-sky-100 dark:bg-sky-950/70 text-sky-800 dark:text-sky-300 border border-sky-300 dark:border-sky-700">
+                                    <span>📦</span> รับของแล้ว · รอจ่าย
+                                  </span>
+                                )
+                              }
+                              if (r.status === 'partial') {
+                                return (
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 dark:bg-amber-950/70 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-700">
+                                    <span>⚡</span> รับบางส่วน
+                                  </span>
+                                )
+                              }
+                              return (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-steel-700 dark:text-slate-300 border border-steel-200 dark:border-slate-700">
+                                  <span>🚚</span> รอรับของ
+                                </span>
+                              )
+                            })()}
+                          </div>
+                        </div>
+
+                        {/* ข้อมูลกลางการ์ด: ร้านค้า, โครงการ, วันครบกำหนด */}
+                        <div className="space-y-1.5 text-xs">
+                          <div className="flex items-start gap-1.5">
+                            <span className="text-steel-400 dark:text-slate-500 shrink-0 font-medium w-14">ร้านค้า:</span>
+                            <span className="font-bold text-steel-900 dark:text-slate-100 truncate flex-1" title={r.custom_vendor_name || r.vendors?.vendor_name}>
+                              {r.custom_vendor_name || r.vendors?.vendor_name || '-'}
+                            </span>
+                          </div>
+
+                          <div className="flex items-start gap-1.5">
+                            <span className="text-steel-400 dark:text-slate-500 shrink-0 font-medium w-14">โครงการ:</span>
+                            <div className="truncate flex-1">
+                              <span className="font-semibold text-steel-800 dark:text-slate-200">
+                                {r.custom_project_name || (r.projects ? `${r.projects.project_code} ${r.projects.project_name}` : 'ของกลางบริษัท')}
+                              </span>
+                              {r.customer_name && (
+                                <div className="text-[11px] text-blue-700 dark:text-sky-300 truncate mt-0.5 flex items-center gap-1">
+                                  <span>👤</span>
+                                  <span>{r.customer_name}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1.5 pt-0.5">
+                            <span className="text-steel-400 dark:text-slate-500 shrink-0 font-medium w-14">กำหนดส่ง:</span>
+                            <div className="flex items-center gap-1 flex-wrap">
+                              {r.expected_delivery_date ? (
+                                <span className="font-mono text-xs font-semibold text-steel-800 dark:text-slate-200 mr-1">
+                                  {formatThaiDate(r.expected_delivery_date)}
+                                </span>
+                              ) : null}
+                              {dueStatus && (
+                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${dueStatus.badgeCls}`}>
+                                  <span>{dueStatus.icon}</span>
+                                  <span>{dueStatus.label}</span>
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* ส่วนท้ายการ์ด: ยอดเงินสุทธิ + ปุ่มคำสั่ง */}
+                        <div className="pt-2.5 border-t border-steel-100 dark:border-slate-800 flex items-center justify-between gap-2">
+                          <div>
+                            <div className="text-[10px] text-steel-400 dark:text-slate-500 font-medium">ยอดรวมสุทธิ</div>
+                            <div className="font-mono font-black text-sm text-steel-900 dark:text-slate-100">
+                              ฿{baht(r.total_amount)}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1">
+                            {r.status === 'received' && !isPaid && (
+                              <button
+                                type="button"
+                                onClick={() => setPaymentTargetPo(r)}
+                                className="inline-flex items-center gap-1 rounded-lg bg-amber-500 hover:bg-amber-600 px-2.5 py-1 text-xs font-bold text-slate-950 transition shadow-xs cursor-pointer"
+                                title="จ่ายเงิน"
+                              >
+                                <span>💸</span>
+                                <span>จ่ายเงิน</span>
+                              </button>
+                            )}
+                            {['open', 'partial'].includes(r.status) && (
                               <Link
                                 to={`/purchasing/po/${r.id}`}
-                                className="font-bold text-emerald-700 dark:text-emerald-400 hover:underline flex items-center gap-1"
+                                className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 px-2 py-1 text-xs font-bold text-white transition shadow-xs"
+                                title="ตรวจรับสินค้าเข้าสโตร์"
                               >
-                                <span>📄</span>
-                                <span>{r.po_no}</span>
+                                <span>📥</span>
+                                <span>รับของ</span>
                               </Link>
-                              <div className="text-[11px] text-steel-500 dark:text-slate-400 mt-0.5">
-                                วันที่: {formatThaiDate(r.order_date)}
-                              </div>
-                              {r.pr?.pr_no && (
-                                <div className="text-[10px] text-sky-700 dark:text-sky-400 font-mono mt-0.5">
-                                  PR: {r.pr.pr_no}
-                                </div>
-                              )}
-                            </td>
+                            )}
 
-                            {/* 2. ผู้ขาย / ร้านค้า */}
-                            <td className="py-3 px-3.5 align-top">
-                              <div className="font-bold text-steel-900 dark:text-slate-100 truncate max-w-[200px]" title={r.custom_vendor_name || r.vendors?.vendor_name}>
-                                {r.custom_vendor_name || r.vendors?.vendor_name || '-'}
-                              </div>
-                              <div className="text-[11px] text-steel-500 dark:text-slate-400 truncate max-w-[200px]">
-                                {r.vendors?.contact_person ? `ติดต่อ: ${r.vendors.contact_person}` : ''}
-                                {r.vendors?.phone ? ` โทร: ${r.vendors.phone}` : ''}
-                                {!r.vendors && r.custom_vendor_name && <span className="text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 px-1 rounded text-[10px] border border-amber-200 dark:border-amber-800">ร้านค้าคีย์เอง</span>}
-                              </div>
-                            </td>
+                            <Link
+                              to={`/purchasing/po/${r.id}`}
+                              className="inline-flex items-center justify-center rounded-lg border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-steel-50 dark:hover:bg-slate-700 p-1.5 text-steel-700 dark:text-slate-200 transition shadow-xs"
+                              title="ดูรายละเอียดใบสั่งซื้อ"
+                            >
+                              <Eye className="h-3.5 w-3.5 text-steel-500 dark:text-slate-400" />
+                            </Link>
 
-                            {/* 3. โครงการ & ลูกค้า */}
-                            <td className="py-3 px-3.5 align-top">
-                              <div className="flex flex-col gap-0.5 min-w-0">
-                                <div className="font-bold text-steel-900 dark:text-slate-100 truncate max-w-[190px]" title={r.custom_project_name || (r.projects ? `${r.projects.project_code} ${r.projects.project_name}` : 'ของกลางบริษัท')}>
-                                  {r.custom_project_name || (r.projects ? r.projects.project_code : 'ของกลางบริษัท')}
-                                </div>
-                                <div className="text-[11px] text-steel-600 dark:text-slate-400 truncate max-w-[190px]">
-                                  {r.projects?.project_name || (r.custom_project_name ? 'โครงการคีย์เอง' : 'สต็อกส่วนกลาง')}
-                                </div>
-                                {r.customer_name && (
-                                  <div className="text-[11px] leading-relaxed text-blue-700 dark:text-sky-300 truncate max-w-[190px] font-semibold flex items-center gap-1 mt-0.5">
-                                    <span className="shrink-0">👤</span>
-                                    <span className="truncate">{r.customer_name}</span>
-                                  </div>
-                                )}
-                              </div>
-                            </td>
+                            <button
+                              type="button"
+                              onClick={() => setSelectedPoForPrint(r)}
+                              className="inline-flex items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 p-1.5 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 transition shadow-xs cursor-pointer"
+                              title="พิมพ์ใบสั่งซื้อ A4 / PDF"
+                            >
+                              <Printer className="h-3.5 w-3.5" />
+                            </button>
 
-                            {/* 4. ยอดรวมสุทธิ */}
-                            <td className="py-3 px-3.5 align-top text-right font-black text-ink dark:text-slate-100 whitespace-nowrap">
-                              <div>{baht(r.total_amount)}</div>
-                              <div className="text-[10px] text-steel-400 dark:text-slate-500 font-normal">บาท</div>
-                            </td>
+                            {/* ปุ่มเมนูคำสั่งเพิ่มเติม */}
+                            <button
+                              type="button"
+                              onClick={(e) => toggleDropdown(e, 'po', r)}
+                              className="inline-flex items-center justify-center rounded-lg border border-steel-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-steel-100 dark:hover:bg-slate-700 p-1.5 text-steel-600 dark:text-slate-300 transition shadow-xs cursor-pointer"
+                              title="เปิดคำสั่งเพิ่มเติม (พิมพ์, แชร์, แก้ไข, จ่ายเงิน, ยกเลิก)"
+                            >
+                              <MoreVertical className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                /* มุมมองตาราง (Table View): คอลัมน์สมดุล เลขที่ PO ติดขอบซ้าย และเมนูไม่ทับซ้อน */
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs divide-y divide-steel-200 dark:divide-slate-800">
+                    <thead className="bg-steel-50/90 dark:bg-slate-800 text-steel-700 dark:text-slate-200 font-bold uppercase tracking-wider text-[11px]">
+                      <tr>
+                        {isPoColVisible('po_no') && <th className="py-3 px-3.5 w-36">เลขที่ PO / วันที่</th>}
+                        {isPoColVisible('vendor') && <th className="py-3 px-3 min-w-[140px]">ผู้ขาย / ร้านค้า</th>}
+                        {isPoColVisible('project') && <th className="py-3 px-3 min-w-[140px]">โครงการ / ลูกค้า</th>}
+                        {isPoColVisible('amount') && <th className="py-3 px-3 w-28 text-right">ยอดรวม (บาท)</th>}
+                        {isPoColVisible('due_date') && <th className="py-3 px-3 w-32">วันครบกำหนด</th>}
+                        {isPoColVisible('status') && <th className="py-3 px-3 w-36 text-center">สถานะวงจรเอกสาร</th>}
+                        <th className="py-3 px-3.5 w-24 text-right">
+                          การจัดการ
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-steel-100 dark:divide-slate-800/60 bg-white dark:bg-slate-900">
+                      {paginatedPos.map((r) => {
+                        const dueStatus = getPoDueStatus(r)
+                        const isPaid = r.payment_status === 'ชำระครบแล้ว' || (Number(r.remaining_amount) <= 0.05 && Number(r.deposit_paid_amount) > 0)
 
-                            {/* 5. วันครบกำหนดส่งมอบ + Badge วิเคราะห์กำหนด */}
-                            <td className="py-3 px-3.5 align-top">
-                              <div className="font-mono text-xs font-bold text-steel-800 dark:text-slate-200">
-                                {r.expected_delivery_date ? formatThaiDate(r.expected_delivery_date) : '-'}
-                              </div>
-                              {dueStatus && (
-                                <div className="mt-1">
-                                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold border ${dueStatus.badgeCls}`}>
-                                    <span>{dueStatus.icon}</span>
-                                    <span>{dueStatus.label}</span>
-                                  </span>
-                                </div>
-                              )}
-                            </td>
-
-                            {/* 6. สถานะวงจร (รับของ & จ่ายเงิน) */}
-                            <td className="py-3 px-3 align-top text-center whitespace-nowrap">
-                              {(() => {
-                                const isPaid = r.payment_status === 'ชำระครบแล้ว' || (Number(r.remaining_amount) <= 0.05 && Number(r.deposit_paid_amount) > 0)
-                                if (r.status === 'received' && isPaid) {
-                                  return (
-                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
-                                      <span>✅</span> รับครบ & จ่ายแล้ว
-                                    </span>
-                                  )
-                                }
-                                if (r.status === 'received') {
-                                  return (
-                                    <div className="flex flex-col items-center gap-1">
-                                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-sky-100 dark:bg-sky-950/70 text-sky-800 dark:text-sky-300 border border-sky-300 dark:border-sky-700">
-                                        <span>📦</span> รับของเข้าคลังแล้ว
-                                      </span>
-                                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-100 dark:bg-amber-950/70 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-700">
-                                        <span>⏳</span> ยังไม่จ่ายเงิน (รอจ่าย)
-                                      </span>
-                                    </div>
-                                  )
-                                }
-                                if (r.status === 'partial') {
-                                  return (
-                                    <div className="flex flex-col items-center gap-0.5">
-                                      <Badge map={PO_STATUS} status={r.status} />
-                                      <span className="text-[10px] text-amber-700 dark:text-amber-400 font-semibold">
-                                        {isPaid ? 'จ่ายเงินแล้ว' : 'รอจ่ายเงิน'}
-                                      </span>
-                                    </div>
-                                  )
-                                }
-                                return (
-                                  <div className="flex flex-col items-center gap-0.5">
-                                    <Badge map={PO_STATUS} status={r.status} />
-                                    {isPaid ? (
-                                      <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400">จ่ายล่วงหน้าแล้ว</span>
-                                    ) : (
-                                      <span className="text-[10px] text-steel-500 dark:text-slate-400 font-medium">รอรับของก่อนจ่าย</span>
-                                    )}
-                                  </div>
-                                )
-                              })()}
-                            </td>
-
-                            {/* 7. การจัดการ (Action Bar + Dropdown เมนู 7 ฟังก์ชัน) */}
-                            <td className="py-3 px-3.5 align-top text-right whitespace-nowrap relative">
-                              <div className="inline-flex items-center justify-end gap-1 shrink-0">
-                                {/* ปุ่มด่วน Action ตามสถานะถัดไป */}
-                                {(() => {
-                                  const isPaid = r.payment_status === 'ชำระครบแล้ว' || (Number(r.remaining_amount) <= 0.05 && Number(r.deposit_paid_amount) > 0)
-                                  if (r.status === 'received' && !isPaid) {
-                                    return (
-                                      <button
-                                        type="button"
-                                        onClick={() => setPaymentTargetPo(r)}
-                                        className="inline-flex items-center gap-1 rounded-lg bg-amber-500 hover:bg-amber-600 px-2.5 py-1 text-xs font-bold text-slate-950 transition shadow-xs cursor-pointer"
-                                        title={`รับของเข้าคลังแล้ว คลิกเพื่อจ่ายชำระเงินตามยอดสั่งซื้อ ฿${baht(r.net_amount || r.total_amount)} บ.`}
-                                      >
-                                        <span>💸</span>
-                                        <span>จ่ายเงิน · ฿{baht(r.net_amount || r.total_amount)} บ.</span>
-                                      </button>
-                                    )
-                                  }
-                                  if (['open', 'partial'].includes(r.status)) {
-                                    return (
-                                      <Link
-                                        to={`/purchasing/po/${r.id}`}
-                                        className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 px-2 py-1 text-xs font-bold text-white transition shadow-xs"
-                                        title="ตรวจรับสินค้าเข้าสโตร์"
-                                      >
-                                        <span>📥</span>
-                                        <span>รับของ</span>
-                                      </Link>
-                                    )
-                                  }
-                                  return null
-                                })()}
-
-                                {/* ปุ่มด่วน 1: ดูรายละเอียด */}
+                        return (
+                          <tr key={r.id} className="hover:bg-steel-50/70 dark:hover:bg-slate-800/50 transition-colors group">
+                            {/* 1. เลขที่ PO + วันที่สั่งซื้อ (Sticky Left ไม่หลุดจอ) */}
+                            {isPoColVisible('po_no') && (
+                              <td className="py-3 px-3.5 align-top whitespace-nowrap sticky left-0 z-10 bg-white dark:bg-slate-900 group-hover:bg-steel-50 dark:group-hover:bg-slate-800 shadow-[2px_0_4px_-1px_rgba(0,0,0,0.06)]">
                                 <Link
                                   to={`/purchasing/po/${r.id}`}
-                                  className="inline-flex items-center gap-1 rounded-lg border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-steel-50 dark:hover:bg-slate-700 px-2 py-1 text-xs font-semibold text-steel-700 dark:text-slate-200 transition shadow-xs"
-                                  title="ดูรายละเอียดใบสั่งซื้อ"
+                                  className="font-bold text-emerald-700 dark:text-emerald-400 hover:underline flex items-center gap-1"
                                 >
-                                  <Eye className="h-3.5 w-3.5 text-steel-500 dark:text-slate-400" />
-                                  <span>ดู</span>
+                                  <span>📄</span>
+                                  <span>{r.po_no}</span>
                                 </Link>
+                                <div className="text-[11px] text-steel-500 dark:text-slate-400 mt-0.5">
+                                  {formatThaiDate(r.order_date)}
+                                </div>
+                                {r.pr?.pr_no && (
+                                  <div className="text-[10px] text-sky-700 dark:text-sky-400 font-mono mt-0.5">
+                                    PR: {r.pr.pr_no}
+                                  </div>
+                                )}
+                              </td>
+                            )}
 
-                                {/* ปุ่มด่วน 2: พิมพ์ A4 */}
-                                <button
-                                  type="button"
-                                  onClick={() => setSelectedPoForPrint(r)}
-                                  className="inline-flex items-center gap-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 px-2 py-1 text-xs font-semibold text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 transition shadow-xs cursor-pointer"
-                                  title="พิมพ์ใบสั่งซื้อ A4 / บันทึก PDF"
-                                >
-                                  <Printer className="h-3.5 w-3.5" />
-                                  <span>พิมพ์</span>
-                                </button>
+                            {/* 2. ผู้ขาย / ร้านค้า */}
+                            {isPoColVisible('vendor') && (
+                              <td className="py-3 px-3.5 align-top">
+                                <div className="font-bold text-steel-900 dark:text-slate-100 truncate max-w-[200px]" title={r.custom_vendor_name || r.vendors?.vendor_name}>
+                                  {r.custom_vendor_name || r.vendors?.vendor_name || '-'}
+                                </div>
+                                <div className="text-[11px] text-steel-500 dark:text-slate-400 truncate max-w-[200px]">
+                                  {r.vendors?.contact_person ? `ติดต่อ: ${r.vendors.contact_person}` : ''}
+                                  {r.vendors?.phone ? ` โทร: ${r.vendors.phone}` : ''}
+                                  {!r.vendors && r.custom_vendor_name && <span className="text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 px-1 rounded text-[10px] border border-amber-200 dark:border-amber-800">ร้านค้าคีย์เอง</span>}
+                                </div>
+                              </td>
+                            )}
 
-                                {/* ปุ่ม Action Menu Dropdown (3 จุด) รวม 7 ฟังก์ชัน */}
-                                <div className="relative inline-block text-left">
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation()
-                                      setActionMenuPoId(isMenuOpen ? null : r.id)
-                                    }}
-                                    className="inline-flex items-center justify-center rounded-lg border border-steel-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-steel-100 dark:hover:bg-slate-700 p-1 text-steel-600 dark:text-slate-300 transition cursor-pointer"
-                                    title="เมนูคำสั่งเพิ่มเติม"
-                                  >
-                                    <MoreVertical className="h-4 w-4" />
-                                  </button>
-
-                                  {isMenuOpen && (
-                                    <div
-                                      onClick={(e) => e.stopPropagation()}
-                                      className="absolute right-0 top-7 z-40 w-52 rounded-xl bg-white dark:bg-slate-900 p-1.5 shadow-xl border border-steel-200 dark:border-slate-800 text-left text-xs divide-y divide-steel-100 dark:divide-slate-800 animate-in fade-in zoom-in-95 duration-100"
-                                    >
-                                      {/* กลุ่มที่ 1: การพิมพ์และส่งต่อ */}
-                                      <div className="py-1 space-y-0.5">
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            setSelectedPoForPrint(r)
-                                            setActionMenuPoId(null)
-                                          }}
-                                          className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-steel-700 dark:text-slate-200 hover:bg-steel-100 dark:hover:bg-slate-800 font-semibold transition cursor-pointer"
-                                        >
-                                          <Printer className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-                                          <span>พิมพ์ใบสั่งซื้อ (A4 / PDF)</span>
-                                        </button>
-
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            setSelectedPoForEnvelope(r)
-                                            setActionMenuPoId(null)
-                                          }}
-                                          className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-steel-700 dark:text-slate-200 hover:bg-steel-100 dark:hover:bg-slate-800 font-semibold transition cursor-pointer"
-                                        >
-                                          <Mail className="h-3.5 w-3.5 text-sky-600 dark:text-sky-400" />
-                                          <span>พิมพ์หน้าจ่าซองเอกสาร</span>
-                                        </button>
-
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            setSelectedPoForShare(r)
-                                            setActionMenuPoId(null)
-                                          }}
-                                          className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-steel-700 dark:text-slate-200 hover:bg-steel-100 dark:hover:bg-slate-800 font-semibold transition cursor-pointer"
-                                        >
-                                          <Share2 className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
-                                          <span>แชร์ใบสั่งซื้อ (LINE / ลิงก์)</span>
-                                        </button>
-
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            setSelectedPoForPrint(r)
-                                            setActionMenuPoId(null)
-                                          }}
-                                          className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-steel-700 dark:text-slate-200 hover:bg-steel-100 dark:hover:bg-slate-800 font-semibold transition cursor-pointer"
-                                        >
-                                          <Download className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
-                                          <span>ดาวน์โหลด / บันทึก PDF</span>
-                                        </button>
-                                      </div>
-
-                                      {/* กลุ่มที่ 2: สร้างซ้ำ & แก้ไข */}
-                                      <div className="py-1 space-y-0.5">
-                                        {canCreate && (
-                                          <button
-                                            type="button"
-                                            onClick={() => {
-                                              setActionMenuPoId(null)
-                                              navigate(`/purchasing/po/new?duplicate_from=${r.id}`)
-                                            }}
-                                            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-steel-700 dark:text-slate-200 hover:bg-steel-100 dark:hover:bg-slate-800 font-semibold transition cursor-pointer"
-                                          >
-                                            <Copy className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
-                                            <span>สร้างซ้ำ (Duplicate PO)</span>
-                                          </button>
-                                        )}
-
-                                        {canCreate && r.status !== 'cancelled' && (
-                                          <Link
-                                            to={`/purchasing/po/${r.id}/edit`}
-                                            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-steel-700 dark:text-slate-200 hover:bg-steel-100 dark:hover:bg-slate-800 font-semibold transition"
-                                          >
-                                            <Edit3 className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
-                                            <span>แก้ไขใบสั่งซื้อ</span>
-                                          </Link>
-                                        )}
-
-                                        {r.status !== 'cancelled' && (
-                                          <button
-                                            type="button"
-                                            onClick={() => {
-                                              setPaymentTargetPo(r)
-                                              setActionMenuPoId(null)
-                                            }}
-                                            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-sky-700 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-950/40 font-semibold transition cursor-pointer"
-                                          >
-                                            <DollarSign className="h-3.5 w-3.5 text-sky-600 dark:text-sky-400" />
-                                            <span>จ่ายชำระเงิน · ฿{baht(r.net_amount || r.total_amount)} บ.</span>
-                                          </button>
-                                        )}
-
-                                        {canCreate && r.status !== 'cancelled' && r.payment_status !== 'ชำระครบแล้ว' && r.status !== 'received' && (
-                                          <button
-                                            type="button"
-                                            onClick={() => {
-                                              setActionMenuPoId(null)
-                                              setPoToCancel(r)
-                                              setCancelListReason('')
-                                            }}
-                                            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-rose-700 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 font-semibold transition cursor-pointer"
-                                          >
-                                            <span className="text-xs">❌</span>
-                                            <span>ยกเลิกใบสั่งซื้อ</span>
-                                          </button>
-                                        )}
-                                      </div>
-
-                                      {/* กลุ่มที่ 3: ลบรายการ */}
-                                      {canCreate && (
-                                        <div className="py-1">
-                                          <button
-                                            type="button"
-                                            onClick={() => handleDeletePo(r)}
-                                            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-rose-700 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 font-bold transition cursor-pointer"
-                                          >
-                                            <Trash2 className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400" />
-                                            <span>ลบใบสั่งซื้อนี้</span>
-                                          </button>
-                                        </div>
-                                      )}
+                            {/* 3. โครงการ & ลูกค้า */}
+                            {isPoColVisible('project') && (
+                              <td className="py-3 px-3.5 align-top">
+                                <div className="flex flex-col gap-0.5 min-w-0">
+                                  <div className="font-bold text-steel-900 dark:text-slate-100 truncate max-w-[190px]" title={r.custom_project_name || (r.projects ? `${r.projects.project_code} ${r.projects.project_name}` : 'ของกลางบริษัท')}>
+                                    {r.custom_project_name || (r.projects ? r.projects.project_code : 'ของกลางบริษัท')}
+                                  </div>
+                                  <div className="text-[11px] text-steel-600 dark:text-slate-400 truncate max-w-[190px]">
+                                    {r.projects?.project_name || (r.custom_project_name ? 'โครงการคีย์เอง' : 'สต็อกส่วนกลาง')}
+                                  </div>
+                                  {r.customer_name && (
+                                    <div className="text-[11px] leading-relaxed text-blue-700 dark:text-sky-300 truncate max-w-[190px] font-semibold flex items-center gap-1 mt-0.5">
+                                      <span className="shrink-0">👤</span>
+                                      <span className="truncate">{r.customer_name}</span>
                                     </div>
                                   )}
                                 </div>
+                              </td>
+                            )}
+
+                            {/* 4. ยอดรวมสุทธิ */}
+                            {isPoColVisible('amount') && (
+                              <td className="py-3 px-3.5 align-top text-right whitespace-nowrap">
+                                <div className="font-mono font-black text-sm text-steel-900 dark:text-slate-100 tabular-nums">
+                                  ฿{baht(r.total_amount)}
+                                </div>
+                                <div className="text-[10px] text-steel-400 dark:text-slate-500 font-normal">บาท</div>
+                              </td>
+                            )}
+
+                            {/* 5. วันครบกำหนดส่งมอบ + Badge วิเคราะห์กำหนด */}
+                            {isPoColVisible('due_date') && (
+                              <td className="py-3 px-3.5 align-top">
+                                {r.expected_delivery_date ? (
+                                  <div className="font-mono text-xs font-bold text-steel-800 dark:text-slate-200">
+                                    {formatThaiDate(r.expected_delivery_date)}
+                                  </div>
+                                ) : null}
+                                {dueStatus && (
+                                  <div className={r.expected_delivery_date ? 'mt-1' : ''}>
+                                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold border ${dueStatus.badgeCls}`}>
+                                      <span>{dueStatus.icon}</span>
+                                      <span>{dueStatus.label}</span>
+                                    </span>
+                                  </div>
+                                )}
+                              </td>
+                            )}
+
+                            {/* 6. สถานะวงจร (รับของ & จ่ายเงิน) */}
+                            {isPoColVisible('status') && (
+                              <td className="py-3 px-3 align-middle text-center whitespace-nowrap">
+                                {(() => {
+                                  if (r.status === 'cancelled') {
+                                    return <StatusBadge status="cancelled" label="ยกเลิกคำสั่งซื้อ" />
+                                  }
+                                  if (r.status === 'received' && isPaid) {
+                                    return <StatusBadge status="success" label="รับครบ & จ่ายแล้ว" />
+                                  }
+                                  if (r.status === 'received') {
+                                    return (
+                                      <div className="flex flex-col items-center gap-1">
+                                        <StatusBadge status="received" label="รับของเข้าคลังแล้ว" />
+                                        <StatusBadge status="warning" label="ยังไม่จ่าย (รอจ่าย)" />
+                                      </div>
+                                    )
+                                  }
+                                  if (r.status === 'partial') {
+                                    return (
+                                      <div className="flex flex-col items-center gap-0.5">
+                                        <StatusBadge status="partial" label="รับบางส่วน" />
+                                        <span className="text-[10px] text-amber-700 dark:text-amber-400 font-semibold">
+                                          {isPaid ? 'จ่ายเงินแล้ว' : 'รอจ่ายเงิน'}
+                                        </span>
+                                      </div>
+                                    )
+                                  }
+                                  return (
+                                    <div className="flex flex-col items-center gap-0.5">
+                                      <StatusBadge status="open" label="รอรับของ" />
+                                      <span className={`text-[10px] font-semibold ${isPaid ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400'}`}>
+                                        {isPaid ? 'จ่ายล่วงหน้าแล้ว' : 'รอรับของก่อนจ่าย'}
+                                      </span>
+                                    </div>
+                                  )
+                                })()}
+                              </td>
+                            )}
+
+                            {/* 7. การจัดการ */}
+                            <td className="py-3 px-3.5 align-middle text-right whitespace-nowrap">
+                              <div className="inline-flex items-center justify-end gap-1.5 shrink-0">
+                                {r.status === 'received' && !isPaid ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => setPaymentTargetPo(r)}
+                                    className="inline-flex items-center gap-1 rounded-lg bg-amber-500 hover:bg-amber-600 px-2 py-1 text-xs font-bold text-slate-950 transition shadow-xs cursor-pointer"
+                                    title={`รับของเข้าคลังแล้ว คลิกเพื่อจ่ายชำระเงินตามยอดสั่งซื้อ ฿${baht(r.net_amount || r.total_amount)} บ.`}
+                                  >
+                                    <span>💸</span>
+                                    <span>จ่าย</span>
+                                  </button>
+                                ) : ['open', 'partial'].includes(r.status) ? (
+                                  <Link
+                                    to={`/purchasing/po/${r.id}`}
+                                    className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 px-2 py-1 text-xs font-bold text-white transition shadow-xs"
+                                    title="ตรวจรับสินค้าเข้าสโตร์"
+                                  >
+                                    <span>📥</span>
+                                    <span>รับของ</span>
+                                  </Link>
+                                ) : (
+                                  <Link
+                                    to={`/purchasing/po/${r.id}`}
+                                    className="inline-flex items-center gap-1 rounded-lg border border-steel-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-steel-50 dark:hover:bg-slate-700 px-2 py-1 text-xs font-semibold text-steel-700 dark:text-slate-200 transition shadow-xs"
+                                    title="ดูรายละเอียดใบสั่งซื้อ"
+                                  >
+                                    <Eye className="h-3.5 w-3.5 text-steel-500 dark:text-slate-400" />
+                                    <span>ดู</span>
+                                  </Link>
+                                )}
+
+                                {/* ปุ่มเมนูดรอปดาวน์กะทัดรัด ไม่หลุดขอบ ไม่ทับซ้อน */}
+                                <button
+                                  type="button"
+                                  onClick={(e) => toggleDropdown(e, 'po', r)}
+                                  className={`inline-flex items-center justify-center rounded-lg border p-1 text-xs transition shadow-xs cursor-pointer ${
+                                    activeDropdown && activeDropdown.id === r.id && activeDropdown.type === 'po'
+                                      ? 'bg-amber-100 dark:bg-amber-950/80 border-amber-400 text-amber-900 dark:text-amber-200'
+                                      : 'border-steel-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-steel-100 dark:hover:bg-slate-700 text-steel-600 dark:text-slate-300'
+                                  }`}
+                                  title="เมนูคำสั่งเพิ่มเติม (พิมพ์, จ่าซอง, แชร์, สร้างซ้ำ, แก้ไข, ลบ)"
+                                >
+                                  <MoreVertical className="h-4 w-4" />
+                                </button>
                               </div>
                             </td>
                           </tr>
                         )
-                      })
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
 
               {/* แถบเปลี่ยนหน้า (PO Pagination) */}
               {filteredPos.length > 0 && (
@@ -1448,115 +1606,198 @@ export default function PurchasingHub() {
 
           {/* TAB 2: รายการใบขอซื้อ (PR) */}
           {activeTab === 'pr' && (
-            <div className="overflow-x-auto rounded-2xl border border-steel-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-xs">
-              <div className="mb-3 flex flex-wrap items-center justify-between gap-3 border-b border-steel-100 dark:border-slate-800 pb-2.5">
-                <div className="text-xs font-bold text-steel-900 dark:text-slate-100">
-                  รายการใบขอซื้อทั้งหมด ({filteredPrs.length})
+            <div className="rounded-2xl border border-steel-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs overflow-hidden">
+              <div className="p-4 border-b border-steel-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 bg-slate-50/50 dark:bg-slate-800/50">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-bold text-steel-900 dark:text-slate-100">
+                    รายการใบขอซื้อ (PR) ทั้งหมด ({filteredPrs.length} รายการ)
+                  </span>
+                  {filterStatus && (
+                    <span className="rounded-md bg-sky-100 dark:bg-sky-950/60 px-2 py-0.5 text-[11px] font-bold text-sky-900 dark:text-sky-300 border border-sky-300 dark:border-sky-700">
+                      สถานะ: {PR_STATUS[filterStatus]?.label || filterStatus}
+                    </span>
+                  )}
                 </div>
-                {canCreate && (
-                  <Link to="/purchasing/pr/new" className="inline-flex items-center gap-1 rounded-xl bg-steel-900 dark:bg-amber-500 hover:bg-steel-800 dark:hover:bg-amber-400 px-3 py-1.5 text-xs font-bold text-hivis dark:text-slate-950 shadow-xs transition">
-                    + ออกใบขอซื้อ (PR)
-                  </Link>
-                )}
+                <div className="flex items-center gap-2">
+                  {canCreate && (
+                    <Link
+                      to="/purchasing/pr/new"
+                      className="inline-flex items-center gap-1.5 rounded-xl bg-steel-900 dark:bg-amber-500 hover:bg-steel-800 dark:hover:bg-amber-400 px-3.5 py-1.5 text-xs font-bold text-hivis dark:text-slate-950 shadow-xs transition"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      <span>+ ออกใบขอซื้อ (PR)</span>
+                    </Link>
+                  )}
+                </div>
               </div>
 
-              <table className="w-full text-left text-xs min-w-[950px] divide-y divide-steel-200 dark:divide-slate-800">
-                <thead className="bg-steel-50/80 dark:bg-slate-800/80 text-steel-700 dark:text-slate-200 font-bold uppercase tracking-wider text-[11px]">
-                  <tr>
-                    <th className="py-3 px-3.5 w-32">เลขที่ PR</th>
-                    <th className="py-3 px-3.5 min-w-[200px]">โครงการ</th>
-                    <th className="py-3 px-3 w-28">วันที่ขอ</th>
-                    <th className="py-3 px-3 text-right w-24">จำนวนรายการ</th>
-                    <th className="py-3 px-3 w-28 text-center">สถานะ</th>
-                    <th className="py-3 px-3.5 min-w-[160px]">ใบสั่งซื้อที่เกี่ยวข้อง</th>
-                    <th className="py-3 px-3.5 w-40 text-right">การจัดการ</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-steel-100 dark:divide-slate-800/60 bg-white dark:bg-slate-900">
-                  {filteredPrs.length === 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs divide-y divide-steel-200 dark:divide-slate-800">
+                  <thead className="bg-steel-50/90 dark:bg-slate-800 text-steel-700 dark:text-slate-200 font-bold uppercase tracking-wider text-[11px]">
                     <tr>
-                      <td colSpan={7} className="py-10 text-center text-steel-400 dark:text-slate-500">
-                        ไม่พบใบขอซื้อ
-                      </td>
+                      {isPrColVisible('pr_no') && <th className="py-3 px-3.5 w-36">เลขที่ PR / วันที่ขอ</th>}
+                      {isPrColVisible('project') && <th className="py-3 px-3 min-w-[170px]">โครงการ / ลูกค้า / ผู้ขายแนะนำ</th>}
+                      {isPrColVisible('items') && <th className="py-3 px-3 w-28 text-center">จำนวนรายการ</th>}
+                      {isPrColVisible('status') && <th className="py-3 px-3 w-32 text-center">สถานะ</th>}
+                      {isPrColVisible('linked_po') && <th className="py-3 px-3 min-w-[150px]">ใบสั่งซื้อที่เกี่ยวข้อง (PO)</th>}
+                      <th className="py-3 px-3.5 w-24 text-right">การจัดการ</th>
                     </tr>
-                  ) : (
-                    paginatedPrs.map((r) => {
-                      const linkedPos = poByPrId[r.id] || []
-                      return (
-                        <tr key={r.id} className="hover:bg-steel-50/70 dark:hover:bg-slate-800/50 transition-colors">
-                          <td className="py-3 px-3.5 font-bold text-sky-700 dark:text-sky-400 whitespace-nowrap">
-                            <Link to={`/purchasing/pr/${r.id}`} className="hover:underline flex items-center gap-1">
-                              <span>📋</span>
-                              <span>{r.pr_no}</span>
+                  </thead>
+                  <tbody className="divide-y divide-steel-100 dark:divide-slate-800/60 bg-white dark:bg-slate-900">
+                    {filteredPrs.length === 0 ? (
+                      <tr>
+                        <td colSpan={prColumns.filter((c) => c.visible).length + 1} className="py-12 text-center text-steel-400 dark:text-slate-500">
+                          <FileText className="mx-auto h-8 w-8 text-steel-300 dark:text-slate-600 mb-2" />
+                          <p className="font-semibold text-xs">ไม่พบใบขอซื้อตามเงื่อนไขที่เลือก</p>
+                          {canCreate && (
+                            <Link
+                              to="/purchasing/pr/new"
+                              className="mt-3 inline-flex items-center gap-1 rounded-xl bg-steel-900 dark:bg-amber-500 px-3.5 py-1.5 text-xs font-bold text-hivis dark:text-slate-950 hover:bg-steel-800 dark:hover:bg-amber-400 transition"
+                            >
+                              + ออกใบขอซื้อ (PR) ใหม่
                             </Link>
-                          </td>
-                          <td className="py-3 px-3.5">
-                            <div className="flex flex-col gap-0.5 min-w-0">
-                              <div className="font-semibold text-steel-900 dark:text-slate-100 truncate max-w-[240px]">
-                                {r.custom_project_name || r.projects?.project_code || 'ของกลางบริษัท'}
-                              </div>
-                              <div className="text-xs text-steel-500 dark:text-slate-400 truncate max-w-[240px]">
-                                {r.projects?.project_name || (r.custom_project_name ? 'โครงการคีย์เอง' : 'สต็อกส่วนกลาง')}
-                              </div>
-                              {r.customer_name && (
-                                <div className="text-[11px] leading-relaxed text-blue-700 dark:text-sky-300 truncate max-w-[240px] font-semibold flex items-center gap-1 mt-0.5">
-                                  <span className="shrink-0">👤</span>
-                                  <span className="truncate">{r.customer_name}</span>
-                                </div>
-                              )}
-                              {r.suggested_vendor && (
-                                <div className="text-[11px] leading-relaxed text-emerald-700 dark:text-emerald-300 truncate max-w-[240px] font-semibold flex items-center gap-1">
-                                  <span className="shrink-0">🏪</span>
-                                  <span className="truncate">แนะนำ: {r.suggested_vendor}</span>
-                                </div>
-                              )}
-                            </div>
-                          </td>
-                          <td className="py-3 px-3 text-steel-600 dark:text-slate-300 whitespace-nowrap">{formatThaiDate(r.request_date)}</td>
-                          <td className="py-3 px-3 text-right font-bold text-steel-900 dark:text-slate-100">{r.purchase_requisition_items?.length || 0}</td>
-                          <td className="py-3 px-3 text-center whitespace-nowrap"><Badge map={PR_STATUS} status={r.status} /></td>
-                          <td className="py-3 px-3.5">
-                            {linkedPos.length > 0 ? (
-                              <div className="flex flex-wrap gap-1">
-                                {linkedPos.map((p) => (
-                                  <Link key={p.id} to={`/purchasing/po/${p.id}`} className="rounded-md bg-emerald-50 dark:bg-emerald-950/70 px-2 py-0.5 text-xs font-bold text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900">
-                                    {p.po_no}
-                                  </Link>
-                                ))}
-                              </div>
-                            ) : (
-                              <span className="text-xs text-steel-400 dark:text-slate-500">-</span>
-                            )}
-                          </td>
-                          <td className="py-3 px-3.5 text-right whitespace-nowrap">
-                            <div className="inline-flex items-center justify-end gap-1.5 shrink-0">
-                              {r.status === 'pending' && canCreate && (
+                          )}
+                        </td>
+                      </tr>
+                    ) : (
+                      paginatedPrs.map((r) => {
+                        const linkedPos = poByPrId[r.id] || []
+                        return (
+                          <tr key={r.id} className="hover:bg-steel-50/70 dark:hover:bg-slate-800/50 transition-colors group">
+                            {/* 1. เลขที่ PR + วันที่ขอซื้อ */}
+                            {isPrColVisible('pr_no') && (
+                              <td className="py-3 px-3.5 align-top whitespace-nowrap">
                                 <Link
-                                  to={`/purchasing/po/new?pr=${r.id}`}
-                                  className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 px-2.5 py-1 text-xs font-bold text-white transition shadow-xs"
+                                  to={`/purchasing/pr/${r.id}`}
+                                  className="font-bold text-sky-700 dark:text-sky-400 hover:underline flex items-center gap-1"
                                 >
-                                  <span>⚡</span>
-                                  <span>ออก PO</span>
+                                  <span>📋</span>
+                                  <span>{r.pr_no}</span>
                                 </Link>
-                              )}
-                              <Link
-                                to={`/purchasing/pr/${r.id}`}
-                                className="inline-flex items-center gap-1 rounded-lg bg-white dark:bg-slate-800 px-2.5 py-1 text-xs font-semibold text-steel-700 dark:text-slate-200 border border-steel-300 dark:border-slate-700 hover:bg-steel-50 dark:hover:bg-slate-700 hover:text-ink dark:hover:text-white transition shadow-xs"
-                              >
-                                <span>รายละเอียด</span>
-                              </Link>
-                            </div>
-                          </td>
-                        </tr>
-                      )
-                    })
-                  )}
-                </tbody>
-              </table>
+                                <div className="text-[11px] text-steel-500 dark:text-slate-400 mt-0.5">
+                                  {formatThaiDate(r.request_date)}
+                                </div>
+                              </td>
+                            )}
+
+                            {/* 2. โครงการ / ลูกค้า / ผู้ขายแนะนำ */}
+                            {isPrColVisible('project') && (
+                              <td className="py-3 px-3 align-top">
+                                <div className="flex flex-col gap-0.5 min-w-0">
+                                  <div className="font-bold text-steel-900 dark:text-slate-100 truncate max-w-[220px]" title={r.custom_project_name || (r.projects ? `${r.projects.project_code} ${r.projects.project_name}` : 'ของกลางบริษัท')}>
+                                    {r.custom_project_name || (r.projects ? r.projects.project_code : 'ของกลางบริษัท')}
+                                  </div>
+                                  <div className="text-[11px] text-steel-600 dark:text-slate-400 truncate max-w-[220px]">
+                                    {r.projects?.project_name || (r.custom_project_name ? 'โครงการคีย์เอง' : 'สต็อกส่วนกลาง')}
+                                  </div>
+                                  {r.customer_name && (
+                                    <div className="text-[11px] leading-relaxed text-blue-700 dark:text-sky-300 truncate max-w-[220px] font-semibold flex items-center gap-1 mt-0.5">
+                                      <span className="shrink-0">👤</span>
+                                      <span className="truncate">{r.customer_name}</span>
+                                    </div>
+                                  )}
+                                  {r.suggested_vendor && (
+                                    <div className="text-[10px] leading-relaxed text-emerald-700 dark:text-emerald-300 truncate max-w-[220px] font-semibold flex items-center gap-1 mt-0.5">
+                                      <span className="shrink-0">🏪</span>
+                                      <span className="truncate">แนะนำ: {r.suggested_vendor}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </td>
+                            )}
+
+                            {/* 3. จำนวนรายการ */}
+                            {isPrColVisible('items') && (
+                              <td className="py-3 px-3 align-top text-center whitespace-nowrap">
+                                <div className="inline-flex items-center gap-1 bg-slate-100 dark:bg-slate-800/80 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700/60">
+                                  <Package className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
+                                  <span className="font-mono font-bold text-steel-900 dark:text-slate-100 tabular-nums">
+                                    {r.purchase_requisition_items?.length || 0}
+                                  </span>
+                                  <span className="text-[10px] text-steel-500 dark:text-slate-400">รายการ</span>
+                                </div>
+                              </td>
+                            )}
+
+                            {/* 4. สถานะ PR */}
+                            {isPrColVisible('status') && (
+                              <td className="py-3 px-3 align-top text-center whitespace-nowrap">
+                                <StatusBadge status={r.status} />
+                              </td>
+                            )}
+
+                            {/* 5. ใบสั่งซื้อที่เกี่ยวข้อง (PO Link) */}
+                            {isPrColVisible('linked_po') && (
+                              <td className="py-3 px-3 align-top">
+                                {linkedPos.length > 0 ? (
+                                  <div className="flex flex-wrap gap-1.5">
+                                    {linkedPos.map((p) => (
+                                      <Link
+                                        key={p.id}
+                                        to={`/purchasing/po/${p.id}`}
+                                        className="inline-flex items-center gap-1 rounded-md bg-emerald-50 dark:bg-emerald-950/70 px-2 py-0.5 text-xs font-mono font-bold text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition shadow-2xs"
+                                        title={`เปิดดูใบสั่งซื้อ ${p.po_no}`}
+                                      >
+                                        <span>📄</span>
+                                        <span>{p.po_no}</span>
+                                      </Link>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <span className="text-xs text-steel-400 dark:text-slate-500 font-mono">-</span>
+                                )}
+                              </td>
+                            )}
+
+                            {/* 6. การจัดการ */}
+                            <td className="py-3 px-3.5 align-middle text-right whitespace-nowrap">
+                              <div className="inline-flex items-center justify-end gap-1.5 shrink-0">
+                                {r.status === 'pending' && canCreate ? (
+                                  <Link
+                                    to={`/purchasing/po/new?pr=${r.id}`}
+                                    className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 px-2 py-1 text-xs font-bold text-white transition shadow-xs"
+                                    title="ออกใบสั่งซื้อ (PO) จากใบขอซื้อนี้"
+                                  >
+                                    <span>⚡</span>
+                                    <span>ออก PO</span>
+                                  </Link>
+                                ) : (
+                                  <Link
+                                    to={`/purchasing/pr/${r.id}`}
+                                    className="inline-flex items-center gap-1 rounded-lg border border-steel-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-steel-50 dark:hover:bg-slate-700 px-2 py-1 text-xs font-semibold text-steel-700 dark:text-slate-200 transition shadow-xs"
+                                    title="ดูรายละเอียดใบขอซื้อ"
+                                  >
+                                    <Eye className="h-3.5 w-3.5 text-steel-500 dark:text-slate-400" />
+                                    <span>ดู</span>
+                                  </Link>
+                                )}
+
+                                {/* ปุ่มเมนูดรอปดาวน์กะทัดรัด */}
+                                <button
+                                  type="button"
+                                  onClick={(e) => toggleDropdown(e, 'pr', r)}
+                                  className={`inline-flex items-center justify-center rounded-lg border p-1 text-xs transition shadow-xs cursor-pointer ${
+                                    activeDropdown && activeDropdown.id === r.id && activeDropdown.type === 'pr'
+                                      ? 'bg-sky-100 dark:bg-sky-950/80 border-sky-400 text-sky-900 dark:text-sky-200'
+                                      : 'border-steel-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-steel-100 dark:hover:bg-slate-700 text-steel-600 dark:text-slate-300'
+                                  }`}
+                                  title="เมนูคำสั่งเพิ่มเติม"
+                                >
+                                  <MoreVertical className="h-4 w-4" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        )
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
 
               {/* แถบเปลี่ยนหน้า (PR Pagination) */}
               {filteredPrs.length > 0 && (
-                <div className="border-t border-steel-100 dark:border-slate-800 bg-white dark:bg-slate-900 px-2 py-2 mt-2">
+                <div className="border-t border-steel-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-850 px-4 py-3">
                   <Pagination
                     currentPage={currentPage}
                     totalItems={filteredPrs.length}
@@ -1889,7 +2130,7 @@ export default function PurchasingHub() {
                                     </div>
                                   )}
                                 </td>
-                                <td className="py-3 px-3 text-center whitespace-nowrap"><Badge map={PO_STATUS} status={r.status} /></td>
+                                <td className="py-3 px-3 text-center whitespace-nowrap"><StatusBadge status={r.status} /></td>
                                 <td className="py-3 px-3.5 text-right font-black text-steel-900 dark:text-slate-100 whitespace-nowrap">{baht(r.total_amount)}</td>
                                 <td className="py-3 px-3.5 text-right whitespace-nowrap">
                                   {canReceive ? (
@@ -1963,80 +2204,303 @@ export default function PurchasingHub() {
                 </div>
               </div>
 
-              {/* ตารางจับคู่ PR ➔ PO */}
-              <div className="rounded-2xl border border-steel-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs space-y-3">
-                <div className="flex items-center justify-between border-b border-steel-100 dark:border-slate-800 pb-2">
-                  <h3 className="text-xs font-bold text-ink dark:text-slate-100 uppercase tracking-wider">
-                    🔄 แผนผังการผูกโยงเอกสาร (PR ➔ PO Linkage)
-                  </h3>
-                  <span className="text-xs text-steel-500 dark:text-slate-400">แสดงความเชื่อมโยงของเอกสารแต่ละขั้นตอน</span>
+              {/* ตารางจับคู่ PR ➔ PO และแผนผังการผูกโยงเอกสาร */}
+              <div className="rounded-2xl border border-steel-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-steel-100 dark:border-slate-800 pb-3">
+                  <div>
+                    <h3 className="text-sm font-black text-ink dark:text-slate-100 uppercase tracking-wider flex items-center gap-2">
+                      <span>🔄 แผนผังการผูกโยงเอกสาร (PR ➔ PO Linkage Flow)</span>
+                    </h3>
+                    <p className="text-xs text-steel-500 dark:text-slate-400 mt-0.5">
+                      แสดงความเชื่อมโยงของเอกสารวงจรจัดซื้อ ตั้งแต่ใบขอซื้อ (PR) ไปจนถึงใบสั่งซื้อ (PO) และสถานะการรับของ/จ่ายเงิน
+                    </p>
+                  </div>
+
+                  {/* Toggle Switch: ผังกระบวนการ (Flow Cards) vs ตารางรายงาน (Table) */}
+                  <div className="flex items-center rounded-xl bg-steel-100 dark:bg-slate-800 p-0.5 border border-steel-200 dark:border-slate-700">
+                    <button
+                      type="button"
+                      onClick={() => setPipelineViewMode('flow')}
+                      className={`px-3 py-1.5 text-xs font-bold rounded-lg transition flex items-center gap-1.5 cursor-pointer ${
+                        pipelineViewMode === 'flow'
+                          ? 'bg-white dark:bg-slate-700 text-steel-900 dark:text-amber-400 shadow-2xs'
+                          : 'text-steel-600 dark:text-slate-400 hover:text-steel-900 dark:hover:text-slate-200'
+                      }`}
+                    >
+                      <Layers className="h-3.5 w-3.5" />
+                      <span>ผังเชื่อมโยง (Flow)</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPipelineViewMode('table')}
+                      className={`px-3 py-1.5 text-xs font-bold rounded-lg transition flex items-center gap-1.5 cursor-pointer ${
+                        pipelineViewMode === 'table'
+                          ? 'bg-white dark:bg-slate-700 text-steel-900 dark:text-amber-400 shadow-2xs'
+                          : 'text-steel-600 dark:text-slate-400 hover:text-steel-900 dark:hover:text-slate-200'
+                      }`}
+                    >
+                      <List className="h-3.5 w-3.5" />
+                      <span>ตารางรายงาน (Table)</span>
+                    </button>
+                  </div>
                 </div>
 
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs min-w-[850px] divide-y divide-steel-200 dark:divide-slate-800">
-                    <thead className="bg-steel-50 dark:bg-slate-800 text-steel-700 dark:text-slate-200 font-bold uppercase text-[11px]">
-                      <tr>
-                        <th className="py-2.5 px-3">ใบขอซื้อ (PR)</th>
-                        <th className="py-2.5 px-3">โครงการ</th>
-                        <th className="py-2.5 px-3">สถานะ PR</th>
-                        <th className="py-2.5 px-3">ใบสั่งซื้อที่ออก (PO)</th>
-                        <th className="py-2.5 px-3 text-right">ยอดรวม PO</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-steel-100 dark:divide-slate-800/60 bg-white dark:bg-slate-900">
-                      {filteredPipelinePrs.length === 0 ? (
-                        <tr>
-                          <td colSpan={5} className="py-10 text-center text-steel-400 dark:text-slate-500">
-                            ไม่พบข้อมูลวงจรเอกสารตามเงื่อนไขหรือช่วงวันที่ที่ค้นหา
-                          </td>
-                        </tr>
-                      ) : (
-                        paginatedPipeline.map((r) => {
-                          const linkedPos = poByPrId[r.id] || []
-                          const linkedTotal = linkedPos.reduce((s, p) => s + Number(p.total_amount || 0), 0)
-                          return (
-                            <tr key={r.id} className="hover:bg-steel-50/70 dark:hover:bg-slate-800/50">
-                              <td className="py-2.5 px-3">
-                                <Link to={`/purchasing/pr/${r.id}`} className="font-bold text-sky-700 dark:text-sky-400 hover:underline">
-                                  {r.pr_no}
-                                </Link>
-                                <div className="text-[10px] text-steel-500 dark:text-slate-400 font-mono">
-                                  วันที่ขอ: {formatThaiDate(r.request_date)}
+                {/* 1. มุมมองผังเชื่อมโยงเอกสาร (Flow Cards View) */}
+                {pipelineViewMode === 'flow' ? (
+                  <div className="space-y-3.5">
+                    {filteredPipelinePrs.length === 0 ? (
+                      <div className="py-12 text-center text-steel-400 dark:text-slate-500 rounded-xl bg-steel-50/50 dark:bg-slate-800/30">
+                        <Workflow className="mx-auto h-8 w-8 text-steel-300 dark:text-slate-600 mb-2" />
+                        <p className="font-semibold text-xs">ไม่พบข้อมูลวงจรเอกสารตามเงื่อนไขหรือช่วงวันที่ที่ค้นหา</p>
+                      </div>
+                    ) : (
+                      paginatedPipeline.map((r) => {
+                        const linkedPos = poByPrId[r.id] || []
+                        const linkedTotal = linkedPos.reduce((s, p) => s + Number(p.total_amount || 0), 0)
+
+                        return (
+                          <div
+                            key={r.id}
+                            className="rounded-2xl border border-steel-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-4 sm:p-5 shadow-xs hover:shadow-md transition-shadow space-y-3 relative"
+                          >
+                            {/* Card Top: โครงการ + วันที่ขอ + สถานะ PR */}
+                            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-steel-100 dark:border-slate-800/80 pb-2.5">
+                              <div className="flex items-center gap-2">
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-xs font-bold bg-steel-100 dark:bg-slate-800 text-steel-800 dark:text-slate-200 border border-steel-200 dark:border-slate-700">
+                                  <span>🏗️</span>
+                                  <span>{r.projects ? `${r.projects.project_code} · ${r.projects.project_name}` : 'ของกลางบริษัท / สต็อกส่วนกลาง'}</span>
+                                </span>
+                                {r.customer_name && (
+                                  <span className="text-xs text-steel-500 dark:text-slate-400">
+                                    ลูกค้า: {r.customer_name}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-steel-500 dark:text-slate-400 font-mono">
+                                  ขอซื้อเมื่อ: {formatThaiDate(r.request_date)}
+                                </span>
+                                <StatusBadge status={r.status} />
+                              </div>
+                            </div>
+
+                            {/* Card Flow: PR [ต้นทาง] ──➔ PO [ปลายทาง] */}
+                            <div className="grid grid-cols-1 md:grid-cols-11 gap-3 items-center">
+                              {/* ต้นทาง: ใบขอซื้อ (PR Box) */}
+                              <div className="md:col-span-5 rounded-xl border border-sky-200 dark:border-sky-900/60 bg-sky-50/50 dark:bg-sky-950/20 p-3.5 space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-sky-100 dark:bg-sky-900/60 text-sky-700 dark:text-sky-300 font-black text-xs">
+                                      PR
+                                    </span>
+                                    <Link
+                                      to={`/purchasing/pr/${r.id}`}
+                                      className="font-mono font-bold text-sm text-sky-800 dark:text-sky-400 hover:underline"
+                                    >
+                                      {r.pr_no}
+                                    </Link>
+                                  </div>
+                                  <Link
+                                    to={`/purchasing/pr/${r.id}`}
+                                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-sky-700 dark:text-sky-400 hover:underline"
+                                  >
+                                    <span>เปิดดู PR</span>
+                                    <ExternalLink className="h-3 w-3" />
+                                  </Link>
                                 </div>
-                              </td>
-                              <td className="py-2.5 px-3">
-                                <span className="font-semibold text-steel-900 dark:text-slate-100">{r.projects?.project_code}</span> <span className="text-steel-600 dark:text-slate-400">{r.projects?.project_name}</span>
-                              </td>
-                              <td className="py-2.5 px-3"><Badge map={PR_STATUS} status={r.status} /></td>
-                              <td className="py-2.5 px-3">
+
+                                <div className="text-xs text-steel-600 dark:text-slate-300 space-y-1">
+                                  <div className="flex items-center justify-between text-[11px]">
+                                    <span className="text-steel-400 dark:text-slate-500">ร้านค้าแนะนำ:</span>
+                                    <span className="font-semibold text-steel-800 dark:text-slate-200">{r.suggested_vendor || '-'}</span>
+                                  </div>
+                                  {r.notes && (
+                                    <div className="text-[11px] text-steel-500 dark:text-slate-400 line-clamp-1 italic">
+                                      "{r.notes}"
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* ตัวเชื่อมโยง (Linkage Arrow) */}
+                              <div className="md:col-span-1 flex flex-col items-center justify-center py-1">
+                                <div className="hidden md:flex flex-col items-center text-steel-400 dark:text-slate-500">
+                                  <span className="text-[10px] font-bold uppercase tracking-wider mb-0.5">ออก PO</span>
+                                  <ArrowRight className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                                </div>
+                                <div className="md:hidden flex items-center justify-center gap-1.5 text-xs text-emerald-600 font-bold py-1">
+                                  <span>↓ แปลงเป็นคำสั่งซื้อ (PO)</span>
+                                </div>
+                              </div>
+
+                              {/* ปลายทาง: ใบสั่งซื้อ (PO Box) */}
+                              <div className="md:col-span-5">
                                 {linkedPos.length > 0 ? (
-                                  <div className="flex flex-wrap gap-1">
+                                  <div className="space-y-2">
                                     {linkedPos.map((p) => (
-                                      <Link
+                                      <div
                                         key={p.id}
-                                        to={`/purchasing/po/${p.id}`}
-                                        className="inline-flex items-center gap-1 rounded bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 px-1.5 py-0.5 text-xs font-bold hover:bg-emerald-200 dark:hover:bg-emerald-900"
-                                        title={`สั่งซื้อเมื่อ: ${formatThaiDate(p.order_date)}`}
+                                        className="rounded-xl border border-emerald-200 dark:border-emerald-900/60 bg-emerald-50/50 dark:bg-emerald-950/20 p-3.5 space-y-2"
                                       >
-                                        <span>{p.po_no}</span>
-                                        <span className="text-[10px] font-normal text-emerald-700 dark:text-emerald-400">({formatThaiDate(p.order_date)})</span>
-                                      </Link>
+                                        <div className="flex items-center justify-between">
+                                          <div className="flex items-center gap-2">
+                                            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 font-black text-xs">
+                                              PO
+                                            </span>
+                                            <Link
+                                              to={`/purchasing/po/${p.id}`}
+                                              className="font-mono font-bold text-sm text-emerald-800 dark:text-emerald-400 hover:underline"
+                                            >
+                                              {p.po_no}
+                                            </Link>
+                                          </div>
+                                          <div className="text-right">
+                                            <span className="font-mono font-black text-sm text-emerald-900 dark:text-emerald-300">
+                                              ฿{baht(p.total_amount)} บ.
+                                            </span>
+                                          </div>
+                                        </div>
+
+                                        <div className="flex flex-wrap items-center justify-between gap-1 text-[11px] pt-1 border-t border-emerald-200/60 dark:border-emerald-900/40">
+                                          <span className="text-steel-600 dark:text-slate-300 font-semibold truncate max-w-[180px]">
+                                            🏪 {p.custom_vendor_name || p.vendors?.vendor_name || 'ไม่ระบุผู้ขาย'}
+                                          </span>
+                                          <div className="flex items-center gap-1.5">
+                                            <span className="text-steel-400 dark:text-slate-500">
+                                              {formatThaiDate(p.order_date)}
+                                            </span>
+                                            <Link
+                                              to={`/purchasing/po/${p.id}`}
+                                              className="inline-flex items-center gap-0.5 text-emerald-700 dark:text-emerald-400 font-bold hover:underline"
+                                            >
+                                              <span>เปิดดู</span>
+                                              <ExternalLink className="h-3 w-3" />
+                                            </Link>
+                                          </div>
+                                        </div>
+                                      </div>
                                     ))}
                                   </div>
                                 ) : (
-                                  <span className="text-steel-400 dark:text-slate-500">ยังไม่ออก PO</span>
+                                  <div className="rounded-xl border border-dashed border-steel-300 dark:border-slate-700 bg-steel-50/50 dark:bg-slate-800/40 p-4 text-center space-y-2">
+                                    <div className="text-xs text-steel-500 dark:text-slate-400 font-semibold">
+                                      ⏳ รายการนี้ยังไม่ได้สร้างใบสั่งซื้อ (PO)
+                                    </div>
+                                    {canCreate && (
+                                      <Link
+                                        to={`/purchasing/po/new?pr=${r.id}`}
+                                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-steel-900 dark:bg-amber-500 hover:bg-steel-800 text-hivis dark:text-slate-950 font-bold text-xs shadow-xs transition"
+                                      >
+                                        <Plus className="h-3.5 w-3.5" />
+                                        <span>+ ออกใบสั่งซื้อจาก PR นี้</span>
+                                      </Link>
+                                    )}
+                                  </div>
                                 )}
-                              </td>
-                              <td className="py-2.5 px-3 text-right font-bold text-ink dark:text-slate-100">
-                                {linkedTotal > 0 ? `${baht(linkedTotal)} ฿` : '-'}
-                              </td>
-                            </tr>
-                          )
-                        })
-                      )}
-                    </tbody>
-                  </table>
-                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })
+                    )}
+                  </div>
+                ) : (
+                  /* 2. มุมมองตารางรายงาน (Table View) */
+                  <div className="overflow-x-auto rounded-xl border border-steel-200 dark:border-slate-800">
+                    <table className="w-full text-left text-xs min-w-[850px] divide-y divide-steel-200 dark:divide-slate-800">
+                      <thead className="bg-steel-50 dark:bg-slate-800 text-steel-700 dark:text-slate-200 font-bold uppercase text-[11px]">
+                        <tr>
+                          <th className="py-3 px-3.5">ใบขอซื้อ (PR) / วันที่</th>
+                          <th className="py-3 px-3.5">โครงการ / ลูกค้า</th>
+                          <th className="py-3 px-3.5 text-center">สถานะ PR</th>
+                          <th className="py-3 px-3.5">ใบสั่งซื้อที่ออก (PO)</th>
+                          <th className="py-3 px-3.5 text-right">ยอดรวม PO</th>
+                          <th className="py-3 px-3.5 text-center">การจัดการ</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-steel-100 dark:divide-slate-800/60 bg-white dark:bg-slate-900">
+                        {filteredPipelinePrs.length === 0 ? (
+                          <tr>
+                            <td colSpan={6} className="py-12 text-center text-steel-400 dark:text-slate-500">
+                              ไม่พบข้อมูลวงจรเอกสารตามเงื่อนไขหรือช่วงวันที่ที่ค้นหา
+                            </td>
+                          </tr>
+                        ) : (
+                          paginatedPipeline.map((r) => {
+                            const linkedPos = poByPrId[r.id] || []
+                            const linkedTotal = linkedPos.reduce((s, p) => s + Number(p.total_amount || 0), 0)
+                            return (
+                              <tr key={r.id} className="hover:bg-steel-50/70 dark:hover:bg-slate-800/50 transition">
+                                <td className="py-3 px-3.5 align-top">
+                                  <Link to={`/purchasing/pr/${r.id}`} className="font-bold text-sky-700 dark:text-sky-400 hover:underline flex items-center gap-1">
+                                    <span>📋</span>
+                                    <span>{r.pr_no}</span>
+                                  </Link>
+                                  <div className="text-[11px] text-steel-500 dark:text-slate-400 font-mono mt-0.5">
+                                    วันที่ขอ: {formatThaiDate(r.request_date)}
+                                  </div>
+                                </td>
+                                <td className="py-3 px-3.5 align-top">
+                                  <div className="font-bold text-steel-900 dark:text-slate-100">
+                                    {r.projects?.project_code || 'ของกลาง'}
+                                  </div>
+                                  <div className="text-[11px] text-steel-500 dark:text-slate-400 line-clamp-1">
+                                    {r.projects?.project_name || 'สต็อกส่วนกลางบริษัท'}
+                                  </div>
+                                </td>
+                                <td className="py-3 px-3.5 align-top text-center">
+                                  <StatusBadge status={r.status} />
+                                </td>
+                                <td className="py-3 px-3.5 align-top">
+                                  {linkedPos.length > 0 ? (
+                                    <div className="flex flex-wrap gap-1.5">
+                                      {linkedPos.map((p) => (
+                                        <Link
+                                          key={p.id}
+                                          to={`/purchasing/po/${p.id}`}
+                                          className="inline-flex items-center gap-1 rounded-lg bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 px-2 py-0.5 text-xs font-bold hover:bg-emerald-200 dark:hover:bg-emerald-900 transition"
+                                          title={`สั่งซื้อเมื่อ: ${formatThaiDate(p.order_date)}`}
+                                        >
+                                          <span>🛒 {p.po_no}</span>
+                                          <span className="text-[10px] font-normal text-emerald-700 dark:text-emerald-400">({formatThaiDate(p.order_date)})</span>
+                                        </Link>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1 text-steel-400 dark:text-slate-500 text-xs italic">
+                                      <span>⏳ ยังไม่ออก PO</span>
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="py-3 px-3.5 align-top text-right font-mono font-bold text-ink dark:text-slate-100">
+                                  {linkedTotal > 0 ? `฿${baht(linkedTotal)} บ.` : '-'}
+                                </td>
+                                <td className="py-3 px-3.5 align-top text-center whitespace-nowrap">
+                                  <div className="flex items-center justify-center gap-1.5">
+                                    <Link
+                                      to={`/purchasing/pr/${r.id}`}
+                                      className="px-2 py-1 rounded-lg border border-steel-300 dark:border-slate-700 hover:bg-steel-50 dark:hover:bg-slate-800 text-xs font-semibold text-steel-700 dark:text-slate-200 transition"
+                                    >
+                                      ดู PR
+                                    </Link>
+                                    {linkedPos.length > 0 && (
+                                      <Link
+                                        to={`/purchasing/po/${linkedPos[0].id}`}
+                                        className="px-2 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-xs font-bold text-white transition shadow-2xs"
+                                      >
+                                        ดู PO
+                                      </Link>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            )
+                          })
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
 
                 {/* แถบเปลี่ยนหน้า (Pipeline Pagination) */}
                 {filteredPipelinePrs.length > 0 && (
@@ -2117,6 +2581,230 @@ export default function PurchasingHub() {
           item={selectedUsageItem}
           onClose={() => setSelectedUsageItem(null)}
         />
+      )}
+
+      {/* Universal Floating Dropdown (Never clipped by table, auto-flips up/down, compact) */}
+      {activeDropdown && (
+        <div
+          style={{
+            position: 'fixed',
+            right: `${activeDropdown.right}px`,
+            ...(activeDropdown.openUpward
+              ? { bottom: `${window.innerHeight - activeDropdown.top}px` }
+              : { top: `${activeDropdown.top}px` }),
+            zIndex: 9999,
+          }}
+          onClick={(e) => e.stopPropagation()}
+          className="w-56 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl p-1.5 animate-in fade-in zoom-in-95 duration-100 text-xs"
+        >
+          {activeDropdown.type === 'po' && (() => {
+            const po = activeDropdown.item
+            const isPaid = po.payment_status === 'ชำระครบแล้ว' || (Number(po.remaining_amount) <= 0.05 && Number(po.deposit_paid_amount) > 0)
+
+            return (
+              <div className="space-y-1">
+                {/* Header */}
+                <div className="px-2.5 py-1.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                  <span className="font-bold text-slate-800 dark:text-slate-200 font-mono">{po.po_no}</span>
+                  <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">฿{baht(po.total_amount)}</span>
+                </div>
+
+                {/* Section 1: Documents & Print */}
+                <div className="py-0.5">
+                  <Link
+                    to={`/purchasing/po/${po.id}`}
+                    onClick={() => setActiveDropdown(null)}
+                    className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                  >
+                    <Eye className="h-3.5 w-3.5 text-steel-500 dark:text-slate-400" />
+                    <span>ดูรายละเอียด</span>
+                  </Link>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveDropdown(null)
+                      setSelectedPoForPrint(po)
+                    }}
+                    className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer text-left"
+                  >
+                    <Printer className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                    <span>พิมพ์ใบสั่งซื้อ (A4)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveDropdown(null)
+                      setSelectedPoForEnvelope(po)
+                    }}
+                    className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer text-left"
+                  >
+                    <Mail className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                    <span>พิมพ์หน้าจ่าซอง</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveDropdown(null)
+                      setSelectedPoForShare(po)
+                    }}
+                    className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer text-left"
+                  >
+                    <Share2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                    <span>แชร์ใบสั่งซื้อ (LINE)</span>
+                  </button>
+                </div>
+
+                {/* Section 2: Actions */}
+                <div className="border-t border-slate-100 dark:border-slate-800 pt-1">
+                  {po.status !== 'cancelled' && !isPaid && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveDropdown(null)
+                        setPaymentTargetPo(po)
+                      }}
+                      className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-sky-800 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/40 hover:bg-sky-100 dark:hover:bg-sky-900/60 font-semibold transition cursor-pointer text-left"
+                    >
+                      <div className="flex items-center gap-2">
+                        <DollarSign className="h-3.5 w-3.5 text-sky-600 dark:text-sky-400" />
+                        <span>จ่ายชำระเงิน</span>
+                      </div>
+                      <span className="font-mono text-[10px]">฿{baht(po.net_amount || po.total_amount)}</span>
+                    </button>
+                  )}
+
+                  {canCreate && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveDropdown(null)
+                        navigate(`/purchasing/po/new?duplicate_from=${po.id}`)
+                      }}
+                      className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer text-left"
+                    >
+                      <Copy className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
+                      <span>สร้างซ้ำ (Duplicate PO)</span>
+                    </button>
+                  )}
+
+                  {canCreate && po.status !== 'cancelled' && (
+                    <Link
+                      to={`/purchasing/po/${po.id}/edit`}
+                      onClick={() => setActiveDropdown(null)}
+                      className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                    >
+                      <Edit3 className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                      <span>แก้ไขใบสั่งซื้อ</span>
+                    </Link>
+                  )}
+
+                  {canCreate && po.status !== 'cancelled' && po.payment_status !== 'ชำระครบแล้ว' && po.status !== 'received' && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveDropdown(null)
+                        setPoToCancel(po)
+                        setCancelListReason('')
+                      }}
+                      className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-rose-700 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition cursor-pointer text-left"
+                    >
+                      <XCircle className="h-3.5 w-3.5 text-rose-600" />
+                      <span>ยกเลิกใบสั่งซื้อ</span>
+                    </button>
+                  )}
+
+                  {canCreate && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveDropdown(null)
+                        handleDeletePo(po)
+                      }}
+                      className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-slate-500 hover:text-rose-700 dark:hover:text-rose-400 hover:bg-rose-50/50 dark:hover:bg-rose-950/20 transition cursor-pointer text-left"
+                    >
+                      <Trash2 className="h-3.5 w-3.5 text-slate-400 hover:text-rose-600" />
+                      <span>ลบใบสั่งซื้อนี้</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            )
+          })()}
+
+          {activeDropdown.type === 'pr' && (() => {
+            const pr = activeDropdown.item
+            const linkedPos = poByPrId[pr.id] || []
+
+            return (
+              <div className="space-y-1">
+                {/* Header */}
+                <div className="px-2.5 py-1.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                  <span className="font-bold text-slate-800 dark:text-slate-200 font-mono">{pr.pr_no}</span>
+                  <span className="text-slate-500 font-normal text-[11px]">{pr.purchase_requisition_items?.length || 0} รายการ</span>
+                </div>
+
+                <div className="py-0.5">
+                  <Link
+                    to={`/purchasing/pr/${pr.id}`}
+                    onClick={() => setActiveDropdown(null)}
+                    className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                  >
+                    <Eye className="h-3.5 w-3.5 text-steel-500 dark:text-slate-400" />
+                    <span>ดูรายละเอียด</span>
+                  </Link>
+
+                  {pr.status === 'pending' && canCreate && (
+                    <Link
+                      to={`/purchasing/po/new?pr=${pr.id}`}
+                      onClick={() => setActiveDropdown(null)}
+                      className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-emerald-800 dark:text-emerald-300 bg-emerald-50/80 dark:bg-emerald-950/40 hover:bg-emerald-100 font-semibold transition"
+                    >
+                      <Plus className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                      <span>ออกใบสั่งซื้อ (PO)</span>
+                    </Link>
+                  )}
+
+                  <Link
+                    to={`/purchasing/pr/${pr.id}?mode=paper`}
+                    onClick={() => setActiveDropdown(null)}
+                    className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                  >
+                    <Printer className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                    <span>พิมพ์ใบขอซื้อ (A4)</span>
+                  </Link>
+
+                  {canCreate && linkedPos.length === 0 && (
+                    <Link
+                      to={`/purchasing/pr/${pr.id}/edit`}
+                      onClick={() => setActiveDropdown(null)}
+                      className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                    >
+                      <Edit3 className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                      <span>แก้ไขใบขอซื้อ</span>
+                    </Link>
+                  )}
+
+                  {canCreate && linkedPos.length === 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveDropdown(null)
+                        handleDeletePr(pr)
+                      }}
+                      className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-rose-700 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition cursor-pointer text-left border-t border-slate-100 dark:border-slate-800 mt-1 pt-1"
+                    >
+                      <Trash2 className="h-3.5 w-3.5 text-rose-600" />
+                      <span>ลบใบขอซื้อนี้</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            )
+          })()}
+        </div>
       )}
 
       {/* โมดัล 6: ยืนยันยกเลิกใบสั่งซื้อ (Cancel PO Modal) */}
