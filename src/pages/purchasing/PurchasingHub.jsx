@@ -657,6 +657,7 @@ export default function PurchasingHub() {
 
       const groupedList = Array.from(groupMap.values()).map((it) => ({
         ...it,
+        grn_list: it.grn_list || [],
         grn_no: it.grn_list.length > 1
           ? `${it.grn_list.join(', ')} (${it.grn_list.length} รอบ)`
           : it.grn_list[0] || it.grn_no,
