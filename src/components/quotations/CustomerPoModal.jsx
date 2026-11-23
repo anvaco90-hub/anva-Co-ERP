@@ -75,7 +75,7 @@ export default function CustomerPoModal({ quotation, onClose, onSuccess }) {
         {/* Header */}
         <div className="flex items-center justify-between border-b border-steel-200 bg-emerald-900 px-5 py-4 text-white">
           <div className="flex items-center gap-2">
-            <span className="text-xl">✍️</span>
+            <span className="text-xl">️</span>
             <div>
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
                 <span>บันทึกการเซ็น PO ของลูกค้า</span>
@@ -83,7 +83,7 @@ export default function CustomerPoModal({ quotation, onClose, onSuccess }) {
                   {quotation.quotation_no}
                 </span>
               </h3>
-              <p className="text-[11px] text-emerald-200">เอกสารขาย ➔ ลูกค้าเซ็นอนุมัติ PO ➔ ส่งต่อฝ่ายจัดซื้อสั่งของ</p>
+              <p className="text-[11px] text-emerald-200">เอกสารขาย  ลูกค้าเซ็นอนุมัติ PO  ส่งต่อฝ่ายจัดซื้อสั่งของ</p>
             </div>
           </div>
           <button
@@ -100,7 +100,7 @@ export default function CustomerPoModal({ quotation, onClose, onSuccess }) {
           
           <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-3 text-xs text-emerald-900 space-y-1">
             <div className="font-bold flex items-center gap-1.5">
-              <span>🏢 ลูกค้า:</span>
+              <span>ลูกค้า:</span>
               <span>{quotation.customer_name}</span>
             </div>
             <div className="text-[11px] text-emerald-800">

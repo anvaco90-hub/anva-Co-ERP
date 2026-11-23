@@ -49,18 +49,18 @@ import { uploadItemImage } from '../../lib/store'
 function getMaterialCategory(itemName = '') {
   const name = itemName.toLowerCase()
   if (name.includes('แผง') || name.includes('solar') || name.includes('โซลาร์') || name.includes('pv')) {
-    return { label: '☀️ โซลาร์เซลล์ & พลังงานแสงอาทิตย์', color: 'bg-amber-100 text-amber-900 border-amber-300', icon: '☀️' }
+    return { label: '️ โซลาร์เซลล์ & พลังงานแสงอาทิตย์', color: 'bg-amber-100 text-amber-900 border-amber-300', icon: '️' }
   }
   if (name.includes('inverter') || name.includes('อินเวอร์เตอร์') || name.includes('แบต') || name.includes('สายไฟ') || name.includes('เบรกเกอร์') || name.includes('ตู้')) {
-    return { label: '⚡ ระบบไฟฟ้า & อินเวอร์เตอร์', color: 'bg-sky-100 text-sky-900 border-sky-300', icon: '⚡' }
+    return { label: 'ระบบไฟฟ้า & อินเวอร์เตอร์', color: 'bg-sky-100 text-sky-900 border-sky-300', icon: '' }
   }
   if (name.includes('กล่อง') || name.includes('เครื่องมือ') || name.includes('สว่าน') || name.includes('ประแจ') || name.includes('คีม') || name.includes('deli') || name.includes('bosch')) {
-    return { label: '🔧 เครื่องมือช่าง & อุปกรณ์ติดตั้ง', color: 'bg-emerald-100 text-emerald-900 border-emerald-300', icon: '🔧' }
+    return { label: ' เครื่องมือช่าง & อุปกรณ์ติดตั้ง', color: 'bg-emerald-100 text-emerald-900 border-emerald-300', icon: '' }
   }
   if (name.includes('เหล็ก') || name.includes('ปูน') || name.includes('ท่อ') || name.includes('ราง') || name.includes('mounting')) {
-    return { label: '🏗️ โครงสร้าง Mounting & ฮาร์ดแวร์', color: 'bg-purple-100 text-purple-900 border-purple-300', icon: '🏗️' }
+    return { label: 'โครงสร้าง Mounting & ฮาร์ดแวร์', color: 'bg-purple-100 text-purple-900 border-purple-300', icon: '' }
   }
-  return { label: '📦 พัสดุและวัสดุงานวิศวกรรม', color: 'bg-slate-100 text-slate-800 border-slate-300', icon: '📦' }
+  return { label: 'พัสดุและวัสดุงานวิศวกรรม', color: 'bg-slate-100 text-slate-800 border-slate-300', icon: '' }
 }
 
 export function thaiBahtText(num) {
@@ -136,8 +136,8 @@ export default function PODetail() {
     }
   }
 
-  // สลับมุมมองระหว่าง Web Portal กับ Paper A4 และ รูปแบบการแสดงสินค้า (Cards vs Table)
-  const [viewStyle, setViewStyle] = useState('portal') // 'portal' | 'paper'
+  // มุมมองมาตรฐาน A4 Paper Sheet (รูปแบบกระดาษพิมพ์ขนาดมาตรฐาน)
+  const [viewStyle, setViewStyle] = useState('paper')
   const [itemsLayout, setItemsLayout] = useState('cards') // 'cards' (Thai Watsadu style) | 'table'
   const [activeTab, setActiveTab] = useState('items') // 'items' | 'receiving' | 'payments' | 'lifecycle' | 'audit'
 
@@ -525,34 +525,8 @@ export default function PODetail() {
             <StatusBadge status={po.status} />
           </div>
 
-          {/* ขวา: สลับมุมมอง + ปุ่มหลัก (Primary Action) + พิมพ์ PDF + เมนูเพิ่มเติม (...) */}
+          {/* ขวา: ปุ่มหลัก (Primary Action) + พิมพ์ PDF + เมนูเพิ่มเติม (...) */}
           <div className="flex flex-wrap items-center gap-2">
-            {/* View Segment Switcher */}
-            <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-xl border border-slate-200 dark:border-slate-700">
-              <button
-                type="button"
-                onClick={() => setViewStyle('portal')}
-                className={`px-2.5 py-1 text-xs font-bold rounded-lg transition cursor-pointer flex items-center gap-1 ${
-                  viewStyle === 'portal'
-                    ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-2xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
-                }`}
-              >
-                <span>🌐 เว็บ</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewStyle('paper')}
-                className={`px-2.5 py-1 text-xs font-bold rounded-lg transition cursor-pointer flex items-center gap-1 ${
-                  viewStyle === 'paper'
-                    ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-2xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
-                }`}
-              >
-                <span>📄 A4</span>
-              </button>
-            </div>
-
             {/* Primary Action Button เด่น 1 อันตามสถานะ */}
             {isPaidInFull ? (
               <span className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-300 dark:border-emerald-700 px-3 py-1.5 text-xs font-bold text-emerald-800 dark:text-emerald-300">
@@ -566,7 +540,6 @@ export default function PODetail() {
                 className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm shadow-emerald-600/30 transition cursor-pointer active:scale-95"
                 title={`คลิกเพื่อจ่ายชำระเงินตามยอดสั่งซื้อ ฿${baht(grandTotalVal)} บ.`}
               >
-                <span>💸</span>
                 <span>จ่ายชำระเงิน · ฿{baht(grandTotalVal)} บ.</span>
               </button>
             ) : null}
@@ -574,11 +547,11 @@ export default function PODetail() {
             {/* Print PDF Button */}
             <button
               type="button"
-              onClick={() => setShowPoPdf(true)}
-              className="inline-flex items-center gap-1 rounded-xl bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 text-white px-3 py-1.5 text-xs font-bold shadow-2xs transition cursor-pointer"
+              onClick={() => window.print()}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 text-white px-3.5 py-1.5 text-xs font-bold shadow-2xs transition cursor-pointer"
             >
               <Printer className="h-3.5 w-3.5" />
-              <span>พิมพ์ PDF</span>
+              <span>พิมพ์ PDF (A4)</span>
             </button>
 
             {/* Dropdown เมนูเพิ่มเติม (...) */}
@@ -669,12 +642,12 @@ export default function PODetail() {
 
         {error && (
           <div className="p-3.5 bg-rose-50 border border-rose-200 text-rose-800 rounded-2xl text-xs font-semibold shadow-xs">
-            ⚠️ {error}
+            {error}
           </div>
         )}
         {done && (
           <div className="p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl text-xs font-semibold shadow-xs">
-            ✅ {done}
+            {done}
           </div>
         )}
 
@@ -772,7 +745,7 @@ export default function PODetail() {
             <div className="rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs space-y-4">
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
                 <div className="flex items-center gap-2">
-                  <span className="text-lg">🔄</span>
+                  <span className="text-lg"></span>
                   <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-slate-100">
                     ลำดับขั้นตอนวงจรจัดซื้อ (Procurement Lifecycle: รับของก่อนจ่ายเงิน)
                   </h3>
@@ -787,7 +760,7 @@ export default function PODetail() {
                 {/* ขั้นที่ 1: ออกใบสั่งซื้อ */}
                 <div className="flex items-start gap-3 p-3.5 rounded-xl border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/50 dark:bg-emerald-950/20">
                   <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white text-xs font-black">
-                    ✓
+                    
                   </div>
                   <div className="space-y-0.5 min-w-0">
                     <div className="text-xs font-bold text-emerald-950 dark:text-emerald-300">1. ออกใบสั่งซื้อ (PO)</div>
@@ -811,7 +784,7 @@ export default function PODetail() {
                       ? 'bg-emerald-600 text-white'
                       : 'bg-sky-600 text-white animate-pulse'
                   }`}>
-                    {isFullyReceived ? '✓' : '2'}
+                    {isFullyReceived ? '' : '2'}
                   </div>
                   <div className="space-y-0.5 min-w-0">
                     <div className="text-xs font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
@@ -819,11 +792,11 @@ export default function PODetail() {
                     </div>
                     <div className="text-[11px] font-semibold">
                       {isFullyReceived ? (
-                        <span className="text-emerald-700 dark:text-emerald-300 font-bold">✅ ตรวจรับเข้าสโตร์ครบแล้ว</span>
+                        <span className="text-emerald-700 dark:text-emerald-300 font-bold">ตรวจรับเข้าสโตร์ครบแล้ว</span>
                       ) : po.status === 'partial' ? (
-                        <span className="text-amber-700 dark:text-amber-300 font-bold">⚡ ทยอยรับเข้าบางส่วนแล้ว</span>
+                        <span className="text-amber-700 dark:text-amber-300 font-bold">ทยอยรับเข้าบางส่วนแล้ว</span>
                       ) : (
-                        <span className="text-sky-700 dark:text-sky-300 font-bold">🚚 รอนำส่งสินค้าเข้าสโตร์</span>
+                        <span className="text-sky-700 dark:text-sky-300 font-bold"> รอนำส่งสินค้าเข้าสโตร์</span>
                       )}
                     </div>
                     <div className="text-[10px] text-slate-500 dark:text-slate-400">
@@ -847,7 +820,7 @@ export default function PODetail() {
                       ? 'bg-amber-500 text-slate-950 font-black animate-bounce'
                       : 'bg-slate-300 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
                   }`}>
-                    {isPaidInFull ? '✓' : '3'}
+                    {isPaidInFull ? '' : '3'}
                   </div>
                   <div className="space-y-0.5 min-w-0">
                     <div className="text-xs font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
@@ -855,7 +828,7 @@ export default function PODetail() {
                     </div>
                     <div className="text-[11px] font-semibold">
                       {isPaidInFull ? (
-                        <span className="text-emerald-700 dark:text-emerald-300 font-bold">✅ ชำระเงินครบถ้วนแล้ว</span>
+                        <span className="text-emerald-700 dark:text-emerald-300 font-bold">ชำระเงินครบถ้วนแล้ว</span>
                       ) : isFullyReceived ? (
                         <span className="text-amber-800 dark:text-amber-300 font-black">⏳ รอฝ่ายบัญชีจ่ายเงิน</span>
                       ) : (
@@ -882,7 +855,7 @@ export default function PODetail() {
                 <div className="flex items-center justify-between gap-2">
                   <div className="font-bold flex items-center gap-2">
                     <span className="text-base">
-                      {po.status === 'cancelled' ? '❌' : isFullyReceived && isPaidInFull ? '🎉' : isFullyReceived ? '📦' : '🚚'}
+                      {po.status === 'cancelled' ? '' : isFullyReceived && isPaidInFull ? '' : isFullyReceived ? '' : ''}
                     </span>
                     <span>
                       {po.status === 'cancelled'
@@ -902,7 +875,7 @@ export default function PODetail() {
                       onClick={() => setShowPaymentModal(true)}
                       className="shrink-0 px-3 py-1 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-lg shadow-xs cursor-pointer text-xs flex items-center gap-1"
                     >
-                      <span>💸</span>
+                      <span></span>
                       <span>จ่ายเงินตอนนี้</span>
                     </button>
                   )}
@@ -933,8 +906,7 @@ export default function PODetail() {
                 <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
                   <div className="flex items-center gap-2">
                     <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 text-base font-bold">
-                      🏢
-                    </span>
+                      </span>
                     <span className="font-bold text-xs text-slate-800 dark:text-slate-200">ผู้ขาย / ร้านค้า</span>
                   </div>
                   <span className="text-[10px] font-mono text-slate-400">VEND</span>
@@ -956,7 +928,7 @@ export default function PODetail() {
                     <div className="flex justify-between items-center text-sky-700 dark:text-sky-400">
                       <span>โทรศัพท์:</span>
                       <a href={`tel:${po.vendors.phone}`} className="font-bold hover:underline">
-                        📞 {po.vendors.phone}
+                         {po.vendors.phone}
                       </a>
                     </div>
                   )}
@@ -968,7 +940,7 @@ export default function PODetail() {
                 <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
                   <div className="flex items-center gap-2">
                     <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-400 text-base font-bold">
-                      📍
+                      
                     </span>
                     <span className="font-bold text-xs text-slate-800 dark:text-slate-200">หน้างาน / โครงการ</span>
                   </div>
@@ -983,7 +955,7 @@ export default function PODetail() {
                   </div>
                   {po.customer_name && (
                     <div className="text-xs text-sky-800 dark:text-sky-400 font-semibold mt-0.5">
-                      👤 ลูกค้า: {po.customer_name}
+                       ลูกค้า: {po.customer_name}
                     </div>
                   )}
                 </div>
@@ -1000,7 +972,7 @@ export default function PODetail() {
                 <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
                   <div className="flex items-center gap-2">
                     <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 text-base font-bold">
-                      💳
+                      
                     </span>
                     <span className="font-bold text-xs text-slate-800 dark:text-slate-200">การเงิน & ภาษี</span>
                   </div>
@@ -1031,7 +1003,7 @@ export default function PODetail() {
                 <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
                   <div className="flex items-center gap-2">
                     <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-400 text-base font-bold">
-                      🚚
+                      
                     </span>
                     <span className="font-bold text-xs text-slate-800 dark:text-slate-200">กำหนดส่ง & รับของ</span>
                   </div>
@@ -1067,8 +1039,7 @@ export default function PODetail() {
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-sky-100 dark:border-sky-900/60 pb-3">
                 <div className="flex items-center gap-2.5">
                   <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-600 text-white font-bold text-base shadow-xs">
-                    📄
-                  </span>
+                    </span>
                   <div>
                     <div className="flex items-center gap-2">
                       <h3 className="text-sm font-black text-slate-900 dark:text-slate-100">
@@ -1133,8 +1104,7 @@ export default function PODetail() {
                       </div>
                     ) : (
                       <div className="h-14 w-14 shrink-0 rounded-lg bg-sky-100 dark:bg-sky-950 flex items-center justify-center text-sky-700 dark:text-sky-300 text-2xl font-bold">
-                        📄
-                      </div>
+                        </div>
                     )}
                     <div className="min-w-0 flex-1">
                       <div className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
@@ -1167,7 +1137,7 @@ export default function PODetail() {
                   </div>
                 ) : (
                   <div className="sm:col-span-2 text-xs text-slate-400 dark:text-slate-500 italic bg-white/50 dark:bg-slate-800/40 p-3 rounded-xl border border-dashed border-slate-200 dark:border-slate-800 flex items-center gap-2">
-                    <span>💡 ยังไม่ได้แนบไฟล์รูปใบเสนอราคา สามารถคลิกปุ่ม "+ แนบรูปใบเสนอราคา" เพื่ออัปโหลดเอกสารต้นฉบับได้</span>
+                    <span>ยังไม่ได้แนบไฟล์รูปใบเสนอราคา สามารถคลิกปุ่ม "+ แนบรูปใบเสนอราคา" เพื่ออัปโหลดเอกสารต้นฉบับได้</span>
                   </div>
                 )}
               </div>
@@ -1178,8 +1148,7 @@ export default function PODetail() {
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
                 <div className="flex items-center gap-2.5">
                   <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-500 text-slate-950 font-black text-xl shadow-sm">
-                    📦
-                  </span>
+                    </span>
                   <div>
                     <h2 className="text-lg font-black text-slate-900 dark:text-slate-100 tracking-tight">
                       รายการพัสดุและอุปกรณ์สั่งซื้อ ({items.length} รายการ)
@@ -1263,7 +1232,7 @@ export default function PODetail() {
                             onClick={() => setSelectedUsageItem({ item_name: i.item_name })}
                             className="text-[11px] font-bold text-sky-700 hover:text-sky-900 hover:underline flex items-center gap-1 cursor-pointer"
                           >
-                            <span>📊 ดูประวัติโครงการที่เคยใช้</span>
+                            <span>ดูประวัติโครงการที่เคยใช้</span>
                           </button>
                         </div>
 
@@ -1300,7 +1269,7 @@ export default function PODetail() {
                                 ? 'bg-amber-50 text-amber-900 border-amber-300'
                                 : 'bg-slate-100 text-slate-600 border-slate-200'
                             }`}>
-                              <span>{isFullyReceivedItem ? '✓ รับครบแล้ว' : Number(i.qty_received) > 0 ? '⚡ รับแล้วบางส่วน' : '⏳ รอรับของ'}</span>
+                              <span>{isFullyReceivedItem ? ' รับครบแล้ว' : Number(i.qty_received) > 0 ? 'รับแล้วบางส่วน' : '⏳ รอรับของ'}</span>
                               <span>({Math.round(Number(i.qty_received) || 0)} / {Math.round(Number(i.quantity) || 0)})</span>
                             </span>
 
@@ -1368,7 +1337,7 @@ export default function PODetail() {
                                 onClick={() => setSelectedUsageItem({ item_name: i.item_name })}
                                 className="text-[11px] text-sky-700 hover:text-sky-900 hover:underline cursor-pointer"
                               >
-                                📊 ดูประวัติโครงการที่เคยใช้
+                                ดูประวัติโครงการที่เคยใช้
                               </button>
                             </td>
                             <td className="py-3 px-3 text-right font-mono font-bold text-slate-900">
@@ -1422,7 +1391,7 @@ export default function PODetail() {
                 <div className="flex flex-wrap items-center justify-between gap-3 bg-gradient-to-r from-sky-50 to-emerald-50 p-4 rounded-2xl border border-sky-200">
                   <div>
                     <div className="font-bold text-xs text-slate-900 flex items-center gap-1.5">
-                      <span>📥</span> ฝ่ายสโตร์และพัสดุ: ตรวจรับของเข้าสโตร์หลัก
+                      <span></span> ฝ่ายสโตร์และพัสดุ: ตรวจรับของเข้าสโตร์หลัก
                     </div>
                     <p className="mt-0.5 text-xs text-slate-600">
                       ระบบจะสร้างใบตรวจรับของ (RI), เพิ่มสต็อกสโตร์ (`inventory_items`) และลงบัญชีสมุดรายวันอัตโนมัติ
@@ -1433,7 +1402,7 @@ export default function PODetail() {
                     onClick={receive}
                     disabled={busy || !anyQty}
                   >
-                    {busy ? 'กำลังบันทึก...' : '📥 ยืนยันรับของเข้าสโตร์ (ออก RI)'}
+                    {busy ? 'กำลังบันทึก...' : 'ยืนยันรับของเข้าสโตร์ (ออก RI)'}
                   </button>
                 </div>
               )}
@@ -1451,7 +1420,7 @@ export default function PODetail() {
                       : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
                   }`}
                 >
-                  <span>💰</span>
+                  <span></span>
                   <span>สรุปยอดเงินและเงื่อนไข</span>
                 </button>
 
@@ -1464,7 +1433,7 @@ export default function PODetail() {
                       : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
                   }`}
                 >
-                  <span>📥</span>
+                  <span></span>
                   <span>ประวัติรับของเข้าสโตร์ ({grns.length})</span>
                 </button>
 
@@ -1477,7 +1446,7 @@ export default function PODetail() {
                       : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
                   }`}
                 >
-                  <span>💸</span>
+                  <span></span>
                   <span>ประวัติจ่ายชำระเงิน ({payments.length})</span>
                 </button>
 
@@ -1490,8 +1459,8 @@ export default function PODetail() {
                       : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
                   }`}
                 >
-                  <span>🔗</span>
-                  <span>วงจรเอกสาร (PR ➔ PO ➔ RI ➔ PV)</span>
+                  <span></span>
+                  <span>วงจรเอกสาร (PR  PO  RI  PV)</span>
                 </button>
 
                 <button
@@ -1503,7 +1472,7 @@ export default function PODetail() {
                       : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
                   }`}
                 >
-                  <span>🛡️</span>
+                  <span>️</span>
                   <span>บันทึกระบบ (Audit)</span>
                 </button>
               </div>
@@ -1514,7 +1483,7 @@ export default function PODetail() {
                   <div className="space-y-3">
                     <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/90 dark:border-slate-700/80 space-y-2">
                       <div className="font-bold text-slate-900 dark:text-slate-100 border-b border-slate-200 dark:border-slate-700 pb-1">
-                        💳 เงื่อนไขและกำหนดการชำระเงิน
+                         เงื่อนไขและกำหนดการชำระเงิน
                       </div>
                       <div className="space-y-1 text-slate-700 dark:text-slate-300">
                         <div>รูปแบบ: <b>{PAYMENT_TYPES.find((p) => p.value === po.payment_type)?.label || 'เครดิตเทอม'}</b></div>
@@ -1529,7 +1498,7 @@ export default function PODetail() {
 
                     {po.notes && (
                       <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/90 dark:border-slate-700/80 space-y-1">
-                        <div className="font-bold text-slate-900 dark:text-slate-100">📝 หมายเหตุเพิ่มเติม</div>
+                        <div className="font-bold text-slate-900 dark:text-slate-100">หมายเหตุเพิ่มเติม</div>
                         <p className="text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{po.notes}</p>
                       </div>
                     )}
@@ -1574,12 +1543,12 @@ export default function PODetail() {
                     grns.map((g) => (
                       <div key={g.id} className="flex flex-wrap items-center justify-between gap-2 p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-xs">
                         <div className="flex items-center gap-3">
-                          <span className="font-mono font-bold text-sm text-sky-800">📄 {g.grn_no}</span>
+                          <span className="font-mono font-bold text-sm text-sky-800">{g.grn_no}</span>
                           <span className="text-slate-600">วันที่รับเข้าสโตร์: <b>{g.received_date}</b></span>
                         </div>
                         <div className="flex items-center gap-2">
                           <span className="text-emerald-700 bg-emerald-100 px-2.5 py-1 rounded-lg text-xs font-bold border border-emerald-300">
-                            ✓ ลงบัญชีสมุดรายวันแล้ว
+                             ลงบัญชีสมุดรายวันแล้ว
                           </span>
                           <Link to="/store?tab=receipts" className="text-sky-700 hover:underline font-semibold">
                             ดูในสโตร์ →
@@ -1639,12 +1608,12 @@ export default function PODetail() {
                 <div className="space-y-3 text-xs">
                   {pr ? (
                     <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
-                      <div className="font-bold text-slate-900">📋 ใบขอซื้อต้นทาง: {pr.pr_no}</div>
+                      <div className="font-bold text-slate-900">ใบขอซื้อต้นทาง: {pr.pr_no}</div>
                       <div className="text-slate-600">ผู้ขอซื้อ: {pr.requester_name || '-'} · วันที่: {pr.request_date}</div>
                     </div>
                   ) : (
                     <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-slate-500">
-                      ⚡ สั่งซื้อตรง (Direct PO) ไม่ผ่านใบขอซื้อ PR
+                      สั่งซื้อตรง (Direct PO) ไม่ผ่านใบขอซื้อ PR
                     </div>
                   )}
                 </div>
@@ -1735,20 +1704,58 @@ export default function PODetail() {
               </tbody>
             </table>
 
-            <div className="flex justify-between items-start pt-2 text-xs">
-              <div className="text-slate-600">
-                <div>เงื่อนไข: {PAYMENT_TYPES.find((p) => p.value === po.payment_type)?.label || 'เครดิตเทอม'}</div>
-                <div className="italic mt-1">({thaiBahtText(grandTotalVal)})</div>
+            <div className="flex flex-wrap justify-between items-start gap-4 pt-3 text-xs border-t border-slate-200">
+              <div className="text-slate-600 max-w-sm space-y-1">
+                <div><b>เงื่อนไขการชำระเงิน:</b> {PAYMENT_TYPES.find((p) => p.value === po.payment_type)?.label || 'เครดิตเทอม 30 วัน'}</div>
+                {po.quotation_no && <div><b>อ้างอิงใบเสนอราคา:</b> <span className="font-mono">{po.quotation_no}</span></div>}
+                {po.pr?.pr_no && <div><b>อ้างอิงใบขอซื้อ (PR):</b> <span className="font-mono">{po.pr.pr_no}</span></div>}
+                <div className="font-medium text-slate-800 italic pt-1">({thaiBahtText(grandTotalVal)})</div>
               </div>
-              <div className="w-64 space-y-1">
-                <div className="flex justify-between">
-                  <span>รวมเป็นเงิน:</span>
+              <div className="w-72 space-y-1.5 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                <div className="flex justify-between text-slate-700">
+                  <span>รวมเป็นเงิน (Subtotal):</span>
                   <span className="font-mono font-bold">{baht(totalAmountVal)} บาท</span>
                 </div>
-                <div className="flex justify-between text-base font-black text-slate-950 border-t border-slate-900 pt-1">
+                {Number(po.vat_amount) > 0 && (
+                  <div className="flex justify-between text-slate-700">
+                    <span>ภาษีมูลค่าเพิ่ม (VAT 7%):</span>
+                    <span className="font-mono">+{baht(po.vat_amount)} บาท</span>
+                  </div>
+                )}
+                {Number(po.wht_amount) > 0 && (
+                  <div className="flex justify-between text-rose-700">
+                    <span>หักภาษี ณ ที่จ่าย (WHT {po.wht_rate}%):</span>
+                    <span className="font-mono">-{baht(po.wht_amount)} บาท</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-base font-black text-slate-950 border-t border-slate-900 pt-1.5 mt-1">
                   <span>ยอดสุทธิทั้งสิ้น:</span>
-                  <span className="font-mono">{baht(grandTotalVal)} บาท</span>
+                  <span className="font-mono text-emerald-800">{baht(grandTotalVal)} บาท</span>
                 </div>
+              </div>
+            </div>
+
+            {/* 4-Column Signature Block for Standard A4 Paper Document */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-8 border-t border-slate-300 text-center text-[11px] text-slate-700">
+              <div className="space-y-6">
+                <div className="font-bold">ผู้สั่งซื้อ (Purchaser)</div>
+                <div className="border-b border-dashed border-slate-400 mx-3"></div>
+                <div>( {po.buyer_name || 'Admin'} )<br /><span className="text-[10px] text-slate-500">เจ้าหน้าที่จัดซื้อ</span></div>
+              </div>
+              <div className="space-y-6">
+                <div className="font-bold">ผู้ตรวจสอบ (Checked By)</div>
+                <div className="border-b border-dashed border-slate-400 mx-3"></div>
+                <div>( ........................................ )<br /><span className="text-[10px] text-slate-500">ผู้จัดการโครงการ / วิศวกร</span></div>
+              </div>
+              <div className="space-y-6">
+                <div className="font-bold">ผู้อนุมัติ (Authorized By)</div>
+                <div className="border-b border-dashed border-slate-400 mx-3"></div>
+                <div>( ........................................ )<br /><span className="text-[10px] text-slate-500">กรรมการผู้มีอำนาจลงนาม</span></div>
+              </div>
+              <div className="space-y-6">
+                <div className="font-bold">ผู้รับคำสั่งซื้อ (Vendor)</div>
+                <div className="border-b border-dashed border-slate-400 mx-3"></div>
+                <div>( ........................................ )<br /><span className="text-[10px] text-slate-500">ลงนามและประทับตรา</span></div>
               </div>
             </div>
           </div>
@@ -1808,8 +1815,7 @@ export default function PODetail() {
             <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
               <div className="flex items-center gap-3 border-b border-slate-200 dark:border-slate-800 pb-3">
                 <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-400 font-bold text-xl shrink-0">
-                  ❌
-                </span>
+                  </span>
                 <div>
                   <h3 className="text-base font-bold text-slate-900 dark:text-white">
                     ยกเลิกใบสั่งซื้อ (Cancel PO)
@@ -1822,7 +1828,7 @@ export default function PODetail() {
 
               <div className="text-xs text-slate-600 dark:text-slate-300 space-y-2 bg-rose-50/70 dark:bg-rose-950/20 p-3 rounded-xl border border-rose-200/80 dark:border-rose-900/50">
                 <p className="font-bold text-rose-900 dark:text-rose-300">
-                  ⚠️ สิ่งที่จะเกิดขึ้นเมื่อกดยกเลิก:
+                  สิ่งที่จะเกิดขึ้นเมื่อกดยกเลิก:
                 </p>
                 <ul className="list-disc list-inside space-y-1 text-[11px] text-slate-600 dark:text-slate-400">
                   <li>สถานะของใบสั่งซื้อนี้จะเปลี่ยนเป็น <strong>"ยกเลิก (Cancelled)"</strong></li>
@@ -1879,7 +1885,7 @@ export default function PODetail() {
                   disabled={cancelling || !cancelReason.trim()}
                   className="px-4 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white shadow-xs transition disabled:opacity-50 cursor-pointer flex items-center gap-1.5"
                 >
-                  <span>{cancelling ? 'กำลังดำเนินการ...' : '❌ ยืนยันยกเลิกใบสั่งซื้อ'}</span>
+                  <span>{cancelling ? 'กำลังดำเนินการ...' : 'ยืนยันยกเลิกใบสั่งซื้อ'}</span>
                 </button>
               </div>
             </div>
@@ -1898,7 +1904,7 @@ export default function PODetail() {
             >
               <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
                 <div className="flex items-center gap-2">
-                  <span className="text-base">📄</span>
+                  <span className="text-base"></span>
                   <span className="font-bold text-sm text-slate-900 dark:text-white">
                     รูปใบเสนอราคาจากผู้ขาย {po.quotation_no ? `(เลขที่ ${po.quotation_no})` : ''}
                   </span>

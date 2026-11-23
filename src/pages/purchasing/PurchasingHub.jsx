@@ -88,14 +88,14 @@ export default function PurchasingHub() {
 
   // ตัวเลือกการเรียงลำดับมาตรฐานสำหรับสายงานจัดซื้อ
   const PURCHASING_SORT_OPTIONS = [
-    { value: 'date_desc', label: '🕒 วันที่ล่าสุด (ใหม่ ➔ เก่า)' },
-    { value: 'date_asc', label: '🕒 วันที่ (เก่า ➔ ใหม่)' },
-    { value: 'code_desc', label: '🔢 เลขที่เอกสาร (มาก ➔ น้อย)' },
-    { value: 'code_asc', label: '🔢 เลขที่เอกสาร (น้อย ➔ มาก)' },
-    { value: 'name_asc', label: '🔤 ชื่อคู่ค้า/โครงการ ก ➔ ฮ (A ➔ Z)' },
-    { value: 'name_desc', label: '🔤 ชื่อคู่ค้า/โครงการ ฮ ➔ ก (Z ➔ A)' },
-    { value: 'amount_desc', label: '💰 มูลค่าสั่งซื้อ (มาก ➔ น้อย)' },
-    { value: 'amount_asc', label: '💰 มูลค่าสั่งซื้อ (น้อย ➔ มาก)' },
+    { value: 'date_desc', label: ' วันที่ล่าสุด (ใหม่  เก่า)' },
+    { value: 'date_asc', label: ' วันที่ (เก่า  ใหม่)' },
+    { value: 'code_desc', label: 'เลขที่เอกสาร (มาก  น้อย)' },
+    { value: 'code_asc', label: 'เลขที่เอกสาร (น้อย  มาก)' },
+    { value: 'name_asc', label: 'ชื่อคู่ค้า/โครงการ ก  ฮ (A  Z)' },
+    { value: 'name_desc', label: 'ชื่อคู่ค้า/โครงการ ฮ  ก (Z  A)' },
+    { value: 'amount_desc', label: 'มูลค่าสั่งซื้อ (มาก  น้อย)' },
+    { value: 'amount_asc', label: 'มูลค่าสั่งซื้อ (น้อย  มาก)' },
   ]
 
   const [showFilterDrawer, setShowFilterDrawer] = useState(false)
@@ -820,7 +820,7 @@ export default function PurchasingHub() {
                   : 'bg-steel-800/80 hover:bg-steel-800 border-steel-700 text-steel-300'
               }`}
             >
-              <div className="text-[11px] font-medium text-steel-400">📋 ใบขอซื้อ (PR)</div>
+              <div className="text-[11px] font-medium text-steel-400">ใบขอซื้อ (PR)</div>
               <div className="mt-0.5 text-xl font-black font-mono text-sky-400">{prs.length}</div>
               <div className="text-[10px] text-steel-400">รายการ</div>
             </div>
@@ -833,7 +833,7 @@ export default function PurchasingHub() {
                   : 'bg-steel-800/80 hover:bg-steel-800 border-steel-700 text-steel-300'
               }`}
             >
-              <div className="text-[11px] font-medium text-steel-400">🛒 ใบสั่งซื้อ (PO)</div>
+              <div className="text-[11px] font-medium text-steel-400">ใบสั่งซื้อ (PO)</div>
               <div className="mt-0.5 text-xl font-black font-mono text-amber-300">{pos.length}</div>
               <div className="text-[10px] text-steel-400">รายการ</div>
             </div>
@@ -846,7 +846,7 @@ export default function PurchasingHub() {
                   : 'bg-steel-800/80 hover:bg-steel-800 border-steel-700 text-steel-300'
               }`}
             >
-              <div className="text-[11px] font-medium text-steel-400">📦 รอตรวจรับ</div>
+              <div className="text-[11px] font-medium text-steel-400">รอตรวจรับ</div>
               <div className="mt-0.5 text-xl font-black font-mono text-rose-400">{pendingReceipts.length}</div>
               <div className="text-[10px] text-steel-400">ค้างรับเข้าสโตร์</div>
             </div>
@@ -859,7 +859,7 @@ export default function PurchasingHub() {
                   : 'bg-steel-800/80 hover:bg-steel-800 border-steel-700 text-steel-300'
               }`}
             >
-              <div className="text-[11px] font-medium text-steel-400">🔄 วงจรเอกสาร</div>
+              <div className="text-[11px] font-medium text-steel-400">วงจรเอกสาร</div>
               <div className="mt-0.5 text-xl font-black font-mono text-emerald-400">{completedPos.length}</div>
               <div className="text-[10px] text-steel-400">ปิดวงจรสมบูรณ์</div>
             </div>
@@ -882,14 +882,14 @@ export default function PurchasingHub() {
                   to="/purchasing/pr/new"
                   className="inline-flex items-center gap-1.5 rounded-xl border border-steel-600 bg-steel-800 hover:bg-steel-700 px-3.5 py-2 text-xs font-bold text-white transition shadow-xs cursor-pointer"
                 >
-                  <span>📋 + ออกใบขอซื้อ (PR)</span>
+                  <span>+ ออกใบขอซื้อ (PR)</span>
                 </Link>
                 <Link
                   to="/purchasing/po/new"
                   className="inline-flex items-center gap-1.5 rounded-xl bg-hivis hover:brightness-110 text-steel-950 px-4 py-2 text-xs font-black shadow-md transition cursor-pointer"
                 >
                   <Plus className="h-4 w-4" />
-                  <span>+ สร้างใบสั่งซื้อ (PO)</span>
+                  <span>สร้างใบสั่งซื้อ (PO)</span>
                 </Link>
               </>
             )}
@@ -904,7 +904,7 @@ export default function PurchasingHub() {
             <div className="flex items-center gap-2">
               <Clock className="h-4 w-4 text-hivis shrink-0" />
               <h3 className="text-xs font-black text-ink uppercase tracking-wider">
-                📊 รายงานติดตามวันครบกำหนดส่งมอบสินค้า (PO Due Date & Delivery Report)
+                รายงานติดตามวันครบกำหนดส่งมอบสินค้า (PO Due Date & Delivery Report)
               </h3>
             </div>
             {filterDueStatus !== 'all' && (
@@ -913,7 +913,7 @@ export default function PurchasingHub() {
                 onClick={() => setFilterDueStatus('all')}
                 className="text-xs text-rose-600 hover:underline font-semibold"
               >
-                ✕ แสดงทุกสถานะกำหนดส่ง
+                 แสดงทุกสถานะกำหนดส่ง
               </button>
             )}
           </div>
@@ -931,7 +931,7 @@ export default function PurchasingHub() {
             >
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-bold text-rose-800 uppercase tracking-wider flex items-center gap-1">
-                  <span>🚨</span> เกินกำหนดส่งมอบ
+                  <span></span> เกินกำหนดส่งมอบ
                 </span>
                 {overduePos.length > 0 && (
                   <span className="h-2 w-2 rounded-full bg-rose-600 animate-ping" />
@@ -973,7 +973,7 @@ export default function PurchasingHub() {
               }`}
             >
               <div className="text-[11px] font-bold text-blue-800 uppercase tracking-wider flex items-center gap-1">
-                <span>🚚</span> รอนำส่งตามกำหนด
+                <span></span> รอนำส่งตามกำหนด
               </div>
               <div className="mt-1 text-2xl font-black text-blue-900">
                 {onTrackPos.length} <span className="text-xs font-normal text-blue-700">ใบ</span>
@@ -992,7 +992,7 @@ export default function PurchasingHub() {
               }`}
             >
               <div className="text-[11px] font-bold text-emerald-800 uppercase tracking-wider flex items-center gap-1">
-                <span>✅</span> ส่งมอบครบแล้ว
+                <span></span> ส่งมอบครบแล้ว
               </div>
               <div className="mt-1 text-2xl font-black text-emerald-900">
                 {completedPos.length} <span className="text-xs font-normal text-emerald-700">ใบ</span>
@@ -1035,16 +1035,16 @@ export default function PurchasingHub() {
         statusOptions={
           activeTab === 'po'
             ? [
-                { value: 'open', label: '🚚 รอรับของ (Open)' },
-                { value: 'partial', label: '⚡ รับบางส่วน (Partial)' },
-                { value: 'received', label: '📦 รับของครบแล้ว' },
-                { value: 'cancelled', label: '❌ ยกเลิก (Cancelled)' },
+                { value: 'open', label: ' รอรับของ (Open)' },
+                { value: 'partial', label: 'รับบางส่วน (Partial)' },
+                { value: 'received', label: 'รับของครบแล้ว' },
+                { value: 'cancelled', label: 'ยกเลิก (Cancelled)' },
               ]
             : activeTab === 'pr'
             ? [
                 { value: 'pending', label: '⏳ รอสั่งซื้อ' },
-                { value: 'ordered', label: '✅ สั่งซื้อแล้ว' },
-                { value: 'cancelled', label: '❌ ยกเลิก' },
+                { value: 'ordered', label: 'สั่งซื้อแล้ว' },
+                { value: 'cancelled', label: 'ยกเลิก' },
               ]
             : []
         }
@@ -1121,10 +1121,10 @@ export default function PurchasingHub() {
                   onChange={(e) => setFilterDueStatus(e.target.value)}
                 >
                   <option value="all">ทุกกำหนดส่ง ({pos.length})</option>
-                  <option value="overdue">🚨 เกินกำหนดส่งมอบ ({overduePos.length})</option>
+                  <option value="overdue">เกินกำหนดส่งมอบ ({overduePos.length})</option>
                   <option value="urgent">⏰ ใกล้ครบกำหนด 7 วัน ({dueSoonPos.length})</option>
-                  <option value="on_track">🚚 รอนำส่งตามกำหนด ({onTrackPos.length})</option>
-                  <option value="completed">✅ ส่งมอบครบแล้ว ({completedPos.length})</option>
+                  <option value="on_track"> รอนำส่งตามกำหนด ({onTrackPos.length})</option>
+                  <option value="completed">ส่งมอบครบแล้ว ({completedPos.length})</option>
                   <option value="no_date">⏳ ไม่ระบุวันส่งมอบ</option>
                 </select>
               </div>
@@ -1227,7 +1227,7 @@ export default function PurchasingHub() {
                               to={`/purchasing/po/${r.id}`}
                               className="font-bold text-sm text-emerald-700 dark:text-emerald-400 hover:underline flex items-center gap-1"
                             >
-                              <span>📄</span>
+                              <span></span>
                               <span>{r.po_no}</span>
                             </Link>
                             <div className="text-[11px] text-steel-500 dark:text-slate-400 mt-0.5">
@@ -1241,34 +1241,34 @@ export default function PurchasingHub() {
                               if (r.status === 'cancelled') {
                                 return (
                                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 dark:bg-rose-950/70 text-rose-800 dark:text-rose-300 border border-rose-300 dark:border-rose-700">
-                                    <span>❌</span> ยกเลิก
+                                    <span></span> ยกเลิก
                                   </span>
                                 )
                               }
                               if (r.status === 'received' && isPaid) {
                                 return (
                                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
-                                    <span>✅</span> รับครบ & จ่ายแล้ว
+                                    <span></span> รับครบ & จ่ายแล้ว
                                   </span>
                                 )
                               }
                               if (r.status === 'received') {
                                 return (
                                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-sky-100 dark:bg-sky-950/70 text-sky-800 dark:text-sky-300 border border-sky-300 dark:border-sky-700">
-                                    <span>📦</span> รับของแล้ว · รอจ่าย
+                                    <span></span> รับของแล้ว · รอจ่าย
                                   </span>
                                 )
                               }
                               if (r.status === 'partial') {
                                 return (
                                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 dark:bg-amber-950/70 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-700">
-                                    <span>⚡</span> รับบางส่วน
+                                    <span></span> รับบางส่วน
                                   </span>
                                 )
                               }
                               return (
                                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-steel-700 dark:text-slate-300 border border-steel-200 dark:border-slate-700">
-                                  <span>🚚</span> รอรับของ
+                                  <span></span> รอรับของ
                                 </span>
                               )
                             })()}
@@ -1292,7 +1292,7 @@ export default function PurchasingHub() {
                               </span>
                               {r.customer_name && (
                                 <div className="text-[11px] text-blue-700 dark:text-sky-300 truncate mt-0.5 flex items-center gap-1">
-                                  <span>👤</span>
+                                  <span></span>
                                   <span>{r.customer_name}</span>
                                 </div>
                               )}
@@ -1334,7 +1334,7 @@ export default function PurchasingHub() {
                                 className="inline-flex items-center gap-1 rounded-lg bg-amber-500 hover:bg-amber-600 px-2.5 py-1 text-xs font-bold text-slate-950 transition shadow-xs cursor-pointer"
                                 title="จ่ายเงิน"
                               >
-                                <span>💸</span>
+                                <span></span>
                                 <span>จ่ายเงิน</span>
                               </button>
                             )}
@@ -1344,7 +1344,7 @@ export default function PurchasingHub() {
                                 className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 px-2 py-1 text-xs font-bold text-white transition shadow-xs"
                                 title="ตรวจรับสินค้าเข้าสโตร์"
                               >
-                                <span>📥</span>
+                                <span></span>
                                 <span>รับของ</span>
                               </Link>
                             )}
@@ -1391,7 +1391,7 @@ export default function PurchasingHub() {
                         {isPoColVisible('vendor') && <th className="py-3 px-3 min-w-[140px]">ผู้ขาย / ร้านค้า</th>}
                         {isPoColVisible('project') && <th className="py-3 px-3 min-w-[140px]">โครงการ / ลูกค้า</th>}
                         {isPoColVisible('amount') && <th className="py-3 px-3 w-28 text-right">ยอดรวม (บาท)</th>}
-                        {isPoColVisible('due_date') && <th className="py-3 px-3 w-32">วันครบกำหนด</th>}
+                        {isPoColVisible('due_date') && <th className="py-3 px-3 w-40 min-w-[140px]">วันครบกำหนด</th>}
                         {isPoColVisible('status') && <th className="py-3 px-3 w-36 text-center">สถานะวงจรเอกสาร</th>}
                         <th className="py-3 px-3.5 w-24 text-right">
                           การจัดการ
@@ -1412,7 +1412,7 @@ export default function PurchasingHub() {
                                   to={`/purchasing/po/${r.id}`}
                                   className="font-bold text-emerald-700 dark:text-emerald-400 hover:underline flex items-center gap-1"
                                 >
-                                  <span>📄</span>
+                                  <span></span>
                                   <span>{r.po_no}</span>
                                 </Link>
                                 <div className="text-[11px] text-steel-500 dark:text-slate-400 mt-0.5">
@@ -1452,7 +1452,7 @@ export default function PurchasingHub() {
                                   </div>
                                   {r.customer_name && (
                                     <div className="text-[11px] leading-relaxed text-blue-700 dark:text-sky-300 truncate max-w-[190px] font-semibold flex items-center gap-1 mt-0.5">
-                                      <span className="shrink-0">👤</span>
+                                      <span className="shrink-0"></span>
                                       <span className="truncate">{r.customer_name}</span>
                                     </div>
                                   )}
@@ -1480,7 +1480,7 @@ export default function PurchasingHub() {
                                 ) : null}
                                 {dueStatus && (
                                   <div className={r.expected_delivery_date ? 'mt-1' : ''}>
-                                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold border ${dueStatus.badgeCls}`}>
+                                    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold border whitespace-nowrap ${dueStatus.badgeCls}`}>
                                       <span>{dueStatus.icon}</span>
                                       <span>{dueStatus.label}</span>
                                     </span>
@@ -1539,7 +1539,7 @@ export default function PurchasingHub() {
                                     className="inline-flex items-center gap-1 rounded-lg bg-amber-500 hover:bg-amber-600 px-2 py-1 text-xs font-bold text-slate-950 transition shadow-xs cursor-pointer"
                                     title={`รับของเข้าคลังแล้ว คลิกเพื่อจ่ายชำระเงินตามยอดสั่งซื้อ ฿${baht(r.net_amount || r.total_amount)} บ.`}
                                   >
-                                    <span>💸</span>
+                                    <span></span>
                                     <span>จ่าย</span>
                                   </button>
                                 ) : ['open', 'partial'].includes(r.status) ? (
@@ -1548,7 +1548,7 @@ export default function PurchasingHub() {
                                     className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 px-2 py-1 text-xs font-bold text-white transition shadow-xs"
                                     title="ตรวจรับสินค้าเข้าสโตร์"
                                   >
-                                    <span>📥</span>
+                                    <span></span>
                                     <span>รับของ</span>
                                   </Link>
                                 ) : (
@@ -1671,7 +1671,7 @@ export default function PurchasingHub() {
                                   to={`/purchasing/pr/${r.id}`}
                                   className="font-bold text-sky-700 dark:text-sky-400 hover:underline flex items-center gap-1"
                                 >
-                                  <span>📋</span>
+                                  <span></span>
                                   <span>{r.pr_no}</span>
                                 </Link>
                                 <div className="text-[11px] text-steel-500 dark:text-slate-400 mt-0.5">
@@ -1692,13 +1692,13 @@ export default function PurchasingHub() {
                                   </div>
                                   {r.customer_name && (
                                     <div className="text-[11px] leading-relaxed text-blue-700 dark:text-sky-300 truncate max-w-[220px] font-semibold flex items-center gap-1 mt-0.5">
-                                      <span className="shrink-0">👤</span>
+                                      <span className="shrink-0"></span>
                                       <span className="truncate">{r.customer_name}</span>
                                     </div>
                                   )}
                                   {r.suggested_vendor && (
                                     <div className="text-[10px] leading-relaxed text-emerald-700 dark:text-emerald-300 truncate max-w-[220px] font-semibold flex items-center gap-1 mt-0.5">
-                                      <span className="shrink-0">🏪</span>
+                                      <span className="shrink-0"></span>
                                       <span className="truncate">แนะนำ: {r.suggested_vendor}</span>
                                     </div>
                                   )}
@@ -1738,7 +1738,7 @@ export default function PurchasingHub() {
                                         className="inline-flex items-center gap-1 rounded-md bg-emerald-50 dark:bg-emerald-950/70 px-2 py-0.5 text-xs font-mono font-bold text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition shadow-2xs"
                                         title={`เปิดดูใบสั่งซื้อ ${p.po_no}`}
                                       >
-                                        <span>📄</span>
+                                        <span></span>
                                         <span>{p.po_no}</span>
                                       </Link>
                                     ))}
@@ -1758,7 +1758,7 @@ export default function PurchasingHub() {
                                     className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 px-2 py-1 text-xs font-bold text-white transition shadow-xs"
                                     title="ออกใบสั่งซื้อ (PO) จากใบขอซื้อนี้"
                                   >
-                                    <span>⚡</span>
+                                    <span></span>
                                     <span>ออก PO</span>
                                   </Link>
                                 ) : (
@@ -1832,7 +1832,7 @@ export default function PurchasingHub() {
                         : 'bg-steel-50 dark:bg-slate-800 text-steel-700 dark:text-slate-300 hover:bg-steel-100 dark:hover:bg-slate-700 border border-steel-200 dark:border-slate-700'
                     }`}
                   >
-                    <span>📜</span>
+                    <span></span>
                     <span>ประวัติพัสดุที่เคยรับเข้ามา (Received Materials History)</span>
                     <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
                       receiptSubTab === 'received_items' ? 'bg-white/25 text-white' : 'bg-steel-200 dark:bg-slate-700 text-steel-700 dark:text-slate-200'
@@ -1880,7 +1880,7 @@ export default function PurchasingHub() {
                         }`}
                         title="รวมรายการตามใบสั่งซื้อและวัสดุ ไม่ให้แสดงแถวซ้ำซ้อน"
                       >
-                        <span>🗂️</span>
+                        <span></span>
                         <span>สรุปตาม PO (ไม่ซ้ำรายการ)</span>
                       </button>
 
@@ -1897,7 +1897,7 @@ export default function PurchasingHub() {
                         }`}
                         title="แสดงแยกตามรอบและเลขที่ใบตรวจรับแต่ละครั้ง (GRN)"
                       >
-                        <span>📑</span>
+                        <span></span>
                         <span>แยกตามรอบตรวจรับ (GRN)</span>
                       </button>
                     </div>
@@ -1921,7 +1921,7 @@ export default function PurchasingHub() {
                           {filteredReceivedMaterials.length} <span className="text-xs font-normal text-steel-500 dark:text-slate-400">รายการ</span>
                         </div>
                       </div>
-                      <span className="text-2xl p-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300">📦</span>
+                      <span className="text-2xl p-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300"></span>
                     </div>
 
                     <div className="p-3.5 rounded-xl bg-white dark:bg-slate-900 border border-steel-200 dark:border-slate-800 shadow-xs flex items-center justify-between">
@@ -1931,7 +1931,7 @@ export default function PurchasingHub() {
                           {totalReceivedQuantity.toLocaleString()} <span className="text-xs font-normal text-steel-500 dark:text-slate-400">หน่วย/ชิ้น</span>
                         </div>
                       </div>
-                      <span className="text-2xl p-2 rounded-lg bg-sky-50 dark:bg-sky-950/50 text-sky-700 dark:text-sky-300">🔢</span>
+                      <span className="text-2xl p-2 rounded-lg bg-sky-50 dark:bg-sky-950/50 text-sky-700 dark:text-sky-300"></span>
                     </div>
 
                     <div className="p-3.5 rounded-xl bg-white dark:bg-slate-900 border border-steel-200 dark:border-slate-800 shadow-xs flex items-center justify-between">
@@ -1941,7 +1941,7 @@ export default function PurchasingHub() {
                           {baht(totalReceivedValue)} <span className="text-xs font-normal text-steel-500 dark:text-slate-400">บาท</span>
                         </div>
                       </div>
-                      <span className="text-2xl p-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300">💰</span>
+                      <span className="text-2xl p-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300"></span>
                     </div>
                   </div>
 
@@ -1967,7 +1967,7 @@ export default function PurchasingHub() {
                         {filteredReceivedMaterials.length === 0 ? (
                           <tr>
                             <td colSpan={11} className="py-12 text-center text-steel-400 dark:text-slate-500">
-                              <span className="text-2xl block mb-1">📦</span>
+                              <span className="text-2xl block mb-1"></span>
                               ไม่พบประวัติการตรวจรับพัสดุตามเงื่อนไขหรือช่วงเวลาที่เลือก
                             </td>
                           </tr>
@@ -1978,11 +1978,11 @@ export default function PurchasingHub() {
                                 {formatThaiDate(m.received_date)}
                               </td>
                               <td className="py-3 px-3.5 font-mono font-bold text-sky-800 dark:text-sky-400 whitespace-nowrap">
-                                <span>📄 {m.grn_no}</span>
+                                <span>{m.grn_no}</span>
                               </td>
                               <td className="py-3 px-3.5 font-mono font-bold text-emerald-700 dark:text-emerald-400 whitespace-nowrap">
                                 <Link to={`/purchasing/po/${m.po_id}`} className="hover:underline flex items-center gap-1">
-                                  <span>🛒</span>
+                                  <span></span>
                                   <span>{m.po_no}</span>
                                 </Link>
                               </td>
@@ -1993,7 +1993,7 @@ export default function PurchasingHub() {
                                   onClick={() => setSelectedUsageItem({ item_name: m.item_name })}
                                   className="text-[11px] text-sky-700 dark:text-sky-400 hover:text-sky-900 dark:hover:text-sky-300 hover:underline font-normal cursor-pointer flex items-center gap-1 mt-0.5"
                                 >
-                                  <span>📊 ดูประวัติโครงการที่เคยใช้</span>
+                                  <span>ดูประวัติโครงการที่เคยใช้</span>
                                 </button>
                               </td>
                               <td className="py-3 px-3 text-right font-mono font-bold text-steel-900 dark:text-slate-100">
@@ -2009,23 +2009,23 @@ export default function PurchasingHub() {
                                 {baht(m.total_value)}
                               </td>
                               <td className="py-3 px-3.5 text-steel-800 dark:text-slate-200">
-                                <div className="truncate max-w-[160px]" title={m.vendor_name}>
+                                <div className="break-words whitespace-normal leading-relaxed max-w-[200px]" title={m.vendor_name}>
                                   {m.vendor_name}
                                 </div>
                               </td>
                               <td className="py-3 px-3.5 text-steel-700 dark:text-slate-300">
-                                <div className="truncate max-w-[160px]" title={m.project_name}>
+                                <div className="break-words whitespace-normal leading-relaxed max-w-[200px]" title={m.project_name}>
                                   {m.project_name}
                                 </div>
                                 {m.customer_name && (
-                                  <div className="text-[11px] leading-relaxed text-sky-800 dark:text-sky-300 truncate">
-                                    👤 {m.customer_name}
+                                  <div className="text-[11px] leading-relaxed text-sky-800 dark:text-sky-300 break-words whitespace-normal mt-0.5">
+                                    {m.customer_name}
                                   </div>
                                 )}
                               </td>
                               <td className="py-3 px-3 text-center whitespace-nowrap">
                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
-                                  <span>✓</span> เข้าคลังแล้ว
+                                  <span></span> เข้าคลังแล้ว
                                 </span>
                               </td>
                             </tr>
@@ -2085,7 +2085,7 @@ export default function PurchasingHub() {
                         {pendingReceipts.length === 0 ? (
                           <tr>
                             <td colSpan={8} className="py-10 text-center text-steel-400 dark:text-slate-500">
-                              ✨ ไม่มีใบสั่งซื้อค้างส่งมอบ หรือไม่พบข้อมูลตามช่วงวันที่ที่เลือก
+                              ไม่มีใบสั่งซื้อค้างส่งมอบ หรือไม่พบข้อมูลตามช่วงวันที่ที่เลือก
                             </td>
                           </tr>
                         ) : (
@@ -2095,24 +2095,24 @@ export default function PurchasingHub() {
                               <tr key={r.id} className="hover:bg-steel-50/70 dark:hover:bg-slate-800/50 transition-colors">
                                 <td className="py-3 px-3.5 font-bold text-emerald-700 dark:text-emerald-400 whitespace-nowrap">
                                   <Link to={`/purchasing/po/${r.id}`} className="hover:underline flex items-center gap-1">
-                                    <span>📄</span>
+                                    <span></span>
                                     <span>{r.po_no}</span>
                                   </Link>
                                   {r.pr?.pr_no && <div className="text-[11px] text-steel-500 dark:text-slate-400 font-normal">จาก {r.pr.pr_no}</div>}
                                 </td>
                                 <td className="py-3 px-3.5 font-semibold text-steel-900 dark:text-slate-100">
-                                  <div className="truncate max-w-[200px]" title={r.custom_vendor_name || r.vendors?.vendor_name}>
+                                  <div className="break-words whitespace-normal leading-relaxed max-w-[220px]" title={r.custom_vendor_name || r.vendors?.vendor_name}>
                                     {r.custom_vendor_name || r.vendors?.vendor_name || '-'}
                                   </div>
                                 </td>
                                 <td className="py-3 px-3.5 text-steel-700 dark:text-slate-300">
-                                  <div className="truncate max-w-[200px]" title={r.custom_project_name || `${r.projects?.project_code || ''} ${r.projects?.project_name || ''}`}>
+                                  <div className="break-words whitespace-normal leading-relaxed max-w-[220px]" title={r.custom_project_name || `${r.projects?.project_code || ''} ${r.projects?.project_name || ''}`}>
                                     <span className="font-semibold text-steel-900 dark:text-slate-100">{r.custom_project_name || r.projects?.project_code || 'ของกลาง'}</span>{' '}
                                     <span className="text-steel-600 dark:text-slate-400">{r.projects?.project_name}</span>
                                   </div>
                                   {r.customer_name && (
-                                    <div className="text-[11px] leading-relaxed text-blue-700 dark:text-sky-300 truncate">
-                                      👤 {r.customer_name}
+                                    <div className="text-[11px] leading-relaxed text-blue-700 dark:text-sky-300 break-words whitespace-normal mt-0.5">
+                                      {r.customer_name}
                                     </div>
                                   )}
                                 </td>
@@ -2138,7 +2138,7 @@ export default function PurchasingHub() {
                                       to={`/purchasing/po/${r.id}`}
                                       className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 transition cursor-pointer"
                                     >
-                                      <span>📥</span>
+                                      <span></span>
                                       <span>ตรวจรับสินค้า</span>
                                     </Link>
                                   ) : (
@@ -2204,12 +2204,12 @@ export default function PurchasingHub() {
                 </div>
               </div>
 
-              {/* ตารางจับคู่ PR ➔ PO และแผนผังการผูกโยงเอกสาร */}
+              {/* ตารางจับคู่ PR  PO และแผนผังการผูกโยงเอกสาร */}
               <div className="rounded-2xl border border-steel-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs space-y-4">
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-steel-100 dark:border-slate-800 pb-3">
                   <div>
                     <h3 className="text-sm font-black text-ink dark:text-slate-100 uppercase tracking-wider flex items-center gap-2">
-                      <span>🔄 แผนผังการผูกโยงเอกสาร (PR ➔ PO Linkage Flow)</span>
+                      <span>แผนผังการผูกโยงเอกสาร (PR  PO Linkage Flow)</span>
                     </h3>
                     <p className="text-xs text-steel-500 dark:text-slate-400 mt-0.5">
                       แสดงความเชื่อมโยงของเอกสารวงจรจัดซื้อ ตั้งแต่ใบขอซื้อ (PR) ไปจนถึงใบสั่งซื้อ (PO) และสถานะการรับของ/จ่ายเงิน
@@ -2267,7 +2267,7 @@ export default function PurchasingHub() {
                             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-steel-100 dark:border-slate-800/80 pb-2.5">
                               <div className="flex items-center gap-2">
                                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-xs font-bold bg-steel-100 dark:bg-slate-800 text-steel-800 dark:text-slate-200 border border-steel-200 dark:border-slate-700">
-                                  <span>🏗️</span>
+                                  <span></span>
                                   <span>{r.projects ? `${r.projects.project_code} · ${r.projects.project_name}` : 'ของกลางบริษัท / สต็อกส่วนกลาง'}</span>
                                 </span>
                                 {r.customer_name && (
@@ -2284,7 +2284,7 @@ export default function PurchasingHub() {
                               </div>
                             </div>
 
-                            {/* Card Flow: PR [ต้นทาง] ──➔ PO [ปลายทาง] */}
+                            {/* Card Flow: PR [ต้นทาง] ── PO [ปลายทาง] */}
                             <div className="grid grid-cols-1 md:grid-cols-11 gap-3 items-center">
                               {/* ต้นทาง: ใบขอซื้อ (PR Box) */}
                               <div className="md:col-span-5 rounded-xl border border-sky-200 dark:border-sky-900/60 bg-sky-50/50 dark:bg-sky-950/20 p-3.5 space-y-2">
@@ -2363,7 +2363,7 @@ export default function PurchasingHub() {
 
                                         <div className="flex flex-wrap items-center justify-between gap-1 text-[11px] pt-1 border-t border-emerald-200/60 dark:border-emerald-900/40">
                                           <span className="text-steel-600 dark:text-slate-300 font-semibold truncate max-w-[180px]">
-                                            🏪 {p.custom_vendor_name || p.vendors?.vendor_name || 'ไม่ระบุผู้ขาย'}
+                                             {p.custom_vendor_name || p.vendors?.vendor_name || 'ไม่ระบุผู้ขาย'}
                                           </span>
                                           <div className="flex items-center gap-1.5">
                                             <span className="text-steel-400 dark:text-slate-500">
@@ -2433,7 +2433,7 @@ export default function PurchasingHub() {
                               <tr key={r.id} className="hover:bg-steel-50/70 dark:hover:bg-slate-800/50 transition">
                                 <td className="py-3 px-3.5 align-top">
                                   <Link to={`/purchasing/pr/${r.id}`} className="font-bold text-sky-700 dark:text-sky-400 hover:underline flex items-center gap-1">
-                                    <span>📋</span>
+                                    <span></span>
                                     <span>{r.pr_no}</span>
                                   </Link>
                                   <div className="text-[11px] text-steel-500 dark:text-slate-400 font-mono mt-0.5">
@@ -2461,7 +2461,7 @@ export default function PurchasingHub() {
                                           className="inline-flex items-center gap-1 rounded-lg bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 px-2 py-0.5 text-xs font-bold hover:bg-emerald-200 dark:hover:bg-emerald-900 transition"
                                           title={`สั่งซื้อเมื่อ: ${formatThaiDate(p.order_date)}`}
                                         >
-                                          <span>🛒 {p.po_no}</span>
+                                          <span>{p.po_no}</span>
                                           <span className="text-[10px] font-normal text-emerald-700 dark:text-emerald-400">({formatThaiDate(p.order_date)})</span>
                                         </Link>
                                       ))}
@@ -2813,8 +2813,7 @@ export default function PurchasingHub() {
           <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
             <div className="flex items-center gap-3 border-b border-slate-200 dark:border-slate-800 pb-3">
               <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-400 font-bold text-xl shrink-0">
-                ❌
-              </span>
+                </span>
               <div>
                 <h3 className="text-base font-bold text-slate-900 dark:text-white">
                   ยกเลิกใบสั่งซื้อ (Cancel PO)
@@ -2827,7 +2826,7 @@ export default function PurchasingHub() {
 
             <div className="text-xs text-slate-600 dark:text-slate-300 space-y-2 bg-rose-50/70 dark:bg-rose-950/20 p-3 rounded-xl border border-rose-200/80 dark:border-rose-900/50">
               <p className="font-bold text-rose-900 dark:text-rose-300">
-                ⚠️ ผลของการยกเลิกใบสั่งซื้อ:
+                ผลของการยกเลิกใบสั่งซื้อ:
               </p>
               <ul className="list-disc list-inside space-y-1 text-[11px] text-slate-600 dark:text-slate-400">
                 <li>สถานะของใบสั่งซื้อจะเปลี่ยนเป็น <strong>"ยกเลิก (Cancelled)"</strong></li>
@@ -2884,7 +2883,7 @@ export default function PurchasingHub() {
                 disabled={cancellingList || !cancelListReason.trim()}
                 className="px-4 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white shadow-xs transition disabled:opacity-50 cursor-pointer flex items-center gap-1.5"
               >
-                <span>{cancellingList ? 'กำลังดำเนินการ...' : '❌ ยืนยันยกเลิกใบสั่งซื้อ'}</span>
+                <span>{cancellingList ? 'กำลังดำเนินการ...' : 'ยืนยันยกเลิกใบสั่งซื้อ'}</span>
               </button>
             </div>
           </div>

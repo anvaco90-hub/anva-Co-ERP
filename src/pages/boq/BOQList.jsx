@@ -118,7 +118,7 @@ export default function BOQList() {
               to="/quotations"
               className="rounded-xl bg-steel-800 hover:bg-steel-700 text-steel-200 border border-steel-600 px-3.5 py-2 text-xs font-bold transition shadow-xs flex items-center gap-1.5"
             >
-              <span>📄 ดูใบเสนอราคา</span>
+              <span>ดูใบเสนอราคา</span>
             </Link>
 
             <Link
@@ -157,7 +157,7 @@ export default function BOQList() {
         <div className="rounded-2xl border border-steel-200 bg-white p-4 shadow-2xs">
           <div className="flex items-center justify-between text-xs text-emerald-800 font-bold uppercase">
             <span>มูลค่าเสนอขายรวมทั้งสิ้น</span>
-            <span className="text-xs">💰</span>
+            <span className="text-xs"></span>
           </div>
           <div className="mt-2 text-2xl font-black font-mono text-emerald-700">
             {baht(totalValue)} <span className="text-xs font-normal text-steel-500">บาท</span>

@@ -45,13 +45,13 @@ const NEW_ITEM = {
 }
 
 const STOCK_SORT_OPTIONS = [
-  { value: 'name_asc', label: '🔤 ชื่อพัสดุ ก ➔ ฮ (A ➔ Z)' },
-  { value: 'name_desc', label: '🔤 ชื่อพัสดุ ฮ ➔ ก (Z ➔ A)' },
-  { value: 'code_asc', label: '🔢 รหัสพัสดุ (น้อย ➔ มาก: 0 ➔ 9)' },
-  { value: 'code_desc', label: '🔢 รหัสพัสดุ (มาก ➔ น้อย: 9 ➔ 0)' },
-  { value: 'qty_desc', label: '📦 จำนวนคงเหลือ (มาก ➔ น้อย)' },
-  { value: 'qty_asc', label: '📦 จำนวนคงเหลือ (น้อย ➔ มาก)' },
-  { value: 'cost_desc', label: '💰 ต้นทุนเฉลี่ย (มาก ➔ น้อย)' },
+  { value: 'name_asc', label: 'ชื่อพัสดุ ก  ฮ (A  Z)' },
+  { value: 'name_desc', label: 'ชื่อพัสดุ ฮ  ก (Z  A)' },
+  { value: 'code_asc', label: 'รหัสพัสดุ (น้อย  มาก: 0  9)' },
+  { value: 'code_desc', label: 'รหัสพัสดุ (มาก  น้อย: 9  0)' },
+  { value: 'qty_desc', label: 'จำนวนคงเหลือ (มาก  น้อย)' },
+  { value: 'qty_asc', label: 'จำนวนคงเหลือ (น้อย  มาก)' },
+  { value: 'cost_desc', label: 'ต้นทุนเฉลี่ย (มาก  น้อย)' },
 ]
 
 const isLow = (item) => {
@@ -427,7 +427,7 @@ export default function ItemsMaster() {
 
   // ล้างข้อมูลจำลองสโตร์ทั้งหมด (Wipe All Mock Store Data)
   async function handleClearAllMockItems() {
-    if (!confirm('⚠️ ยืนยันลบข้อมูลวัสดุจำลองทั้งหมดในสโตร์หรือไม่?\n\nการกระทำนี้จะล้างรายการพัสดุจำลองและประวัติสต็อกทดสอบทั้งหมด เพื่อให้คลังสินค้าว่างเปล่า สะอาด 100% พร้อมสำหรับการป้อนข้อมูลจริงของบริษัท')) {
+    if (!confirm('ยืนยันลบข้อมูลวัสดุจำลองทั้งหมดในสโตร์หรือไม่?\n\nการกระทำนี้จะล้างรายการพัสดุจำลองและประวัติสต็อกทดสอบทั้งหมด เพื่อให้คลังสินค้าว่างเปล่า สะอาด 100% พร้อมสำหรับการป้อนข้อมูลจริงของบริษัท')) {
       return
     }
 
@@ -784,7 +784,7 @@ export default function ItemsMaster() {
                     </option>
                   ))}
                   <option value="__ADD_NEW__" className="font-bold text-amber-600 bg-amber-50">
-                    ➕ + เพิ่มหมวดหมู่ใหม่...
+                     + เพิ่มหมวดหมู่ใหม่...
                   </option>
                 </select>
                 <FieldError error={errors.category_id} />
@@ -964,7 +964,7 @@ export default function ItemsMaster() {
               onChange={(e) => setSelectedCatFilter(e.target.value)}
               className="h-8 rounded-lg border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 text-xs font-bold text-steel-800 dark:text-slate-200 focus:outline-none focus:border-amber-500 cursor-pointer shadow-2xs"
             >
-              <option value="all">📂 หมวดหมู่ทั้งหมด ({items.length} รายการ)</option>
+              <option value="all"> หมวดหมู่ทั้งหมด ({items.length} รายการ)</option>
               {cats.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name} ({items.filter((it) => it.category_id === c.id).length})
@@ -1046,7 +1046,7 @@ export default function ItemsMaster() {
                 onClick={() => setSearch('')}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-steel-400 hover:text-steel-600 dark:hover:text-slate-200"
               >
-                ✕
+                
               </button>
             )}
           </div>
@@ -1073,7 +1073,7 @@ export default function ItemsMaster() {
                 : 'bg-white dark:bg-slate-900 text-steel-700 dark:text-slate-200 border-steel-300 dark:border-slate-700 hover:bg-steel-50 dark:hover:bg-slate-800'
             }`}
           >
-            <span>⚠️</span>
+            <span></span>
             <span>ใกล้หมด ({lowCount})</span>
           </button>
 
@@ -1090,7 +1090,7 @@ export default function ItemsMaster() {
                 : 'bg-white dark:bg-slate-900 text-steel-700 dark:text-slate-200 border-steel-300 dark:border-slate-700 hover:bg-steel-50 dark:hover:bg-slate-800'
             }`}
           >
-            <span>🚨</span>
+            <span></span>
             <span>หมดสต็อก ({outCount})</span>
           </button>
 
@@ -1902,7 +1902,7 @@ export default function ItemsMaster() {
               onClick={() => setPreviewModalImg(null)}
               className="absolute right-4 top-4 rounded-full bg-black/60 p-2 text-white hover:bg-black"
             >
-              ✕
+              
             </button>
           </div>
         </div>

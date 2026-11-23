@@ -32,105 +32,105 @@ export function getLocationBreadcrumb(pathname, search = '') {
 
   // 1. จัดซื้อและพัสดุ (Purchasing)
   if (pathname.startsWith('/purchasing/po/new')) {
-    return { module: 'ฝ่ายจัดซื้อและพัสดุ', feature: 'ออกใบสั่งซื้อ (PO)', icon: '📄', modulePath: '/purchasing' }
+    return { module: 'ฝ่ายจัดซื้อและพัสดุ', feature: 'ออกใบสั่งซื้อ (PO)', icon: '', modulePath: '/purchasing' }
   }
   if (pathname.startsWith('/purchasing/po/')) {
-    return { module: 'ฝ่ายจัดซื้อและพัสดุ', feature: 'รายละเอียดใบสั่งซื้อ (PO)', icon: '📄', modulePath: '/purchasing' }
+    return { module: 'ฝ่ายจัดซื้อและพัสดุ', feature: 'รายละเอียดใบสั่งซื้อ (PO)', icon: '', modulePath: '/purchasing' }
   }
   if (pathname.startsWith('/purchasing/pr/new')) {
-    return { module: 'ฝ่ายจัดซื้อและพัสดุ', feature: 'ออกใบขอซื้อ (PR)', icon: '📝', modulePath: '/purchasing' }
+    return { module: 'ฝ่ายจัดซื้อและพัสดุ', feature: 'ออกใบขอซื้อ (PR)', icon: '', modulePath: '/purchasing' }
   }
   if (pathname.startsWith('/purchasing/pr/')) {
-    return { module: 'ฝ่ายจัดซื้อและพัสดุ', feature: 'รายละเอียดใบขอซื้อ (PR)', icon: '📝', modulePath: '/purchasing' }
+    return { module: 'ฝ่ายจัดซื้อและพัสดุ', feature: 'รายละเอียดใบขอซื้อ (PR)', icon: '', modulePath: '/purchasing' }
   }
   if (pathname.startsWith('/purchasing/quotation')) {
-    return { module: 'ฝ่ายจัดซื้อและพัสดุ', feature: 'เปรียบเทียบใบเสนอราคาผู้ขาย', icon: '📊', modulePath: '/purchasing' }
+    return { module: 'ฝ่ายจัดซื้อและพัสดุ', feature: 'เปรียบเทียบใบเสนอราคาผู้ขาย', icon: '', modulePath: '/purchasing' }
   }
   if (pathname.startsWith('/purchasing/vendors')) {
-    return { module: 'ฝ่ายจัดซื้อและพัสดุ', feature: 'ทะเบียนผู้ขาย (Vendors)', icon: '🏢', modulePath: '/purchasing' }
+    return { module: 'ฝ่ายจัดซื้อและพัสดุ', feature: 'ทะเบียนผู้ขาย (Vendors)', icon: '', modulePath: '/purchasing' }
   }
   if (pathname.startsWith('/purchasing')) {
-    if (tab === 'pr') return { module: 'ฝ่ายจัดซื้อและพัสดุ', feature: 'รายการใบขอซื้อ (PR)', icon: '📝', modulePath: '/purchasing' }
-    if (tab === 'po') return { module: 'ฝ่ายจัดซื้อและพัสดุ', feature: 'รายการใบสั่งซื้อ (PO)', icon: '🛒', modulePath: '/purchasing' }
-    if (tab === 'receipts') return { module: 'ฝ่ายจัดซื้อและพัสดุ', feature: 'ตรวจรับของเข้า (GR / RI)', icon: '📦', modulePath: '/purchasing' }
-    return { module: 'ฝ่ายจัดซื้อและพัสดุ', feature: 'PR ➔ PO (สายงานจัดซื้อ)', icon: '🛒', modulePath: '/purchasing' }
+    if (tab === 'pr') return { module: 'ฝ่ายจัดซื้อและพัสดุ', feature: 'รายการใบขอซื้อ (PR)', icon: '', modulePath: '/purchasing' }
+    if (tab === 'po') return { module: 'ฝ่ายจัดซื้อและพัสดุ', feature: 'รายการใบสั่งซื้อ (PO)', icon: '', modulePath: '/purchasing' }
+    if (tab === 'receipts') return { module: 'ฝ่ายจัดซื้อและพัสดุ', feature: 'ตรวจรับของเข้า (GR / RI)', icon: '', modulePath: '/purchasing' }
+    return { module: 'ฝ่ายจัดซื้อและพัสดุ', feature: 'PR  PO (สายงานจัดซื้อ)', icon: '', modulePath: '/purchasing' }
   }
 
   // 2. คลังและสโตร์ (Store & Inventory)
   if (pathname.startsWith('/store/receipts')) {
-    return { module: 'คลังวัสดุและสโตร์', feature: 'รับของเข้า (Goods Receipts - RI)', icon: '📥', modulePath: '/store' }
+    return { module: 'คลังวัสดุและสโตร์', feature: 'รับของเข้า (Goods Receipts - RI)', icon: '', modulePath: '/store' }
   }
   if (pathname.startsWith('/store/issue/new')) {
-    return { module: 'คลังวัสดุและสโตร์', feature: 'เบิกจ่ายวัสดุ (Stock Issue)', icon: '📤', modulePath: '/store' }
+    return { module: 'คลังวัสดุและสโตร์', feature: 'เบิกจ่ายวัสดุ (Stock Issue)', icon: '', modulePath: '/store' }
   }
   if (pathname.startsWith('/store/issues')) {
-    return { module: 'คลังวัสดุและสโตร์', feature: 'ประวัติการเบิก-คืนพัปลด (Issue & Return Logs)', icon: '📜', modulePath: '/store' }
+    return { module: 'คลังวัสดุและสโตร์', feature: 'ประวัติการเบิก-คืนพัปลด (Issue & Return Logs)', icon: '', modulePath: '/store' }
   }
   if (pathname.startsWith('/store/adjust')) {
-    return { module: 'คลังวัสดุและสโตร์', feature: 'คืนของ & ปรับปรุงสต็อก', icon: '🔄', modulePath: '/store' }
+    return { module: 'คลังวัสดุและสโตร์', feature: 'คืนของ & ปรับปรุงสต็อก', icon: '', modulePath: '/store' }
   }
   if (pathname.startsWith('/store/items')) {
-    return { module: 'คลังวัสดุและสโตร์', feature: 'ทะเบียนพัสดุ & หมวดหมู่', icon: '📑', modulePath: '/store' }
+    return { module: 'คลังวัสดุและสโตร์', feature: 'ทะเบียนพัสดุ & หมวดหมู่', icon: '', modulePath: '/store' }
   }
   if (pathname.startsWith('/store')) {
-    return { module: 'คลังวัสดุและสโตร์', feature: 'สต็อกวัสดุวิศวกรรม', icon: '📦', modulePath: '/store' }
+    return { module: 'คลังวัสดุและสโตร์', feature: 'สต็อกวัสดุวิศวกรรม', icon: '', modulePath: '/store' }
   }
 
   // 3. โครงการ (Projects)
   if (pathname.startsWith('/projects/new')) {
-    return { module: 'บริหารโครงการ', feature: 'สร้างโครงการใหม่', icon: '🏗️', modulePath: '/projects' }
+    return { module: 'บริหารโครงการ', feature: 'สร้างโครงการใหม่', icon: '', modulePath: '/projects' }
   }
   if (pathname.startsWith('/projects/')) {
-    return { module: 'บริหารโครงการ', feature: 'รายละเอียดโครงการ', icon: '🏗️', modulePath: '/projects' }
+    return { module: 'บริหารโครงการ', feature: 'รายละเอียดโครงการ', icon: '', modulePath: '/projects' }
   }
   if (pathname.startsWith('/projects')) {
-    return { module: 'บริหารโครงการ', feature: 'รายการโครงการทั้งหมด', icon: '🏗️', modulePath: '/projects' }
+    return { module: 'บริหารโครงการ', feature: 'รายการโครงการทั้งหมด', icon: '', modulePath: '/projects' }
   }
 
   // 4. บัญชีและการเงิน (Accounting)
   if (pathname.startsWith('/accounting/expenses')) {
-    return { module: 'บัญชีและการเงิน', feature: 'บันทึกค่าใช้จ่าย', icon: '💸', modulePath: '/accounting' }
+    return { module: 'บัญชีและการเงิน', feature: 'บันทึกค่าใช้จ่าย', icon: '', modulePath: '/accounting' }
   }
   if (pathname.startsWith('/accounting/ap')) {
-    return { module: 'บัญชีและการเงิน', feature: 'เจ้าหนี้การค้า (AP)', icon: '📋', modulePath: '/accounting' }
+    return { module: 'บัญชีและการเงิน', feature: 'เจ้าหนี้การค้า (AP)', icon: '', modulePath: '/accounting' }
   }
   if (pathname.startsWith('/accounting/ar')) {
-    return { module: 'บัญชีและการเงิน', feature: 'ลูกหนี้การค้า (AR)', icon: '📈', modulePath: '/accounting' }
+    return { module: 'บัญชีและการเงิน', feature: 'ลูกหนี้การค้า (AR)', icon: '', modulePath: '/accounting' }
   }
   if (pathname.startsWith('/accounting/gl') || pathname.startsWith('/accounting/journal')) {
-    return { module: 'บัญชีและการเงิน', feature: 'สมุดรายวันทั่วไป (GL)', icon: '⚖️', modulePath: '/accounting' }
+    return { module: 'บัญชีและการเงิน', feature: 'สมุดรายวันทั่วไป (GL)', icon: '️', modulePath: '/accounting' }
   }
   if (pathname.startsWith('/accounting/reports')) {
-    return { module: 'บัญชีและการเงิน', feature: 'งบการเงิน & รายงาน', icon: '📊', modulePath: '/accounting' }
+    return { module: 'บัญชีและการเงิน', feature: 'งบการเงิน & รายงาน', icon: '', modulePath: '/accounting' }
   }
   if (pathname.startsWith('/accounting')) {
-    return { module: 'บัญชีและการเงิน', feature: 'ภาพรวมระบบบัญชี', icon: '⚖️', modulePath: '/accounting' }
+    return { module: 'บัญชีและการเงิน', feature: 'ภาพรวมระบบบัญชี', icon: '️', modulePath: '/accounting' }
   }
 
   // 5. ใบเสนอราคา & BOQ
   if (pathname.startsWith('/quotations/new')) {
-    return { module: 'งานขายและเสนอราคา', feature: 'สร้างใบเสนอราคาใหม่', icon: '📄', modulePath: '/quotations' }
+    return { module: 'งานขายและเสนอราคา', feature: 'สร้างใบเสนอราคาใหม่', icon: '', modulePath: '/quotations' }
   }
   if (pathname.startsWith('/quotations/')) {
-    return { module: 'งานขายและเสนอราคา', feature: 'รายละเอียดใบเสนอราคา', icon: '📄', modulePath: '/quotations' }
+    return { module: 'งานขายและเสนอราคา', feature: 'รายละเอียดใบเสนอราคา', icon: '', modulePath: '/quotations' }
   }
   if (pathname.startsWith('/quotations')) {
-    return { module: 'งานขายและเสนอราคา', feature: 'รายการใบเสนอราคา', icon: '📄', modulePath: '/quotations' }
+    return { module: 'งานขายและเสนอราคา', feature: 'รายการใบเสนอราคา', icon: '', modulePath: '/quotations' }
   }
   if (pathname.startsWith('/boq')) {
-    return { module: 'งานวิศวกรรมและราคา', feature: 'ประมาณราคา BOQ', icon: '📐', modulePath: '/boq' }
+    return { module: 'งานวิศวกรรมและราคา', feature: 'ประมาณราคา BOQ', icon: '', modulePath: '/boq' }
   }
 
   // 6. คู่ค้า / ลูกค้า
   if (pathname.startsWith('/contacts')) {
-    return { module: 'ทะเบียนคู่ค้าและลูกค้า', feature: 'รายชื่อผู้ติดต่อ', icon: '👥', modulePath: '/contacts' }
+    return { module: 'ทะเบียนคู่ค้าและลูกค้า', feature: 'รายชื่อผู้ติดต่อ', icon: '', modulePath: '/contacts' }
   }
 
   if (pathname === '/') {
-    return { module: 'หน้าหลัก', feature: 'แดชบอร์ดภาพรวม', icon: '🏠', modulePath: '/' }
+    return { module: 'หน้าหลัก', feature: 'แดชบอร์ดภาพรวม', icon: '', modulePath: '/' }
   }
 
-  return { module: 'ระบบบริหารงานก่อสร้าง', feature: pathname, icon: '🏠', modulePath: '/' }
+  return { module: 'ระบบบริหารงานก่อสร้าง', feature: pathname, icon: '', modulePath: '/' }
 }
 
 export default function Layout() {

@@ -24,12 +24,12 @@ export default function ContactsPage() {
   const [entityFilter, setEntityFilter] = useState('all') // 'all' | 'corporate' | 'individual'
 
   const CONTACTS_SORT_OPTIONS = [
-    { value: 'name_asc', label: '🔤 ชื่อคู่ค้า/บริษัท ก ➔ ฮ (A ➔ Z)' },
-    { value: 'name_desc', label: '🔤 ชื่อคู่ค้า/บริษัท ฮ ➔ ก (Z ➔ A)' },
-    { value: 'code_asc', label: '🔢 รหัสคู่ค้า (น้อย ➔ มาก: 0 ➔ 9)' },
-    { value: 'code_desc', label: '🔢 รหัสคู่ค้า (มาก ➔ น้อย: 9 ➔ 0)' },
-    { value: 'date_desc', label: '🕒 เพิ่มล่าสุด (ใหม่ ➔ เก่า)' },
-    { value: 'date_asc', label: '🕒 เพิ่มก่อนหน้า (เก่า ➔ ใหม่)' },
+    { value: 'name_asc', label: 'ชื่อคู่ค้า/บริษัท ก  ฮ (A  Z)' },
+    { value: 'name_desc', label: 'ชื่อคู่ค้า/บริษัท ฮ  ก (Z  A)' },
+    { value: 'code_asc', label: 'รหัสคู่ค้า (น้อย  มาก: 0  9)' },
+    { value: 'code_desc', label: 'รหัสคู่ค้า (มาก  น้อย: 9  0)' },
+    { value: 'date_desc', label: ' เพิ่มล่าสุด (ใหม่  เก่า)' },
+    { value: 'date_asc', label: ' เพิ่มก่อนหน้า (เก่า  ใหม่)' },
   ]
   const [showInactive, setShowInactive] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
@@ -229,7 +229,7 @@ export default function ContactsPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-2xl">👥</span>
+            <span className="text-2xl"></span>
             <h1 className="text-xl sm:text-2xl font-black text-steel-900 tracking-tight">
               ทะเบียนคู่ค้า & ผู้ติดต่อ (Contacts Hub)
             </h1>
@@ -273,7 +273,7 @@ export default function ContactsPage() {
           }`}
         >
           <div className={`text-[11px] font-bold uppercase tracking-wider ${roleFilter === 'all' ? 'text-steel-300' : 'text-steel-500'}`}>
-            👥 คู่ค้าทั้งหมด
+            คู่ค้าทั้งหมด
           </div>
           <div className="mt-1 flex items-baseline gap-1">
             <span className="text-xl sm:text-2xl font-black">{totalCount}</span>
@@ -293,7 +293,7 @@ export default function ContactsPage() {
           }`}
         >
           <div className={`text-[11px] font-bold uppercase tracking-wider ${roleFilter === 'customer' ? 'text-sky-200' : 'text-sky-700'}`}>
-            🏢 ลูกค้า (Customers)
+            ลูกค้า (Customers)
           </div>
           <div className="mt-1 flex items-baseline gap-1">
             <span className="text-xl sm:text-2xl font-black">{customerCount}</span>
@@ -313,7 +313,7 @@ export default function ContactsPage() {
           }`}
         >
           <div className={`text-[11px] font-bold uppercase tracking-wider ${roleFilter === 'vendor' ? 'text-emerald-200' : 'text-emerald-700'}`}>
-            🏪 ผู้จำหน่าย / ร้านค้า (Vendors)
+             ผู้จำหน่าย / ร้านค้า (Vendors)
           </div>
           <div className="mt-1 flex items-baseline gap-1">
             <span className="text-xl sm:text-2xl font-black">{vendorCount}</span>
@@ -333,7 +333,7 @@ export default function ContactsPage() {
           }`}
         >
           <div className={`text-[11px] font-bold uppercase tracking-wider ${roleFilter === 'both' ? 'text-purple-200' : 'text-purple-700'}`}>
-            🔄 ทั้งสองบทบาท (Dual Roles)
+            ทั้งสองบทบาท (Dual Roles)
           </div>
           <div className="mt-1 flex items-baseline gap-1">
             <span className="text-xl sm:text-2xl font-black">{bothCount}</span>
@@ -360,7 +360,7 @@ export default function ContactsPage() {
               onClick={() => setSearch('')}
               className="absolute right-2.5 top-2 text-xs text-steel-400 hover:text-steel-600"
             >
-              ✕
+              
             </button>
           )}
         </div>
@@ -381,8 +381,8 @@ export default function ContactsPage() {
             className="rounded-xl border border-steel-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-steel-700 focus:outline-none"
           >
             <option value="all">ทุกประเภทกฎหมาย</option>
-            <option value="corporate">🏢 นิติบุคคล (Corporate)</option>
-            <option value="individual">👤 บุคคลธรรมดา (Individual)</option>
+            <option value="corporate">นิติบุคคล (Corporate)</option>
+            <option value="individual"> บุคคลธรรมดา (Individual)</option>
           </select>
 
           {/* Toggle Inactive */}
@@ -458,9 +458,9 @@ export default function ContactsPage() {
                         </div>
                         <div className="text-[10px] text-steel-500 mt-0.5 flex items-center gap-1">
                           {c.entity_type === 'individual' ? (
-                            <span className="text-amber-700 bg-amber-50 px-1 rounded">👤 บุคคลธรรมดา</span>
+                            <span className="text-amber-700 bg-amber-50 px-1 rounded"> บุคคลธรรมดา</span>
                           ) : (
-                            <span className="text-sky-800 bg-sky-50 px-1 rounded">🏢 นิติบุคคล</span>
+                            <span className="text-sky-800 bg-sky-50 px-1 rounded">นิติบุคคล</span>
                           )}
                         </div>
                       </td>
@@ -509,12 +509,12 @@ export default function ContactsPage() {
                         <div className="flex flex-col items-center gap-1">
                           {c.is_customer && (
                             <span className="inline-block rounded-full bg-sky-50 text-sky-800 border border-sky-200 px-2 py-0.5 text-[10px] font-bold">
-                              🏢 ลูกค้า
+                              ลูกค้า
                             </span>
                           )}
                           {c.is_vendor && (
                             <span className="inline-block rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 text-[10px] font-bold">
-                              🏪 ผู้จำหน่าย
+                               ผู้จำหน่าย
                             </span>
                           )}
                           {!c.is_customer && !c.is_vendor && (

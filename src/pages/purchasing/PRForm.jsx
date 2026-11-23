@@ -1,10 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useNavigate, useParams, useSearchParams, Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { EMPTY_ITEM, itemsValid } from '../../lib/purchasing'
+import { baht } from '../../lib/projects'
 import ItemsEditor from './ItemsEditor'
 import { FieldError } from '../../components/FieldError'
 import SearchableSelect from '../../components/SearchableSelect'
+import { FileText, CheckCircle2 } from 'lucide-react'
 
 // สร้าง (/purchasing/pr/new) และแก้ไข (/purchasing/pr/:id/edit) ใบขอซื้อ
 export default function PRForm() {
@@ -27,6 +29,36 @@ export default function PRForm() {
   const [errors, setErrors] = useState({})
   const [showItemErrors, setShowItemErrors] = useState(false)
 
+  // จัดการการซิงค์ราคาและภาษีจากใบเสนอราคา (Quotation -> PR Sync)
+  const [quotationSync, setQuotationSync] = useState(null)
+  const [prPriceMode, setPrPriceMode] = useState('with_vat') // 'with_vat' | 'net_before_vat'
+  const loadedQuotationRef = useRef(false)
+
+  const applyPriceMode = (mode, syncData = quotationSync) => {
+    if (!syncData) return
+    setPrPriceMode(mode)
+    const vatMultiplier = (mode === 'with_vat' && syncData.hasVat) ? (1 + syncData.vatRate / 100) : 1
+
+    setItems(syncData.rawItems.map((i) => {
+      const rawPrice = Number(i.unit_price) || 0
+      const discPct = Number(i.discount_percent) || 0
+      const baseEffective = discPct > 0 
+        ? rawPrice * (1 - discPct / 100) 
+        : (i.total_amount && Number(i.quantity) > 0 
+            ? Number(i.total_amount) / Number(i.quantity) 
+            : rawPrice)
+      const finalPrice = Math.round(baseEffective * vatMultiplier * 100) / 100
+
+      return {
+        item_name: i.item_name,
+        quantity: String(i.quantity || 1),
+        unit: i.unit || 'ชุด',
+        price: String(finalPrice || ''),
+        discount_percent: discPct > 0 ? String(discPct) : '0',
+      }
+    }))
+  }
+
   useEffect(() => {
     supabase.from('projects').select('id, project_code, project_name').order('project_code').then(({ data }) => setProjects(data ?? []))
     supabase.from('customers').select('id, customer_code, customer_name').order('customer_name').then(({ data }) => setCustomers(data ?? []))
@@ -34,9 +66,10 @@ export default function PRForm() {
 
     // โหลดรายการจากใบเสนอราคาถ้ามีการส่งต่อมา (Quotation -> PR)
     const qId = params.get('quotation_id')
-    if (qId && !id) {
+    if (qId && !id && !loadedQuotationRef.current) {
+      loadedQuotationRef.current = true
       Promise.all([
-        supabase.from('quotations').select('project_id, customer_name').eq('id', qId).single(),
+        supabase.from('quotations').select('*').eq('id', qId).single(),
         supabase.from('quotation_items').select('*').eq('quotation_id', qId),
       ]).then(([qRes, itemsRes]) => {
         if (qRes.data?.project_id) {
@@ -46,14 +79,42 @@ export default function PRForm() {
         if (qRes.data?.customer_name) {
           setCustomerName(qRes.data.customer_name)
         }
-        if (itemsRes.data && itemsRes.data.length > 0) {
-          setItems(itemsRes.data.map((i) => ({
-            item_name: i.item_name,
-            quantity: String(i.quantity || 1),
-            unit: i.unit || 'ชุด',
-            price: String(i.unit_price || ''),
-          })))
+        
+        const qItems = itemsRes.data || []
+        const hasVat = qRes.data?.tax_type !== 'vat_exempt' && Number(qRes.data?.vat_rate ?? 7) > 0
+        const vatRate = Number(qRes.data?.vat_rate ?? 7)
+
+        const subtotalNet = qItems.reduce((s, i) => {
+          const rawPrice = Number(i.unit_price) || 0
+          const discPct = Number(i.discount_percent) || 0
+          const eff = discPct > 0 ? rawPrice * (1 - discPct / 100) : (i.total_amount ? Number(i.total_amount) / (Number(i.quantity) || 1) : rawPrice)
+          return s + eff * (Number(i.quantity) || 1)
+        }, 0)
+        const vatAmt = hasVat ? Math.round(subtotalNet * (vatRate / 100) * 100) / 100 : 0
+        const grandTotal = Math.round((subtotalNet + vatAmt) * 100) / 100
+
+        const syncObj = {
+          quotation_no: qRes.data?.quotation_no,
+          subtotalNet,
+          hasVat,
+          vatRate,
+          vatAmt,
+          grandTotal,
+          rawItems: qItems,
         }
+        setQuotationSync(syncObj)
+
+        if (qRes.data?.quotation_no) {
+          const qNoTag = `อ้างอิงใบเสนอราคา: ${qRes.data.quotation_no}`
+          setNotes((prev) => {
+            if (!prev) return qNoTag
+            if (prev.includes(qRes.data.quotation_no)) return prev
+            return `${prev}\n${qNoTag}`
+          })
+        }
+
+        // ค่าเริ่มต้น: ซิงค์ราคาตามราคาสุทธิรวมภาษี (ถ้ามี VAT) เพื่อให้ยอด PR ตรงกับยอดรวมทั้งสิ้นของใบเสนอราคา
+        applyPriceMode(hasVat ? 'with_vat' : 'net_before_vat', syncObj)
       })
     }
 
@@ -107,7 +168,7 @@ export default function PRForm() {
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)
-      setError('⚠️ ไม่สามารถบันทึกได้: มีช่องที่ยังไม่ได้กรอก (กรุณาตรวจสอบช่องที่มีข้อความเตือนสีแดง)')
+      setError('ไม่สามารถบันทึกได้: มีช่องที่ยังไม่ได้กรอก (กรุณาตรวจสอบช่องที่มีข้อความเตือนสีแดง)')
       return
     }
 
@@ -161,7 +222,7 @@ export default function PRForm() {
 
   // ตัวเลือกสำหรับ SearchableSelect
   const projectOptions = [
-    { value: '', label: '🏢 ของกลางบริษัท / สต็อกส่วนกลาง (ไม่ระบุโครงการ)', badge: 'ของกลาง', keywords: 'ของกลาง สต็อก ส่วนกลาง' },
+    { value: '', label: 'ของกลางบริษัท / สต็อกส่วนกลาง (ไม่ระบุโครงการ)', badge: 'ของกลาง', keywords: 'ของกลาง สต็อก ส่วนกลาง' },
     ...projects.map((p) => ({
       value: p.id,
       badge: p.project_code,
@@ -186,18 +247,17 @@ export default function PRForm() {
   }))
 
   return (
-    <div className="max-w-3xl space-y-4">
+    <div className="max-w-4xl space-y-5">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold">{id ? 'แก้ไขใบขอซื้อ' : 'สร้างใบขอซื้อ (PR)'}</h2>
         <Link to="/purchasing?tab=pr" className="text-xs text-steel-500 hover:underline">← กลับไปรายการใบขอซื้อ</Link>
       </div>
 
-      <div className="space-y-4 rounded-lg bg-white p-5 shadow-sm">
+      <div className="space-y-4 rounded-xl bg-white p-6 shadow-sm border border-steel-200">
         {/* 1. โครงการ และ ลูกค้า (เลือกหรือพิมพ์เองได้) */}
         <div className="rounded-xl border border-steel-200 bg-steel-50/60 p-4 space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-steel-200/80 pb-2">
             <span className="text-xs font-bold uppercase tracking-wider text-steel-700 flex items-center gap-1.5">
-              <span>🏗️</span>
               <span>โครงการ และ ลูกค้า / ผู้ว่าจ้าง</span>
             </span>
             <div className="flex items-center gap-1 bg-white p-0.5 rounded-lg border border-steel-200 text-xs">
@@ -209,7 +269,7 @@ export default function PRForm() {
                   projectMode === 'select' ? 'bg-sky-700 text-white shadow-2xs font-bold' : 'text-steel-600 hover:text-steel-900'
                 }`}
               >
-                🏢 เลือกโครงการในระบบ
+                เลือกโครงการในระบบ
               </button>
               <button
                 type="button"
@@ -219,7 +279,7 @@ export default function PRForm() {
                   projectMode === 'custom' ? 'bg-sky-700 text-white shadow-2xs font-bold' : 'text-steel-600 hover:text-steel-900'
                 }`}
               >
-                ✏️ พิมพ์ชื่อโครงการเอง
+                พิมพ์ชื่อโครงการเอง
               </button>
             </div>
           </div>
@@ -288,7 +348,7 @@ export default function PRForm() {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label className="block text-xs font-semibold text-steel-700 mb-1">
-              🏪 ร้านค้าที่แนะนำ / แหล่งซื้อ (Suggested Store / Vendor)
+              ร้านค้าที่แนะนำ / แหล่งซื้อ (Suggested Store / Vendor)
             </label>
             <SearchableSelect
               options={vendorOptions}
@@ -306,17 +366,62 @@ export default function PRForm() {
 
           <div>
             <label className="block text-xs font-semibold text-steel-700 mb-1">
-              📝 วัตถุประสงค์ / หมายเหตุเพิ่มเติม
+              วัตถุประสงค์ / หมายเหตุเพิ่มเติม
             </label>
-            <input
-              type="text"
-              className="input text-xs"
+            <textarea
+              rows={3}
+              className="w-full rounded-lg border border-steel-300 p-2.5 text-xs text-steel-900 focus:outline-none focus:border-sky-600 focus:ring-1 focus:ring-sky-500 resize-y"
               placeholder="เช่น วัสดุสำหรับเริ่มเทปูนสัปดาห์หน้า หรือ ขอซื้อด่วน"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
             />
           </div>
         </div>
+
+        {/* กล่องแสดงการซิงค์ข้อมูลและเลือกโหมดราคากับใบเสนอราคา */}
+        {quotationSync && (
+          <div className="rounded-xl border border-sky-300 bg-sky-50/70 p-4 space-y-2.5 text-xs shadow-2xs">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-sky-200/80 pb-2.5">
+              <div className="font-bold text-sky-950 flex items-center gap-1.5">
+                <FileText className="h-4 w-4 text-sky-700" />
+                <span>ซิงค์ข้อมูลจากใบเสนอราคา: <b className="font-mono text-sky-800">{quotationSync.quotation_no}</b></span>
+              </div>
+              <div className="flex items-center gap-1 bg-white p-0.5 rounded-lg border border-sky-200">
+                <button
+                  type="button"
+                  onClick={() => applyPriceMode('with_vat')}
+                  className={`px-3 py-1.5 rounded-md font-bold text-xs transition cursor-pointer flex items-center gap-1 ${
+                    prPriceMode === 'with_vat' ? 'bg-sky-700 text-white shadow-2xs' : 'text-sky-700 hover:bg-sky-50'
+                  }`}
+                  title="ปรับราคาต่อหน่วยให้รวม VAT เพื่อให้ยอดรวม PR ตรงกับยอดสุทธิทั้งสิ้น"
+                >
+                  <CheckCircle2 className={`h-3.5 w-3.5 ${prPriceMode === 'with_vat' ? 'inline' : 'hidden'}`} />
+                  <span>ราคารวม VAT 7% (฿{baht(quotationSync.grandTotal)} บ.)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => applyPriceMode('net_before_vat')}
+                  className={`px-3 py-1.5 rounded-md font-bold text-xs transition cursor-pointer flex items-center gap-1 ${
+                    prPriceMode === 'net_before_vat' ? 'bg-sky-700 text-white shadow-2xs' : 'text-sky-700 hover:bg-sky-50'
+                  }`}
+                  title="ใช้ราคาหลังหักส่วนลด แต่ยังไม่รวมภาษีมูลค่าเพิ่ม"
+                >
+                  <CheckCircle2 className={`h-3.5 w-3.5 ${prPriceMode === 'net_before_vat' ? 'inline' : 'hidden'}`} />
+                  <span>ราคาก่อน VAT (฿{baht(quotationSync.subtotalNet)} บ.)</span>
+                </button>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-4 text-slate-600 text-xs">
+              <span>ยอดสินค้าหลังส่วนลด: <b className="font-mono text-slate-900">{baht(quotationSync.subtotalNet)}</b> บ.</span>
+              {quotationSync.hasVat && (
+                <span>ภาษี VAT {quotationSync.vatRate}%: <b className="font-mono text-slate-900">+{baht(quotationSync.vatAmt)}</b> บ.</span>
+              )}
+              <span className="text-emerald-800 font-bold">
+                ยอดสุทธิทั้งสิ้น: <b className="font-mono">{baht(quotationSync.grandTotal)}</b> บาท
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* 3. รายการวัสดุ */}
         <div className="text-sm font-medium pt-2 border-t border-steel-100">
@@ -338,7 +443,7 @@ export default function PRForm() {
 
       {error && (
         <div className="rounded-xl bg-rose-50 border border-rose-200 p-3 text-xs sm:text-sm font-semibold text-rose-800 flex items-center gap-2">
-          <span>⚠️</span>
+          <span></span>
           <span>{error}</span>
         </div>
       )}

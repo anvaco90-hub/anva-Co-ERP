@@ -188,7 +188,7 @@ export default function QuotationDetail() {
             </span>
           </div>
           <p className="text-xs text-steel-500 dark:text-slate-400 mt-1 flex items-center gap-1.5">
-            <span>📅 สร้างเมื่อ:</span>
+            <span>สร้างเมื่อ:</span>
             <span className="font-semibold text-steel-700 dark:text-slate-300 font-mono">
               {new Date(quotation.created_at).toLocaleString('th-TH')}
             </span>
@@ -204,7 +204,7 @@ export default function QuotationDetail() {
             className="inline-flex items-center gap-1.5 rounded-xl bg-sky-700 hover:bg-sky-800 dark:bg-sky-600 dark:hover:bg-sky-700 text-white px-3.5 py-2 text-xs font-bold shadow-xs transition cursor-pointer"
             title="พิมพ์เอกสารใบเสนอราคามาตรฐาน หรือบันทึก PDF"
           >
-            <span>🖨️</span>
+            <span>️</span>
             <span>พิมพ์ใบเสนอราคา (PDF)</span>
           </button>
 
@@ -214,7 +214,7 @@ export default function QuotationDetail() {
             onClick={openPoModal}
             className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white px-3.5 py-2 text-xs font-bold shadow-xs transition cursor-pointer"
           >
-            <span>✍️</span>
+            <span>️</span>
             <span>{quotation.customer_po_no ? 'แก้ไขข้อมูล PO ลูกค้า' : 'ลูกค้าเซ็นอนุมัติ / บันทึก PO'}</span>
           </button>
 
@@ -223,7 +223,7 @@ export default function QuotationDetail() {
             to={`/purchasing/po/new?quotation_id=${quotation.id}`}
             className="inline-flex items-center gap-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 px-3.5 py-2 text-xs font-black shadow-xs transition"
           >
-            <span>🛒</span>
+            <span></span>
             <span>ส่งต่อจัดซื้อ (เปิด PO)</span>
           </Link>
 
@@ -231,7 +231,7 @@ export default function QuotationDetail() {
             to={`/purchasing/pr/new?quotation_id=${quotation.id}`}
             className="inline-flex items-center gap-1.5 rounded-xl bg-steel-800 hover:bg-steel-700 text-white px-3 py-2 text-xs font-bold shadow-xs transition"
           >
-            <span>📋</span>
+            <span></span>
             <span>เปิด PR</span>
           </Link>
 
@@ -254,7 +254,7 @@ export default function QuotationDetail() {
             to={`/quotations/${quotation.id}/edit`}
             className="inline-flex items-center gap-1.5 rounded-xl border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-xs font-semibold text-steel-700 dark:text-slate-200 shadow-2xs hover:bg-steel-50 dark:hover:bg-slate-700 transition"
           >
-            <span>✏️</span>
+            <span>️</span>
             <span>แก้ไข</span>
           </Link>
 
@@ -265,7 +265,7 @@ export default function QuotationDetail() {
             disabled={deleting}
             className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/60 px-3 py-2 text-xs font-semibold text-rose-700 dark:text-rose-300 shadow-2xs hover:bg-rose-100 transition cursor-pointer"
           >
-            <span>🗑️</span>
+            <span>️</span>
             <span>ลบ</span>
           </button>
         </div>
@@ -285,7 +285,7 @@ export default function QuotationDetail() {
             </div>
           </div>
 
-          <div className="hidden md:block text-steel-300 font-bold">➔</div>
+          <div className="hidden md:block text-steel-300 font-bold"></div>
 
           {/* Step 2 */}
           <div className="flex items-center gap-2.5">
@@ -302,7 +302,7 @@ export default function QuotationDetail() {
             </div>
           </div>
 
-          <div className="hidden md:block text-steel-300 font-bold">➔</div>
+          <div className="hidden md:block text-steel-300 font-bold"></div>
 
           {/* Step 3 */}
           <div className="flex items-center gap-2.5">
@@ -311,7 +311,7 @@ export default function QuotationDetail() {
                 ? 'bg-emerald-600 text-white shadow-xs'
                 : 'bg-steel-100 text-steel-500'
             }`}>
-              {quotation.customer_po_no ? '✓' : '3'}
+              {quotation.customer_po_no ? '' : '3'}
             </span>
             <div>
               <div className="font-bold text-steel-900">3. ลูกค้าเซ็นอนุมัติ / PO</div>
@@ -331,7 +331,7 @@ export default function QuotationDetail() {
             </div>
           </div>
 
-          <div className="hidden md:block text-steel-300 font-bold">➔</div>
+          <div className="hidden md:block text-steel-300 font-bold"></div>
 
           {/* Step 4 */}
           <div className="flex items-center gap-2.5">
@@ -345,7 +345,7 @@ export default function QuotationDetail() {
                   to={`/purchasing/po/new?quotation_id=${quotation.id}`}
                   className="text-amber-800 hover:underline font-bold"
                 >
-                  คลิกเปิด PO ซื้อของ ➔
+                  คลิกเปิด PO ซื้อของ 
                 </Link>
               </div>
             </div>
@@ -358,7 +358,7 @@ export default function QuotationDetail() {
         <div className="rounded-2xl border border-emerald-300 dark:border-emerald-800/80 bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 dark:from-emerald-950/40 dark:via-slate-900 dark:to-emerald-950/40 p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3.5">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-xs text-xl">
-              ✍️
+              ️
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
@@ -385,14 +385,14 @@ export default function QuotationDetail() {
               onClick={() => setShowCustomerPoDoc(true)}
               className="rounded-xl border border-emerald-300 dark:border-emerald-700 bg-white dark:bg-slate-800 px-3.5 py-2 text-xs font-bold text-emerald-900 dark:text-emerald-200 hover:bg-emerald-50 dark:hover:bg-slate-700 transition shadow-2xs flex items-center gap-1.5 cursor-pointer"
             >
-              <span>📄</span>
+              <span></span>
               <span>เปิดดูไฟล์ PO ลูกค้า</span>
             </button>
             <Link
               to={`/purchasing/po/new?quotation_id=${quotation.id}`}
               className="rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 px-4 py-2 text-xs font-black shadow-xs transition flex items-center gap-1.5"
             >
-              <span>🛒</span>
+              <span></span>
               <span>สั่งซื้อของตาม PO นี้</span>
             </Link>
           </div>
@@ -406,7 +406,7 @@ export default function QuotationDetail() {
           {/* ข้อมูลลูกค้า */}
           <div className="rounded-xl border border-steel-200 bg-white p-5 shadow-sm">
             <h2 className="text-base font-bold text-ink flex items-center gap-2 border-b border-steel-100 pb-3 mb-4">
-              <span>🏢</span>
+              <span></span>
               <span>ข้อมูลลูกค้า (Customer Details)</span>
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
@@ -436,7 +436,7 @@ export default function QuotationDetail() {
           {/* ข้อมูลโครงการและคลังสินค้า */}
           <div className="rounded-xl border border-steel-200 bg-white p-5 shadow-sm">
             <h2 className="text-base font-bold text-ink flex items-center gap-2 border-b border-steel-100 pb-3 mb-4">
-              <span>🏗️</span>
+              <span></span>
               <span>โครงการและคลังสินค้าอ้างอิง</span>
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
@@ -448,7 +448,7 @@ export default function QuotationDetail() {
                       [{quotation.projects.project_code}] {quotation.projects.project_name}
                     </span>
                   ) : (
-                    <span className="text-steel-500 font-normal">🏢 ของกลางบริษัท / สต็อกส่วนกลาง</span>
+                    <span className="text-steel-500 font-normal">ของกลางบริษัท / สต็อกส่วนกลาง</span>
                   )}
                 </div>
               </div>
@@ -468,7 +468,7 @@ export default function QuotationDetail() {
         <div className="space-y-6">
           <div className="rounded-xl border border-steel-200 bg-white p-5 shadow-sm">
             <h2 className="text-base font-bold text-ink flex items-center gap-2 border-b border-steel-100 pb-3 mb-4">
-              <span>📋</span>
+              <span></span>
               <span>ข้อมูลเอกสาร & การเงิน</span>
             </h2>
             <div className="space-y-3 text-sm">
@@ -486,7 +486,7 @@ export default function QuotationDetail() {
               </div>
               <div className="flex justify-between py-1 border-b border-steel-50">
                 <span className="text-steel-500">พนักงานขาย:</span>
-                <span className="font-semibold text-ink">👤 {quotation.sales_person || '-'}</span>
+                <span className="font-semibold text-ink"> {quotation.sales_person || '-'}</span>
               </div>
               <div className="flex justify-between py-1">
                 <span className="text-steel-500">สกุลเงิน:</span>
@@ -498,7 +498,7 @@ export default function QuotationDetail() {
           {/* ลายเซ็นอิเล็กทรอนิกส์และเอกสารแนบ */}
           <div className="rounded-xl border border-steel-200 bg-white p-5 shadow-sm">
             <h2 className="text-base font-bold text-ink flex items-center gap-2 border-b border-steel-100 pb-3 mb-4">
-              <span>🖋️</span>
+              <span>️</span>
               <span>ลายเซ็นและเอกสารแนบ</span>
             </h2>
             <div className="space-y-4">
@@ -528,7 +528,7 @@ export default function QuotationDetail() {
                     rel="noreferrer"
                     className="flex items-center gap-2 p-2 rounded-lg border border-steel-200 bg-sky-50 text-xs font-semibold text-sky-700 hover:underline"
                   >
-                    <span>📎</span>
+                    <span></span>
                     <span className="truncate">ดาวน์โหลดไฟล์แนบ</span>
                   </a>
                 ) : (
@@ -546,7 +546,7 @@ export default function QuotationDetail() {
       <div className="rounded-xl border border-steel-200 bg-white shadow-sm overflow-hidden">
         <div className="bg-steel-50 px-5 py-3 border-b border-steel-200 flex items-center justify-between">
           <h2 className="text-base font-bold text-ink flex items-center gap-2">
-            <span>📦</span>
+            <span></span>
             <span>รายการสินค้าและบริการ (Itemized Table)</span>
           </h2>
           <span className="text-xs text-steel-500 font-medium">
@@ -640,7 +640,7 @@ export default function QuotationDetail() {
         {/* หมายเหตุแสดงให้ลูกค้าเห็น */}
         <div className="rounded-xl border border-steel-200 bg-white p-5 shadow-sm">
           <h3 className="font-bold text-ink text-sm flex items-center gap-2 mb-2">
-            <span>📝</span>
+            <span></span>
             <span>หมายเหตุและเงื่อนไข (แสดงให้ลูกค้าเห็น)</span>
           </h3>
           <div className="whitespace-pre-line text-xs text-steel-600 bg-steel-50 p-4 rounded-lg min-h-[90px] border border-steel-100">
@@ -651,7 +651,7 @@ export default function QuotationDetail() {
         {/* โน้ตภายในบริษัท */}
         <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-5 shadow-sm">
           <h3 className="font-bold text-amber-900 text-sm flex items-center gap-2 mb-2">
-            <span>🔒</span>
+            <span></span>
             <span>โน้ตภายในบริษัท (ทีมงานเห็นเท่านั้น)</span>
           </h3>
           <div className="whitespace-pre-line text-xs text-amber-800 bg-amber-50 p-4 rounded-lg min-h-[90px] border border-amber-200/60">
@@ -677,7 +677,7 @@ export default function QuotationDetail() {
             <div className="bg-slate-900 p-4 sm:p-5 text-white flex items-center justify-between border-b border-slate-800">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-xs text-lg">
-                  ✍️
+                  ️
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
@@ -698,7 +698,7 @@ export default function QuotationDetail() {
                 onClick={() => setShowCustomerPoDoc(false)}
                 className="text-slate-400 hover:text-white rounded-lg p-2 text-lg cursor-pointer"
               >
-                ✕
+                
               </button>
             </div>
 
@@ -709,7 +709,7 @@ export default function QuotationDetail() {
                 <div className="rounded-2xl border border-emerald-300 dark:border-emerald-800 bg-white dark:bg-slate-900 p-4 shadow-xs">
                   <div className="text-xs font-bold text-emerald-900 dark:text-emerald-200 mb-2 flex items-center justify-between">
                     <span className="flex items-center gap-2">
-                      <span>📎</span>
+                      <span></span>
                       <span>ไฟล์สแกน / เอกสารใบสั่งซื้อของลูกค้าที่แนบไว้:</span>
                     </span>
                     <a
@@ -847,7 +847,7 @@ export default function QuotationDetail() {
                 <div className="pt-4 border-t border-steel-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div className="rounded-xl border border-dashed border-emerald-300 dark:border-emerald-700 bg-emerald-50/50 dark:bg-emerald-950/20 p-3 flex items-center gap-3">
                     <div className="h-10 w-10 rounded-full bg-emerald-600 text-white flex items-center justify-center font-black text-lg">
-                      ✓
+                      
                     </div>
                     <div>
                       <div className="text-[10px] font-black uppercase tracking-wider text-emerald-800 dark:text-emerald-300">
@@ -883,7 +883,7 @@ export default function QuotationDetail() {
                   }}
                   className="rounded-xl border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-steel-50 dark:hover:bg-slate-700 px-3.5 py-2 text-xs font-bold text-steel-700 dark:text-slate-200 transition shadow-2xs flex items-center gap-1.5 cursor-pointer"
                 >
-                  <span>✏️</span>
+                  <span>️</span>
                   <span>แก้ไขข้อมูล / แนบไฟล์ใหม่</span>
                 </button>
                 {quotation.customer_po_file_url && !quotation.customer_po_file_url.includes('example.com') && (
@@ -893,7 +893,7 @@ export default function QuotationDetail() {
                     rel="noreferrer"
                     className="rounded-xl border border-sky-300 dark:border-sky-700 bg-sky-50 dark:bg-sky-950/40 hover:bg-sky-100 px-3.5 py-2 text-xs font-bold text-sky-800 dark:text-sky-200 transition shadow-2xs flex items-center gap-1.5"
                   >
-                    <span>🔗</span>
+                    <span></span>
                     <span>เปิดไฟล์แนบต้นฉบับ</span>
                   </a>
                 )}
@@ -905,7 +905,7 @@ export default function QuotationDetail() {
                   onClick={() => window.print()}
                   className="rounded-xl border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-steel-50 dark:hover:bg-slate-700 px-4 py-2 text-xs font-bold text-steel-700 dark:text-slate-200 transition shadow-2xs flex items-center gap-1.5 cursor-pointer"
                 >
-                  <span>🖨️</span>
+                  <span>️</span>
                   <span>พิมพ์เอกสาร PO</span>
                 </button>
                 <button
@@ -913,7 +913,7 @@ export default function QuotationDetail() {
                   onClick={() => setShowCustomerPoDoc(false)}
                   className="rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600 text-white px-5 py-2 text-xs font-bold transition shadow-xs cursor-pointer"
                 >
-                  ✕ ปิดหน้าต่าง
+                   ปิดหน้าต่าง
                 </button>
               </div>
             </div>
@@ -939,7 +939,7 @@ export default function QuotationDetail() {
                 onClick={() => setShowPoModal(false)}
                 className="text-steel-400 hover:text-white text-lg cursor-pointer"
               >
-                ✕
+                
               </button>
             </div>
 
@@ -999,7 +999,7 @@ export default function QuotationDetail() {
                   />
                   {customerPoFileUrl && (
                     <div className="text-[11px] text-emerald-700 font-semibold flex items-center gap-1.5 bg-emerald-50 p-2 rounded-lg border border-emerald-200">
-                      <span>✓</span>
+                      <span></span>
                       <span>แนบไฟล์เรียบร้อยแล้ว</span>
                       <a href={customerPoFileUrl} target="_blank" rel="noreferrer" className="underline ml-auto">
                         ดูไฟล์
@@ -1010,7 +1010,7 @@ export default function QuotationDetail() {
               </div>
 
               <div className="rounded-xl bg-steel-50 p-3 border border-steel-200 text-steel-600 text-[11px] space-y-1">
-                <div className="font-bold text-steel-800">💡 สิ่งที่จะเกิดขึ้นเมื่อกดยืนยัน:</div>
+                <div className="font-bold text-steel-800">สิ่งที่จะเกิดขึ้นเมื่อกดยืนยัน:</div>
                 <div>1. สถานะใบเสนอราคาจะเปลี่ยนเป็น <b>ลูกค้าอนุมัติ (Approved)</b> ทันที</div>
                 <div>2. บันทึกเลขที่ PO และหลักฐานการเซ็นรับของลูกค้าในระบบ</div>
                 <div>3. พร้อมส่งต่อรายการวัสดุให้ฝ่ายจัดซื้อเปิด PO สั่งซื้อต่อไป</div>
@@ -1029,7 +1029,7 @@ export default function QuotationDetail() {
                   disabled={poBusy}
                   className="rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white px-5 py-2 text-xs font-black shadow-sm transition disabled:opacity-50 flex items-center gap-2 cursor-pointer"
                 >
-                  <span>{poBusy ? 'กำลังบันทึก...' : '✓ บันทึกยืนยัน PO ลูกค้า'}</span>
+                  <span>{poBusy ? 'กำลังบันทึก...' : ' บันทึกยืนยัน PO ลูกค้า'}</span>
                 </button>
               </div>
             </form>

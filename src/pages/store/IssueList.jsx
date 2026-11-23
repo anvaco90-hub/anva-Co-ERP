@@ -32,12 +32,12 @@ import {
 } from 'lucide-react'
 
 const ISSUE_SORT_OPTIONS = [
-  { value: 'date_desc', label: '🕒 วันที่และเวลาล่าสุด (ใหม่ ➔ เก่า)' },
-  { value: 'date_asc', label: '🕒 วันที่ (เก่า ➔ ใหม่)' },
-  { value: 'code_desc', label: '🔢 เลขที่เอกสาร (มาก ➔ น้อย)' },
-  { value: 'code_asc', label: '🔢 เลขที่เอกสาร (น้อย ➔ มาก)' },
-  { value: 'amount_desc', label: '💰 มูลค่ารายการ (มาก ➔ น้อย)' },
-  { value: 'amount_asc', label: '💰 มูลค่ารายการ (น้อย ➔ มาก)' },
+  { value: 'date_desc', label: ' วันที่และเวลาล่าสุด (ใหม่  เก่า)' },
+  { value: 'date_asc', label: ' วันที่ (เก่า  ใหม่)' },
+  { value: 'code_desc', label: 'เลขที่เอกสาร (มาก  น้อย)' },
+  { value: 'code_asc', label: 'เลขที่เอกสาร (น้อย  มาก)' },
+  { value: 'amount_desc', label: 'มูลค่ารายการ (มาก  น้อย)' },
+  { value: 'amount_asc', label: 'มูลค่ารายการ (น้อย  มาก)' },
 ]
 
 export default function IssueList() {
@@ -415,7 +415,7 @@ export default function IssueList() {
                   : 'text-steel-600 dark:text-slate-300 hover:text-steel-900 dark:hover:text-white'
               }`}
             >
-              <span>📑 ทั้งหมด</span>
+              <span>ทั้งหมด</span>
               <span className="rounded-full bg-steel-200 dark:bg-slate-700 px-1.5 py-0.2 text-[10px]">
                 {unifiedRecords.length}
               </span>
@@ -473,7 +473,7 @@ export default function IssueList() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-steel-400 dark:text-slate-500" />
               <input
                 type="text"
-                placeholder="🔍 ค้นหารหัส, ชื่อพัสดุ, เลขที่..."
+                placeholder="ค้นหารหัส, ชื่อพัสดุ, เลขที่..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-48 sm:w-60 h-9 rounded-xl border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 pl-8 pr-7 text-xs font-semibold text-steel-900 dark:text-slate-100 placeholder:text-steel-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-amber-500"
@@ -484,7 +484,7 @@ export default function IssueList() {
                   onClick={() => setSearchQuery('')}
                   className="absolute right-2 top-1/2 -translate-y-1/2 text-steel-400 hover:text-steel-600 dark:hover:text-slate-200"
                 >
-                  ✕
+                  
                 </button>
               )}
             </div>
@@ -539,7 +539,7 @@ export default function IssueList() {
                   onChange={(e) => setSelectedProjectId(e.target.value)}
                   className="rounded-lg border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 pl-8 pr-3 py-1.5 text-xs font-semibold text-steel-800 dark:text-slate-100 focus:outline-none focus:border-amber-500"
                 >
-                  <option value="all">🏗️ ทุกโครงการ (หรือของกลาง)</option>
+                  <option value="all">ทุกโครงการ (หรือของกลาง)</option>
                   {projects.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.project_code} - {p.project_name}
@@ -727,7 +727,7 @@ export default function IssueList() {
                         </span>
                       ) : r.targetType === 'office' ? (
                         <span className="inline-flex items-center gap-1 rounded-lg bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 text-xs font-bold text-blue-900 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
-                          🏢 ออฟฟิศส่วนกลาง
+                          ออฟฟิศส่วนกลาง
                         </span>
                       ) : (
                         <span className="text-steel-400 dark:text-slate-500 text-xs">ของกลางบริษัท</span>
@@ -788,17 +788,17 @@ export default function IssueList() {
                     {isIssue ? (
                       <span className="flex items-center gap-1 rounded-lg bg-amber-50 dark:bg-amber-950/60 px-2.5 py-1 text-xs font-black text-amber-900 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
                         <ArrowUpFromLine className="h-3.5 w-3.5" />
-                        <span>📤 เบิกของ</span>
+                        <span>เบิกของ</span>
                       </span>
                     ) : isReturn ? (
                       <span className="flex items-center gap-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-1 text-xs font-black text-emerald-900 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                         <RotateCcw className="h-3.5 w-3.5" />
-                        <span>📥 คืนของเข้าสโตร์</span>
+                        <span>คืนของเข้าสโตร์</span>
                       </span>
                     ) : (
                       <span className="flex items-center gap-1 rounded-lg bg-rose-50 dark:bg-rose-950/60 px-2.5 py-1 text-xs font-black text-rose-900 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
                         <TrendingDown className="h-3.5 w-3.5" />
-                        <span>🔻 ตัดชำรุด/ปรับยอด</span>
+                        <span> ตัดชำรุด/ปรับยอด</span>
                       </span>
                     )}
 
@@ -821,13 +821,13 @@ export default function IssueList() {
                     ) : r.targetType === 'office' ? (
                       <span className="flex items-center gap-1 rounded-lg bg-blue-50 dark:bg-blue-950/60 px-2.5 py-1 text-xs font-bold text-blue-900 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
                         <Building2 className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
-                        <span>🏢 ออฟฟิศส่วนกลาง</span>
+                        <span>ออฟฟิศส่วนกลาง</span>
                         {r.targetLocation && <span className="font-normal">({r.targetLocation})</span>}
                       </span>
                     ) : r.targetType === 'site' ? (
                       <span className="flex items-center gap-1 rounded-lg bg-cyan-50 dark:bg-cyan-950/60 px-2.5 py-1 text-xs font-bold text-cyan-900 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800">
                         <MapPin className="h-3.5 w-3.5 text-cyan-600 dark:text-cyan-400" />
-                        <span>⚡ หน้างาน</span>
+                        <span>หน้างาน</span>
                         {r.targetLocation && <span className="font-normal truncate max-w-[150px]">({r.targetLocation})</span>}
                       </span>
                     ) : (

@@ -80,14 +80,14 @@ export default function QuotationList() {
 
   // ตัวเลือกการเรียงลำดับมาตรฐานสำหรับงานขายและเสนอราคา
   const QUOTATION_SORT_OPTIONS = [
-    { value: 'date_desc', label: '🕒 วันที่สร้างล่าสุด (ใหม่ ➔ เก่า)' },
-    { value: 'date_asc', label: '🕒 วันที่สร้าง (เก่า ➔ ใหม่)' },
-    { value: 'code_desc', label: '🔢 เลขที่ QT (มาก ➔ น้อย)' },
-    { value: 'code_asc', label: '🔢 เลขที่ QT (น้อย ➔ มาก)' },
-    { value: 'name_asc', label: '🔤 ชื่อลูกค้า/โครงการ ก ➔ ฮ (A ➔ Z)' },
-    { value: 'name_desc', label: '🔤 ชื่อลูกค้า/โครงการ ฮ ➔ ก (Z ➔ A)' },
-    { value: 'amount_desc', label: '💰 มูลค่าเสนอราคา (มาก ➔ น้อย)' },
-    { value: 'amount_asc', label: '💰 มูลค่าเสนอราคา (น้อย ➔ มาก)' },
+    { value: 'date_desc', label: ' วันที่สร้างล่าสุด (ใหม่  เก่า)' },
+    { value: 'date_asc', label: ' วันที่สร้าง (เก่า  ใหม่)' },
+    { value: 'code_desc', label: 'เลขที่ QT (มาก  น้อย)' },
+    { value: 'code_asc', label: 'เลขที่ QT (น้อย  มาก)' },
+    { value: 'name_asc', label: 'ชื่อลูกค้า/โครงการ ก  ฮ (A  Z)' },
+    { value: 'name_desc', label: 'ชื่อลูกค้า/โครงการ ฮ  ก (Z  A)' },
+    { value: 'amount_desc', label: 'มูลค่าเสนอราคา (มาก  น้อย)' },
+    { value: 'amount_asc', label: 'มูลค่าเสนอราคา (น้อย  มาก)' },
   ]
 
   // ตัวกรองวันที่แบบ Smart Preset (ไม่รกตา)
@@ -407,7 +407,7 @@ export default function QuotationList() {
                   : 'text-slate-600 hover:bg-slate-100'
               }`}
             >
-              📑 ทั้งหมด ({stats.totalCount})
+              ทั้งหมด ({stats.totalCount})
             </button>
 
             <button
@@ -418,7 +418,7 @@ export default function QuotationList() {
                   : 'text-emerald-800 hover:bg-emerald-50'
               }`}
             >
-              <span>✍️ ลูกค้าเซ็น PO</span>
+              <span>️ ลูกค้าเซ็น PO</span>
               <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${activeTab === 'signed' ? 'bg-emerald-950 text-white' : 'bg-emerald-100 text-emerald-900 font-bold'}`}>
                 {stats.signedCount}
               </span>
@@ -432,7 +432,7 @@ export default function QuotationList() {
                   : 'text-slate-600 hover:bg-slate-100'
               }`}
             >
-              🔄 ไปป์ไลน์วงจรขาย (Pipeline)
+              ไปป์ไลน์วงจรขาย (Pipeline)
             </button>
           </div>
 
@@ -536,7 +536,7 @@ export default function QuotationList() {
               onClick={clearAllFilters}
               className="text-xs text-rose-600 hover:underline font-semibold cursor-pointer whitespace-nowrap"
             >
-              ✕ ล้างตัวกรอง
+               ล้างตัวกรอง
             </button>
           )}
         </div>
@@ -550,7 +550,7 @@ export default function QuotationList() {
         </div>
       ) : activeTab === 'pipeline' ? (
         
-        /* TAB 3: ไปป์ไลน์วงจรขาย ➔ จัดซื้อ (Pipeline Step View) */
+        /* TAB 3: ไปป์ไลน์วงจรขาย  จัดซื้อ (Pipeline Step View) */
         <div className="space-y-3">
           {/* Step Banner */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
@@ -606,7 +606,7 @@ export default function QuotationList() {
                       <td className="py-2.5 px-3.5">
                         {hasPo ? (
                           <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800 border border-emerald-200">
-                            <span>✓</span>
+                            <span></span>
                             <span>PO: {q.customer_po_no}</span>
                           </span>
                         ) : (
@@ -662,7 +662,7 @@ export default function QuotationList() {
               {filtered.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="py-12 text-center text-slate-400 dark:text-slate-500">
-                    <div className="text-2xl mb-1">📑</div>
+                    <div className="text-2xl mb-1"></div>
                     <div className="font-medium text-slate-600 dark:text-slate-300">ไม่พบใบเสนอราคาตามเงื่อนไขที่เลือก</div>
                     <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">ลองเปลี่ยนคำค้นหา หรือกด "ล้างตัวกรอง"</p>
                   </td>
@@ -695,7 +695,7 @@ export default function QuotationList() {
                         {hasCustomerPo && (
                           <div className="mt-1">
                             <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
-                              <span>✓</span> PO: {q.customer_po_no}
+                              <span></span> PO: {q.customer_po_no}
                             </span>
                           </div>
                         )}
@@ -785,7 +785,7 @@ export default function QuotationList() {
                                   }}
                                   className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-emerald-800 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 font-semibold cursor-pointer transition"
                                 >
-                                  <span>✍️</span>
+                                  <span>️</span>
                                   <span>{hasCustomerPo ? 'แก้ไขข้อมูล PO ลูกค้า' : 'บันทึก PO ลูกค้า'}</span>
                                 </button>
 

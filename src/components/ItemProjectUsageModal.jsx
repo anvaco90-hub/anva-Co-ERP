@@ -102,8 +102,7 @@ export default function ItemProjectUsageModal({ item, onClose }) {
           <div>
             <div className="flex items-center gap-2">
               <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-100 dark:bg-sky-950/80 text-sky-800 dark:text-sky-300 font-bold text-base border border-sky-200 dark:border-sky-800">
-                📊
-              </span>
+                </span>
               <div>
                 <h3 className="text-base font-bold text-ink dark:text-slate-100">
                   ประวัติการเคลื่อนไหวและการใช้วัสดุ (Material Movement History)
@@ -252,7 +251,7 @@ export default function ItemProjectUsageModal({ item, onClose }) {
                 : 'border-transparent text-steel-500 dark:text-slate-400 hover:text-steel-800 dark:hover:text-slate-200'
             }`}
           >
-            <span>🏢</span>
+            <span></span>
             <span>สรุปตามโครงการ ({data.byProject.length})</span>
           </button>
 
@@ -264,7 +263,7 @@ export default function ItemProjectUsageModal({ item, onClose }) {
                 : 'border-transparent text-steel-500 dark:text-slate-400 hover:text-steel-800 dark:hover:text-slate-200'
             }`}
           >
-            <span>📦</span>
+            <span></span>
             <span>ประวัติการสั่งซื้อ PO ({filteredPos.length})</span>
           </button>
 
@@ -276,7 +275,7 @@ export default function ItemProjectUsageModal({ item, onClose }) {
                 : 'border-transparent text-steel-500 dark:text-slate-400 hover:text-steel-800 dark:hover:text-slate-200'
             }`}
           >
-            <span>📤</span>
+            <span></span>
             <span>ประวัติการเบิกใช้สโตร์ ({filteredIssues.length})</span>
           </button>
         </div>

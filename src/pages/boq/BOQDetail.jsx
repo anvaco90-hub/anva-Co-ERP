@@ -232,7 +232,7 @@ export default function BOQDetail() {
             className="rounded-xl bg-hivis hover:bg-amber-400 text-slate-950 px-4 py-2 text-xs font-black shadow-xs transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
           >
             <FileCheck2 className="h-4 w-4" />
-            <span>{converting ? 'กำลังแปลง...' : '📄 แปลงเป็นใบเสนอราคา'}</span>
+            <span>{converting ? 'กำลังแปลง...' : 'แปลงเป็นใบเสนอราคา'}</span>
           </button>
 
           {/* พิมพ์เอกสาร */}
@@ -300,7 +300,7 @@ export default function BOQDetail() {
       {/* 3. รายละเอียดโครงการ */}
       <div className="rounded-2xl border border-steel-200 bg-white p-5 shadow-2xs space-y-3">
         <h2 className="font-bold text-sm text-steel-900 flex items-center gap-2 border-b border-steel-100 pb-2">
-          <span>📋 ข้อมูลโครงการและงานที่ถอดแบบ</span>
+          <span>ข้อมูลโครงการและงานที่ถอดแบบ</span>
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
           <div>

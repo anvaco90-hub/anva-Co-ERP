@@ -709,7 +709,7 @@ export default function Dashboard() {
               }`}
               title="สลับระหว่างข้อมูลจำลองสำหรับทดสอบ (Demo) และข้อมูลจริงจากระบบ (Live DB)"
             >
-              <span>{isDemoMode ? '✨ ข้อมูลจำลอง (Demo Active)' : '🗄️ ข้อมูลจริง (Live DB)'}</span>
+              <span>{isDemoMode ? 'ข้อมูลจำลอง (Demo Active)' : '️ ข้อมูลจริง (Live DB)'}</span>
             </button>
 
             <button
@@ -741,8 +741,7 @@ export default function Dashboard() {
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-emerald-300/80 dark:border-emerald-800/60 bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 dark:from-slate-900 dark:via-emerald-950/20 dark:to-slate-900 p-4 text-xs text-emerald-950 dark:text-emerald-200 shadow-sm">
           <div className="flex items-center gap-3 min-w-0">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-600 dark:bg-emerald-500 text-white font-black text-base shadow-xs">
-              📊
-            </span>
+              </span>
             <div className="min-w-0">
               <div className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2 flex-wrap">
                 <span>กำลังแสดงผลชุดข้อมูลจำลองสมจริง (Realistic Enterprise Simulation Active)</span>
@@ -757,7 +756,7 @@ export default function Dashboard() {
           </div>
           <div className="flex items-center gap-2 font-medium shrink-0">
             <span className="rounded-lg bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-bold text-emerald-900 dark:text-slate-200 border border-emerald-200 dark:border-slate-700 shadow-xs">
-              🎯 ทดสอบตัวกรอง ปี/เดือน/ไตรมาส ได้แบบเรียลไทม์
+              ทดสอบตัวกรอง ปี/เดือน/ไตรมาส ได้แบบเรียลไทม์
             </span>
           </div>
         </div>
@@ -1094,7 +1093,7 @@ export default function Dashboard() {
               {salesByProduct.slice(0, 3).map((p, idx) => (
                 <div key={p.name} className="flex items-center justify-between text-xs">
                   <span className="truncate max-w-[240px] text-steel-800 font-semibold" title={p.name}>
-                    {idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉'} {p.name}
+                    {idx === 0 ? '' : idx === 1 ? '' : ''} {p.name}
                   </span>
                   <div className="flex items-center gap-2 shrink-0">
                     <span className="font-mono font-bold text-steel-900">{baht(p.totalAmount)} บ.</span>
@@ -1576,7 +1575,7 @@ export default function Dashboard() {
                           p.rank === 2 ? 'bg-slate-200 text-steel-800' :
                           p.rank === 3 ? 'bg-orange-100 text-orange-800' : 'bg-steel-100 text-steel-600'
                         }`}>
-                          {p.rank === 1 ? '🥇' : p.rank === 2 ? '🥈' : p.rank === 3 ? '🥉' : p.rank}
+                          {p.rank === 1 ? '' : p.rank === 2 ? '' : p.rank === 3 ? '' : p.rank}
                         </span>
                       </td>
                       <td className="py-3 px-3.5 font-bold text-steel-900 max-w-sm truncate" title={p.name}>
@@ -1632,7 +1631,7 @@ export default function Dashboard() {
                         <span className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-black ${
                           p.rank === 1 ? 'bg-amber-100 text-amber-800 ring-1 ring-amber-300' : 'bg-steel-100 text-steel-600'
                         }`}>
-                          {p.rank === 1 ? '🥇' : p.rank}
+                          {p.rank === 1 ? '' : p.rank}
                         </span>
                       </td>
                       <td className="py-3 px-3.5 font-bold text-steel-900 max-w-sm truncate" title={p.name}>
@@ -1740,7 +1739,7 @@ export default function Dashboard() {
                   to="/accounting/ar-aging"
                   className="font-bold text-amber-800 hover:text-amber-900 hover:underline flex items-center gap-0.5 text-[11px]"
                 >
-                  วิเคราะห์อายุ ➔
+                  วิเคราะห์อายุ 
                 </Link>
               </div>
             </div>
@@ -1820,9 +1819,9 @@ export default function Dashboard() {
                     {/* Tooltip on hover */}
                     <div className="absolute -top-16 z-20 hidden group-hover:flex flex-col items-start bg-steel-900 text-white text-[10px] rounded px-2.5 py-1.5 shadow-lg pointer-events-none whitespace-nowrap">
                       <span className="font-bold border-b border-steel-700 pb-0.5 mb-0.5 w-full">{m.monthName}</span>
-                      <span className="text-emerald-300">🟢 รายได้: {baht(m.revenue)} บ.</span>
-                      <span className="text-amber-300">🟡 ค้างรับ: {baht(m.receivable)} บ.</span>
-                      <span className="text-rose-300">🔴 จ่าย: {baht(m.expense)} บ.</span>
+                      <span className="text-emerald-300">รายได้: {baht(m.revenue)} บ.</span>
+                      <span className="text-amber-300">ค้างรับ: {baht(m.receivable)} บ.</span>
+                      <span className="text-rose-300">จ่าย: {baht(m.expense)} บ.</span>
                     </div>
 
                     <div className="w-full flex items-end justify-center gap-0.5 sm:gap-1 h-36">

@@ -17,7 +17,7 @@ export const NAV_ITEMS = [
     children: [
       { path: '/quotations?tab=all', label: 'ศูนย์งานขาย & ใบเสนอราคา', roles: ['admin', 'management', 'accounting', 'purchasing', 'store'] },
       { path: '/quotations?tab=signed', label: 'ลูกค้าเซ็น PO / อนุมัติแล้ว', roles: ['admin', 'management', 'accounting', 'purchasing', 'store'] },
-      { path: '/quotations?tab=pipeline', label: 'ไปป์ไลน์วงจรขาย ➔ จัดซื้อ', roles: ['admin', 'management', 'accounting', 'purchasing', 'store'] },
+      { path: '/quotations?tab=pipeline', label: 'ไปป์ไลน์วงจรขาย  จัดซื้อ', roles: ['admin', 'management', 'accounting', 'purchasing', 'store'] },
       { path: '/boq', label: 'ระบบประมาณราคา (BOQ)', roles: ['admin', 'management', 'accounting', 'purchasing', 'store'] },
       { path: '/contacts?role=customer', label: 'ทะเบียนลูกค้า (Customers)', roles: ['admin', 'management', 'accounting', 'purchasing', 'store'] },
     ],
@@ -27,7 +27,7 @@ export const NAV_ITEMS = [
     label: 'จัดซื้อและพัสดุ',
     roles: ['admin', 'purchasing', 'store', 'management'],
     children: [
-      { path: '/purchasing?tab=pipeline', label: 'PR ➔ PO (สายงานจัดซื้อ)', roles: ['admin', 'purchasing', 'store', 'management'] },
+      { path: '/purchasing?tab=pipeline', label: 'PR  PO (สายงานจัดซื้อ)', roles: ['admin', 'purchasing', 'store', 'management'] },
       { path: '/purchasing?tab=pr', label: 'ใบขอซื้อ (PR)', roles: ['admin', 'purchasing', 'store', 'management'] },
       { path: '/purchasing?tab=po', label: 'ใบสั่งซื้อ (PO)', roles: ['admin', 'purchasing', 'store', 'management'] },
       { path: '/purchasing?tab=receipts', label: 'ตรวจรับของเข้า (GR)', roles: ['admin', 'purchasing', 'store', 'management'] },

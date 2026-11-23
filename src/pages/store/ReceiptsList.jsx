@@ -39,14 +39,14 @@ export default function ReceiptsList() {
   const [receiveModalError, setReceiveModalError] = useState('')
 
   const RECEIPTS_SORT_OPTIONS = [
-    { value: 'date_desc', label: '🕒 วันที่และเวลาล่าสุด (ใหม่ ➔ เก่า)' },
-    { value: 'date_asc', label: '🕒 วันที่ (เก่า ➔ ใหม่)' },
-    { value: 'name_asc', label: '🔤 ชื่อพัสดุ ก ➔ ฮ (A ➔ Z)' },
-    { value: 'name_desc', label: '🔤 ชื่อพัสดุ ฮ ➔ ก (Z ➔ A)' },
-    { value: 'code_asc', label: '🔢 รหัสพัสดุ (น้อย ➔ มาก: 0 ➔ 9)' },
-    { value: 'code_desc', label: '🔢 รหัสพัสดุ (มาก ➔ น้อย: 9 ➔ 0)' },
-    { value: 'qty_desc', label: '📦 จำนวนรับเข้า (มาก ➔ น้อย)' },
-    { value: 'amount_desc', label: '💰 มูลค่ารับเข้า (มาก ➔ น้อย)' },
+    { value: 'date_desc', label: ' วันที่และเวลาล่าสุด (ใหม่  เก่า)' },
+    { value: 'date_asc', label: ' วันที่ (เก่า  ใหม่)' },
+    { value: 'name_asc', label: 'ชื่อพัสดุ ก  ฮ (A  Z)' },
+    { value: 'name_desc', label: 'ชื่อพัสดุ ฮ  ก (Z  A)' },
+    { value: 'code_asc', label: 'รหัสพัสดุ (น้อย  มาก: 0  9)' },
+    { value: 'code_desc', label: 'รหัสพัสดุ (มาก  น้อย: 9  0)' },
+    { value: 'qty_desc', label: 'จำนวนรับเข้า (มาก  น้อย)' },
+    { value: 'amount_desc', label: 'มูลค่ารับเข้า (มาก  น้อย)' },
   ]
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(20) // 10 | 20 | 50 | 100
@@ -620,7 +620,7 @@ export default function ReceiptsList() {
             onClick={() => setShowStockInForm(!showStockInForm)}
             className="btn-primary flex items-center gap-1.5 shadow-sm !py-2"
           >
-            <span>{showStockInForm ? '▲ ซ่อนแบบฟอร์ม' : '📥 + รับวัสดุเข้าสโตร์โดยตรง'}</span>
+            <span>{showStockInForm ? '▲ ซ่อนแบบฟอร์ม' : '+ รับวัสดุเข้าสโตร์โดยตรง'}</span>
           </button>
         )}
       </div>
@@ -634,7 +634,7 @@ export default function ReceiptsList() {
           <div className="flex items-center justify-between pb-3 border-b border-emerald-200">
             <div>
               <h3 className="font-bold text-emerald-950 flex items-center gap-2">
-                <span>📥 บันทึกรับวัสดุเข้าสโตร์ (Direct Stock-In & Tax Invoice)</span>
+                <span>บันทึกรับวัสดุเข้าสโตร์ (Direct Stock-In & Tax Invoice)</span>
               </h3>
               <p className="text-xs text-emerald-800 mt-0.5">
                 ระบุจำนวน ราคาต่อหน่วย เลขที่ใบกำกับภาษี และโครงการที่ตัดต้นทุน (P&L Allocation)
@@ -644,7 +644,7 @@ export default function ReceiptsList() {
               onClick={() => setShowStockInForm(false)}
               className="text-xs text-steel-500 hover:text-black"
             >
-              ✕ ปิด
+               ปิด
             </button>
           </div>
 
@@ -762,7 +762,7 @@ export default function ReceiptsList() {
               onClick={handleDirectStockIn}
               disabled={saving || !selectedItemId || !Number(qty) || Number(unitPrice) < 0}
             >
-              {saving ? 'กำลังบันทึก...' : '📥 ยืนยันรับเข้าสโตร์และบันทึกบัญชี'}
+              {saving ? 'กำลังบันทึก...' : 'ยืนยันรับเข้าสโตร์และบันทึกบัญชี'}
             </button>
           </div>
         </div>
@@ -783,7 +783,7 @@ export default function ReceiptsList() {
                 : 'bg-white dark:bg-slate-800 text-steel-700 dark:text-slate-300 hover:bg-steel-50 dark:hover:bg-slate-700 border border-steel-200 dark:border-slate-700'
             }`}
           >
-            <span>📜</span>
+            <span></span>
             <span>ประวัติรับเข้าสโตร์แล้ว (Goods Receipts - RI)</span>
             <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
               activeMainTab === 'received' ? 'bg-white/20 text-white' : 'bg-steel-200 dark:bg-slate-700 text-steel-700 dark:text-slate-200'
@@ -804,11 +804,11 @@ export default function ReceiptsList() {
                 : 'bg-white dark:bg-slate-800 text-steel-700 dark:text-slate-300 hover:bg-steel-50 dark:hover:bg-slate-700 border border-steel-200 dark:border-slate-700'
             }`}
           >
-            <span>🚚</span>
+            <span></span>
             <span>นำเข้า / ตรวจรับของเข้าสโตร์</span>
             {pendingPos.length > 0 ? (
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-mono font-black bg-rose-500 text-white shadow-sm animate-pulse">
-                <span>🔔</span>
+                <span></span>
                 <span>({pendingPos.length})</span>
               </span>
             ) : (
@@ -821,7 +821,7 @@ export default function ReceiptsList() {
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <input
             className="input text-xs w-full sm:w-64"
-            placeholder={activeMainTab === 'received' ? "🔍 ค้นหารหัส / ชื่อพัสดุ / เลขที่ RI..." : "🔍 ค้นหาเลขที่ PO / ผู้ขาย / วัสดุ..."}
+            placeholder={activeMainTab === 'received' ? "ค้นหารหัส / ชื่อพัสดุ / เลขที่ RI..." : "ค้นหาเลขที่ PO / ผู้ขาย / วัสดุ..."}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -839,11 +839,11 @@ export default function ReceiptsList() {
         <div className="space-y-4">
           <div className="rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 p-4 text-xs text-amber-900 dark:text-amber-200 flex flex-wrap items-center justify-between gap-3 shadow-xs">
             <div className="flex items-center gap-3">
-              <span className="text-2xl p-2 bg-amber-100 dark:bg-amber-900/50 rounded-xl">🚚</span>
+              <span className="text-2xl p-2 bg-amber-100 dark:bg-amber-900/50 rounded-xl"></span>
               <div>
                 <h4 className="font-bold text-sm text-amber-950 dark:text-amber-100">ใบสั่งซื้อที่อยู่ระหว่างรอสินค้าส่งมอบเข้าสโตร์ (Pending Deliveries)</h4>
                 <p className="text-amber-800 dark:text-amber-300 mt-0.5">
-                  เมื่อผู้ขายนำของมาส่งถึงโกดัง/ไซต์งาน ให้กดปุ่ม <b>"📥 ตรวจรับเข้าสโตร์"</b> เพื่อระบุจำนวนที่รับจริง ตรวจรับเข้าคลัง และออกเลขที่ใบรับของ (RI) ทันที
+                  เมื่อผู้ขายนำของมาส่งถึงโกดัง/ไซต์งาน ให้กดปุ่ม <b>"ตรวจรับเข้าสโตร์"</b> เพื่อระบุจำนวนที่รับจริง ตรวจรับเข้าคลัง และออกเลขที่ใบรับของ (RI) ทันที
                 </p>
               </div>
             </div>
@@ -875,7 +875,7 @@ export default function ReceiptsList() {
                 {filteredPendingPos.length === 0 ? (
                   <tr>
                     <td colSpan={9} className="py-12 text-center text-steel-400 dark:text-slate-500 text-xs">
-                      {search ? 'ไม่พบใบสั่งซื้อที่ตรงกับคำค้นหา' : 'ไม่มีใบสั่งซื้อที่ค้างรับของ (รับของเข้าสโตร์ครบทุกใบแล้ว 🎉)'}
+                      {search ? 'ไม่พบใบสั่งซื้อที่ตรงกับคำค้นหา' : 'ไม่มีใบสั่งซื้อที่ค้างรับของ (รับของเข้าสโตร์ครบทุกใบแล้ว )'}
                     </td>
                   </tr>
                 ) : (
@@ -901,10 +901,10 @@ export default function ReceiptsList() {
                             <span>{po.po_no}</span>
                           </Link>
                         </td>
-                        <td className="py-3 px-3 font-medium text-steel-900 dark:text-slate-100 max-w-[160px] truncate" title={vendorName}>
+                        <td className="py-3 px-3 font-medium text-steel-900 dark:text-slate-100 max-w-[200px] break-words whitespace-normal leading-relaxed" title={vendorName}>
                           {vendorName}
                         </td>
-                        <td className="py-3 px-3 text-steel-700 dark:text-slate-300 max-w-[160px] truncate" title={`${projCode} ${projName}`}>
+                        <td className="py-3 px-3 text-steel-700 dark:text-slate-300 max-w-[200px] break-words whitespace-normal leading-relaxed" title={`${projCode} ${projName}`}>
                           {projCode ? <span className="font-mono font-bold text-amber-700 dark:text-amber-400 mr-1">{projCode}</span> : null}
                           <span>{projName}</span>
                         </td>
@@ -918,10 +918,10 @@ export default function ReceiptsList() {
                           )}
                         </td>
                         <td className="py-3 px-3 min-w-[200px]">
-                          <div className="space-y-0.5">
-                            {itemsList.slice(0, 2).map((it, idx) => (
-                              <div key={idx} className="text-[11px] text-steel-700 dark:text-slate-300 flex items-center justify-between gap-2">
-                                <span className="truncate max-w-[150px] font-medium">• {it.item_name}</span>
+                          <div className="space-y-1">
+                            {itemsList.slice(0, 3).map((it, idx) => (
+                              <div key={idx} className="text-[11px] text-steel-700 dark:text-slate-300 flex items-start justify-between gap-2">
+                                <span className="break-words whitespace-normal leading-tight font-medium">• {it.item_name}</span>
                                 <span className="font-mono text-steel-500 dark:text-slate-400 shrink-0">
                                   {Number(it.qty_received) || 0}/{Number(it.quantity) || 0} {it.unit}
                                 </span>
@@ -940,7 +940,7 @@ export default function ReceiptsList() {
                         <td className="py-3 px-3 text-center whitespace-nowrap">
                           {isPartial ? (
                             <span className="bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800 px-2.5 py-1 rounded-full text-[10px] font-bold">
-                              📦 รับบางส่วน ({receivedQty}/{totalQty})
+                              รับบางส่วน ({receivedQty}/{totalQty})
                             </span>
                           ) : (
                             <span className="bg-sky-100 dark:bg-sky-950 text-sky-800 dark:text-sky-300 border border-sky-300 dark:border-sky-800 px-2.5 py-1 rounded-full text-[10px] font-bold">
@@ -955,7 +955,7 @@ export default function ReceiptsList() {
                             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition cursor-pointer"
                             title="เปิดตรวจนับและยืนยันรับเข้าสโตร์"
                           >
-                            <span>📥 ตรวจรับเข้าสโตร์</span>
+                            <span>ตรวจรับเข้าสโตร์</span>
                           </button>
                         </td>
                       </tr>
@@ -997,7 +997,7 @@ export default function ReceiptsList() {
                     docViewMode === 'business' ? 'bg-sky-700 text-white shadow-sm' : 'bg-steel-100 dark:bg-slate-800 text-steel-700 dark:text-slate-300 hover:bg-steel-200 dark:hover:bg-slate-700'
                   }`}
                 >
-                  📁 เอกสารสโตร์
+                   เอกสารสโตร์
                 </button>
                 <button
                   onClick={() => setDocViewMode('accounting')}
@@ -1005,7 +1005,7 @@ export default function ReceiptsList() {
                     docViewMode === 'accounting' ? 'bg-emerald-700 text-white shadow-sm' : 'bg-steel-100 dark:bg-slate-800 text-steel-700 dark:text-slate-300 hover:bg-steel-200 dark:hover:bg-slate-700'
                   }`}
                 >
-                  ⚖️ เอกสารบัญชีสต็อก (RI / GL)
+                  ️ เอกสารบัญชีสต็อก (RI / GL)
                 </button>
               </div>
             </div>
@@ -1013,7 +1013,7 @@ export default function ReceiptsList() {
         {/* ตัวกรองช่วงเวลาดูประวัติย้อนหลัง */}
         <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-steel-100 dark:border-slate-800 text-xs">
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="font-bold text-steel-600 dark:text-slate-300 mr-1">📅 ช่วงเวลา:</span>
+            <span className="font-bold text-steel-600 dark:text-slate-300 mr-1">ช่วงเวลา:</span>
             {[
               { id: 'all', label: 'ทั้งหมด' },
               { id: 'today', label: 'วันนี้' },
@@ -1118,7 +1118,7 @@ export default function ReceiptsList() {
                           })()}
                         </span>
                         <span className="text-[11px] text-sky-700 dark:text-sky-400 font-mono flex items-center gap-1 font-semibold mt-0.5">
-                          <span>🕒</span>
+                          <span></span>
                           <span>
                             {r.created_at
                               ? new Date(r.created_at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + ' น.'
@@ -1199,7 +1199,7 @@ export default function ReceiptsList() {
                     {/* สถานะบัญชี */}
                     <td className="py-3 px-3 text-center whitespace-nowrap">
                       <span className="bg-emerald-50 text-emerald-800 px-2.5 py-1 rounded-full text-[10px] font-bold border border-emerald-200">
-                        ✅ ลงบัญชีแล้ว (RI)
+                        ลงบัญชีแล้ว (RI)
                       </span>
                     </td>
                   </tr>
@@ -1234,7 +1234,7 @@ export default function ReceiptsList() {
           <div className="w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 border border-steel-200 dark:border-slate-800 shadow-2xl overflow-hidden p-5 space-y-4">
             <div className="flex items-center justify-between border-b border-steel-100 dark:border-slate-800 pb-3">
               <div className="flex items-center gap-2">
-                <span className="text-xl">✨</span>
+                <span className="text-xl"></span>
                 <div>
                   <h3 className="font-bold text-sm text-steel-900 dark:text-slate-100">ลงทะเบียนพัสดุใหม่ด่วน</h3>
                   <p className="text-[11px] text-steel-500 dark:text-slate-400">สำหรับของซื้อด่วนที่ยังไม่เคยมีในทะเบียนสโตร์</p>
@@ -1245,13 +1245,13 @@ export default function ReceiptsList() {
                 onClick={() => setShowQuickItemModal(false)}
                 className="text-steel-400 hover:text-steel-600 dark:hover:text-white"
               >
-                ✕
+                
               </button>
             </div>
 
             {quickItemError && (
               <div className="rounded-lg bg-rose-50 dark:bg-rose-950/40 p-2.5 text-xs text-rose-700 dark:text-rose-300 font-semibold">
-                ⚠️ {quickItemError}
+                {quickItemError}
               </div>
             )}
 
@@ -1317,7 +1317,7 @@ export default function ReceiptsList() {
                   disabled={quickItemSaving}
                   className="btn-primary !py-1.5 text-xs flex items-center gap-1 shadow-sm cursor-pointer"
                 >
-                  <span>{quickItemSaving ? 'กำลังบันทึก...' : '✓ บันทึกและเลือกทันที'}</span>
+                  <span>{quickItemSaving ? 'กำลังบันทึก...' : ' บันทึกและเลือกทันที'}</span>
                 </button>
               </div>
             </form>
@@ -1333,8 +1333,7 @@ export default function ReceiptsList() {
             <div className="flex items-center justify-between border-b border-steel-100 dark:border-slate-800 pb-3">
               <div className="flex items-center gap-2.5">
                 <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600 text-white font-bold text-lg shadow-sm">
-                  📥
-                </span>
+                  </span>
                 <div>
                   <h3 className="font-bold text-base text-steel-900 dark:text-slate-100 flex items-center gap-2">
                     <span>ตรวจรับสินค้าเข้าสโตร์</span>
@@ -1350,13 +1349,13 @@ export default function ReceiptsList() {
                 onClick={() => setReceivingPo(null)}
                 className="text-steel-400 hover:text-steel-600 dark:hover:text-white p-1"
               >
-                ✕
+                
               </button>
             </div>
 
             {receiveModalError && (
               <div className="rounded-xl bg-rose-50 dark:bg-rose-950/40 p-3 text-xs text-rose-700 dark:text-rose-300 font-semibold border border-rose-200 dark:border-rose-800">
-                ⚠️ {receiveModalError}
+                {receiveModalError}
               </div>
             )}
 
@@ -1442,7 +1441,7 @@ export default function ReceiptsList() {
                   disabled={receivingSubmitting}
                   className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-5 py-2 transition shadow-sm disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
                 >
-                  <span>{receivingSubmitting ? 'กำลังบันทึกรับเข้า...' : '✓ ยืนยันบันทึกรับเข้าสโตร์'}</span>
+                  <span>{receivingSubmitting ? 'กำลังบันทึกรับเข้า...' : ' ยืนยันบันทึกรับเข้าสโตร์'}</span>
                 </button>
               </div>
             </div>

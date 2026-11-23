@@ -14,7 +14,7 @@ export default function QuotationShareModal({ quotation, onClose }) {
   const validUntilStr = quotation.valid_until || quotation.expiry_date || 'ตามเงื่อนไขในเอกสาร'
   const totalAmountStr = baht(quotation.grand_total || quotation.total_amount || 0)
 
-  const summaryMessage = `📄 *ใบเสนอราคา (Quotation) - ANVA & Co.*
+  const summaryMessage = `*ใบเสนอราคา (Quotation) - ANVA & Co.*
 • เลขที่: ${quotation.quotation_no}
 • ลูกค้า: ${customerName}
 • โครงการ: ${projectInfo}
