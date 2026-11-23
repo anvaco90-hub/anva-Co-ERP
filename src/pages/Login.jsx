@@ -29,7 +29,7 @@ export default function Login() {
         shapes={[Snowflake]}
       />
       <div className="w-full max-w-sm rounded-lg border-t-8 border-hivis bg-white p-6">
-        <h1 className="text-xl font-bold">เข้าสู่ระบบ ERP ก่อสร้าง</h1>
+        <h1 className="text-xl font-bold">เข้าสู่ระบบ ERP </h1>
         <div className="mt-5 space-y-3">
           <label className="block text-sm">
             อีเมล
