@@ -1,11 +1,12 @@
 import { baht } from '../../lib/projects'
+import { printElement } from '../../lib/printElement'
 import R2Image from '../R2Image'
 
 export default function QuotationPrintModal({ quotation, items, onClose }) {
   if (!quotation) return null
 
   const handlePrint = () => {
-    window.print()
+    printElement('printable-report', `ใบเสนอราคา-${quotation.quotation_no}`)
   }
 
   const issueDateStr = quotation.issue_date

@@ -369,9 +369,11 @@ html.dark #printable-envelope * {
 }
 
 @media print {
-  * {
+  *, *::before, *::after {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
+    animation: none !important;
+    transition: none !important;
   }
   body {
     background: #ffffff !important;
@@ -387,11 +389,12 @@ html.dark #printable-envelope * {
     backdrop-filter: none !important;
   }
   /* ปลดล็อก layout ของ container บรรพบุรุษเพื่อไม่ให้ Chrome/Edge ตัดกระดาษเหลือหน้าเปล่า */
-  html, body, #root, main, .fixed, .overflow-y-auto, .overflow-hidden {
+  html, body, #root, main, .fixed, .overflow-y-auto, .overflow-hidden, [class*="max-h-"] {
     overflow: visible !important;
     height: auto !important;
     max-height: none !important;
     position: static !important;
+    transform: none !important;
   }
   body * {
     visibility: hidden;

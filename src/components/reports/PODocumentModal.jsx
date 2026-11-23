@@ -1,12 +1,13 @@
 import { baht } from '../../lib/projects'
 import { PAYMENT_TYPES } from '../../pages/purchasing/POForm'
+import { printElement } from '../../lib/printElement'
 import { Printer, X } from 'lucide-react'
 
 export default function PODocumentModal({ po, items, onClose }) {
   if (!po) return null
 
   const handlePrint = () => {
-    window.print()
+    printElement('printable-report', `ใบสั่งซื้อ-${po.po_no}`)
   }
 
   const orderDate = po.order_date
