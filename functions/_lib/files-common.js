@@ -26,10 +26,20 @@ export const EXT_BY_TYPE = {
 }
 export const TYPE_BY_EXT = { pdf: 'application/pdf', jpg: 'image/jpeg', png: 'image/png', webp: 'image/webp' }
 
+export const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Authorization, Content-Type, apikey',
+}
+
 export const json = (data, status = 200) =>
   new Response(JSON.stringify(data), {
     status,
-    headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' },
+    headers: {
+      'Content-Type': 'application/json; charset=utf-8',
+      'Cache-Control': 'no-store',
+      ...corsHeaders,
+    },
   })
 
 // ตรวจ JWT + อ่าน role ผ่าน get_my_role() ของ Supabase (คืน null ถ้า token ผิด/หมดอายุ/ผู้ใช้ยังไม่ active)

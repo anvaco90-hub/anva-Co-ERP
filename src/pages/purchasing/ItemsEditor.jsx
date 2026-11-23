@@ -83,14 +83,14 @@ export default function ItemsEditor({ items, onChange, priceLabel, showErrors = 
               <div className="col-span-2 md:col-span-1 relative">
                 <input
                   list="catalog-items-list"
-                  className={fieldErrorClass(nameEmpty, 'input w-full')}
+                  className={fieldErrorClass(nameEmpty, `input w-full ${matched ? 'pr-24' : ''}`)}
                   placeholder="พิมพ์หรือเลือกชื่อวัสดุในระบบ..."
                   disabled={locked}
                   value={it.item_name}
                   onChange={(e) => upd(i, 'item_name', e.target.value)}
                 />
                 {matched && (
-                  <span className="absolute right-2 top-2 rounded bg-sky-100 px-1.5 py-0.5 text-[10px] font-mono text-sky-800">
+                  <span className="absolute right-2 top-2 rounded bg-sky-100 px-2 py-0.5 text-[10px] font-mono font-bold text-sky-800 pointer-events-none">
                     {matched.item_code}
                   </span>
                 )}
@@ -157,7 +157,7 @@ export default function ItemsEditor({ items, onChange, priceLabel, showErrors = 
             {/* แถบแจ้งเตือนเมื่อวัสดุมีอยู่ในระบบ */}
             {matched && (
               <div className="mt-1 flex items-center gap-2 text-[11px] text-steel-500">
-                <span className="font-semibold text-emerald-700">✓ วัสดุตรงกับรหัส {matched.item_code}</span>
+                <span className="font-semibold text-emerald-700">พัสดุตรงกับรหัส {matched.item_code}</span>
                 {matched.avg_unit_cost ? <span>· ราคาเฉลี่ยเดิม {baht(matched.avg_unit_cost)} บาท</span> : null}
               </div>
             )}

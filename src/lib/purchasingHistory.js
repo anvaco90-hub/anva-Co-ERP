@@ -109,7 +109,7 @@ export async function getItemProjectUsageHistory(itemName, itemId = null) {
       const proj = pi.po?.project
       const projId = proj?.id || 'general'
       const projCode = proj?.project_code || 'ของกลาง'
-      const projName = proj?.project_name || pi.po?.custom_project_name || '🏢 ของกลางบริษัท / สต็อกส่วนกลาง'
+      const projName = proj?.project_name || pi.po?.custom_project_name || 'ของกลางบริษัท / สต็อกส่วนกลาง'
       const vendorName = pi.po?.custom_vendor_name || pi.po?.vendors?.vendor_name || 'ไม่ระบุผู้ขาย'
 
       poTransactions.push({
@@ -160,7 +160,7 @@ export async function getItemProjectUsageHistory(itemName, itemId = null) {
       const proj = ii.issue?.project
       const projId = proj?.id || 'general'
       const projCode = proj?.project_code || 'ของกลาง'
-      const projName = proj?.project_name || '🏢 ของกลางบริษัท / สต็อกส่วนกลาง'
+      const projName = proj?.project_name || 'ของกลางบริษัท / สต็อกส่วนกลาง'
 
       issueTransactions.push({
         id: ii.id,

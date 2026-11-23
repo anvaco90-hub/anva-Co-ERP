@@ -2,9 +2,10 @@ import { useEffect, useState, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { baht } from '../../lib/projects'
-import { fmtDateTime } from '../../lib/purchasing'
+import { fmtDateTime, formatDateTimeParts } from '../../lib/purchasing'
 import { formatIntQty, toIntQty } from '../../lib/store'
 import Pagination from '../../components/Pagination'
+import TableSortFilter from '../../components/TableSortFilter'
 import {
   History,
   ArrowUpFromLine,
@@ -25,7 +26,19 @@ import {
   TrendingDown,
   TrendingUp,
   X,
+  List,
+  Grid,
+  Clock,
 } from 'lucide-react'
+
+const ISSUE_SORT_OPTIONS = [
+  { value: 'date_desc', label: ' วันที่และเวลาล่าสุด (ใหม่  เก่า)' },
+  { value: 'date_asc', label: ' วันที่ (เก่า  ใหม่)' },
+  { value: 'code_desc', label: 'เลขที่เอกสาร (มาก  น้อย)' },
+  { value: 'code_asc', label: 'เลขที่เอกสาร (น้อย  มาก)' },
+  { value: 'amount_desc', label: 'มูลค่ารายการ (มาก  น้อย)' },
+  { value: 'amount_asc', label: 'มูลค่ารายการ (น้อย  มาก)' },
+]
 
 export default function IssueList() {
   const navigate = useNavigate()
@@ -43,6 +56,8 @@ export default function IssueList() {
   const [endDate, setEndDate] = useState('')
   const [selectedProjectId, setSelectedProjectId] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
+  const [sortBy, setSortBy] = useState('date_desc')
+  const [viewMode, setViewMode] = useState('table') // 'table' | 'cards'
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1)
@@ -82,10 +97,11 @@ export default function IssueList() {
 
       // Fallback for stock_issues if schema differs
       if (issRes.error) {
+        console.warn('Stock issues primary query warning, fallback query:', issRes.error)
         const fbIss = await supabase
           .from('stock_issues')
           .select(
-            'id, issue_no, issue_date, notes, created_at, projects(id, project_code, project_name), issuer:profiles!issued_by(full_name), stock_issue_items(quantity, unit_cost, inventory_items(id, item_name, unit, item_code))'
+            'id, issue_no, issue_date, notes, created_at, projects(id, project_code, project_name), stock_issue_items(quantity, unit_cost, inventory_items(id, item_name, unit, item_code))'
           )
           .order('created_at', { ascending: false })
           .limit(200)
@@ -281,7 +297,19 @@ export default function IssueList() {
 
       return true
     })
-  }, [unifiedRecords, activeTab, selectedProjectId, periodPreset, startDate, endDate, searchQuery])
+
+    return filtered.sort((a, b) => {
+      const timeA = new Date(a.createdAt || 0).getTime()
+      const timeB = new Date(b.createdAt || 0).getTime()
+      if (sortBy === 'date_desc') return timeB - timeA
+      if (sortBy === 'date_asc') return timeA - timeB
+      if (sortBy === 'code_desc') return (b.code || '').localeCompare(a.code || '', undefined, { numeric: true })
+      if (sortBy === 'code_asc') return (a.code || '').localeCompare(b.code || '', undefined, { numeric: true })
+      if (sortBy === 'amount_desc') return Number(b.totalAmount || 0) - Number(a.totalAmount || 0)
+      if (sortBy === 'amount_asc') return Number(a.totalAmount || 0) - Number(b.totalAmount || 0)
+      return timeB - timeA
+    })
+  }, [unifiedRecords, activeTab, selectedProjectId, periodPreset, startDate, endDate, searchQuery, sortBy])
 
   // Summary Metrics of filtered data
   const metrics = useMemo(() => {
@@ -354,15 +382,6 @@ export default function IssueList() {
           </div>
 
           <div className="flex items-center gap-2 self-start sm:self-center">
-            <button
-              type="button"
-              onClick={() => navigate(-1)}
-              className="rounded-xl bg-steel-800 hover:bg-steel-700 text-steel-200 border border-steel-600 px-3.5 py-2 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              <span>ย้อนกลับ</span>
-            </button>
-
             <Link
               to="/store/issue/new"
               className="rounded-xl bg-hivis text-steel-950 hover:bg-amber-400 font-black px-3.5 py-2 text-xs transition shadow-xs flex items-center gap-1.5 cursor-pointer"
@@ -382,9 +401,9 @@ export default function IssueList() {
         </div>
       </div>
 
-      {/* 2. Sub-Tabs & Filter Card */}
+      {/* 2. Sub-Tabs & Filter Card (จัดเลย์เอาต์มาตรฐานเหมือนทั้งโมดูล) */}
       <div className="rounded-2xl border border-steel-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs space-y-4">
-        {/* Sub-tabs: All | Issues | Returns | Adjust */}
+        {/* แถวบน: หมวดหมู่แท็บ (ซ้าย) + ค้นหาด่วน & เรียงลำดับมาตรฐาน & สลับมุมมอง (ขวา) */}
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-steel-100 dark:border-slate-800 pb-3">
           <div className="flex flex-wrap rounded-xl bg-steel-100 dark:bg-slate-800 p-1 gap-1">
             <button
@@ -396,7 +415,7 @@ export default function IssueList() {
                   : 'text-steel-600 dark:text-slate-300 hover:text-steel-900 dark:hover:text-white'
               }`}
             >
-              <span>📑 ทั้งหมด</span>
+              <span>ทั้งหมด</span>
               <span className="rounded-full bg-steel-200 dark:bg-slate-700 px-1.5 py-0.2 text-[10px]">
                 {unifiedRecords.length}
               </span>
@@ -448,75 +467,79 @@ export default function IssueList() {
             </button>
           </div>
 
-          {/* Quick Metrics */}
-          <div className="flex items-center gap-3 text-xs">
-            <div className="rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 px-3 py-1 text-right">
-              <span className="text-[10px] text-amber-800 dark:text-amber-300 block">มูลค่าเบิกรวม</span>
-              <span className="font-mono font-bold text-amber-950 dark:text-amber-400">
-                {baht(metrics.issueTotal)} บ.
-              </span>
+          {/* ช่องค้นหาด่วน + เรียงลำดับมาตรฐาน + ปุ่มสลับมุมมอง */}
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-steel-400 dark:text-slate-500" />
+              <input
+                type="text"
+                placeholder="ค้นหารหัส, ชื่อพัสดุ, เลขที่..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-48 sm:w-60 h-9 rounded-xl border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 pl-8 pr-7 text-xs font-semibold text-steel-900 dark:text-slate-100 placeholder:text-steel-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-amber-500"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-steel-400 hover:text-steel-600 dark:hover:text-slate-200"
+                >
+                  
+                </button>
+              )}
             </div>
 
-            <div className="rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 px-3 py-1 text-right">
-              <span className="text-[10px] text-emerald-800 dark:text-emerald-300 block">มูลค่าคืนรวม</span>
-              <span className="font-mono font-bold text-emerald-950 dark:text-emerald-400">
-                {baht(metrics.returnTotal)} บ.
-              </span>
+            <TableSortFilter
+              value={sortBy}
+              onChange={setSortBy}
+              options={ISSUE_SORT_OPTIONS}
+            />
+
+            {/* View Mode Toggle: ตาราง vs การ์ด */}
+            <div className="flex items-center rounded-xl border border-steel-200 dark:border-slate-700 bg-steel-100/80 dark:bg-slate-800 p-0.5">
+              <button
+                type="button"
+                onClick={() => setViewMode('table')}
+                className={`px-2.5 py-1 text-xs font-bold rounded-lg transition flex items-center gap-1 cursor-pointer ${
+                  viewMode === 'table'
+                    ? 'bg-white dark:bg-slate-900 text-steel-900 dark:text-amber-400 shadow-2xs'
+                    : 'text-steel-600 dark:text-slate-400 hover:text-steel-900 dark:hover:text-slate-200'
+                }`}
+                title="มุมมองตาราง"
+              >
+                <List className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">ตาราง</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('cards')}
+                className={`px-2.5 py-1 text-xs font-bold rounded-lg transition flex items-center gap-1 cursor-pointer ${
+                  viewMode === 'cards'
+                    ? 'bg-white dark:bg-slate-900 text-steel-900 dark:text-amber-400 shadow-2xs'
+                    : 'text-steel-600 dark:text-slate-400 hover:text-steel-900 dark:hover:text-slate-200'
+                }`}
+                title="มุมมองการ์ด"
+              >
+                <Grid className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">การ์ด</span>
+              </button>
             </div>
           </div>
         </div>
 
-        {/* Filters Controls Row */}
+        {/* แถวล่าง: ตัวกรองโครงการ + ช่วงเวลาดูย้อนหลัง + ปฏิทินกำหนดเอง */}
         <div className="space-y-3">
-          {/* Preset Buttons for Time Period */}
-          <div className="flex flex-wrap items-center gap-1.5 text-xs">
-            <span className="text-xs font-bold text-steel-500 dark:text-slate-400 flex items-center gap-1 mr-1">
-              <Calendar className="h-3.5 w-3.5" />
-              <span>ช่วงเวลา:</span>
-            </span>
-
-            {[
-              { id: 'all', label: 'ทั้งหมด' },
-              { id: 'today', label: 'วันนี้' },
-              { id: '7days', label: '7 วันล่าสุด' },
-              { id: '30days', label: '30 วันล่าสุด' },
-              { id: 'thisMonth', label: 'เดือนนี้' },
-              { id: 'thisYear', label: 'ปีนี้ (2569)' },
-            ].map((p) => {
-              const active = periodPreset === p.id && !startDate && !endDate
-              return (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => {
-                    setPeriodPreset(p.id)
-                    setStartDate('')
-                    setEndDate('')
-                  }}
-                  className={`rounded-lg px-2.5 py-1 text-xs font-bold transition cursor-pointer border ${
-                    active
-                      ? 'bg-sky-600 text-white border-sky-600 shadow-2xs'
-                      : 'border-steel-200 dark:border-slate-700 bg-steel-50 dark:bg-slate-800 text-steel-700 dark:text-slate-300 hover:bg-steel-100 dark:hover:bg-slate-700'
-                  }`}
-                >
-                  {p.label}
-                </button>
-              )
-            })}
-          </div>
-
-          {/* Project & Search Inputs Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 pt-1">
-            {/* Filter by Project */}
-            <div className="sm:col-span-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
+            {/* โครงการ & ช่วงเวลา */}
+            <div className="flex flex-wrap items-center gap-2">
               <div className="relative">
-                <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-steel-400 dark:text-slate-500" />
+                <Briefcase className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-steel-400 dark:text-slate-500" />
                 <select
                   value={selectedProjectId}
                   onChange={(e) => setSelectedProjectId(e.target.value)}
-                  className="w-full rounded-xl border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 pl-9 pr-3 py-2 text-xs font-semibold text-steel-800 dark:text-slate-100 focus:border-steel-900 dark:focus:border-amber-400 focus:outline-none"
+                  className="rounded-lg border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 pl-8 pr-3 py-1.5 text-xs font-semibold text-steel-800 dark:text-slate-100 focus:outline-none focus:border-amber-500"
                 >
-                  <option value="all">🏗️ ทุกโครงการ (หรือของกลาง)</option>
+                  <option value="all">ทุกโครงการ (หรือของกลาง)</option>
                   {projects.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.project_code} - {p.project_name}
@@ -524,33 +547,46 @@ export default function IssueList() {
                   ))}
                 </select>
               </div>
-            </div>
 
-            {/* Keyword Search (Material name, code, document no) */}
-            <div className="sm:col-span-5">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-steel-400 dark:text-slate-500" />
-                <input
-                  type="text"
-                  placeholder="ค้นหาชื่อวัสดุ, รหัสพัสดุ, เลขที่ใบเบิก/คืน..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full rounded-xl border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 pl-9 pr-8 py-2 text-xs font-semibold text-steel-900 dark:text-slate-100 placeholder:text-steel-400 dark:placeholder:text-slate-500 focus:border-steel-900 dark:focus:border-amber-400 focus:outline-none"
-                />
-                {searchQuery && (
-                  <button
-                    type="button"
-                    onClick={() => setSearchQuery('')}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-steel-400 hover:text-steel-600 dark:hover:text-slate-200"
-                  >
-                    ✕
-                  </button>
-                )}
+              {/* ช่วงเวลา presets */}
+              <div className="flex flex-wrap items-center gap-1">
+                <span className="font-bold text-steel-600 dark:text-slate-300 mr-1 flex items-center gap-1">
+                  <Calendar className="h-3.5 w-3.5" /> ช่วงเวลา:
+                </span>
+                {[
+                  { id: 'all', label: 'ทั้งหมด' },
+                  { id: 'today', label: 'วันนี้' },
+                  { id: '7days', label: '7 วันล่าสุด' },
+                  { id: '30days', label: '30 วันล่าสุด' },
+                  { id: 'thisMonth', label: 'เดือนนี้' },
+                  { id: 'thisYear', label: 'ปีนี้ (2569)' },
+                ].map((p) => {
+                  const active = periodPreset === p.id && !startDate && !endDate
+                  return (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => {
+                        setPeriodPreset(p.id)
+                        setStartDate('')
+                        setEndDate('')
+                      }}
+                      className={`px-2.5 py-1 rounded-md text-xs font-semibold transition cursor-pointer border ${
+                        active
+                          ? 'bg-sky-600 text-white border-sky-600 shadow-2xs font-bold'
+                          : 'border-steel-200 dark:border-slate-700 bg-steel-50 dark:bg-slate-800 text-steel-700 dark:text-slate-300 hover:bg-steel-100 dark:hover:bg-slate-700'
+                      }`}
+                    >
+                      {p.label}
+                    </button>
+                  )
+                })}
               </div>
             </div>
 
-            {/* Date Pickers (Custom range) */}
-            <div className="sm:col-span-3 flex items-center gap-1.5">
+            {/* Custom Date Inputs */}
+            <div className="flex items-center gap-1.5">
+              <span className="text-steel-500 dark:text-slate-400 text-xs">ตั้งแต่:</span>
               <input
                 type="date"
                 value={startDate}
@@ -558,10 +594,9 @@ export default function IssueList() {
                   setStartDate(e.target.value)
                   setPeriodPreset('custom')
                 }}
-                className="w-full rounded-xl border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-2 py-1.5 text-xs text-steel-800 dark:text-slate-100"
-                title="จากวันที่"
+                className="rounded-lg border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-2 py-1 text-xs text-steel-800 dark:text-slate-100 focus:outline-none focus:border-amber-500"
               />
-              <span className="text-steel-400 text-xs">-</span>
+              <span className="text-steel-400 text-xs">ถึง:</span>
               <input
                 type="date"
                 value={endDate}
@@ -569,37 +604,49 @@ export default function IssueList() {
                   setEndDate(e.target.value)
                   setPeriodPreset('custom')
                 }}
-                className="w-full rounded-xl border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-2 py-1.5 text-xs text-steel-800 dark:text-slate-100"
-                title="ถึงวันที่"
+                className="rounded-lg border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-2 py-1 text-xs text-steel-800 dark:text-slate-100 focus:outline-none focus:border-amber-500"
               />
             </div>
           </div>
         </div>
       </div>
 
-      {/* 3. Results Section */}
-      <div className="flex items-center justify-between text-xs text-steel-500 dark:text-slate-400 px-1">
-        <span>
-          แสดงผล <b>{filteredRecords.length}</b> รายการ (เรียงตามการทำรายการล่าสุด)
-        </span>
-        {(searchQuery || selectedProjectId !== 'all' || periodPreset !== 'all' || startDate || endDate) && (
-          <button
-            type="button"
-            onClick={() => {
-              setSearchQuery('')
-              setSelectedProjectId('all')
-              setPeriodPreset('all')
-              setStartDate('')
-              setEndDate('')
-            }}
-            className="text-amber-700 dark:text-amber-400 hover:underline flex items-center gap-1 font-bold cursor-pointer"
-          >
-            <X className="h-3 w-3" />
-            <span>ล้างตัวกรองทั้งหมด</span>
-          </button>
-        )}
+      {/* 3. Results Section (สรุปผลและสลับมุมมอง) */}
+      <div className="flex flex-wrap items-center justify-between gap-3 text-xs px-1 text-steel-600 dark:text-slate-400">
+        <div className="flex flex-wrap items-center gap-3">
+          <span>
+            มูลค่าเบิกรวม (ที่แสดง): <b className="font-mono text-amber-900 dark:text-amber-400 font-bold">{baht(metrics.issueTotal)} บาท</b>
+          </span>
+          <span className="text-steel-300 dark:text-slate-600">·</span>
+          <span>
+            มูลค่าคืนรวม (ที่แสดง): <b className="font-mono text-emerald-900 dark:text-emerald-400 font-bold">{baht(metrics.returnTotal)} บาท</b>
+          </span>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <span>
+            แสดง <b>{filteredRecords.length}</b> รายการ
+          </span>
+          {(searchQuery || selectedProjectId !== 'all' || periodPreset !== 'all' || startDate || endDate) && (
+            <button
+              type="button"
+              onClick={() => {
+                setSearchQuery('')
+                setSelectedProjectId('all')
+                setPeriodPreset('all')
+                setStartDate('')
+                setEndDate('')
+              }}
+              className="text-amber-700 dark:text-amber-400 hover:underline flex items-center gap-1 font-bold cursor-pointer"
+            >
+              <X className="h-3 w-3" />
+              <span>ล้างตัวกรองทั้งหมด</span>
+            </button>
+          )}
+        </div>
       </div>
 
+      {/* 4. การแสดงผลข้อมูล: โหมดตาราง (Table View) และ โหมดการ์ด (Cards View) */}
       {filteredRecords.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-steel-300 dark:border-slate-800 bg-white dark:bg-slate-900 p-12 text-center space-y-3">
           <Boxes className="mx-auto h-12 w-12 text-steel-300 dark:text-slate-600" />
@@ -610,7 +657,119 @@ export default function IssueList() {
             ลองปรับเปลี่ยนคำค้นหา หรือเลือกตัวกรองช่วงเวลา/โครงการใหม่
           </p>
         </div>
+      ) : viewMode === 'table' ? (
+        /* โหมดตารางมาตรฐานระดับสากล เหมือน ReceiptsList และ ItemsMaster */
+        <div className="overflow-x-auto rounded-2xl border border-steel-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs">
+          <table className="w-full text-xs min-w-[950px] divide-y divide-steel-200 dark:divide-slate-800">
+            <thead className="bg-steel-50/90 dark:bg-slate-800 text-steel-700 dark:text-slate-200 font-bold uppercase tracking-wider text-[11px]">
+              <tr>
+                <th className="py-3.5 pl-4 pr-3 whitespace-nowrap">วันที่ / เวลา</th>
+                <th className="py-3.5 px-3 whitespace-nowrap">ประเภท</th>
+                <th className="py-3.5 px-3 whitespace-nowrap">เลขที่เอกสาร</th>
+                <th className="py-3.5 px-3 whitespace-nowrap">โครงการ / ปลายทาง</th>
+                <th className="py-3.5 px-3 whitespace-nowrap">รายการพัสดุ</th>
+                <th className="py-3.5 px-3 text-right whitespace-nowrap">จำนวนรวม</th>
+                <th className="py-3.5 px-3 text-right whitespace-nowrap">มูลค่ารวม (บาท)</th>
+                <th className="py-3.5 pl-3 pr-4 whitespace-nowrap">รายละเอียด / หมายเหตุ</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-steel-100 dark:divide-slate-800">
+              {paginatedRows.map((r) => {
+                const { date, time } = formatDateTimeParts(r.createdAt)
+                const isIssue = r.kind === 'issue'
+                const isReturn = r.kind === 'return'
+                const totalItemsQty = r.items.reduce((s, it) => s + Number(it.quantity || 0), 0)
+
+                return (
+                  <tr key={r.id} className="hover:bg-steel-50/80 dark:hover:bg-slate-800/60 transition text-xs">
+                    {/* 1. วันที่และเวลา (2 บรรทัดมาตรฐาน ERP สากล) */}
+                    <td className="py-3 pl-4 pr-3 whitespace-nowrap">
+                      <div className="flex flex-col text-xs leading-tight">
+                        <span className="font-semibold text-steel-800 dark:text-slate-200">{date}</span>
+                        <span className="flex items-center gap-1 text-[11px] text-steel-500 dark:text-slate-400 font-mono mt-0.5">
+                          <Clock className="h-3 w-3 text-steel-400 dark:text-slate-500 shrink-0" />
+                          {time ? `${time} น.` : ''}
+                        </span>
+                      </div>
+                    </td>
+
+                    {/* 2. ประเภท */}
+                    <td className="py-3 px-3 whitespace-nowrap">
+                      {isIssue ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 dark:bg-amber-950/80 text-amber-900 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                          <ArrowUpFromLine className="h-3 w-3" />
+                          <span>เบิกของ</span>
+                        </span>
+                      ) : isReturn ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 dark:bg-emerald-950/80 text-emerald-900 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                          <RotateCcw className="h-3 w-3" />
+                          <span>คืนของเข้าสโตร์</span>
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-100 dark:bg-rose-950/80 text-rose-900 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
+                          <TrendingDown className="h-3 w-3" />
+                          <span>ตัดชำรุด/ปรับยอด</span>
+                        </span>
+                      )}
+                    </td>
+
+                    {/* 3. เลขที่เอกสาร */}
+                    <td className="py-3 px-3 font-mono font-bold text-steel-900 dark:text-amber-400 whitespace-nowrap">
+                      {r.code}
+                    </td>
+
+                    {/* 4. โครงการ / ปลายทาง */}
+                    <td className="py-3 px-3 whitespace-nowrap">
+                      {r.projectName ? (
+                        <span className="inline-flex items-center gap-1 rounded-lg bg-steel-100 dark:bg-slate-800 px-2 py-0.5 font-semibold text-steel-800 dark:text-slate-200 border border-steel-200 dark:border-slate-700 text-xs">
+                          <Briefcase className="h-3 w-3 text-steel-500" />
+                          <span className="font-bold">{r.projectCode}</span> {r.projectName}
+                        </span>
+                      ) : r.targetType === 'office' ? (
+                        <span className="inline-flex items-center gap-1 rounded-lg bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 text-xs font-bold text-blue-900 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                          ออฟฟิศส่วนกลาง
+                        </span>
+                      ) : (
+                        <span className="text-steel-400 dark:text-slate-500 text-xs">ของกลางบริษัท</span>
+                      )}
+                    </td>
+
+                    {/* 5. รายการพัสดุ */}
+                    <td className="py-3 px-3 max-w-[260px]">
+                      <div className="font-semibold text-steel-900 dark:text-slate-100 truncate" title={r.items.map((i) => i.name).join(', ')}>
+                        {r.items[0]?.name || '-'}
+                        {r.items.length > 1 && (
+                          <span className="ml-1 text-[11px] text-steel-500 dark:text-slate-400 font-normal">
+                            (+อีก {r.items.length - 1} รายการ)
+                          </span>
+                        )}
+                      </div>
+                    </td>
+
+                    {/* 6. จำนวนรวม */}
+                    <td className="py-3 px-3 text-right font-mono font-bold whitespace-nowrap text-steel-800 dark:text-slate-200">
+                      {formatIntQty(totalItemsQty)} {r.items[0]?.unit || 'ชิ้น'}
+                    </td>
+
+                    {/* 7. มูลค่ารวม */}
+                    <td className="py-3 px-3 text-right font-mono font-bold whitespace-nowrap">
+                      <span className={isReturn ? 'text-emerald-700 dark:text-emerald-400' : isIssue ? 'text-amber-800 dark:text-amber-400' : 'text-rose-700 dark:text-rose-400'}>
+                        {baht(r.totalAmount)} บ.
+                      </span>
+                    </td>
+
+                    {/* 8. หมายเหตุ / รายละเอียด */}
+                    <td className="py-3 pl-3 pr-4 text-steel-500 dark:text-slate-400 text-xs max-w-[200px] truncate" title={r.notes || r.reason || '-'}>
+                      {r.notes || r.reason || '-'}
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
       ) : (
+        /* โหมดการ์ด (Cards View) */
         <div className="space-y-3.5">
           {paginatedRows.map((r) => {
             const isIssue = r.kind === 'issue'
@@ -629,17 +788,17 @@ export default function IssueList() {
                     {isIssue ? (
                       <span className="flex items-center gap-1 rounded-lg bg-amber-50 dark:bg-amber-950/60 px-2.5 py-1 text-xs font-black text-amber-900 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
                         <ArrowUpFromLine className="h-3.5 w-3.5" />
-                        <span>📤 เบิกของ</span>
+                        <span>เบิกของ</span>
                       </span>
                     ) : isReturn ? (
                       <span className="flex items-center gap-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-1 text-xs font-black text-emerald-900 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                         <RotateCcw className="h-3.5 w-3.5" />
-                        <span>📥 คืนของเข้าสโตร์</span>
+                        <span>คืนของเข้าสโตร์</span>
                       </span>
                     ) : (
                       <span className="flex items-center gap-1 rounded-lg bg-rose-50 dark:bg-rose-950/60 px-2.5 py-1 text-xs font-black text-rose-900 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
                         <TrendingDown className="h-3.5 w-3.5" />
-                        <span>🔻 ตัดชำรุด/ปรับยอด</span>
+                        <span> ตัดชำรุด/ปรับยอด</span>
                       </span>
                     )}
 
@@ -662,13 +821,13 @@ export default function IssueList() {
                     ) : r.targetType === 'office' ? (
                       <span className="flex items-center gap-1 rounded-lg bg-blue-50 dark:bg-blue-950/60 px-2.5 py-1 text-xs font-bold text-blue-900 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
                         <Building2 className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
-                        <span>🏢 ออฟฟิศส่วนกลาง</span>
+                        <span>ออฟฟิศส่วนกลาง</span>
                         {r.targetLocation && <span className="font-normal">({r.targetLocation})</span>}
                       </span>
                     ) : r.targetType === 'site' ? (
                       <span className="flex items-center gap-1 rounded-lg bg-cyan-50 dark:bg-cyan-950/60 px-2.5 py-1 text-xs font-bold text-cyan-900 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800">
                         <MapPin className="h-3.5 w-3.5 text-cyan-600 dark:text-cyan-400" />
-                        <span>⚡ หน้างาน</span>
+                        <span>หน้างาน</span>
                         {r.targetLocation && <span className="font-normal truncate max-w-[150px]">({r.targetLocation})</span>}
                       </span>
                     ) : (

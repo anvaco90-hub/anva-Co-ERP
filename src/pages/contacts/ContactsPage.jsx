@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
 import {
   Building2, User, Search, Plus, MoreVertical, Eye, Edit3, Trash2,
-  Printer, CheckCircle2, XCircle, FileText, Package, RefreshCw, Filter, Phone, Mail
+  Printer, CheckCircle2, XCircle, FileText, Package, RefreshCw, Filter, Phone, Mail, Users
 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { baht } from '../../lib/projects'
@@ -24,12 +24,12 @@ export default function ContactsPage() {
   const [entityFilter, setEntityFilter] = useState('all') // 'all' | 'corporate' | 'individual'
 
   const CONTACTS_SORT_OPTIONS = [
-    { value: 'name_asc', label: '🔤 ชื่อคู่ค้า/บริษัท ก ➔ ฮ (A ➔ Z)' },
-    { value: 'name_desc', label: '🔤 ชื่อคู่ค้า/บริษัท ฮ ➔ ก (Z ➔ A)' },
-    { value: 'code_asc', label: '🔢 รหัสคู่ค้า (น้อย ➔ มาก: 0 ➔ 9)' },
-    { value: 'code_desc', label: '🔢 รหัสคู่ค้า (มาก ➔ น้อย: 9 ➔ 0)' },
-    { value: 'date_desc', label: '🕒 เพิ่มล่าสุด (ใหม่ ➔ เก่า)' },
-    { value: 'date_asc', label: '🕒 เพิ่มก่อนหน้า (เก่า ➔ ใหม่)' },
+    { value: 'name_asc', label: 'ชื่อคู่ค้า/บริษัท ก  ฮ (A  Z)' },
+    { value: 'name_desc', label: 'ชื่อคู่ค้า/บริษัท ฮ  ก (Z  A)' },
+    { value: 'code_asc', label: 'รหัสคู่ค้า (น้อย  มาก: 0  9)' },
+    { value: 'code_desc', label: 'รหัสคู่ค้า (มาก  น้อย: 9  0)' },
+    { value: 'date_desc', label: ' เพิ่มล่าสุด (ใหม่  เก่า)' },
+    { value: 'date_asc', label: ' เพิ่มก่อนหน้า (เก่า  ใหม่)' },
   ]
   const [showInactive, setShowInactive] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
@@ -225,18 +225,30 @@ export default function ContactsPage() {
 
   return (
     <div className="space-y-4 max-w-7xl mx-auto">
+      {/* Invisible backdrop to close action menu on outside click */}
+      {actionMenuId && (
+        <div
+          className="fixed inset-0 z-30 bg-transparent"
+          onClick={() => setActionMenuId(null)}
+        />
+      )}
+
       {/* 1. Header & Title */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">👥</span>
-            <h1 className="text-xl sm:text-2xl font-black text-steel-900 tracking-tight">
-              ทะเบียนคู่ค้า & ผู้ติดต่อ (Contacts Hub)
-            </h1>
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-700 text-white shadow-sm">
+              <Users className="h-5 w-5" />
+            </div>
+            <div>
+              <h1 className="text-xl sm:text-2xl font-black text-steel-900 tracking-tight">
+                ทะเบียนคู่ค้า &amp; ผู้ติดต่อ (Contacts Hub)
+              </h1>
+              <p className="text-xs text-steel-500 mt-0.5">
+                สถาปัตยกรรมรวมศูนย์ (Multi-Role) บันทึกและเรียกดูประวัติลูกค้าจากใบเสนอราคา และผู้จำหน่ายจากใบสั่งซื้อ
+              </p>
+            </div>
           </div>
-          <p className="text-xs text-steel-500 mt-0.5">
-            สถาปัตยกรรมรวมศูนย์ (Multi-Role) บันทึกและเรียกดูประวัติลูกค้าจากใบเสนอราคา และผู้จำหน่ายจากใบสั่งซื้อ
-          </p>
         </div>
 
         <div className="flex items-center gap-2">
@@ -273,7 +285,7 @@ export default function ContactsPage() {
           }`}
         >
           <div className={`text-[11px] font-bold uppercase tracking-wider ${roleFilter === 'all' ? 'text-steel-300' : 'text-steel-500'}`}>
-            👥 คู่ค้าทั้งหมด
+            คู่ค้าทั้งหมด
           </div>
           <div className="mt-1 flex items-baseline gap-1">
             <span className="text-xl sm:text-2xl font-black">{totalCount}</span>
@@ -293,7 +305,7 @@ export default function ContactsPage() {
           }`}
         >
           <div className={`text-[11px] font-bold uppercase tracking-wider ${roleFilter === 'customer' ? 'text-sky-200' : 'text-sky-700'}`}>
-            🏢 ลูกค้า (Customers)
+            ลูกค้า (Customers)
           </div>
           <div className="mt-1 flex items-baseline gap-1">
             <span className="text-xl sm:text-2xl font-black">{customerCount}</span>
@@ -313,7 +325,7 @@ export default function ContactsPage() {
           }`}
         >
           <div className={`text-[11px] font-bold uppercase tracking-wider ${roleFilter === 'vendor' ? 'text-emerald-200' : 'text-emerald-700'}`}>
-            🏪 ผู้จำหน่าย / ร้านค้า (Vendors)
+            ผู้จำหน่าย / ร้านค้า (Vendors)
           </div>
           <div className="mt-1 flex items-baseline gap-1">
             <span className="text-xl sm:text-2xl font-black">{vendorCount}</span>
@@ -333,7 +345,7 @@ export default function ContactsPage() {
           }`}
         >
           <div className={`text-[11px] font-bold uppercase tracking-wider ${roleFilter === 'both' ? 'text-purple-200' : 'text-purple-700'}`}>
-            🔄 ทั้งสองบทบาท (Dual Roles)
+            ทั้งสองบทบาท (Dual Roles)
           </div>
           <div className="mt-1 flex items-baseline gap-1">
             <span className="text-xl sm:text-2xl font-black">{bothCount}</span>
@@ -360,7 +372,7 @@ export default function ContactsPage() {
               onClick={() => setSearch('')}
               className="absolute right-2.5 top-2 text-xs text-steel-400 hover:text-steel-600"
             >
-              ✕
+              
             </button>
           )}
         </div>
@@ -381,8 +393,8 @@ export default function ContactsPage() {
             className="rounded-xl border border-steel-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-steel-700 focus:outline-none"
           >
             <option value="all">ทุกประเภทกฎหมาย</option>
-            <option value="corporate">🏢 นิติบุคคล (Corporate)</option>
-            <option value="individual">👤 บุคคลธรรมดา (Individual)</option>
+            <option value="corporate">นิติบุคคล (Corporate)</option>
+            <option value="individual"> บุคคลธรรมดา (Individual)</option>
           </select>
 
           {/* Toggle Inactive */}
@@ -458,9 +470,9 @@ export default function ContactsPage() {
                         </div>
                         <div className="text-[10px] text-steel-500 mt-0.5 flex items-center gap-1">
                           {c.entity_type === 'individual' ? (
-                            <span className="text-amber-700 bg-amber-50 px-1 rounded">👤 บุคคลธรรมดา</span>
+                            <span className="text-amber-700 bg-amber-50 px-1 rounded"> บุคคลธรรมดา</span>
                           ) : (
-                            <span className="text-sky-800 bg-sky-50 px-1 rounded">🏢 นิติบุคคล</span>
+                            <span className="text-sky-800 bg-sky-50 px-1 rounded">นิติบุคคล</span>
                           )}
                         </div>
                       </td>
@@ -509,12 +521,12 @@ export default function ContactsPage() {
                         <div className="flex flex-col items-center gap-1">
                           {c.is_customer && (
                             <span className="inline-block rounded-full bg-sky-50 text-sky-800 border border-sky-200 px-2 py-0.5 text-[10px] font-bold">
-                              🏢 ลูกค้า
+                              ลูกค้า
                             </span>
                           )}
                           {c.is_vendor && (
                             <span className="inline-block rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 text-[10px] font-bold">
-                              🏪 ผู้จำหน่าย
+                               ผู้จำหน่าย
                             </span>
                           )}
                           {!c.is_customer && !c.is_vendor && (
@@ -539,14 +551,19 @@ export default function ContactsPage() {
                       </td>
 
                       {/* 7. การจัดการ (Action Popover) */}
-                      <td className="py-3 px-3.5 align-top text-right whitespace-nowrap relative">
+                      <td className={`py-3 px-3.5 align-top text-right whitespace-nowrap relative ${isMenuOpen ? 'z-40' : 'z-10'}`}>
                         <button
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation()
                             setActionMenuId(isMenuOpen ? null : c.id)
                           }}
-                          className="rounded-lg p-1 text-steel-500 hover:bg-steel-100 transition cursor-pointer"
+                          className={`rounded-xl p-1.5 transition cursor-pointer border ${
+                            isMenuOpen
+                              ? 'bg-sky-50 text-sky-700 border-sky-300 ring-2 ring-sky-400/20'
+                              : 'text-steel-500 hover:text-steel-800 hover:bg-steel-100 border-transparent'
+                          }`}
+                          title="เมนูการจัดการ"
                         >
                           <MoreVertical className="h-4 w-4" />
                         </button>
@@ -555,7 +572,7 @@ export default function ContactsPage() {
                         {isMenuOpen && (
                           <div
                             onClick={(e) => e.stopPropagation()}
-                            className="absolute right-3 top-8 z-50 w-52 rounded-xl border border-steel-200 bg-white p-1.5 shadow-xl text-xs space-y-0.5 text-left animate-in fade-in zoom-in-95 duration-100"
+                            className="absolute right-0 top-full mt-1.5 z-50 min-w-[230px] rounded-2xl border border-steel-200 bg-white p-1.5 shadow-2xl text-xs space-y-1 text-left ring-1 ring-black/5 animate-in fade-in zoom-in-95 duration-100"
                           >
                             <button
                               type="button"
@@ -563,10 +580,10 @@ export default function ContactsPage() {
                                 setActionMenuId(null)
                                 setSelectedContactForDetail(c)
                               }}
-                              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-steel-50 text-steel-800 transition cursor-pointer font-medium"
+                              className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-sky-50 hover:text-sky-950 text-steel-700 transition cursor-pointer font-medium whitespace-nowrap leading-normal"
                             >
-                              <Eye className="h-3.5 w-3.5 text-sky-600" />
-                              <span>ดูข้อมูล & ประวัติธุรกรรม</span>
+                              <Eye className="h-4 w-4 text-sky-600 shrink-0" />
+                              <span>ดูข้อมูล &amp; ประวัติธุรกรรม</span>
                             </button>
 
                             <button
@@ -575,9 +592,9 @@ export default function ContactsPage() {
                                 setActionMenuId(null)
                                 setSelectedContactForEdit(c)
                               }}
-                              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-steel-50 text-steel-800 transition cursor-pointer font-medium"
+                              className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-amber-50 hover:text-amber-950 text-steel-700 transition cursor-pointer font-medium whitespace-nowrap leading-normal"
                             >
-                              <Edit3 className="h-3.5 w-3.5 text-amber-600" />
+                              <Edit3 className="h-4 w-4 text-amber-600 shrink-0" />
                               <span>แก้ไขข้อมูลคู่ค้า</span>
                             </button>
 
@@ -587,9 +604,9 @@ export default function ContactsPage() {
                                 setActionMenuId(null)
                                 setSelectedContactForEnvelope(c)
                               }}
-                              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-steel-50 text-steel-800 transition cursor-pointer font-medium"
+                              className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-emerald-50 hover:text-emerald-950 text-steel-700 transition cursor-pointer font-medium whitespace-nowrap leading-normal"
                             >
-                              <Printer className="h-3.5 w-3.5 text-emerald-600" />
+                              <Printer className="h-4 w-4 text-emerald-600 shrink-0" />
                               <span>พิมพ์จ่าหน้าซองจดหมาย</span>
                             </button>
 
@@ -598,7 +615,7 @@ export default function ContactsPage() {
                             <button
                               type="button"
                               onClick={() => handleToggleActive(c)}
-                              className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg transition cursor-pointer font-medium ${
+                              className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl transition cursor-pointer font-medium whitespace-nowrap leading-normal ${
                                 c.is_active !== false
                                   ? 'hover:bg-rose-50 text-rose-700'
                                   : 'hover:bg-emerald-50 text-emerald-700'
@@ -606,12 +623,12 @@ export default function ContactsPage() {
                             >
                               {c.is_active !== false ? (
                                 <>
-                                  <XCircle className="h-3.5 w-3.5 text-rose-500" />
+                                  <XCircle className="h-4 w-4 text-rose-500 shrink-0" />
                                   <span>ระงับการใช้งาน (Soft Delete)</span>
                                 </>
                               ) : (
                                 <>
-                                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                                  <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
                                   <span>เปิดใช้งานอีกครั้ง</span>
                                 </>
                               )}

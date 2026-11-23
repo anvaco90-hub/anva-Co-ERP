@@ -34,8 +34,7 @@ export default function JournalEntriesPage() {
             projects(project_code, project_name),
             journal_entry_lines(
               id, account_id, contact_id, debit, credit, line_description,
-              chart_of_accounts(account_code, account_name_th, account_category),
-              contacts(company_name)
+              chart_of_accounts(account_code, account_name_th, account_category)
             )
           `)
           .order('entry_date', { ascending: false })
@@ -45,7 +44,16 @@ export default function JournalEntriesPage() {
         supabase.from('contacts').select('id, company_name, contact_type').order('company_name'),
       ])
 
-      setEntries(jvRes.data || [])
+      const cntMap = new Map((cntRes.data || []).map((c) => [c.id, c]))
+      const enrichedEntries = (jvRes.data || []).map((e) => ({
+        ...e,
+        journal_entry_lines: (e.journal_entry_lines || []).map((l) => ({
+          ...l,
+          contacts: l.contact_id ? cntMap.get(l.contact_id) || null : null,
+        })),
+      }))
+
+      setEntries(enrichedEntries)
       setCoaList(coaRes.data || [])
       setProjects(prjRes.data || [])
       setContacts(cntRes.data || [])
@@ -164,7 +172,7 @@ export default function JournalEntriesPage() {
           }`}
         >
           <span>{toastMsg.text}</span>
-          <button onClick={() => setToastMsg({ text: '', type: '' })} className="text-xs">✕</button>
+          <button onClick={() => setToastMsg({ text: '', type: '' })} className="text-xs"></button>
         </div>
       )}
 
@@ -391,7 +399,7 @@ export default function JournalEntriesPage() {
                                       เดบิตและเครดิตสมดุลสมบูรณ์ (Balanced)
                                     </>
                                   ) : (
-                                    '⚠️ ยอดเดบิตและเครดิตไม่สมดุล (Unbalanced)'
+                                    'ยอดเดบิตและเครดิตไม่สมดุล (Unbalanced)'
                                   )}
                                 </span>
                               </div>
@@ -610,12 +618,12 @@ function ManualJVModal({ isOpen, onClose, onSuccess, coaList = [], projects = []
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="text-steel-400 hover:text-steel-600 text-sm">✕</button>
+          <button onClick={onClose} className="text-steel-400 hover:text-steel-600 text-sm"></button>
         </div>
 
         {error && (
           <div className="mt-3 p-3 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-700 font-medium">
-            ⚠️ {error}
+            {error}
           </div>
         )}
 
@@ -649,7 +657,7 @@ function ManualJVModal({ isOpen, onClose, onSuccess, coaList = [], projects = []
                 onChange={(e) => setProjectId(e.target.value)}
                 className="w-full px-3 py-2 border border-steel-300 rounded-lg text-ink focus:ring-1 focus:ring-sky-500 bg-white"
               >
-                <option value="">🏢 ส่วนกลางบริษัท (Overhead)</option>
+                <option value="">ส่วนกลางบริษัท (Overhead)</option>
                 {projects.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.project_code} - {p.project_name}
@@ -802,7 +810,7 @@ function ManualJVModal({ isOpen, onClose, onSuccess, coaList = [], projects = []
               disabled={saving || !isBalanced}
               className="px-5 py-2 bg-sky-700 text-white rounded-lg hover:bg-sky-800 font-bold shadow flex items-center gap-1.5 disabled:opacity-50"
             >
-              {saving ? 'กำลังบันทึก...' : '💾 บันทึกสมุดรายวันทั่วไป'}
+              {saving ? 'กำลังบันทึก...' : ' บันทึกสมุดรายวันทั่วไป'}
             </button>
           </div>
         </form>

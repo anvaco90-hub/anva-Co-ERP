@@ -19,16 +19,35 @@ export function AuthProvider({ children }) {
   }
 
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data }) => {
-      setSession(data.session)
-      if (data.session) await loadProfile(data.session.user.id)
+    supabase.auth.getSession().then(async ({ data, error }) => {
+      if (error) {
+        console.warn('Session recovery error, resetting stale auth:', error.message)
+        await supabase.auth.signOut()
+        setSession(null)
+        setProfile(null)
+      } else {
+        setSession(data?.session || null)
+        if (data?.session) await loadProfile(data.session.user.id)
+      }
+      setLoading(false)
+    }).catch(async (err) => {
+      console.warn('Failed to retrieve session:', err)
+      await supabase.auth.signOut()
+      setSession(null)
+      setProfile(null)
       setLoading(false)
     })
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
-      setSession(s)
-      setTimeout(() => (s ? loadProfile(s.user.id) : setProfile(null)), 0)
+
+    const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
+      if (event === 'SIGNED_OUT' || !s) {
+        setSession(null)
+        setProfile(null)
+      } else {
+        setSession(s)
+        setTimeout(() => (s ? loadProfile(s.user.id) : setProfile(null)), 0)
+      }
     })
-    return () => sub.subscription.unsubscribe()
+    return () => sub?.subscription?.unsubscribe()
   }, [])
 
   const value = {

@@ -80,12 +80,12 @@ export default function ContactDetailModal({ contact, onClose, onEdit }) {
                   )}
                   {contact.is_customer && (
                     <span className="rounded-full bg-sky-500/30 text-sky-200 border border-sky-400/40 px-2 py-0.5 text-[10px] font-bold">
-                      🏢 ลูกค้า
+                      ลูกค้า
                     </span>
                   )}
                   {contact.is_vendor && (
                     <span className="rounded-full bg-emerald-500/30 text-emerald-200 border border-emerald-400/40 px-2 py-0.5 text-[10px] font-bold">
-                      🏪 ผู้จำหน่าย
+                       ผู้จำหน่าย
                     </span>
                   )}
                 </div>
@@ -159,7 +159,7 @@ export default function ContactDetailModal({ contact, onClose, onEdit }) {
                   : 'border-transparent text-steel-500 hover:text-steel-800'
               }`}
             >
-              🏢 ข้อมูลทั่วไป & ที่อยู่ติดต่อ
+              ข้อมูลทั่วไป & ที่อยู่ติดต่อ
             </button>
             <button
               type="button"
@@ -170,7 +170,7 @@ export default function ContactDetailModal({ contact, onClose, onEdit }) {
                   : 'border-transparent text-steel-500 hover:text-steel-800'
               }`}
             >
-              <span>📄 ประวัติใบเสนอราคา (Quotations)</span>
+              <span>ประวัติใบเสนอราคา (Quotations)</span>
               <span className="rounded-full bg-sky-100 text-sky-800 px-1.5 py-0.2 text-[10px]">{quotations.length}</span>
             </button>
             <button
@@ -182,7 +182,7 @@ export default function ContactDetailModal({ contact, onClose, onEdit }) {
                   : 'border-transparent text-steel-500 hover:text-steel-800'
               }`}
             >
-              <span>🛒 ประวัติใบสั่งซื้อ (Purchase Orders)</span>
+              <span>ประวัติใบสั่งซื้อ (Purchase Orders)</span>
               <span className="rounded-full bg-emerald-100 text-emerald-800 px-1.5 py-0.2 text-[10px]">{pos.length}</span>
             </button>
           </div>
@@ -268,7 +268,7 @@ export default function ContactDetailModal({ contact, onClose, onEdit }) {
                     {contact.bank_account_no ? (
                       <div className="rounded-lg bg-emerald-50/70 border border-emerald-200 p-3 text-xs space-y-1">
                         <div className="font-bold text-emerald-950 flex items-center justify-between">
-                          <span>🏦 {contact.bank_name || 'ธนาคารพาณิชย์'}</span>
+                          <span> {contact.bank_name || 'ธนาคารพาณิชย์'}</span>
                           <span className="font-mono text-xs">{contact.bank_account_no}</span>
                         </div>
                         <div className="text-emerald-800">

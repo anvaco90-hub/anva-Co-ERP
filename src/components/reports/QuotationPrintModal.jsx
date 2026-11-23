@@ -1,4 +1,5 @@
 import { baht } from '../../lib/projects'
+import R2Image from '../R2Image'
 
 export default function QuotationPrintModal({ quotation, items, onClose }) {
   if (!quotation) return null
@@ -24,7 +25,7 @@ export default function QuotationPrintModal({ quotation, items, onClose }) {
         {/* แถบควบคุมด้านบน (ไม่แสดงตอนพิมพ์) */}
         <div className="no-print flex items-center justify-between border-b border-steel-200 bg-steel-100 px-6 py-3">
           <div className="flex items-center gap-2">
-            <span className="text-xl">📄</span>
+            <span className="text-xl"></span>
             <span className="font-bold text-ink">พิมพ์ใบเสนอราคา / บันทึก PDF ({quotation.quotation_no})</span>
           </div>
           <div className="flex items-center gap-3">
@@ -32,7 +33,7 @@ export default function QuotationPrintModal({ quotation, items, onClose }) {
               onClick={handlePrint}
               className="inline-flex items-center gap-2 rounded-lg bg-sky-700 px-4 py-2 text-sm font-semibold text-white shadow-md hover:bg-sky-800 transition"
             >
-              <span>🖨️</span>
+              <span>️</span>
               <span>พิมพ์ใบเสนอราคา / บันทึกเป็น PDF</span>
             </button>
             <button
@@ -94,7 +95,7 @@ export default function QuotationPrintModal({ quotation, items, onClose }) {
                 <div>สกุลเงิน: <b>{currency}</b> · คลังสินค้า: <b>{quotation.warehouse_name || 'สโตร์หลัก'}</b></div>
                 {quotation.customer_po_no && (
                   <div className="rounded bg-emerald-50 border border-emerald-300 p-1.5 text-emerald-900 text-[11px] font-bold mt-1">
-                    ✅ เลขที่ PO ลูกค้า: <span className="font-mono">{quotation.customer_po_no}</span> {quotation.customer_po_date ? `(ลงวันที่ ${new Date(quotation.customer_po_date).toLocaleDateString('th-TH')})` : ''}
+                    เลขที่ PO ลูกค้า: <span className="font-mono">{quotation.customer_po_no}</span> {quotation.customer_po_date ? `(ลงวันที่ ${new Date(quotation.customer_po_date).toLocaleDateString('th-TH')})` : ''}
                   </div>
                 )}
               </div>
@@ -180,7 +181,7 @@ export default function QuotationPrintModal({ quotation, items, onClose }) {
                 <p className="font-bold text-neutral-800">ในนาม บริษัท แอนวา คอนสตรัคชั่น แอนด์ เอ็นจิเนียริ่ง จำกัด</p>
                 <div className="h-16 flex items-center justify-center">
                   {quotation.signature_url ? (
-                    <img src={quotation.signature_url} alt="ตราประทับ/ลายเซ็น" className="max-h-16 object-contain" />
+                    <R2Image fileKey={quotation.signature_url} alt="ตราประทับ/ลายเซ็น" className="max-h-16 object-contain" />
                   ) : (
                     <div className="border-b border-dotted border-black w-3/5" />
                   )}

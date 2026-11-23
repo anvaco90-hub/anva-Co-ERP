@@ -30,6 +30,7 @@ import {
   Sun,
   ShieldCheck,
   Building2,
+  ExternalLink,
 } from 'lucide-react'
 
 export default function StockList() {
@@ -109,13 +110,13 @@ export default function StockList() {
 
   // ตัวเลือกการเรียงลำดับมาตรฐานสำหรับคลังวัสดุ
   const STOCK_SORT_OPTIONS = [
-    { value: 'name_asc', label: '🔤 ชื่อพัสดุ ก ➔ ฮ (A ➔ Z)' },
-    { value: 'name_desc', label: '🔤 ชื่อพัสดุ ฮ ➔ ก (Z ➔ A)' },
-    { value: 'code_asc', label: '🔢 รหัสพัสดุ (น้อย ➔ มาก: 0 ➔ 9)' },
-    { value: 'code_desc', label: '🔢 รหัสพัสดุ (มาก ➔ น้อย: 9 ➔ 0)' },
-    { value: 'qty_desc', label: '📦 จำนวนคงเหลือ (มาก ➔ น้อย)' },
-    { value: 'qty_asc', label: '📦 จำนวนคงเหลือ (น้อย ➔ มาก)' },
-    { value: 'cost_desc', label: '💰 ต้นทุนเฉลี่ย (มาก ➔ น้อย)' },
+    { value: 'name_asc', label: 'ชื่อพัสดุ ก  ฮ (A  Z)' },
+    { value: 'name_desc', label: 'ชื่อพัสดุ ฮ  ก (Z  A)' },
+    { value: 'code_asc', label: 'รหัสพัสดุ (น้อย  มาก: 0  9)' },
+    { value: 'code_desc', label: 'รหัสพัสดุ (มาก  น้อย: 9  0)' },
+    { value: 'qty_desc', label: 'จำนวนคงเหลือ (มาก  น้อย)' },
+    { value: 'qty_asc', label: 'จำนวนคงเหลือ (น้อย  มาก)' },
+    { value: 'cost_desc', label: 'ต้นทุนเฉลี่ย (มาก  น้อย)' },
   ]
 
   // คำนวณรายการที่ผ่านการกรองและการจัดเรียง (ต้องอยู่ก่อน Early Return)
@@ -239,7 +240,7 @@ export default function StockList() {
                   : 'bg-steel-800/80 hover:bg-steel-800 border-steel-700 text-steel-300'
               }`}
             >
-              <div className="text-[11px] font-medium">⚠️ ใกล้หมด</div>
+              <div className="text-[11px] font-medium">ใกล้หมด</div>
               <div className="mt-0.5 text-xl font-black font-mono text-amber-300">
                 {lowCount}
               </div>
@@ -257,7 +258,7 @@ export default function StockList() {
                   : 'bg-steel-800/80 hover:bg-steel-800 border-steel-700 text-steel-300'
               }`}
             >
-              <div className="text-[11px] font-medium">🚨 หมดสต็อก</div>
+              <div className="text-[11px] font-medium">หมดสต็อก</div>
               <div className="mt-0.5 text-xl font-black font-mono text-rose-400">
                 {outCount}
               </div>
@@ -298,14 +299,30 @@ export default function StockList() {
       {/* 2. Category Filter Pills (เลือกตามหมวดหมู่ - ไม่เลื่อน ไม่ล้น)          */}
       {/* ---------------------------------------------------------------------- */}
       <div className="rounded-2xl border border-steel-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-xs space-y-3">
-        <div className="flex items-center justify-between text-xs font-bold text-steel-700 dark:text-slate-300">
+        <div className="flex flex-wrap items-center justify-between gap-3 text-xs font-bold text-steel-700 dark:text-slate-300">
           <span className="flex items-center gap-1.5 text-steel-900 dark:text-slate-100">
             <Layers className="h-4 w-4 text-steel-700 dark:text-amber-400" />
             <span>เลือกดูตามหมวดหมู่วัสดุและอุปกรณ์</span>
           </span>
-          <span className="text-steel-400 dark:text-slate-300 font-normal">
-            แสดง {shown.length} จาก {items.length} รายการ
-          </span>
+
+          <div className="flex items-center gap-2">
+            <span className="text-steel-400 dark:text-slate-300 font-normal hidden sm:inline">
+              แสดง {shown.length} จาก {items.length} รายการ
+            </span>
+            {/* Dropdown เลือกหมวดหมู่ (สำหรับกรณีหมวดหมู่เยอะหรือเลือกผ่าน Dropdown) */}
+            <select
+              value={cat}
+              onChange={(e) => setCat(e.target.value)}
+              className="h-8 rounded-lg border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 text-xs font-bold text-steel-800 dark:text-slate-200 focus:outline-none focus:border-amber-500 cursor-pointer shadow-2xs"
+            >
+              <option value=""> หมวดหมู่ทั้งหมด ({items.length} รายการ)</option>
+              {cats.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name} ({items.filter((it) => it.category_id === c.id).length})
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -377,7 +394,7 @@ export default function StockList() {
                 onClick={() => setSearch('')}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-steel-400 hover:text-steel-600 dark:hover:text-slate-200"
               >
-                ✕
+                
               </button>
             )}
           </div>
@@ -404,7 +421,7 @@ export default function StockList() {
                 : 'bg-white dark:bg-slate-900 text-steel-700 dark:text-slate-200 border-steel-300 dark:border-slate-700 hover:bg-steel-50 dark:hover:bg-slate-800'
             }`}
           >
-            <span>⚠️</span>
+            <span></span>
             <span>ใกล้หมด ({lowCount})</span>
           </button>
 
@@ -420,7 +437,7 @@ export default function StockList() {
                 : 'bg-white dark:bg-slate-900 text-steel-700 dark:text-slate-200 border-steel-300 dark:border-slate-700 hover:bg-steel-50 dark:hover:bg-slate-800'
             }`}
           >
-            <span>🚨</span>
+            <span></span>
             <span>หมดสต็อก ({outCount})</span>
           </button>
 
@@ -889,7 +906,7 @@ export default function StockList() {
                 onClick={() => setSelectedDetailItem(null)}
                 className="rounded-full p-1 text-steel-400 hover:text-white transition"
               >
-                ✕
+                
               </button>
             </div>
 
@@ -1024,7 +1041,7 @@ export default function StockList() {
               onClick={() => setPreviewImg(null)}
               className="absolute right-4 top-4 rounded-full bg-black/60 p-2 text-white hover:bg-black"
             >
-              ✕
+              
             </button>
           </div>
         </div>
@@ -1043,7 +1060,9 @@ export default function StockList() {
         <InventoryReportModal
           items={items}
           lots={lots}
+          categories={cats}
           cats={cats}
+          selectedCategory={cat}
           onClose={() => setShowReport(false)}
         />
       )}

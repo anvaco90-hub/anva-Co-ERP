@@ -32,7 +32,7 @@ export default function AccountingDashboard() {
         supabase.from('fleet_card_expenses').select('*, projects(project_code, project_name)').order('transaction_date', { ascending: false }),
         supabase
           .from('expenses')
-          .select('*, projects(project_code, project_name), vendors(vendor_name, tax_id)')
+          .select('*, projects(project_code, project_name)')
           .order('expense_date', { ascending: false }),
         supabase.from('projects').select('id, project_code, project_name').order('project_code'),
         supabase.from('vendors').select('id, vendor_code, vendor_name, tax_id').order('vendor_name'),
@@ -102,11 +102,11 @@ export default function AccountingDashboard() {
       case 'รอดำเนินการ':
         return <span className="bg-amber-100 text-amber-800 text-[10px] px-2 py-0.5 rounded-full font-bold">⏳ รอดำเนินการ</span>
       case 'อนุมัติแล้ว':
-        return <span className="bg-sky-100 text-sky-800 text-[10px] px-2 py-0.5 rounded-full font-bold">📋 อนุมัติแล้ว</span>
+        return <span className="bg-sky-100 text-sky-800 text-[10px] px-2 py-0.5 rounded-full font-bold">อนุมัติแล้ว</span>
       case 'จ่ายเงินแล้ว':
-        return <span className="bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded-full font-bold">💵 จ่ายเงินแล้ว</span>
+        return <span className="bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded-full font-bold"> จ่ายเงินแล้ว</span>
       case 'ยกเลิก':
-        return <span className="bg-rose-100 text-rose-800 text-[10px] px-2 py-0.5 rounded-full font-bold">❌ ยกเลิก</span>
+        return <span className="bg-rose-100 text-rose-800 text-[10px] px-2 py-0.5 rounded-full font-bold">ยกเลิก</span>
       default:
         return <span className="bg-steel-100 text-steel-700 text-[10px] px-2 py-0.5 rounded-full font-medium">{status || 'ฉบับร่าง'}</span>
     }
@@ -115,13 +115,13 @@ export default function AccountingDashboard() {
   const getAccountingStatusBadge = (accStatus) => {
     switch (accStatus) {
       case 'อนุมัติแล้ว':
-        return <span className="bg-emerald-50 text-emerald-700 border border-emerald-300 text-[10px] px-2 py-0.5 rounded-full font-bold">✅ บัญชี: บันทึก GL แล้ว</span>
+        return <span className="bg-emerald-50 text-emerald-700 border border-emerald-300 text-[10px] px-2 py-0.5 rounded-full font-bold">บัญชี: บันทึก GL แล้ว</span>
       case 'รอดำเนินการ':
-        return <span className="bg-amber-50 text-amber-700 border border-amber-300 text-[10px] px-2 py-0.5 rounded-full font-bold">⚡ บัญชี: รอดำเนินการ</span>
+        return <span className="bg-amber-50 text-amber-700 border border-amber-300 text-[10px] px-2 py-0.5 rounded-full font-bold">บัญชี: รอดำเนินการ</span>
       case 'ยกเลิก':
-        return <span className="bg-rose-50 text-rose-700 border border-rose-300 text-[10px] px-2 py-0.5 rounded-full font-bold">❌ บัญชี: ยกเลิก</span>
+        return <span className="bg-rose-50 text-rose-700 border border-rose-300 text-[10px] px-2 py-0.5 rounded-full font-bold">บัญชี: ยกเลิก</span>
       default:
-        return <span className="bg-steel-50 text-steel-600 border border-steel-200 text-[10px] px-2 py-0.5 rounded-full font-medium">⚡ บัญชี: รอดำเนินการ</span>
+        return <span className="bg-steel-50 text-steel-600 border border-steel-200 text-[10px] px-2 py-0.5 rounded-full font-medium">บัญชี: รอดำเนินการ</span>
     }
   }
 
@@ -136,13 +136,13 @@ export default function AccountingDashboard() {
     const diffDays = Math.ceil((due - today) / (1000 * 60 * 60 * 24))
 
     if (diffDays < 0) {
-      return <span className="bg-rose-100 text-rose-800 text-xs px-2.5 py-0.5 rounded-full font-bold">🔴 เกินกำหนด {Math.abs(diffDays)} วัน</span>
+      return <span className="bg-rose-100 text-rose-800 text-xs px-2.5 py-0.5 rounded-full font-bold">เกินกำหนด {Math.abs(diffDays)} วัน</span>
     }
     if (diffDays <= 3) {
-      return <span className="bg-rose-50 text-rose-700 border border-rose-300 text-xs px-2.5 py-0.5 rounded-full font-bold animate-pulse">🚨 ด่วน! ครบใน {diffDays} วัน</span>
+      return <span className="bg-rose-50 text-rose-700 border border-rose-300 text-xs px-2.5 py-0.5 rounded-full font-bold animate-pulse">ด่วน! ครบใน {diffDays} วัน</span>
     }
     if (diffDays <= 7) {
-      return <span className="bg-amber-100 text-amber-800 text-xs px-2.5 py-0.5 rounded-full font-medium">⚠️ เตือน: อีก {diffDays} วัน</span>
+      return <span className="bg-amber-100 text-amber-800 text-xs px-2.5 py-0.5 rounded-full font-medium">เตือน: อีก {diffDays} วัน</span>
     }
     return <span className="bg-sky-100 text-sky-800 text-xs px-2.5 py-0.5 rounded-full font-medium">ปกติ (เหลือ {diffDays} วัน)</span>
   }
@@ -162,7 +162,7 @@ export default function AccountingDashboard() {
             onClick={() => setShowExpenseModal(true)}
             className="px-4 py-2 bg-sky-700 hover:bg-sky-800 text-white rounded-xl text-xs font-bold shadow flex items-center gap-1.5 transition"
           >
-            <span>➕</span> บันทึกค่าใช้จ่ายใหม่ (New EXP)
+            <span></span> บันทึกค่าใช้จ่ายใหม่ (New EXP)
           </button>
         </div>
       </div>
@@ -201,7 +201,7 @@ export default function AccountingDashboard() {
               : 'bg-white text-steel-600 hover:bg-steel-100 border border-steel-200'
           }`}
         >
-          💸 ค่าใช้จ่ายโครงการ & บริษัท (Expenses - EXP)
+          ค่าใช้จ่ายโครงการ & บริษัท (Expenses - EXP)
         </button>
         <button
           onClick={() => setActiveTab('gl')}
@@ -211,7 +211,7 @@ export default function AccountingDashboard() {
               : 'bg-white text-steel-600 hover:bg-steel-100 border border-steel-200'
           }`}
         >
-          📖 สมุดรายวันทั่วไป & ผังบัญชี (GL & COA)
+           สมุดรายวันทั่วไป & ผังบัญชี (GL & COA)
         </button>
         <button
           onClick={() => setActiveTab('ap')}
@@ -221,7 +221,7 @@ export default function AccountingDashboard() {
               : 'bg-white text-steel-600 hover:bg-steel-100 border border-steel-200'
           }`}
         >
-          📑 เจ้าหนี้การค้า (AP) & กำหนดจ่าย
+          เจ้าหนี้การค้า (AP) & กำหนดจ่าย
         </button>
         <button
           onClick={() => setActiveTab('retention')}
@@ -231,7 +231,7 @@ export default function AccountingDashboard() {
               : 'bg-white text-steel-600 hover:bg-steel-100 border border-steel-200'
           }`}
         >
-          🏦 เงินประกันผลงาน (Retention)
+           เงินประกันผลงาน (Retention)
         </button>
         <button
           onClick={() => setActiveTab('fleet')}
@@ -241,7 +241,7 @@ export default function AccountingDashboard() {
               : 'bg-white text-steel-600 hover:bg-steel-100 border border-steel-200'
           }`}
         >
-          ⛽ บัตรน้ำมัน Fleet Card
+           บัตรน้ำมัน Fleet Card
         </button>
       </div>
 
@@ -272,7 +272,7 @@ export default function AccountingDashboard() {
                     : 'bg-sky-50 text-sky-700 hover:bg-sky-100'
                 }`}
               >
-                💼 เอกสารธุรกิจ (Business)
+                 เอกสารธุรกิจ (Business)
               </button>
               <button
                 onClick={() => setDocFilterMode('accounting')}
@@ -282,7 +282,7 @@ export default function AccountingDashboard() {
                     : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
                 }`}
               >
-                📑 เอกสารบัญชี (Accounting GL)
+                เอกสารบัญชี (Accounting GL)
               </button>
             </div>
             <span className="text-xs text-steel-500">
@@ -346,7 +346,7 @@ export default function AccountingDashboard() {
                               </span>
                               {exp.is_asset && (
                                 <span className="text-[9px] bg-purple-100 text-purple-800 px-1 py-0.5 rounded font-bold">
-                                  🏢 สินทรัพย์ถาวร
+                                  สินทรัพย์ถาวร
                                 </span>
                               )}
                             </div>
@@ -421,7 +421,7 @@ export default function AccountingDashboard() {
                                   }
                                   className="px-2 py-1 bg-emerald-600 text-white rounded text-[10px] font-bold hover:bg-emerald-700 shadow-sm flex items-center gap-1"
                                 >
-                                  <span>💸</span> จ่ายชำระ
+                                  <span></span> จ่ายชำระ
                                 </button>
                               )}
                             </div>
@@ -487,7 +487,7 @@ export default function AccountingDashboard() {
                           }
                           className="px-2.5 py-1 bg-emerald-600 text-white rounded text-xs font-bold hover:bg-emerald-700 shadow-sm"
                         >
-                          💸 จ่ายชำระ
+                          จ่ายชำระ
                         </button>
                       )}
                     </td>

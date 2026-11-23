@@ -1,6 +1,13 @@
 // POST /api/files/upload-url
 // body: { kind, name, contentType, size }  →  { key, uploadUrl, headers, expiresIn }
-import { KINDS, MAX_SIZE, UPLOAD_TTL, json, getRole, r2Config, signFor, buildKey } from '../../_lib/files-common.js'
+import { KINDS, MAX_SIZE, UPLOAD_TTL, json, corsHeaders, getRole, r2Config, signFor, buildKey } from '../../_lib/files-common.js'
+
+export async function onRequestOptions() {
+  return new Response(null, {
+    status: 204,
+    headers: corsHeaders,
+  })
+}
 
 export async function onRequestPost({ request, env }) {
   const cfg = r2Config(env)

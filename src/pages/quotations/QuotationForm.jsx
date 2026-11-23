@@ -3,8 +3,11 @@ import { useNavigate, useParams, Link, useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
 import { baht } from '../../lib/projects'
-import { uploadItemImage } from '../../lib/store'
+import { uploadQuotationFile, openFile } from '../../lib/files'
+import R2Image from '../../components/R2Image'
 import { FieldError, fieldErrorClass } from '../../components/FieldError'
+import SearchableSelect from '../../components/SearchableSelect'
+import SearchableProjectSelect from '../../components/SearchableProjectSelect'
 
 const EMPTY_ITEM = {
   item_name: '',
@@ -88,10 +91,65 @@ export default function QuotationForm() {
     }
   }, [issueDate, validityDays])
 
-  // โหลดโครงการ, ลูกค้า, แคตตาล็อกสินค้า
+  // โหลดโครงการ, ลูกค้า (รวมจาก contacts & customers), แคตตาล็อกสินค้า
   useEffect(() => {
     supabase.from('projects').select('id, project_code, project_name, client_name').order('project_code').then(({ data }) => setProjects(data ?? []))
-    supabase.from('customers').select('*').order('customer_name').then(({ data }) => setCustomers(data ?? []))
+
+    // ดึงรายชื่อลูกค้าจากทั้ง contacts (is_customer หรือ contact_type=customer) และ customers
+    Promise.all([
+      supabase.from('contacts').select('*').or('contact_type.eq.customer,is_customer.eq.true').order('company_name'),
+      supabase.from('customers').select('*').order('customer_name'),
+    ]).then(([contactsRes, customersRes]) => {
+      const merged = []
+      const seenNames = new Set()
+
+      // 1. เพิ่มจาก contacts
+      if (contactsRes.data) {
+        contactsRes.data.forEach((c) => {
+          const name = (c.company_name || c.business_name || '').trim()
+          if (name && !seenNames.has(name.toLowerCase())) {
+            seenNames.add(name.toLowerCase())
+            merged.push({
+              id: c.id,
+              customer_code: c.contact_code || '',
+              customer_name: name,
+              tax_id: c.tax_id || '',
+              address: c.registered_address || c.address || '',
+              postal_code: c.postal_code || '',
+              branch_type: c.branch_type || 'head_office',
+              branch_no: c.branch_code || '00000',
+              phone: c.office_phone || c.phone || '',
+              email: c.email || '',
+            })
+          }
+        })
+      }
+
+      // 2. เพิ่มจาก customers ถ้ายังไม่มี
+      if (customersRes.data) {
+        customersRes.data.forEach((c) => {
+          const name = (c.customer_name || c.company_name || '').trim()
+          if (name && !seenNames.has(name.toLowerCase())) {
+            seenNames.add(name.toLowerCase())
+            merged.push({
+              id: c.id,
+              customer_code: c.customer_code || '',
+              customer_name: name,
+              tax_id: c.tax_id || '',
+              address: c.address || '',
+              postal_code: c.postal_code || '',
+              branch_type: c.branch_type || 'head_office',
+              branch_no: c.branch_no || '00000',
+              phone: c.phone || '',
+              email: c.email || '',
+            })
+          }
+        })
+      }
+
+      setCustomers(merged)
+    })
+
     supabase.from('inventory_items').select('id, item_code, item_name, unit, avg_unit_cost').order('item_name').then(({ data }) => setCatalog(data ?? []))
 
     if (!id) {
@@ -185,7 +243,7 @@ export default function QuotationForm() {
   // เมื่อเลือกลูกค้าจากรายชื่อเดิม
   const handleSelectCustomer = (cName) => {
     setCustomerName(cName)
-    const found = customers.find((c) => c.customer_name === cName)
+    const found = customers.find((c) => (c.customer_name || '').toLowerCase() === (cName || '').trim().toLowerCase())
     if (found) {
       if (found.address) setCustomerAddress(found.address)
       if (found.postal_code) setCustomerPostalCode(found.postal_code)
@@ -193,6 +251,15 @@ export default function QuotationForm() {
       if (found.branch_no) setCustomerBranch(found.branch_type === 'head_office' ? 'สำนักงานใหญ่' : `สาขาที่ ${found.branch_no}`)
     }
   }
+
+  // ตัวเลือกสำหรับ SearchableSelect ของลูกค้า
+  const customerOptions = customers.map((c) => ({
+    value: c.customer_name,
+    label: c.customer_name,
+    subLabel: [c.customer_code, c.branch_no ? `สาขา ${c.branch_no}` : '', c.phone].filter(Boolean).join(' • '),
+    badge: c.tax_id ? `Tax: ${c.tax_id}` : '',
+    keywords: `${c.customer_code || ''} ${c.tax_id || ''} ${c.address || ''} ${c.phone || ''}`,
+  }))
 
   // เมื่อเลือกโครงการ ให้ดึงชื่อลูกค้าถ้าโครงการมีระบุ
   const handleSelectProject = (pId) => {
@@ -265,7 +332,7 @@ export default function QuotationForm() {
       setBusy(true)
       let url = null
       try {
-        url = await uploadItemImage(file)
+        url = await uploadQuotationFile(file)
       } catch (uploadErr) {
         console.warn('API upload failed, fallback to DataURL:', uploadErr)
         url = await new Promise((resolve, reject) => {
@@ -323,7 +390,7 @@ export default function QuotationForm() {
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)
-      setError('⚠️ ไม่สามารถบันทึกได้: มีช่องที่ยังไม่ได้กรอกครบถ้วน (กรุณาตรวจสอบช่องที่มีข้อความเตือนสีแดง)')
+      setError('ไม่สามารถบันทึกได้: มีช่องที่ยังไม่ได้กรอกครบถ้วน (กรุณาตรวจสอบช่องที่มีข้อความเตือนสีแดง)')
       window.scrollTo({ top: 0, behavior: 'smooth' })
       return
     }
@@ -493,7 +560,7 @@ export default function QuotationForm() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-bold text-ink">
-            {id ? `แก้ไขใบเสนอราคา ${quotationNo}` : '📄 สร้างใบเสนอราคาใหม่ (New Quotation)'}
+            {id ? `แก้ไขใบเสนอราคา ${quotationNo}` : 'สร้างใบเสนอราคาใหม่ (New Quotation)'}
           </h2>
           <p className="text-xs text-steel-500">
             ออกเอกสารเสนอราคาสำหรับลูกค้า พร้อมคำนวณส่วนลด ภาษี และผูกกับโครงการ
@@ -507,7 +574,7 @@ export default function QuotationForm() {
       {duplicatedFromNo && (
         <div className="rounded-xl border border-sky-300 bg-sky-50 p-3.5 text-xs text-sky-900 flex items-center justify-between shadow-xs">
           <span className="flex items-center gap-2">
-            <span className="text-base">📋</span>
+            <span className="text-base"></span>
             <span>กำลังสร้างใบเสนอราคาใหม่โดยคัดลอกข้อมูลจาก: <strong>{duplicatedFromNo}</strong></span>
           </span>
           <span className="text-[11px] text-sky-800 font-bold bg-sky-200/70 px-2.5 py-0.5 rounded-full">
@@ -522,7 +589,7 @@ export default function QuotationForm() {
         {/* 1. ส่วนหัวเอกสารและข้อมูลอ้างอิง */}
         <div className="border-b border-steel-200 pb-5">
           <h3 className="font-bold text-sm text-ink mb-3 flex items-center gap-2">
-            <span>📌 1. ส่วนหัวเอกสารและข้อมูลอ้างอิง</span>
+            <span>1. ส่วนหัวเอกสารและข้อมูลอ้างอิง</span>
           </h3>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
             <div>
@@ -591,28 +658,29 @@ export default function QuotationForm() {
         {/* 2. ข้อมูลลูกค้า (Customer Details) */}
         <div className="border-b border-steel-200 pb-5">
           <h3 className="font-bold text-sm text-ink mb-3 flex items-center gap-2">
-            <span>🏢 2. ข้อมูลลูกค้า (Customer Details)</span>
+            <span>2. ข้อมูลลูกค้า (Customer Details)</span>
           </h3>
-          <datalist id="customer-suggestions">
-            {customers.map((c) => (
-              <option key={c.id} value={c.customer_name}>{c.tax_id ? `Tax: ${c.tax_id}` : ''}</option>
-            ))}
-          </datalist>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
             <div className="sm:col-span-2">
               <label className="block text-xs font-semibold text-steel-700 mb-1">
                 ชื่อลูกค้า / บริษัทลูกค้า *
               </label>
-              <input
-                list="customer-suggestions"
-                className={fieldErrorClass(errors.customerName, "input text-xs font-bold text-ink")}
-                placeholder="ค้นหาหรือพิมพ์ชื่อลูกค้าใหม่..."
+              <SearchableSelect
+                options={customerOptions}
                 value={customerName}
-                onChange={(e) => {
-                  handleSelectCustomer(e.target.value)
+                onChange={(val) => {
+                  handleSelectCustomer(val)
                   if (errors.customerName) setErrors((prev) => ({ ...prev, customerName: '' }))
                 }}
+                onCustomChange={(val) => {
+                  setCustomerName(val)
+                  if (errors.customerName) setErrors((prev) => ({ ...prev, customerName: '' }))
+                }}
+                allowCustom={true}
+                placeholder="พิมพ์ค้นหาชื่อลูกค้า, เลขภาษี หรือพิมพ์ชื่อลูกค้าใหม่..."
+                customPlaceholder="กด Enter เพื่อใช้ชื่อลูกค้ารายใหม่นี้"
+                error={errors.customerName}
               />
               <FieldError error={errors.customerName} />
             </div>
@@ -672,25 +740,19 @@ export default function QuotationForm() {
         {/* 3. การเชื่อมโยงโครงการ (Project Link) & คลังสินค้า */}
         <div className="border-b border-steel-200 pb-5">
           <h3 className="font-bold text-sm text-ink mb-3 flex items-center gap-2">
-            <span>🏗️ 3. การเชื่อมโยงโครงการ และคลังสินค้า</span>
+            <span>3. การเชื่อมโยงโครงการ และคลังสินค้า</span>
           </h3>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <div>
+            <div className="sm:col-span-2">
               <label className="block text-xs font-semibold text-steel-700 mb-1">
                 เลือกโปรเจกต์ (โครงการ)
               </label>
-              <select
-                className="input text-xs"
+              <SearchableProjectSelect
+                projects={projects}
                 value={projectId}
-                onChange={(e) => handleSelectProject(e.target.value)}
-              >
-                <option value="">-- ไม่ระบุโครงการ / ขายทั่วไป --</option>
-                {projects.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.project_code} {p.project_name}
-                  </option>
-                ))}
-              </select>
+                onChange={(val) => handleSelectProject(val)}
+                placeholder="พิมพ์รหัส หรือชื่อโครงการเพื่อค้นหา..."
+              />
             </div>
 
             <div>
@@ -726,7 +788,7 @@ export default function QuotationForm() {
         <div className="border-b border-steel-200 pb-5">
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-bold text-sm text-ink flex items-center gap-2">
-              <span>📦 4. รายการสินค้าและบริการ (Itemized Table)</span>
+              <span>4. รายการสินค้าและบริการ (Itemized Table)</span>
             </h3>
             <span className="text-xs text-steel-500">เลือกจากคลัง: <b>{warehouseName}</b></span>
           </div>
@@ -758,11 +820,10 @@ export default function QuotationForm() {
               return (
                 <div
                   key={idx}
-                  className={`rounded-2xl border p-3.5 space-y-2.5 transition shadow-xs ${
-                    nameEmpty || qtyEmpty || priceEmpty
-                      ? 'border-rose-300 bg-rose-50/20'
-                      : 'border-steel-200 bg-white hover:border-steel-300'
-                  }`}
+                  className={`rounded-2xl border p-3.5 space-y-2.5 transition shadow-xs ${nameEmpty || qtyEmpty || priceEmpty
+                    ? 'border-rose-300 bg-rose-50/20'
+                    : 'border-steel-200 bg-white hover:border-steel-300'
+                    }`}
                 >
                   {/* แถวที่ 1: ข้อมูลสินค้าและตัวเลขราคา */}
                   <div className="grid grid-cols-2 sm:grid-cols-[auto_1fr_6rem_5rem_7rem_5rem_7rem_auto] gap-2.5 items-center">
@@ -839,7 +900,7 @@ export default function QuotationForm() {
                         className="p-1.5 text-steel-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition disabled:opacity-20 cursor-pointer"
                         title="ลบแถวนี้"
                       >
-                        ✕
+
                       </button>
                     </div>
                   </div>
@@ -848,7 +909,7 @@ export default function QuotationForm() {
                   <div className="pt-1 border-t border-steel-100">
                     <div className="flex items-center justify-between text-[11px] text-steel-500 mb-1">
                       <span className="flex items-center gap-1.5 font-semibold text-steel-700">
-                        <span>📝</span>
+                        <span></span>
                         <span>รายละเอียดเฉพาะ / สเปกวิศวกรรม (กด Enter ขึ้นบรรทัดใหม่ได้อิสระ)</span>
                       </span>
                       <span className="text-[10px] text-steel-400">รองรับข้อความหลายบรรทัดและหัวข้อย่อย</span>
@@ -881,7 +942,7 @@ export default function QuotationForm() {
         {/* 5. การคำนวณเงินและภาษี (Financial Calculations) */}
         <div className="border-b border-steel-200 pb-5">
           <h3 className="font-bold text-sm text-ink mb-3 flex items-center gap-2">
-            <span>💰 5. การคำนวณเงินและภาษี (Financial Calculations)</span>
+            <span>5. การคำนวณเงินและภาษี (Financial Calculations)</span>
           </h3>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
@@ -952,7 +1013,7 @@ export default function QuotationForm() {
         {/* 6. เงื่อนไขและหมายเหตุ (Terms & Notes) & ลายเซ็น/ไฟล์แนบ */}
         <div>
           <h3 className="font-bold text-sm text-ink mb-3 flex items-center gap-2">
-            <span>📝 6. เงื่อนไข หมายเหตุ และลายเซ็น/ตราประทับ</span>
+            <span>6. เงื่อนไข หมายเหตุ และลายเซ็น/ตราประทับ</span>
           </h3>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -971,7 +1032,7 @@ export default function QuotationForm() {
 
             <div>
               <label className="block text-xs font-semibold text-amber-800 mb-1">
-                🔒 โน้ตภายในบริษัท (บันทึกเฉพาะทีมงาน ไม่แสดงให้ลูกค้าเห็น)
+                โน้ตภายในบริษัท (บันทึกเฉพาะทีมงาน ไม่แสดงให้ลูกค้าเห็น)
               </label>
               <textarea
                 rows={4}
@@ -987,18 +1048,18 @@ export default function QuotationForm() {
             {/* ลายเซ็นอิเล็กทรอนิกส์และตราประทับ */}
             <div className="rounded-lg border border-steel-200 p-3 bg-steel-50/40">
               <span className="block text-xs font-semibold text-steel-700 mb-2">
-                ✒️ ลายเซ็นอิเล็กทรอนิกส์และตราประทับบริษัท
+                ️ ลายเซ็นอิเล็กทรอนิกส์และตราประทับบริษัท
               </span>
               <div className="flex items-center gap-3">
                 {signatureUrl ? (
                   <div className="relative">
-                    <img src={signatureUrl} alt="ลายเซ็น" className="h-14 w-28 object-contain border rounded bg-white" />
+                    <R2Image fileKey={signatureUrl} alt="ลายเซ็น" className="h-14 w-28 object-contain border rounded bg-white" />
                     <button
                       type="button"
                       onClick={() => setSignatureUrl('')}
-                      className="absolute -top-1 -right-1 rounded-full bg-red-600 text-white w-4 h-4 text-[10px] flex items-center justify-center"
+                      className="absolute -top-1 -right-1 rounded-full bg-red-600 text-white w-4 h-4 text-[10px] flex items-center justify-center cursor-pointer"
                     >
-                      ✕
+
                     </button>
                   </div>
                 ) : (
@@ -1030,7 +1091,7 @@ export default function QuotationForm() {
             {/* ช่องแนบไฟล์เอกสารทั่วไป (รูปภาพ, PDF, Excel) */}
             <div className="rounded-lg border border-steel-200 p-3 bg-steel-50/40">
               <span className="block text-xs font-semibold text-steel-700 mb-2">
-                📎 แนบไฟล์เอกสารทั่วไป (รูปภาพ, PDF, Excel)
+                แนบไฟล์เอกสารทั่วไป (รูปภาพ, PDF, Excel)
               </span>
               <div className="flex items-center gap-3">
                 <input
@@ -1051,9 +1112,13 @@ export default function QuotationForm() {
                 {attachmentUrl && (
                   <div className="flex items-center gap-1.5 text-xs text-sky-700">
                     <span>✓ แนบแล้ว:</span>
-                    <a href={attachmentUrl} target="_blank" rel="noreferrer" className="underline font-semibold max-w-xs truncate">
+                    <button
+                      type="button"
+                      onClick={() => openFile(attachmentUrl)}
+                      className="underline font-semibold max-w-xs truncate text-sky-700 hover:text-sky-900 cursor-pointer text-left"
+                    >
                       {attachmentName || 'ดูไฟล์แนบ'}
-                    </a>
+                    </button>
                   </div>
                 )}
               </div>
@@ -1066,7 +1131,7 @@ export default function QuotationForm() {
       {/* แสดงข้อความเตือนเมื่อมี Error */}
       {error && (
         <div className="mt-3 rounded-xl bg-rose-50 border border-rose-200 p-3 text-xs sm:text-sm font-semibold text-rose-800 flex items-center gap-2">
-          <span>⚠️</span>
+          <span></span>
           <span>{error}</span>
         </div>
       )}
@@ -1082,7 +1147,7 @@ export default function QuotationForm() {
           disabled={busy}
           className="btn-primary !py-2 px-6 shadow-md"
         >
-          {busy ? 'กำลังบันทึก...' : '💾 บันทึกใบเสนอราคา'}
+          {busy ? 'กำลังบันทึก...' : ' บันทึกใบเสนอราคา'}
         </button>
       </div>
     </div>

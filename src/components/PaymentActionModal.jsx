@@ -375,7 +375,7 @@ export default function PaymentActionModal({
         }
       }
 
-      // 4. บันทึกลงตาราง payment_transactions แบบ Self-Healing
+      // 4. บันทึกลงตาราง payment_transactions แบบ Self-Healing & Robust Fallback
       const txPayload = {
         transaction_no: voucherNo,
         document_type: docType,
@@ -385,65 +385,85 @@ export default function PaymentActionModal({
         contact_id: contactId || null,
         project_id: projectId || null,
         payment_stage: paymentStage,
-        payment_method: paymentMethod,
         payment_channel: paymentMethod === 'transfer' ? (companyBank || 'โอนเงิน') : paymentMethod === 'cheque' ? 'เช็ค' : 'เงินสด',
-        amount: numericPay,
         amount_paid: numericPay,
         payment_date: todayStr,
         company_bank_account: paymentMethod === 'transfer' ? companyBank : null,
+        company_bank_code: paymentMethod === 'transfer' ? companyBank : null,
         vendor_bank_name: vendorBank.bank_name || null,
-        vendor_bank_account_no: vendorBank.bank_account_no || null,
-        vendor_bank_account_name: vendorBank.bank_account_name || null,
-        vendor_promptpay: vendorBank.promptpay_no || null,
-        bank_fee: numericFee,
+        vendor_bank_account: vendorBank.bank_account_no || null,
+        vendor_promptpay_no: vendorBank.promptpay_no || null,
         transfer_fee: numericFee,
         cheque_no: paymentMethod === 'cheque' ? chequeNo : null,
         cheque_bank: paymentMethod === 'cheque' ? chequeBank : null,
         cheque_date: paymentMethod === 'cheque' ? chequeDate : null,
         cheque_payee_name: paymentMethod === 'cheque' ? chequePayeeName : null,
-        cash_source: paymentMethod === 'cash' ? cashSource : null,
+        cash_source_account: paymentMethod === 'cash' ? cashSource : null,
+        cash_voucher_no: paymentMethod === 'cash' ? cashVoucherNo : null,
         slip_reference_no: paymentMethod === 'transfer' ? slipRef : paymentMethod === 'cash' ? cashVoucherNo : chequeAttachmentNote,
         notes: notes || null,
         journal_entry_id: currentJvId || null,
       }
 
       let activeTx = { ...txPayload }
-      for (let attempt = 0; attempt < 3; attempt++) {
+      for (let attempt = 0; attempt < 8; attempt++) {
         const { error: ptErr } = await supabase.from('payment_transactions').insert(activeTx)
         if (!ptErr) break
-        console.warn(`Payment transaction attempt ${attempt + 1} warning:`, ptErr)
-        const colMatch = ptErr?.message?.match(/column "(.*?)" of relation "payment_transactions" does not exist/)
+        const colMatch =
+          ptErr?.message?.match(/column "(.*?)" of relation "payment_transactions" does not exist/i) ||
+          ptErr?.message?.match(/Could not find the '(.*?)' column of 'payment_transactions'/i) ||
+          ptErr?.details?.match(/column "(.*?)"/i) ||
+          ptErr?.message?.match(/column "(.*?)"/i)
         if (colMatch && colMatch[1]) {
           delete activeTx[colMatch[1]]
           continue
         }
+        console.warn(`Payment transaction notice (optional):`, ptErr?.message || ptErr)
         break
       }
 
-      // 5. ตัดยอดหนี้คงค้างในเอกสารเป้าหมาย
+      // 5. ตัดยอดหนี้คงค้างในเอกสารเป้าหมาย แบบ Self-Healing
       if (docType === 'PO') {
         const nextPaymentStatus = remainingAfter <= 0.05 || paymentStage === 'remaining' || paymentStage === 'full'
           ? 'ชำระครบแล้ว'
           : 'จ่ายมัดจำแล้ว'
 
-        await supabase
-          .from('purchase_orders')
-          .update({
-            deposit_paid_amount: Number(alreadyPaid) + numericPay,
-            payment_status: nextPaymentStatus,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', docId)
+        let poUpdatePayload = {
+          deposit_paid_amount: Number(alreadyPaid) + numericPay,
+          payment_status: nextPaymentStatus,
+          updated_at: new Date().toISOString(),
+        }
 
-        // อัปเดต accounts_payable ด้วยถ้ามี
-        await supabase
-          .from('accounts_payable')
-          .update({
-            paid_amount: Number(alreadyPaid) + numericPay,
-            remaining_amount: remainingAfter,
-            status: remainingAfter <= 0.05 ? 'paid' : 'partial',
-          })
-          .eq('po_id', docId)
+        for (let attempt = 0; attempt < 4; attempt++) {
+          const { error: poErr } = await supabase
+            .from('purchase_orders')
+            .update(poUpdatePayload)
+            .eq('id', docId)
+
+          if (!poErr) break
+          const colMatch = poErr?.message?.match(/column "(.*?)" of relation "purchase_orders" does not exist/)
+          if (colMatch && colMatch[1]) {
+            delete poUpdatePayload[colMatch[1]]
+            continue
+          }
+          console.warn('PO update notice (optional):', poErr?.message || poErr)
+          break
+        }
+
+        // อัปเดต accounts_payable ด้วยถ้ามี (ปลอดภัยด้วย try-catch)
+        try {
+          await supabase
+            .from('accounts_payable')
+            .update({
+              paid_amount: Number(alreadyPaid) + numericPay,
+              remaining_amount: remainingAfter,
+              status: remainingAfter <= 0.05 ? 'paid' : 'partial',
+              updated_at: new Date().toISOString(),
+            })
+            .eq('po_id', docId)
+        } catch (apErr) {
+          console.warn('AP update notice:', apErr)
+        }
       } else if (docType === 'EXP') {
         await supabase
           .from('expenses')
@@ -488,7 +508,7 @@ export default function PaymentActionModal({
         <div className="flex items-center justify-between border-b border-steel-200 pb-3">
           <div className="flex items-center gap-2.5">
             <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-100 text-sky-800 font-bold text-xl">
-              {type === 'receive' ? '💰' : '💸'}
+              {type === 'receive' ? '' : ''}
             </span>
             <div>
               <h3 className="font-bold text-ink text-base">
@@ -504,12 +524,12 @@ export default function PaymentActionModal({
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="text-steel-400 hover:text-steel-600 text-base">✕</button>
+          <button onClick={onClose} className="text-steel-400 hover:text-steel-600 text-base"></button>
         </div>
 
         {isAlreadyFullyPaid && (
           <div className="mt-3 p-3.5 rounded-xl bg-emerald-50 border border-emerald-300 text-xs text-emerald-950 flex items-center gap-2.5 font-medium shadow-xs">
-            <span className="text-xl">✅</span>
+            <span className="text-xl"></span>
             <div>
               <div className="font-bold text-emerald-950">เอกสารนี้ได้รับการชำระเงินครบถ้วนแล้ว (Fully Paid)</div>
               <div className="text-[11px] text-emerald-800">ไม่มียอดหนี้คงค้าง ระบบป้องกันการชำระเงินซ้ำซ้อนเรียบร้อยแล้ว</div>
@@ -519,7 +539,7 @@ export default function PaymentActionModal({
 
         {error && (
           <div className="mt-3 p-3 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-700 font-medium">
-            ⚠️ {error}
+            {error}
           </div>
         )}
 
@@ -551,7 +571,7 @@ export default function PaymentActionModal({
                 title="คลิกเพื่อย่อ/ขยายรายการสินค้า"
               >
                 <div className="flex items-center gap-2">
-                  <span className="text-sm">📦</span>
+                  <span className="text-sm"></span>
                   <span className="font-bold text-sky-950 dark:text-sky-200 text-xs">
                     รายการสินค้าและพัสดุที่สั่งซื้อ ({orderedItems.length} รายการ)
                   </span>
@@ -606,7 +626,7 @@ export default function PaymentActionModal({
 
           {loadingItems && (
             <div className="p-3 text-center text-xs text-sky-700 bg-sky-50 rounded-xl border border-sky-200 animate-pulse">
-              📦 กำลังโหลดรายการพัสดุที่สั่งซื้อ...
+              กำลังโหลดรายการพัสดุที่สั่งซื้อ...
             </div>
           )}
 
@@ -614,7 +634,7 @@ export default function PaymentActionModal({
           {type === 'disburse' && hasDeposit && (
             <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-3 space-y-2">
               <label className="font-bold text-amber-950 block text-xs">
-                🎯 ขั้นตอนการจ่ายเงิน (Payment Stage) *
+                ขั้นตอนการจ่ายเงิน (Payment Stage) *
               </label>
               <div className="grid grid-cols-3 gap-2">
                 <button
@@ -664,7 +684,7 @@ export default function PaymentActionModal({
             <div className="rounded-xl border border-steel-200 bg-sky-50/40 p-3 space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5 font-bold text-sky-950 text-xs">
-                  <span>🏪</span>
+                  <span></span>
                   <span>บัญชีธนาคารผู้รับเงิน (ของคู่ค้า / {contactName})</span>
                 </div>
                 {fetchingBank && <span className="text-[10px] text-sky-600">กำลังโหลด...</span>}
@@ -698,13 +718,13 @@ export default function PaymentActionModal({
           {/* 3. แท็บเลือกช่องทางการชำระเงิน (3 Channels) */}
           <div className="space-y-1.5">
             <label className="font-bold text-steel-700 block text-xs">
-              💳 เลือกช่องทางการจ่ายเงินจริง (Payment Channel) *
+               เลือกช่องทางการจ่ายเงินจริง (Payment Channel) *
             </label>
             <div className="grid grid-cols-3 gap-2">
               {[
-                { id: 'transfer', label: '🏦 เงินโอน (Transfer)', desc: 'โอนผ่านบัญชีบริษัท' },
-                { id: 'cheque', label: '📝 เช็คธนาคาร (Cheque)', desc: 'สั่งจ่ายตามหน้าเช็ค' },
-                { id: 'cash', label: '💵 เงินสด (Cash)', desc: 'เงินสด/เงินสดย่อย' },
+                { id: 'transfer', label: ' เงินโอน (Transfer)', desc: 'โอนผ่านบัญชีบริษัท' },
+                { id: 'cheque', label: 'เช็คธนาคาร (Cheque)', desc: 'สั่งจ่ายตามหน้าเช็ค' },
+                { id: 'cash', label: ' เงินสด (Cash)', desc: 'เงินสด/เงินสดย่อย' },
               ].map((m) => (
                 <button
                   key={m.id}
@@ -730,7 +750,7 @@ export default function PaymentActionModal({
           {paymentMethod === 'transfer' && (
             <div className="rounded-xl border border-sky-200 bg-sky-50/50 p-3.5 space-y-3">
               <div className="font-bold text-sky-950 text-xs">
-                🏦 รายละเอียดการโอนเงินผ่านบัญชีธนาคาร
+                 รายละเอียดการโอนเงินผ่านบัญชีธนาคาร
               </div>
 
               <div>
@@ -820,7 +840,7 @@ export default function PaymentActionModal({
           {paymentMethod === 'cheque' && (
             <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-3.5 space-y-3">
               <div className="font-bold text-amber-950 text-xs">
-                📝 รายละเอียดเช็คธนาคารสั่งจ่าย (Cheque Disbursement)
+                รายละเอียดเช็คธนาคารสั่งจ่าย (Cheque Disbursement)
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -922,7 +942,7 @@ export default function PaymentActionModal({
           {paymentMethod === 'cash' && (
             <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-3.5 space-y-3">
               <div className="font-bold text-emerald-950 text-xs">
-                💵 รายละเอียดการจ่ายด้วยเงินสด (Cash Payment)
+                 รายละเอียดการจ่ายด้วยเงินสด (Cash Payment)
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -1008,7 +1028,7 @@ export default function PaymentActionModal({
               ยอดคงเหลือหลังการจ่ายครั้งนี้:
             </span>
             <span className={`font-mono font-bold ${remainingAfter <= 0.05 ? 'text-emerald-700' : 'text-amber-700'}`}>
-              {remainingAfter <= 0.05 ? '0.00 บาท (ชำระครบถ้วน ✅)' : `${baht(remainingAfter)} บาท (แบ่งจ่าย ⚠️)`}
+              {remainingAfter <= 0.05 ? '0.00 บาท (ชำระครบถ้วน )' : `${baht(remainingAfter)} บาท (แบ่งจ่าย )`}
             </span>
           </div>
 
@@ -1031,7 +1051,7 @@ export default function PaymentActionModal({
                   : 'bg-sky-700 hover:bg-sky-800'
               }`}
             >
-              <span>{isAlreadyFullyPaid ? '✅' : type === 'receive' ? '💰' : '💸'}</span>
+              <span>{isAlreadyFullyPaid ? '' : type === 'receive' ? '' : ''}</span>
               <span>
                 {saving
                   ? 'กำลังบันทึกและลงบัญชี...'

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Fragment } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { baht } from '../../lib/projects'
@@ -37,10 +37,11 @@ export default function BOQDetail() {
   const fetchDetail = async () => {
     setLoading(true)
     try {
+      // ดึงข้อมูล boq และ boq_items ควบคู่กัน (แก้ปัญหา PostgREST Foreign Key Relationship Error: PGRST200)
       const [bRes, itemsRes] = await Promise.all([
         supabase
           .from('boqs')
-          .select('*, projects(id, project_code, project_name, client_name)')
+          .select('*')
           .eq('id', id)
           .single(),
         supabase
@@ -51,7 +52,18 @@ export default function BOQDetail() {
       ])
 
       if (bRes.error) throw bRes.error
-      setBoq(bRes.data)
+
+      let boqData = bRes.data
+      if (boqData?.project_id) {
+        const { data: proj } = await supabase
+          .from('projects')
+          .select('id, project_code, project_name, client_name')
+          .eq('id', boqData.project_id)
+          .maybeSingle()
+        if (proj) boqData = { ...boqData, projects: proj }
+      }
+
+      setBoq(boqData)
       setItems(itemsRes.data || [])
     } catch (err) {
       console.error('Failed to load BOQ detail:', err)
@@ -220,7 +232,7 @@ export default function BOQDetail() {
             className="rounded-xl bg-hivis hover:bg-amber-400 text-slate-950 px-4 py-2 text-xs font-black shadow-xs transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
           >
             <FileCheck2 className="h-4 w-4" />
-            <span>{converting ? 'กำลังแปลง...' : '📄 แปลงเป็นใบเสนอราคา'}</span>
+            <span>{converting ? 'กำลังแปลง...' : 'แปลงเป็นใบเสนอราคา'}</span>
           </button>
 
           {/* พิมพ์เอกสาร */}
@@ -288,7 +300,7 @@ export default function BOQDetail() {
       {/* 3. รายละเอียดโครงการ */}
       <div className="rounded-2xl border border-steel-200 bg-white p-5 shadow-2xs space-y-3">
         <h2 className="font-bold text-sm text-steel-900 flex items-center gap-2 border-b border-steel-100 pb-2">
-          <span>📋 ข้อมูลโครงการและงานที่ถอดแบบ</span>
+          <span>ข้อมูลโครงการและงานที่ถอดแบบ</span>
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
           <div>
@@ -335,8 +347,8 @@ export default function BOQDetail() {
             </thead>
             <tbody className="divide-y divide-steel-100">
               {Object.entries(grouped).map(([category, catItems], cIdx) => (
-                <>
-                  <tr key={category} className="bg-steel-50/90 font-bold border-y border-steel-200">
+                <Fragment key={category}>
+                  <tr className="bg-steel-50/90 font-bold border-y border-steel-200">
                     <td colSpan={7} className="py-2 px-3 text-sky-950 flex items-center gap-2">
                       <span className="flex h-5 w-5 items-center justify-center rounded bg-sky-200 text-sky-900 font-mono text-[10px]">
                         {cIdx + 1}
@@ -371,7 +383,7 @@ export default function BOQDetail() {
                       </td>
                     </tr>
                   ))}
-                </>
+                </Fragment>
               ))}
             </tbody>
             <tfoot className="border-t-2 border-steel-200 bg-steel-50/50 text-xs">

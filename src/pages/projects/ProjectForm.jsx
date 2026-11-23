@@ -78,7 +78,7 @@ export default function ProjectForm() {
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
-      setError("⚠️ ไม่สามารถบันทึกได้: มีช่องที่ยังไม่ได้กรอก (กรุณาตรวจสอบช่องที่มีข้อความเตือนสีแดง)");
+      setError("ไม่สามารถบันทึกได้: มีช่องที่ยังไม่ได้กรอก (กรุณาตรวจสอบช่องที่มีข้อความเตือนสีแดง)");
       return;
     }
 
@@ -222,7 +222,7 @@ export default function ProjectForm() {
       </div>
       {error && (
         <div className="mt-3 rounded-xl bg-rose-50 border border-rose-200 p-3 text-xs sm:text-sm font-semibold text-rose-800 flex items-center gap-2">
-          <span>⚠️</span>
+          <span></span>
           <span>{error}</span>
         </div>
       )}

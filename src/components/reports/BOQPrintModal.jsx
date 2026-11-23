@@ -1,3 +1,4 @@
+import { Fragment } from 'react'
 import { baht } from '../../lib/projects'
 
 export default function BOQPrintModal({ boq, items, onClose }) {
@@ -21,7 +22,7 @@ export default function BOQPrintModal({ boq, items, onClose }) {
         {/* แถบควบคุมบน ไม่แสดงตอนพิมพ์ */}
         <div className="no-print flex items-center justify-between border-b border-steel-200 bg-steel-100 px-6 py-3">
           <div className="flex items-center gap-2">
-            <span className="text-xl">📊</span>
+            <span className="text-xl"></span>
             <span className="font-bold text-ink">พิมพ์เอกสารประมาณราคา BOQ ({boq.boq_no})</span>
           </div>
           <div className="flex items-center gap-3">
@@ -29,7 +30,7 @@ export default function BOQPrintModal({ boq, items, onClose }) {
               onClick={handlePrint}
               className="inline-flex items-center gap-2 rounded-lg bg-sky-700 px-4 py-2 text-sm font-semibold text-white shadow-md hover:bg-sky-800 transition cursor-pointer"
             >
-              <span>🖨️</span>
+              <span>️</span>
               <span>พิมพ์เอกสาร / บันทึก PDF</span>
             </button>
             <button
@@ -99,8 +100,8 @@ export default function BOQPrintModal({ boq, items, onClose }) {
               </thead>
               <tbody>
                 {Object.entries(grouped).map(([category, catItems], cIdx) => (
-                  <>
-                    <tr key={category} className="bg-neutral-100 font-bold border-y border-neutral-300">
+                  <Fragment key={category}>
+                    <tr className="bg-neutral-100 font-bold border-y border-neutral-300">
                       <td colSpan={7} className="py-1.5 px-2 text-neutral-900">
                         หมวดที่ {cIdx + 1}: {category}
                       </td>
@@ -123,7 +124,7 @@ export default function BOQPrintModal({ boq, items, onClose }) {
                         <td className="py-1.5 px-2 text-right font-mono font-bold">{baht(it.total_amount)}</td>
                       </tr>
                     ))}
-                  </>
+                  </Fragment>
                 ))}
               </tbody>
               <tfoot>

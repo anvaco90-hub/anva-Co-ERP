@@ -61,30 +61,17 @@ export default function StoreLayout() {
           {/* Top Brand Bar */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-steel-700/80 pb-3">
             <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-hivis text-steel-900 font-black shadow-md shadow-amber-500/20 shrink-0">
-                <Sun className="h-6 w-6 text-steel-900 fill-steel-900" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-hivis text-steel-900 font-black shadow-md shadow-amber-500/20 shrink-0">
+                <Sun className="h-5 w-5 text-steel-900 fill-steel-900" />
               </div>
               <div>
-                <h1 className="text-lg sm:text-xl font-black tracking-tight text-white">
+                <h1 className="text-base sm:text-lg font-black tracking-tight text-white">
                   ANVA & CO. — ระบบบริหารคลังและพัสดุวิศวกรรม
                 </h1>
                 <p className="text-xs text-steel-400">
                   ระบบคลังวัสดุและอุปกรณ์มาตรฐานวิศวกรรม บริษัท อันวาแอนด์โค จำกัด
                 </p>
               </div>
-            </div>
-
-            {/* Actions */}
-            <div className="flex items-center gap-2 text-xs">
-              <button
-                type="button"
-                onClick={() => navigate(-1)}
-                className="flex items-center gap-1.5 rounded-lg bg-steel-800 hover:bg-steel-700 px-3 py-1.5 text-xs font-bold text-steel-200 border border-steel-600 transition cursor-pointer"
-                title="ย้อนกลับ"
-              >
-                <ArrowLeft className="h-3.5 w-3.5" />
-                <span>ย้อนกลับ</span>
-              </button>
             </div>
           </div>
 

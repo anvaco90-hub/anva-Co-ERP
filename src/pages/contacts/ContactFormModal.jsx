@@ -194,7 +194,7 @@ export default function ContactFormModal({ contact = null, initialRole = 'both',
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6 text-xs sm:text-sm">
           {error && (
             <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800 font-semibold flex items-center gap-2">
-              <span>⚠️</span>
+              <span></span>
               <span>{error}</span>
             </div>
           )}
@@ -202,7 +202,7 @@ export default function ContactFormModal({ contact = null, initialRole = 'both',
           {/* ส่วนที่ 1: สถานะทางกฎหมาย และ บทบาทคู่ค้า (Legal Entity & Roles) */}
           <div className="rounded-xl border border-steel-200 bg-steel-50/70 p-4 space-y-3">
             <h4 className="font-bold text-xs uppercase tracking-wider text-steel-700 flex items-center gap-1.5">
-              <span>🏷️</span>
+              <span></span>
               <span>1. การจำแนกประเภท และ บทบาทคู่ค้า (Entity & Roles)</span>
             </h4>
 
@@ -253,7 +253,7 @@ export default function ContactFormModal({ contact = null, initialRole = 'both',
                       onChange={(e) => handleChange('is_customer', e.target.checked)}
                       className="rounded border-steel-300 text-sky-600 focus:ring-sky-500 h-4 w-4 cursor-pointer"
                     />
-                    <span>🏢 ลูกค้า (Customer)</span>
+                    <span>ลูกค้า (Customer)</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer font-semibold text-xs text-steel-800">
                     <input
@@ -262,7 +262,7 @@ export default function ContactFormModal({ contact = null, initialRole = 'both',
                       onChange={(e) => handleChange('is_vendor', e.target.checked)}
                       className="rounded border-steel-300 text-emerald-600 focus:ring-emerald-500 h-4 w-4 cursor-pointer"
                     />
-                    <span>🏪 ผู้จำหน่าย / ร้านค้า (Vendor)</span>
+                    <span> ผู้จำหน่าย / ร้านค้า (Vendor)</span>
                   </label>
                 </div>
                 <span className="text-[10px] text-steel-500 mt-1 block">
@@ -275,7 +275,7 @@ export default function ContactFormModal({ contact = null, initialRole = 'both',
           {/* ส่วนที่ 2: ข้อมูลระบุตัวตนและเลขภาษี (Identity & Tax Info) */}
           <div className="space-y-3">
             <h4 className="font-bold text-xs uppercase tracking-wider text-steel-700">
-              🏢 2. ข้อมูลระบุตัวตนและเลขภาษี (Identity & Tax Info)
+              2. ข้อมูลระบุตัวตนและเลขภาษี (Identity & Tax Info)
             </h4>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -356,7 +356,7 @@ export default function ContactFormModal({ contact = null, initialRole = 'both',
           {/* ส่วนที่ 3: ที่อยู่จดทะเบียน และ ที่อยู่จัดส่ง (Addresses) */}
           <div className="space-y-3">
             <h4 className="font-bold text-xs uppercase tracking-wider text-steel-700">
-              📍 3. ข้อมูลที่อยู่และการติดต่อ (Addresses & Contact Info)
+               3. ข้อมูลที่อยู่และการติดต่อ (Addresses & Contact Info)
             </h4>
 
             <div>
@@ -381,7 +381,7 @@ export default function ContactFormModal({ contact = null, initialRole = 'both',
                 onClick={handleCopyRegisteredAddress}
                 className="text-[11px] text-sky-700 hover:underline font-semibold cursor-pointer"
               >
-                📋 คัดลอกจากที่อยู่จดทะเบียน
+                คัดลอกจากที่อยู่จดทะเบียน
               </button>
             </div>
             <textarea
@@ -435,7 +435,7 @@ export default function ContactFormModal({ contact = null, initialRole = 'both',
           {/* ส่วนที่ 4: บุคคลผู้ประสานงาน (Contact Person) */}
           <div className="space-y-3">
             <h4 className="font-bold text-xs uppercase tracking-wider text-steel-700">
-              👤 4. บุคคลผู้ประสานงาน (Primary Contact Person)
+               4. บุคคลผู้ประสานงาน (Primary Contact Person)
             </h4>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -481,7 +481,7 @@ export default function ContactFormModal({ contact = null, initialRole = 'both',
           {/* ส่วนที่ 5: บัญชีธนาคารสำหรับทำจ่าย (Bank Accounts) */}
           <div className="rounded-xl border border-steel-200 bg-steel-50/70 p-4 space-y-3">
             <h4 className="font-bold text-xs uppercase tracking-wider text-steel-700 flex items-center gap-1.5">
-              <span>💳</span>
+              <span></span>
               <span>5. บัญชีธนาคารของคู่ค้า (สำหรับฝั่งจัดซื้อ/ทำจ่าย PAY)</span>
             </h4>
 
@@ -528,7 +528,7 @@ export default function ContactFormModal({ contact = null, initialRole = 'both',
           {/* บันทึกข้อความภายใน (Internal Notes) */}
           <div>
             <label className="block text-xs font-semibold text-steel-700 mb-1">
-              📝 บันทึกข้อความภายใน (Internal Memo)
+              บันทึกข้อความภายใน (Internal Memo)
             </label>
             <input
               type="text"

@@ -10,12 +10,14 @@ const THAI_MONTHS = [
 
 export default function InventoryReportModal({
   items: rawItems,
-  categories = [],
+  categories: propCategories = [],
+  cats = [],
   categoryName: initialCategoryName = '',
   selectedCategory: initialCategory = '',
   onClose,
   userProfile
 }) {
+  const categories = (propCategories && propCategories.length > 0) ? propCategories : (cats || [])
   const now = new Date()
   const currentCEYear = now.getFullYear()
   const currentMonthIdx = now.getMonth()
@@ -272,19 +274,19 @@ export default function InventoryReportModal({
       `}</style>
 
       {/* Modal Container */}
-      <div className="flex max-h-[96vh] w-full max-w-6xl flex-col rounded-2xl bg-white shadow-2xl overflow-hidden border border-steel-200">
+      <div className="flex max-h-[96vh] w-full max-w-6xl flex-col rounded-2xl bg-white dark:bg-slate-900 shadow-2xl overflow-hidden border border-steel-200 dark:border-slate-800 text-steel-800 dark:text-slate-100">
 
         {/* แถบควบคุมด้านบน (ซ่อนเมื่อพิมพ์ no-print) */}
-        <div className="no-print border-b border-steel-200 bg-gradient-to-r from-steel-50 to-steel-100 p-4 space-y-3">
+        <div className="no-print border-b border-steel-200 dark:border-slate-800 bg-gradient-to-r from-steel-50 to-steel-100 dark:from-slate-900 dark:to-slate-800 p-4 space-y-3">
           {/* Header Bar */}
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-steel-200 pb-3">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-steel-200 dark:border-slate-700/60 pb-3">
             <div className="flex items-center gap-2">
               <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-600 text-white shadow">
-                🖨️
+                ️
               </span>
               <div>
-                <h2 className="text-base font-bold text-ink">ศูนย์ออกรายงานและพิมพ์เอกสารสต็อก (Stock PDF Generator)</h2>
-                <p className="text-xs text-steel-500">เลือกช่วงเวลารายเดือน/ปี ปรับแต่งรายละเอียด และสั่งพิมพ์เป็น PDF</p>
+                <h2 className="text-base font-bold text-ink dark:text-white">ศูนย์ออกรายงานและพิมพ์เอกสารสต็อก (Stock PDF Generator)</h2>
+                <p className="text-xs text-steel-500 dark:text-slate-400">เลือกช่วงเวลารายเดือน/ปี ปรับแต่งรายละเอียด และสั่งพิมพ์เป็น PDF</p>
               </div>
             </div>
 
@@ -292,17 +294,17 @@ export default function InventoryReportModal({
               <button
                 type="button"
                 onClick={handlePrint}
-                className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-bold text-white shadow-md hover:bg-emerald-700 transition"
+                className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-bold text-white shadow-md hover:bg-emerald-700 transition cursor-pointer"
               >
-                <span>🖨️</span>
+                <span>️</span>
                 <span>พิมพ์เอกสาร / บันทึก PDF</span>
               </button>
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded-lg border border-steel-300 bg-white px-3 py-2 text-sm font-medium text-steel-700 hover:bg-steel-50 transition"
+                className="rounded-lg border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm font-medium text-steel-700 dark:text-slate-300 hover:bg-steel-50 dark:hover:bg-slate-700 transition cursor-pointer"
               >
-                ✕ ปิดหน้าต่าง
+                 ปิดหน้าต่าง
               </button>
             </div>
           </div>
@@ -310,15 +312,15 @@ export default function InventoryReportModal({
           {/* แถวตัวกรองช่วงเวลา และ รูปแบบรายงาน */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-3 text-xs">
             {/* 1. เลือกช่วงเวลา */}
-            <div className="bg-white p-2.5 rounded-lg border border-steel-200 shadow-sm space-y-1.5">
-              <label className="font-bold text-steel-700 flex items-center gap-1">
-                <span>📅</span> เลือกช่วงเวลารายงาน
+            <div className="bg-white dark:bg-slate-800/90 p-2.5 rounded-lg border border-steel-200 dark:border-slate-700 shadow-sm space-y-1.5">
+              <label className="font-bold text-steel-700 dark:text-slate-200 flex items-center gap-1">
+                <span></span> เลือกช่วงเวลารายงาน
               </label>
               <div className="grid grid-cols-2 gap-1">
                 <button
                   type="button"
                   onClick={() => setPeriodType('current')}
-                  className={`py-1 px-1.5 rounded font-semibold text-center transition ${periodType === 'current' ? 'bg-sky-700 text-white' : 'bg-steel-100 text-steel-700 hover:bg-steel-200'
+                  className={`py-1 px-1.5 rounded font-semibold text-center transition ${periodType === 'current' ? 'bg-sky-700 text-white' : 'bg-steel-100 dark:bg-slate-700 text-steel-700 dark:text-slate-200 hover:bg-steel-200 dark:hover:bg-slate-600'
                     }`}
                 >
                   ณ วันนี้
@@ -326,7 +328,7 @@ export default function InventoryReportModal({
                 <button
                   type="button"
                   onClick={() => setPeriodType('monthly')}
-                  className={`py-1 px-1.5 rounded font-semibold text-center transition ${periodType === 'monthly' ? 'bg-sky-700 text-white' : 'bg-steel-100 text-steel-700 hover:bg-steel-200'
+                  className={`py-1 px-1.5 rounded font-semibold text-center transition ${periodType === 'monthly' ? 'bg-sky-700 text-white' : 'bg-steel-100 dark:bg-slate-700 text-steel-700 dark:text-slate-200 hover:bg-steel-200 dark:hover:bg-slate-600'
                     }`}
                 >
                   รายเดือน
@@ -334,7 +336,7 @@ export default function InventoryReportModal({
                 <button
                   type="button"
                   onClick={() => setPeriodType('yearly')}
-                  className={`py-1 px-1.5 rounded font-semibold text-center transition ${periodType === 'yearly' ? 'bg-sky-700 text-white' : 'bg-steel-100 text-steel-700 hover:bg-steel-200'
+                  className={`py-1 px-1.5 rounded font-semibold text-center transition ${periodType === 'yearly' ? 'bg-sky-700 text-white' : 'bg-steel-100 dark:bg-slate-700 text-steel-700 dark:text-slate-200 hover:bg-steel-200 dark:hover:bg-slate-600'
                     }`}
                 >
                   รายปี
@@ -342,7 +344,7 @@ export default function InventoryReportModal({
                 <button
                   type="button"
                   onClick={() => setPeriodType('custom')}
-                  className={`py-1 px-1.5 rounded font-semibold text-center transition ${periodType === 'custom' ? 'bg-sky-700 text-white' : 'bg-steel-100 text-steel-700 hover:bg-steel-200'
+                  className={`py-1 px-1.5 rounded font-semibold text-center transition ${periodType === 'custom' ? 'bg-sky-700 text-white' : 'bg-steel-100 dark:bg-slate-700 text-steel-700 dark:text-slate-200 hover:bg-steel-200 dark:hover:bg-slate-600'
                     }`}
                 >
                   กำหนดเอง
@@ -353,7 +355,7 @@ export default function InventoryReportModal({
               {periodType === 'monthly' && (
                 <div className="flex gap-1 pt-1">
                   <select
-                    className="w-1/2 p-1 border rounded bg-white text-xs"
+                    className="w-1/2 p-1 border border-steel-300 dark:border-slate-700 rounded bg-white dark:bg-slate-900 text-steel-800 dark:text-slate-100 text-xs"
                     value={selectedMonth}
                     onChange={(e) => setSelectedMonth(Number(e.target.value))}
                   >
@@ -362,7 +364,7 @@ export default function InventoryReportModal({
                     ))}
                   </select>
                   <select
-                    className="w-1/2 p-1 border rounded bg-white text-xs font-mono"
+                    className="w-1/2 p-1 border border-steel-300 dark:border-slate-700 rounded bg-white dark:bg-slate-900 text-steel-800 dark:text-slate-100 text-xs font-mono"
                     value={selectedYear}
                     onChange={(e) => setSelectedYear(Number(e.target.value))}
                   >
@@ -376,7 +378,7 @@ export default function InventoryReportModal({
               {periodType === 'yearly' && (
                 <div className="pt-1">
                   <select
-                    className="w-full p-1 border rounded bg-white text-xs font-mono font-bold"
+                    className="w-full p-1 border border-steel-300 dark:border-slate-700 rounded bg-white dark:bg-slate-900 text-steel-800 dark:text-slate-100 text-xs font-mono font-bold"
                     value={selectedYear}
                     onChange={(e) => setSelectedYear(Number(e.target.value))}
                   >
@@ -391,14 +393,14 @@ export default function InventoryReportModal({
                 <div className="flex items-center gap-1 pt-1">
                   <input
                     type="date"
-                    className="w-1/2 p-1 border rounded text-[11px]"
+                    className="w-1/2 p-1 border border-steel-300 dark:border-slate-700 rounded bg-white dark:bg-slate-900 text-steel-800 dark:text-slate-100 text-[11px]"
                     value={customStart}
                     onChange={(e) => setCustomStart(e.target.value)}
                   />
-                  <span>-</span>
+                  <span className="text-steel-400">-</span>
                   <input
                     type="date"
-                    className="w-1/2 p-1 border rounded text-[11px]"
+                    className="w-1/2 p-1 border border-steel-300 dark:border-slate-700 rounded bg-white dark:bg-slate-900 text-steel-800 dark:text-slate-100 text-[11px]"
                     value={customEnd}
                     onChange={(e) => setCustomEnd(e.target.value)}
                   />
@@ -407,83 +409,88 @@ export default function InventoryReportModal({
             </div>
 
             {/* 2. เลือกประเภทรายงาน */}
-            <div className="bg-white p-2.5 rounded-lg border border-steel-200 shadow-sm space-y-1.5">
-              <label className="font-bold text-steel-700 flex items-center gap-1">
-                <span>📊</span> รูปแบบรายงาน
+            <div className="bg-white dark:bg-slate-800/90 p-2.5 rounded-lg border border-steel-200 dark:border-slate-700 shadow-sm space-y-1.5">
+              <label className="font-bold text-steel-700 dark:text-slate-200 flex items-center gap-1">
+                <span></span> รูปแบบรายงาน
               </label>
               <div className="space-y-1">
-                <label className="flex items-center gap-2 cursor-pointer hover:bg-steel-50 p-1 rounded">
+                <label className="flex items-center gap-2 cursor-pointer hover:bg-steel-50 dark:hover:bg-slate-700/60 p-1 rounded text-steel-800 dark:text-slate-200">
                   <input
                     type="radio"
                     name="reportType"
                     checked={reportType === 'balance'}
                     onChange={() => setReportType('balance')}
                   />
-                  <span>📦 ยอดคงเหลือและมูลค่าสต็อก</span>
+                  <span>ยอดคงเหลือและมูลค่าสต็อก</span>
                 </label>
-                <label className="flex items-center gap-2 cursor-pointer hover:bg-steel-50 p-1 rounded">
+                <label className="flex items-center gap-2 cursor-pointer hover:bg-steel-50 dark:hover:bg-slate-700/60 p-1 rounded text-steel-800 dark:text-slate-200">
                   <input
                     type="radio"
                     name="reportType"
                     checked={reportType === 'movement'}
                     onChange={() => setReportType('movement')}
                   />
-                  <span>🔄 สรุปความเคลื่อนไหว (รับ/จ่าย)</span>
+                  <span>สรุปความเคลื่อนไหว (รับ/จ่าย)</span>
                 </label>
-                <label className="flex items-center gap-2 cursor-pointer hover:bg-steel-50 p-1 rounded">
+                <label className="flex items-center gap-2 cursor-pointer hover:bg-steel-50 dark:hover:bg-slate-700/60 p-1 rounded text-steel-800 dark:text-slate-200">
                   <input
                     type="radio"
                     name="reportType"
                     checked={reportType === 'reorder'}
                     onChange={() => setReportType('reorder')}
                   />
-                  <span>⚠️ รายการใกล้หมด / ต้องสั่งซื้อ</span>
+                  <span>รายการใกล้หมด / ต้องสั่งซื้อ</span>
                 </label>
               </div>
             </div>
 
             {/* 3. กรองหมวดหมู่ & สถานะ */}
-            <div className="bg-white p-2.5 rounded-lg border border-steel-200 shadow-sm space-y-1.5">
-              <label className="font-bold text-steel-700 flex items-center gap-1">
-                <span>🏷️</span> กรองหมวดหมู่ & สถานะ
+            <div className="bg-white dark:bg-slate-800/90 p-2.5 rounded-lg border border-steel-200 dark:border-slate-700 shadow-sm space-y-1.5">
+              <label className="font-bold text-steel-700 dark:text-slate-200 flex items-center gap-1">
+                <span></span> กรองหมวดหมู่ & สถานะ
               </label>
               <select
-                className="w-full p-1 border rounded bg-white text-xs"
+                className="w-full h-9 px-2.5 border border-steel-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-xs font-semibold text-steel-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500 shadow-2xs cursor-pointer"
                 value={catFilter}
                 onChange={(e) => setCatFilter(e.target.value)}
               >
-                <option value="">ทุกหมวดหมู่วัสดุ</option>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
+                <option value="" className="bg-white dark:bg-slate-900 text-steel-800 dark:text-slate-100 py-1">ทุกหมวดหมู่วัสดุ ({rawItems?.length || 0} รายการ)</option>
+                {categories.map((c) => {
+                  const countInCat = (rawItems || []).filter((i) => i.category_id === c.id).length
+                  return (
+                    <option key={c.id} value={c.id} className="bg-white dark:bg-slate-900 text-steel-800 dark:text-slate-100 py-1">
+                      {c.name} {countInCat > 0 ? `(${countInCat} รายการ)` : ''}
+                    </option>
+                  )
+                })}
               </select>
 
               <select
-                className="w-full p-1 border rounded bg-white text-xs"
+                className="w-full h-9 px-2.5 border border-steel-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-xs font-semibold text-steel-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500 shadow-2xs cursor-pointer"
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
               >
-                <option value="all">ทุกสถานะคงเหลือ</option>
-                <option value="in_stock">เฉพาะมีของในสโตร์ (&gt; 0)</option>
-                <option value="low">เฉพาะใกล้หมดจุดสั่งซื้อ</option>
-                <option value="out">เฉพาะหมดสต็อก (= 0)</option>
+                <option value="all" className="bg-white dark:bg-slate-900 text-steel-800 dark:text-slate-100 py-1">ทุกสถานะคงเหลือ</option>
+                <option value="in_stock" className="bg-white dark:bg-slate-900 text-steel-800 dark:text-slate-100 py-1">เฉพาะมีของในสโตร์ (&gt; 0)</option>
+                <option value="low" className="bg-white dark:bg-slate-900 text-steel-800 dark:text-slate-100 py-1">เฉพาะใกล้หมดจุดสั่งซื้อ</option>
+                <option value="out" className="bg-white dark:bg-slate-900 text-steel-800 dark:text-slate-100 py-1">เฉพาะหมดสต็อก (= 0)</option>
               </select>
 
               <input
                 type="text"
                 placeholder="ค้นหารหัส หรือชื่อวัสดุ..."
-                className="w-full p-1 border rounded text-xs"
+                className="w-full h-9 px-2.5 border border-steel-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-xs text-steel-800 dark:text-slate-100 placeholder:text-steel-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-emerald-500 shadow-2xs"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
 
             {/* 4. ตัวเลือกเปิด/ปิดคอลัมน์ใน PDF */}
-            <div className="bg-white p-2.5 rounded-lg border border-steel-200 shadow-sm space-y-1.5">
-              <label className="font-bold text-steel-700 flex items-center gap-1">
-                <span>⚙️</span> ตัวเลือกการแสดงผล PDF
+            <div className="bg-white dark:bg-slate-800/90 p-2.5 rounded-lg border border-steel-200 dark:border-slate-700 shadow-sm space-y-1.5">
+              <label className="font-bold text-steel-700 dark:text-slate-200 flex items-center gap-1">
+                <span></span> ตัวเลือกการแสดงผล PDF
               </label>
-              <div className="grid grid-cols-2 gap-1 text-[11px]">
+              <div className="grid grid-cols-2 gap-1 text-[11px] text-steel-800 dark:text-slate-200">
                 <label className="flex items-center gap-1.5 cursor-pointer">
                   <input
                     type="checkbox"
@@ -518,8 +525,8 @@ export default function InventoryReportModal({
                 </label>
               </div>
 
-              <div className="pt-1 flex items-center justify-between border-t border-steel-200">
-                <span className="text-[10px] font-bold text-steel-700">รูปแบบหน้ากระดาษ:</span>
+              <div className="pt-1 flex items-center justify-between border-t border-steel-200 dark:border-slate-700">
+                <span className="text-[10px] font-bold text-steel-700 dark:text-slate-300">รูปแบบหน้ากระดาษ:</span>
                 <div className="flex items-center gap-1">
                   <button
                     type="button"
@@ -529,7 +536,7 @@ export default function InventoryReportModal({
                         : 'bg-steel-100 text-steel-600 hover:bg-steel-200'
                       }`}
                   >
-                    📄 แนวนอน (แนะนำ)
+                    แนวนอน (แนะนำ)
                   </button>
                   <button
                     type="button"
@@ -539,7 +546,7 @@ export default function InventoryReportModal({
                         : 'bg-steel-100 text-steel-600 hover:bg-steel-200'
                       }`}
                   >
-                    📄 แนวตั้ง
+                    แนวตั้ง
                   </button>
                 </div>
               </div>

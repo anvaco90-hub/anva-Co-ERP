@@ -24,16 +24,29 @@ export default function ReceiptsList() {
   const [activeMainTab, setActiveMainTab] = useState('received') // 'received' | 'pending_po'
   const [search, setSearch] = useState('')
   const [sortBy, setSortBy] = useState('date_desc')
+  const [categories, setCategories] = useState([])
+  const [showQuickItemModal, setShowQuickItemModal] = useState(false)
+  const [quickItemName, setQuickItemName] = useState('')
+  const [quickItemCatId, setQuickItemCatId] = useState('')
+  const [quickItemUnit, setQuickItemUnit] = useState('ชิ้น')
+  const [quickItemSaving, setQuickItemSaving] = useState(false)
+  const [quickItemError, setQuickItemError] = useState('')
+
+  // State สำหรับ Modal ตรวจรับเข้าสโตร์ (Receive Goods Modal from PO)
+  const [receivingPo, setReceivingPo] = useState(null)
+  const [receiveQuantities, setReceiveQuantities] = useState({})
+  const [receivingSubmitting, setReceivingSubmitting] = useState(false)
+  const [receiveModalError, setReceiveModalError] = useState('')
 
   const RECEIPTS_SORT_OPTIONS = [
-    { value: 'date_desc', label: '🕒 วันที่และเวลาล่าสุด (ใหม่ ➔ เก่า)' },
-    { value: 'date_asc', label: '🕒 วันที่ (เก่า ➔ ใหม่)' },
-    { value: 'name_asc', label: '🔤 ชื่อพัสดุ ก ➔ ฮ (A ➔ Z)' },
-    { value: 'name_desc', label: '🔤 ชื่อพัสดุ ฮ ➔ ก (Z ➔ A)' },
-    { value: 'code_asc', label: '🔢 รหัสพัสดุ (น้อย ➔ มาก: 0 ➔ 9)' },
-    { value: 'code_desc', label: '🔢 รหัสพัสดุ (มาก ➔ น้อย: 9 ➔ 0)' },
-    { value: 'qty_desc', label: '📦 จำนวนรับเข้า (มาก ➔ น้อย)' },
-    { value: 'amount_desc', label: '💰 มูลค่ารับเข้า (มาก ➔ น้อย)' },
+    { value: 'date_desc', label: ' วันที่และเวลาล่าสุด (ใหม่  เก่า)' },
+    { value: 'date_asc', label: ' วันที่ (เก่า  ใหม่)' },
+    { value: 'name_asc', label: 'ชื่อพัสดุ ก  ฮ (A  Z)' },
+    { value: 'name_desc', label: 'ชื่อพัสดุ ฮ  ก (Z  A)' },
+    { value: 'code_asc', label: 'รหัสพัสดุ (น้อย  มาก: 0  9)' },
+    { value: 'code_desc', label: 'รหัสพัสดุ (มาก  น้อย: 9  0)' },
+    { value: 'qty_desc', label: 'จำนวนรับเข้า (มาก  น้อย)' },
+    { value: 'amount_desc', label: 'มูลค่ารับเข้า (มาก  น้อย)' },
   ]
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(20) // 10 | 20 | 50 | 100
@@ -102,6 +115,11 @@ export default function ReceiptsList() {
       .order('item_name')
       .then(({ data }) => setItems(data ?? []))
 
+    supabase.from('item_categories')
+      .select('id, name, code_prefix')
+      .order('name')
+      .then(({ data }) => setCategories(data ?? []))
+
     supabase.from('projects')
       .select('id, project_code, project_name')
       .order('project_code')
@@ -125,6 +143,230 @@ export default function ReceiptsList() {
     const it = items.find((i) => i.id === id)
     if (it && it.avg_unit_cost && !unitPrice) {
       setUnitPrice(String(it.avg_unit_cost))
+    }
+  }
+
+  // ฟังก์ชันเปิด Modal สร้างพัสดุใหม่ด่วน
+  const handleOpenQuickItemModal = (name = '') => {
+    setQuickItemName(name)
+    setQuickItemCatId(categories[0]?.id || '')
+    setQuickItemUnit('ชิ้น')
+    setQuickItemError('')
+    setShowQuickItemModal(true)
+  }
+
+  // ฟังก์ชันบันทึกพัสดุใหม่ด่วน
+  const handleQuickCreateItem = async (e) => {
+    e.preventDefault()
+    if (!quickItemName.trim()) {
+      setQuickItemError('กรุณาระบุชื่อพัสดุ')
+      return
+    }
+    if (!quickItemCatId) {
+      setQuickItemError('กรุณาเลือกหมวดหมู่')
+      return
+    }
+
+    setQuickItemSaving(true)
+    setQuickItemError('')
+
+    try {
+      const selectedCat = categories.find((c) => c.id === quickItemCatId)
+      const prefix = selectedCat?.code_prefix || 'ITM'
+
+      const { count } = await supabase
+        .from('inventory_items')
+        .select('id', { count: 'exact', head: true })
+        .eq('category_id', quickItemCatId)
+
+      const genCode = `${prefix}-${String((count || 0) + 1).padStart(3, '0')}`
+
+      const { data: newIt, error: insErr } = await supabase
+        .from('inventory_items')
+        .insert({
+          item_code: genCode,
+          item_name: quickItemName.trim(),
+          category_id: quickItemCatId,
+          unit: quickItemUnit.trim() || 'ชิ้น',
+          qty_on_hand: 0,
+          avg_unit_cost: 0,
+          reorder_point: 5,
+        })
+        .select('id, item_code, item_name, unit, qty_on_hand, avg_unit_cost')
+        .single()
+
+      if (insErr) throw insErr
+
+      // บันทึกสำเร็จ: นำเข้าลิสต์และเลือกตัวนี้ในฟอร์มทันที
+      setItems((prev) => [newIt, ...prev])
+      setSelectedItemId(newIt.id)
+      setShowQuickItemModal(false)
+      setQuickItemName('')
+      setQuickItemUnit('ชิ้น')
+    } catch (err) {
+      console.error('Quick create item failed:', err)
+      setQuickItemError(err.message || 'สร้างพัสดุไม่สำเร็จ')
+    } finally {
+      setQuickItemSaving(false)
+    }
+  }
+
+  // ฟังก์ชันเปิด Modal ตรวจรับของเข้าสโตร์จาก PO
+  const handleOpenReceiveModal = (po) => {
+    setReceivingPo(po)
+    const initialQty = {}
+    po.purchase_order_items?.forEach((it) => {
+      const remain = Math.max(0, Number(it.quantity || 0) - Number(it.qty_received || 0))
+      initialQty[it.id] = String(remain)
+    })
+    setReceiveQuantities(initialQty)
+    setReceiveModalError('')
+  }
+
+  // ฟังก์ชันยืนยันตรวจรับเข้าสโตร์
+  const handleConfirmReceive = async () => {
+    if (!receivingPo) return
+    const poItems = receivingPo.purchase_order_items || []
+    const itemsToReceive = poItems
+      .filter((it) => Number(receiveQuantities[it.id] || 0) > 0)
+      .map((it) => {
+        const qtyNum = Number(receiveQuantities[it.id]) || 0
+        const remain = Math.max(0, Number(it.quantity) - Number(it.qty_received))
+        const actualQty = Math.min(qtyNum, remain > 0 ? remain : qtyNum)
+        let unitCost = Number(it.unit_price) || 0
+        if (unitCost === 0 && Number(receivingPo.total_amount) > 0) {
+          unitCost = Math.round((Number(receivingPo.total_amount) / (Number(it.quantity) || 1)) * 100) / 100
+        }
+        return {
+          po_item_id: it.id,
+          qty_received: actualQty,
+          unit_cost: unitCost,
+        }
+      })
+
+    if (itemsToReceive.length === 0) {
+      setReceiveModalError('กรุณาระบุจำนวนที่ต้องการรับเข้าสโตร์อย่างน้อย 1 รายการ')
+      return
+    }
+
+    setReceivingSubmitting(true)
+    setReceiveModalError('')
+
+    try {
+      // 1. ลองใช้ RPC confirm_goods_receipt
+      const { error: rpcErr } = await supabase.rpc('confirm_goods_receipt', {
+        p_po_id: receivingPo.id,
+        p_items: itemsToReceive,
+      })
+
+      if (rpcErr) {
+        console.warn('RPC confirm_goods_receipt failed, running direct fallback:', rpcErr)
+        // Fallback: บันทึกลงตารางโดยตรง
+        let grnNo = `RI${new Date().toISOString().slice(2, 4)}${String(new Date().getMonth() + 1).padStart(2, '0')}${String(Math.floor(Math.random() * 9000) + 1000)}`
+        try {
+          const { data: noData } = await supabase.rpc('next_doc_no', { p_prefix: 'RI' })
+          if (noData) grnNo = noData
+        } catch (_) {}
+
+        const { data: grnRow, error: grnErr } = await supabase
+          .from('goods_receipts')
+          .insert({
+            grn_no: grnNo,
+            po_id: receivingPo.id,
+            received_date: new Date().toISOString().slice(0, 10),
+          })
+          .select('id')
+          .single()
+
+        if (grnErr) throw grnErr
+        const grnId = grnRow.id
+
+        for (const it of itemsToReceive) {
+          let griId = null
+          const { data: griRow } = await supabase
+            .from('goods_receipt_items')
+            .insert({
+              grn_id: grnId,
+              po_item_id: it.po_item_id,
+              qty_received: it.qty_received,
+              unit_cost: it.unit_cost,
+            })
+            .select('id')
+            .single()
+
+          if (griRow) griId = griRow.id
+
+          const currentItem = poItems.find((x) => x.id === it.po_item_id)
+          if (currentItem) {
+            let targetItemId = null
+            const { data: found } = await supabase
+              .from('inventory_items')
+              .select('id, qty_on_hand, avg_unit_cost')
+              .ilike('item_name', currentItem.item_name.trim())
+              .limit(1)
+
+            if (found && found.length > 0) {
+              targetItemId = found[0].id
+              const curQty = Number(found[0].qty_on_hand || 0)
+              const curAvg = Number(found[0].avg_unit_cost || 0)
+              const nextQty = curQty + it.qty_received
+              const nextAvg = nextQty > 0 ? Math.round(((curQty * curAvg) + (it.qty_received * it.unit_cost)) / nextQty * 100) / 100 : it.unit_cost
+
+              await supabase.from('inventory_items').update({
+                qty_on_hand: nextQty,
+                avg_unit_cost: nextAvg,
+                updated_at: new Date().toISOString(),
+              }).eq('id', targetItemId)
+            } else {
+              const itemCode = `MAT-${Date.now().toString().slice(-6)}`
+              const { data: newInv } = await supabase.from('inventory_items').insert({
+                item_code: itemCode,
+                item_name: currentItem.item_name.trim(),
+                unit: currentItem.unit || 'ชิ้น',
+                qty_on_hand: it.qty_received,
+                avg_unit_cost: it.unit_cost,
+              }).select('id').single()
+              if (newInv) targetItemId = newInv.id
+            }
+
+            if (targetItemId) {
+              await supabase.from('stock_lots').insert({
+                item_id: targetItemId,
+                source_project_id: receivingPo.project_id || null,
+                grn_item_id: griId || null,
+                lot_type: 'receipt',
+                received_date: new Date().toISOString().slice(0, 10),
+                qty_received: it.qty_received,
+                qty_remaining: it.qty_received,
+                unit_cost: it.unit_cost,
+              })
+            }
+
+            const newReceived = (Number(currentItem.qty_received) || 0) + it.qty_received
+            await supabase.from('purchase_order_items').update({ qty_received: newReceived }).eq('id', it.po_item_id)
+          }
+        }
+
+        const allReceived = poItems.every((x) => {
+          const adding = itemsToReceive.find((r) => r.po_item_id === x.id)?.qty_received || 0
+          return (Number(x.qty_received) || 0) + adding >= Number(x.quantity)
+        })
+
+        await supabase.from('purchase_orders').update({
+          status: allReceived ? 'received' : 'partial',
+          updated_at: new Date().toISOString(),
+        }).eq('id', receivingPo.id)
+      }
+
+      setSuccess(`ตรวจรับของเข้าสโตร์เรียบร้อยสำหรับ ${receivingPo.po_no} (อัปเดตสต็อกและประวัติ RI แล้ว)`)
+      setReceivingPo(null)
+      loadData()
+      setTimeout(() => setSuccess(''), 4000)
+    } catch (err) {
+      console.error('Confirm goods receipt failed:', err)
+      setReceiveModalError(err.message || 'บันทึกตรวจรับของไม่สำเร็จ')
+    } finally {
+      setReceivingSubmitting(false)
     }
   }
 
@@ -378,7 +620,7 @@ export default function ReceiptsList() {
             onClick={() => setShowStockInForm(!showStockInForm)}
             className="btn-primary flex items-center gap-1.5 shadow-sm !py-2"
           >
-            <span>{showStockInForm ? '▲ ซ่อนแบบฟอร์ม' : '📥 + รับวัสดุเข้าสโตร์โดยตรง'}</span>
+            <span>{showStockInForm ? '▲ ซ่อนแบบฟอร์ม' : '+ รับวัสดุเข้าสโตร์โดยตรง'}</span>
           </button>
         )}
       </div>
@@ -392,7 +634,7 @@ export default function ReceiptsList() {
           <div className="flex items-center justify-between pb-3 border-b border-emerald-200">
             <div>
               <h3 className="font-bold text-emerald-950 flex items-center gap-2">
-                <span>📥 บันทึกรับวัสดุเข้าสโตร์ (Direct Stock-In & Tax Invoice)</span>
+                <span>บันทึกรับวัสดุเข้าสโตร์ (Direct Stock-In & Tax Invoice)</span>
               </h3>
               <p className="text-xs text-emerald-800 mt-0.5">
                 ระบุจำนวน ราคาต่อหน่วย เลขที่ใบกำกับภาษี และโครงการที่ตัดต้นทุน (P&L Allocation)
@@ -402,7 +644,7 @@ export default function ReceiptsList() {
               onClick={() => setShowStockInForm(false)}
               className="text-xs text-steel-500 hover:text-black"
             >
-              ✕ ปิด
+               ปิด
             </button>
           </div>
 
@@ -446,6 +688,7 @@ export default function ReceiptsList() {
                 value={selectedItemId}
                 onChange={handleItemSelect}
                 placeholder="พิมพ์ค้นหารหัส หรือชื่อพัสดุ..."
+                onCreateNew={handleOpenQuickItemModal}
                 required
               />
             </div>
@@ -519,7 +762,7 @@ export default function ReceiptsList() {
               onClick={handleDirectStockIn}
               disabled={saving || !selectedItemId || !Number(qty) || Number(unitPrice) < 0}
             >
-              {saving ? 'กำลังบันทึก...' : '📥 ยืนยันรับเข้าสโตร์และบันทึกบัญชี'}
+              {saving ? 'กำลังบันทึก...' : 'ยืนยันรับเข้าสโตร์และบันทึกบัญชี'}
             </button>
           </div>
         </div>
@@ -540,7 +783,7 @@ export default function ReceiptsList() {
                 : 'bg-white dark:bg-slate-800 text-steel-700 dark:text-slate-300 hover:bg-steel-50 dark:hover:bg-slate-700 border border-steel-200 dark:border-slate-700'
             }`}
           >
-            <span>📜</span>
+            <span></span>
             <span>ประวัติรับเข้าสโตร์แล้ว (Goods Receipts - RI)</span>
             <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
               activeMainTab === 'received' ? 'bg-white/20 text-white' : 'bg-steel-200 dark:bg-slate-700 text-steel-700 dark:text-slate-200'
@@ -561,11 +804,11 @@ export default function ReceiptsList() {
                 : 'bg-white dark:bg-slate-800 text-steel-700 dark:text-slate-300 hover:bg-steel-50 dark:hover:bg-slate-700 border border-steel-200 dark:border-slate-700'
             }`}
           >
-            <span>🚚</span>
+            <span></span>
             <span>นำเข้า / ตรวจรับของเข้าสโตร์</span>
             {pendingPos.length > 0 ? (
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-mono font-black bg-rose-500 text-white shadow-sm animate-pulse">
-                <span>🔔</span>
+                <span></span>
                 <span>({pendingPos.length})</span>
               </span>
             ) : (
@@ -578,7 +821,7 @@ export default function ReceiptsList() {
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <input
             className="input text-xs w-full sm:w-64"
-            placeholder={activeMainTab === 'received' ? "🔍 ค้นหารหัส / ชื่อพัสดุ / เลขที่ RI..." : "🔍 ค้นหาเลขที่ PO / ผู้ขาย / วัสดุ..."}
+            placeholder={activeMainTab === 'received' ? "ค้นหารหัส / ชื่อพัสดุ / เลขที่ RI..." : "ค้นหาเลขที่ PO / ผู้ขาย / วัสดุ..."}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -596,11 +839,11 @@ export default function ReceiptsList() {
         <div className="space-y-4">
           <div className="rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 p-4 text-xs text-amber-900 dark:text-amber-200 flex flex-wrap items-center justify-between gap-3 shadow-xs">
             <div className="flex items-center gap-3">
-              <span className="text-2xl p-2 bg-amber-100 dark:bg-amber-900/50 rounded-xl">🚚</span>
+              <span className="text-2xl p-2 bg-amber-100 dark:bg-amber-900/50 rounded-xl"></span>
               <div>
                 <h4 className="font-bold text-sm text-amber-950 dark:text-amber-100">ใบสั่งซื้อที่อยู่ระหว่างรอสินค้าส่งมอบเข้าสโตร์ (Pending Deliveries)</h4>
                 <p className="text-amber-800 dark:text-amber-300 mt-0.5">
-                  เมื่อผู้ขายนำของมาส่งถึงโกดัง/ไซต์งาน ให้กดปุ่ม <b>"📥 ตรวจรับเข้าสโตร์"</b> เพื่อระบุจำนวนที่รับจริง ตรวจรับเข้าคลัง และออกเลขที่ใบรับของ (RI) ทันที
+                  เมื่อผู้ขายนำของมาส่งถึงโกดัง/ไซต์งาน ให้กดปุ่ม <b>"ตรวจรับเข้าสโตร์"</b> เพื่อระบุจำนวนที่รับจริง ตรวจรับเข้าคลัง และออกเลขที่ใบรับของ (RI) ทันที
                 </p>
               </div>
             </div>
@@ -632,7 +875,7 @@ export default function ReceiptsList() {
                 {filteredPendingPos.length === 0 ? (
                   <tr>
                     <td colSpan={9} className="py-12 text-center text-steel-400 dark:text-slate-500 text-xs">
-                      {search ? 'ไม่พบใบสั่งซื้อที่ตรงกับคำค้นหา' : 'ไม่มีใบสั่งซื้อที่ค้างรับของ (รับของเข้าสโตร์ครบทุกใบแล้ว 🎉)'}
+                      {search ? 'ไม่พบใบสั่งซื้อที่ตรงกับคำค้นหา' : 'ไม่มีใบสั่งซื้อที่ค้างรับของ (รับของเข้าสโตร์ครบทุกใบแล้ว )'}
                     </td>
                   </tr>
                 ) : (
@@ -658,10 +901,10 @@ export default function ReceiptsList() {
                             <span>{po.po_no}</span>
                           </Link>
                         </td>
-                        <td className="py-3 px-3 font-medium text-steel-900 dark:text-slate-100 max-w-[160px] truncate" title={vendorName}>
+                        <td className="py-3 px-3 font-medium text-steel-900 dark:text-slate-100 max-w-[200px] break-words whitespace-normal leading-relaxed" title={vendorName}>
                           {vendorName}
                         </td>
-                        <td className="py-3 px-3 text-steel-700 dark:text-slate-300 max-w-[160px] truncate" title={`${projCode} ${projName}`}>
+                        <td className="py-3 px-3 text-steel-700 dark:text-slate-300 max-w-[200px] break-words whitespace-normal leading-relaxed" title={`${projCode} ${projName}`}>
                           {projCode ? <span className="font-mono font-bold text-amber-700 dark:text-amber-400 mr-1">{projCode}</span> : null}
                           <span>{projName}</span>
                         </td>
@@ -675,10 +918,10 @@ export default function ReceiptsList() {
                           )}
                         </td>
                         <td className="py-3 px-3 min-w-[200px]">
-                          <div className="space-y-0.5">
-                            {itemsList.slice(0, 2).map((it, idx) => (
-                              <div key={idx} className="text-[11px] text-steel-700 dark:text-slate-300 flex items-center justify-between gap-2">
-                                <span className="truncate max-w-[150px] font-medium">• {it.item_name}</span>
+                          <div className="space-y-1">
+                            {itemsList.slice(0, 3).map((it, idx) => (
+                              <div key={idx} className="text-[11px] text-steel-700 dark:text-slate-300 flex items-start justify-between gap-2">
+                                <span className="break-words whitespace-normal leading-tight font-medium">• {it.item_name}</span>
                                 <span className="font-mono text-steel-500 dark:text-slate-400 shrink-0">
                                   {Number(it.qty_received) || 0}/{Number(it.quantity) || 0} {it.unit}
                                 </span>
@@ -697,7 +940,7 @@ export default function ReceiptsList() {
                         <td className="py-3 px-3 text-center whitespace-nowrap">
                           {isPartial ? (
                             <span className="bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800 px-2.5 py-1 rounded-full text-[10px] font-bold">
-                              📦 รับบางส่วน ({receivedQty}/{totalQty})
+                              รับบางส่วน ({receivedQty}/{totalQty})
                             </span>
                           ) : (
                             <span className="bg-sky-100 dark:bg-sky-950 text-sky-800 dark:text-sky-300 border border-sky-300 dark:border-sky-800 px-2.5 py-1 rounded-full text-[10px] font-bold">
@@ -706,13 +949,14 @@ export default function ReceiptsList() {
                           )}
                         </td>
                         <td className="py-3 px-3 text-center whitespace-nowrap">
-                          <Link
-                            to={`/purchasing/po/${po.id}`}
+                          <button
+                            type="button"
+                            onClick={() => handleOpenReceiveModal(po)}
                             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition cursor-pointer"
-                            title="เปิดเพื่อตรวจนับและยืนยันรับเข้าสโตร์"
+                            title="เปิดตรวจนับและยืนยันรับเข้าสโตร์"
                           >
-                            <span>📥 ตรวจรับเข้าสโตร์</span>
-                          </Link>
+                            <span>ตรวจรับเข้าสโตร์</span>
+                          </button>
                         </td>
                       </tr>
                     )
@@ -753,7 +997,7 @@ export default function ReceiptsList() {
                     docViewMode === 'business' ? 'bg-sky-700 text-white shadow-sm' : 'bg-steel-100 dark:bg-slate-800 text-steel-700 dark:text-slate-300 hover:bg-steel-200 dark:hover:bg-slate-700'
                   }`}
                 >
-                  📁 เอกสารสโตร์
+                   เอกสารสโตร์
                 </button>
                 <button
                   onClick={() => setDocViewMode('accounting')}
@@ -761,7 +1005,7 @@ export default function ReceiptsList() {
                     docViewMode === 'accounting' ? 'bg-emerald-700 text-white shadow-sm' : 'bg-steel-100 dark:bg-slate-800 text-steel-700 dark:text-slate-300 hover:bg-steel-200 dark:hover:bg-slate-700'
                   }`}
                 >
-                  ⚖️ เอกสารบัญชีสต็อก (RI / GL)
+                  ️ เอกสารบัญชีสต็อก (RI / GL)
                 </button>
               </div>
             </div>
@@ -769,7 +1013,7 @@ export default function ReceiptsList() {
         {/* ตัวกรองช่วงเวลาดูประวัติย้อนหลัง */}
         <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-steel-100 dark:border-slate-800 text-xs">
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="font-bold text-steel-600 dark:text-slate-300 mr-1">📅 ช่วงเวลา:</span>
+            <span className="font-bold text-steel-600 dark:text-slate-300 mr-1">ช่วงเวลา:</span>
             {[
               { id: 'all', label: 'ทั้งหมด' },
               { id: 'today', label: 'วันนี้' },
@@ -874,7 +1118,7 @@ export default function ReceiptsList() {
                           })()}
                         </span>
                         <span className="text-[11px] text-sky-700 dark:text-sky-400 font-mono flex items-center gap-1 font-semibold mt-0.5">
-                          <span>🕒</span>
+                          <span></span>
                           <span>
                             {r.created_at
                               ? new Date(r.created_at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + ' น.'
@@ -955,7 +1199,7 @@ export default function ReceiptsList() {
                     {/* สถานะบัญชี */}
                     <td className="py-3 px-3 text-center whitespace-nowrap">
                       <span className="bg-emerald-50 text-emerald-800 px-2.5 py-1 rounded-full text-[10px] font-bold border border-emerald-200">
-                        ✅ ลงบัญชีแล้ว (RI)
+                        ลงบัญชีแล้ว (RI)
                       </span>
                     </td>
                   </tr>
@@ -982,6 +1226,226 @@ export default function ReceiptsList() {
           />
         </div>
       )}
+        </div>
+      )}
+      {/* Modal ลงทะเบียนพัสดุใหม่ด่วน (Quick Create New Item) */}
+      {showQuickItemModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+          <div className="w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 border border-steel-200 dark:border-slate-800 shadow-2xl overflow-hidden p-5 space-y-4">
+            <div className="flex items-center justify-between border-b border-steel-100 dark:border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <span className="text-xl"></span>
+                <div>
+                  <h3 className="font-bold text-sm text-steel-900 dark:text-slate-100">ลงทะเบียนพัสดุใหม่ด่วน</h3>
+                  <p className="text-[11px] text-steel-500 dark:text-slate-400">สำหรับของซื้อด่วนที่ยังไม่เคยมีในทะเบียนสโตร์</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowQuickItemModal(false)}
+                className="text-steel-400 hover:text-steel-600 dark:hover:text-white"
+              >
+                
+              </button>
+            </div>
+
+            {quickItemError && (
+              <div className="rounded-lg bg-rose-50 dark:bg-rose-950/40 p-2.5 text-xs text-rose-700 dark:text-rose-300 font-semibold">
+                {quickItemError}
+              </div>
+            )}
+
+            <form onSubmit={handleQuickCreateItem} className="space-y-3 text-xs">
+              <div>
+                <label className="block font-bold text-steel-700 dark:text-slate-300 mb-1">
+                  ชื่อวัสดุ / พัสดุ *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="เช่น กาวซิลิโคนใส DOWSIL, น็อตยึดรางเบอร์ 10"
+                  className="input w-full text-xs"
+                  value={quickItemName}
+                  onChange={(e) => setQuickItemName(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-steel-700 dark:text-slate-300 mb-1">
+                  หมวดหมู่วัสดุ *
+                </label>
+                <select
+                  required
+                  className="input w-full text-xs"
+                  value={quickItemCatId}
+                  onChange={(e) => setQuickItemCatId(e.target.value)}
+                >
+                  <option value="">-- เลือกหมวดหมู่ --</option>
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name} {c.code_prefix ? `(${c.code_prefix})` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block font-bold text-steel-700 dark:text-slate-300 mb-1">
+                  หน่วยนับ *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="เช่น ชิ้น, ม้วน, เมตร, เส้น, กล่อง, หลอด, ถัง"
+                  className="input w-full text-xs"
+                  value={quickItemUnit}
+                  onChange={(e) => setQuickItemUnit(e.target.value)}
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-steel-100 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setShowQuickItemModal(false)}
+                  disabled={quickItemSaving}
+                  className="btn-ghost !py-1.5 text-xs cursor-pointer"
+                >
+                  ยกเลิก
+                </button>
+                <button
+                  type="submit"
+                  disabled={quickItemSaving}
+                  className="btn-primary !py-1.5 text-xs flex items-center gap-1 shadow-sm cursor-pointer"
+                >
+                  <span>{quickItemSaving ? 'กำลังบันทึก...' : ' บันทึกและเลือกทันที'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal ตรวจรับเข้าสโตร์ (Goods Receipt Confirmation Modal) */}
+      {receivingPo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+          <div className="w-full max-w-3xl rounded-2xl bg-white dark:bg-slate-900 border border-steel-200 dark:border-slate-800 shadow-2xl overflow-hidden p-6 space-y-4 max-h-[90vh] flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-steel-100 dark:border-slate-800 pb-3">
+              <div className="flex items-center gap-2.5">
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600 text-white font-bold text-lg shadow-sm">
+                  </span>
+                <div>
+                  <h3 className="font-bold text-base text-steel-900 dark:text-slate-100 flex items-center gap-2">
+                    <span>ตรวจรับสินค้าเข้าสโตร์</span>
+                    <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">({receivingPo.po_no})</span>
+                  </h3>
+                  <p className="text-xs text-steel-500 dark:text-slate-400">
+                    ผู้ขาย: <b className="text-steel-800 dark:text-slate-200">{receivingPo.vendors?.vendor_name || receivingPo.custom_vendor_name || 'ไม่ระบุ'}</b> | โครงการ: <b className="text-steel-800 dark:text-slate-200">{receivingPo.projects?.project_code || ''} {receivingPo.projects?.project_name || receivingPo.custom_project_name || 'ของกลาง'}</b>
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setReceivingPo(null)}
+                className="text-steel-400 hover:text-steel-600 dark:hover:text-white p-1"
+              >
+                
+              </button>
+            </div>
+
+            {receiveModalError && (
+              <div className="rounded-xl bg-rose-50 dark:bg-rose-950/40 p-3 text-xs text-rose-700 dark:text-rose-300 font-semibold border border-rose-200 dark:border-rose-800">
+                {receiveModalError}
+              </div>
+            )}
+
+            {/* Items Table */}
+            <div className="overflow-y-auto flex-1 border border-steel-200 dark:border-slate-800 rounded-xl">
+              <table className="w-full text-left text-xs divide-y divide-steel-200 dark:divide-slate-800">
+                <thead className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold uppercase tracking-wider text-[11px] sticky top-0">
+                  <tr>
+                    <th className="py-2.5 px-3">รายการพัสดุ</th>
+                    <th className="py-2.5 px-3 text-right">จำนวนสั่งซื้อ</th>
+                    <th className="py-2.5 px-3 text-right">รับแล้ว</th>
+                    <th className="py-2.5 px-3 text-right">คงเหลือรอรับ</th>
+                    <th className="py-2.5 px-3 text-center min-w-[130px]">จำนวนรับเข้าครั้งนี้</th>
+                    <th className="py-2.5 px-3 text-right">ราคา/หน่วย (บ.)</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-steel-100 dark:divide-slate-800">
+                  {receivingPo.purchase_order_items?.map((it) => {
+                    const ordered = Number(it.quantity || 0)
+                    const received = Number(it.qty_received || 0)
+                    const remaining = Math.max(0, ordered - received)
+                    const val = receiveQuantities[it.id] ?? String(remaining)
+
+                    return (
+                      <tr key={it.id} className="hover:bg-steel-50/50 dark:hover:bg-slate-800/40">
+                        <td className="py-2.5 px-3 font-semibold text-steel-900 dark:text-slate-100">
+                          {it.item_name}
+                        </td>
+                        <td className="py-2.5 px-3 text-right font-mono">
+                          {ordered} {it.unit}
+                        </td>
+                        <td className="py-2.5 px-3 text-right font-mono text-steel-500 dark:text-slate-400">
+                          {received} {it.unit}
+                        </td>
+                        <td className="py-2.5 px-3 text-right font-mono font-bold text-amber-600 dark:text-amber-400">
+                          {remaining} {it.unit}
+                        </td>
+                        <td className="py-2.5 px-3 text-center">
+                          <input
+                            type="number"
+                            min="0"
+                            max={remaining}
+                            className="w-24 text-center font-bold text-xs py-1.5 px-2 rounded-lg border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-steel-900 dark:text-white focus:outline-none focus:border-emerald-500"
+                            value={val}
+                            onChange={(e) => {
+                              const v = e.target.value
+                              setReceiveQuantities((prev) => ({ ...prev, [it.id]: v }))
+                            }}
+                          />
+                        </td>
+                        <td className="py-2.5 px-3 text-right font-mono">
+                          {baht(Number(it.unit_price || 0))}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Footer */}
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-steel-100 dark:border-slate-800">
+              <Link
+                to={`/purchasing/po/${receivingPo.id}`}
+                target="_blank"
+                className="text-xs font-bold text-sky-600 dark:text-sky-400 hover:underline flex items-center gap-1"
+              >
+                <span>เปิดดูรายละเอียดใบสั่งซื้อเต็มรูปแบบ (PO) ↗</span>
+              </Link>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setReceivingPo(null)}
+                  disabled={receivingSubmitting}
+                  className="btn-ghost !py-2 text-xs cursor-pointer"
+                >
+                  ยกเลิก
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmReceive}
+                  disabled={receivingSubmitting}
+                  className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-5 py-2 transition shadow-sm disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
+                >
+                  <span>{receivingSubmitting ? 'กำลังบันทึกรับเข้า...' : ' ยืนยันบันทึกรับเข้าสโตร์'}</span>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

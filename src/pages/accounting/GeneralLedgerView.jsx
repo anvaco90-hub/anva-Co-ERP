@@ -109,7 +109,7 @@ export default function GeneralLedgerView() {
                 : 'bg-white text-steel-600 hover:bg-steel-100 border border-steel-200'
             }`}
           >
-            📑 รายการสมุดรายวันทั่วไป (Journal Entries - Double-Entry)
+            รายการสมุดรายวันทั่วไป (Journal Entries - Double-Entry)
           </button>
           <button
             onClick={() => setSubTab('coa')}
@@ -119,7 +119,7 @@ export default function GeneralLedgerView() {
                 : 'bg-white text-steel-600 hover:bg-steel-100 border border-steel-200'
             }`}
           >
-            📋 ผังบัญชีมาตรฐาน (Chart of Accounts - 33 หมวด)
+            ผังบัญชีมาตรฐาน (Chart of Accounts - 33 หมวด)
           </button>
         </div>
 
@@ -221,11 +221,11 @@ export default function GeneralLedgerView() {
                           <td className="px-3 py-2.5 text-center">
                             {entry.accounting_status === 'อนุมัติแล้ว' ? (
                               <span className="bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded-full font-bold">
-                                ✅ บันทึกแล้ว
+                                บันทึกแล้ว
                               </span>
                             ) : (
                               <span className="bg-amber-100 text-amber-800 text-[10px] px-2 py-0.5 rounded-full font-bold">
-                                ⚡ รอดำเนินการ
+                                รอดำเนินการ
                               </span>
                             )}
                           </td>
@@ -259,7 +259,7 @@ export default function GeneralLedgerView() {
                                 <div className="flex justify-between items-center text-xs border-b border-steel-100 pb-1.5 font-bold text-steel-700">
                                   <span>คู่บัญชี (Double-Entry Posting Details)</span>
                                   <span className={isBalanced ? 'text-emerald-700' : 'text-rose-700 font-bold'}>
-                                    {isBalanced ? '✅ เดบิต = เครดิต สมดุลเรียบร้อย' : '⚠️ ยอดเดบิตและเครดิตไม่สมดุล'}
+                                    {isBalanced ? 'เดบิต = เครดิต สมดุลเรียบร้อย' : 'ยอดเดบิตและเครดิตไม่สมดุล'}
                                   </span>
                                 </div>
                                 <table className="w-full text-left text-xs">
@@ -356,7 +356,7 @@ export default function GeneralLedgerView() {
                     </td>
                     <td className="px-4 py-2.5 text-center">
                       {item.is_system_default ? (
-                        <span className="text-emerald-700 text-[10px] font-bold">✓ ค่าเริ่มต้น</span>
+                        <span className="text-emerald-700 text-[10px] font-bold"> ค่าเริ่มต้น</span>
                       ) : (
                         <span className="text-steel-400 text-[10px]">-</span>
                       )}

@@ -620,7 +620,7 @@ export default function Dashboard() {
               }`}
               title="สลับระหว่างข้อมูลจำลองสำหรับทดสอบ (Demo) และข้อมูลจริงจากระบบ (Live DB)"
             >
-              <span>{isDemoMode ? '✨ ข้อมูลจำลอง (Demo Active)' : '🗄️ ข้อมูลจริง (Live DB)'}</span>
+              <span>{isDemoMode ? 'ข้อมูลจำลอง (Demo Active)' : '️ ข้อมูลจริง (Live DB)'}</span>
             </button>
 
             <button
@@ -652,8 +652,7 @@ export default function Dashboard() {
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-300/80 bg-gradient-to-r from-amber-50 via-amber-100/70 to-amber-50 p-4 text-xs text-amber-950 shadow-sm">
           <div className="flex items-center gap-3">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-400 text-steel-950 font-black text-base shadow-xs">
-              📊
-            </span>
+              </span>
             <div>
               <div className="font-bold text-sm text-steel-900 flex items-center gap-2">
                 <span>กำลังแสดงผลชุดข้อมูลจำลองสมจริง (Realistic Enterprise Simulation Active)</span>
@@ -668,7 +667,7 @@ export default function Dashboard() {
           </div>
           <div className="flex items-center gap-2 font-medium">
             <span className="rounded-lg bg-white px-3 py-1.5 text-xs font-bold text-steel-800 border border-amber-200 shadow-xs">
-              🎯 ทดสอบตัวกรอง ปี/เดือน/ไตรมาส ได้แบบเรียลไทม์
+              ทดสอบตัวกรอง ปี/เดือน/ไตรมาส ได้แบบเรียลไทม์
             </span>
           </div>
         </div>
@@ -706,7 +705,7 @@ export default function Dashboard() {
               { id: 'Q4', label: 'ไตรมาส 4' },
               { id: '2026-11', label: 'พ.ย. 69' },
               { id: '2026-10', label: 'ต.ค. 69' },
-              { id: 'custom', label: 'กำหนดเอง ⚙️' },
+              { id: 'custom', label: 'กำหนดเอง ' },
             ].map((preset) => (
               <button
                 key={preset.id}

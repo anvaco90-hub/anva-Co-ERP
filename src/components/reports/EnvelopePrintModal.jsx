@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Mail, Printer, X } from 'lucide-react'
 
 export default function EnvelopePrintModal({ po, quotation, contact, onClose }) {
   const doc = quotation || po || contact
@@ -19,8 +20,8 @@ export default function EnvelopePrintModal({ po, quotation, contact, onClose }) 
     : 'จ่าหน้าซองจดหมายส่งใบสั่งซื้อ เช็คชำระเงิน หรือเอกสารสัญญาถึงคู่ค้า'
 
   const [envelopeSize, setEnvelopeSize] = useState('c5') // 'c5' | 'dl' | 'label'
-  const [senderName, setSenderName] = useState('บริษัท แอนวา คอนสตรัคชั่น แอนด์ เอ็นจิเนียริ่ง จำกัด')
-  const [senderAddress, setSenderAddress] = useState('อาคารเอ็นจิเนียริ่ง คอมเพล็กซ์ ถ.วิภาวดีรังสิต แขวงลาดยาว เขตจตุจักร กรุงเทพมหานคร 10900 โทร. 02-555-8888')
+  const [senderName, setSenderName] = useState('บริษัท อันวา แอนด์ โค จำกัด')
+  const [senderAddress, setSenderAddress] = useState('123/45 ถนนวิภาวดีรังสิต แขวงลาดยาว เขตจตุจักร กรุงเทพฯ 10900 โทร. 02-555-8888')
   
   const defaultRecipientName = isContact
     ? (contact.business_name || contact.company_name || 'ชื่อบริษัทคู่ค้า / ลูกค้า')
@@ -51,6 +52,12 @@ export default function EnvelopePrintModal({ po, quotation, contact, onClose }) 
   const [recipientAddress, setRecipientAddress] = useState(defaultRecipientAddress)
   const [recipientPhone, setRecipientPhone] = useState(defaultRecipientPhone)
 
+  const recipientTaxId = isContact
+    ? (contact.tax_id || '')
+    : isQuotation
+    ? (quotation.customer_tax_id || '')
+    : (po?.vendors?.tax_id || po?.tax_id || '')
+
   const handlePrint = () => {
     window.print()
   }
@@ -62,7 +69,7 @@ export default function EnvelopePrintModal({ po, quotation, contact, onClose }) 
         {/* แถบควบคุมด้านบน (ไม่แสดงเวลาสั่งพิมพ์) */}
         <div className="no-print flex flex-wrap items-center justify-between border-b border-steel-200 bg-steel-900 px-6 py-3.5 text-white gap-3">
           <div className="flex items-center gap-2.5">
-            <span className="text-xl">✉️</span>
+            <Mail className="h-5 w-5 text-hivis shrink-0" />
             <div>
               <div className="font-bold text-sm text-white flex items-center gap-2">
                 <span>พิมพ์หน้าจ่าซองเอกสารจัดส่ง</span>
@@ -106,7 +113,7 @@ export default function EnvelopePrintModal({ po, quotation, contact, onClose }) 
               onClick={handlePrint}
               className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 px-4 py-2 text-xs font-bold text-white shadow-md transition cursor-pointer"
             >
-              <span>🖨️</span>
+              <Printer className="h-3.5 w-3.5" />
               <span>สั่งพิมพ์จ่าซอง</span>
             </button>
 
@@ -182,7 +189,7 @@ export default function EnvelopePrintModal({ po, quotation, contact, onClose }) 
               <div className="font-bold text-sm text-black">{senderName}</div>
               <div className="text-neutral-700 text-[11px] mt-0.5">{senderAddress}</div>
               <div className="text-[10px] text-neutral-500 font-mono mt-0.5">
-                เลขประจำตัวผู้เสียภาษี: 0105562000000
+                เลขประจำตัวผู้เสียภาษี: 0105566088991
               </div>
             </div>
 
@@ -209,18 +216,38 @@ export default function EnvelopePrintModal({ po, quotation, contact, onClose }) 
 
               <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-neutral-300 pt-2 text-[11px] font-semibold text-neutral-700">
                 <span>โทรศัพท์: <b>{recipientPhone}</b></span>
-                {po.vendors?.tax_id && <span>เลขประจำตัวผู้เสียภาษี: <b>{po.vendors.tax_id}</b></span>}
+                {recipientTaxId && <span>เลขประจำตัวผู้เสียภาษี: <b>{recipientTaxId}</b></span>}
               </div>
             </div>
 
             {/* แถบเอกสารอ้างอิงด้านล่างสุด */}
             <div className="absolute bottom-6 left-8 right-8 flex items-center justify-between border-t border-neutral-300 pt-2 text-[10px] text-neutral-600 font-mono">
               <div>
-                <b>เอกสารแนบ:</b> ใบสั่งซื้อเลขที่ <b>{po.po_no}</b>
-                {po.projects?.project_code && ` · โครงการ: ${po.projects.project_code} ${po.projects.project_name || ''}`}
+                {isQuotation ? (
+                  <>
+                    <b>เอกสารแนบ:</b> ใบเสนอราคาเลขที่ <b>{quotation.quotation_no || '-'}</b>
+                    {quotation.project_name && ` · โครงการ: ${quotation.project_name}`}
+                  </>
+                ) : isContact ? (
+                  <>
+                    <b>คู่ค้า:</b> รหัส <b>{contact.contact_code || (contact.id ? String(contact.id).slice(0, 8) : '-')}</b>
+                    {contact.contact_type && ` · ประเภท: ${contact.contact_type === 'customer' ? 'ลูกค้า' : contact.contact_type === 'vendor' ? 'ผู้จำหน่าย' : 'ลูกค้าและผู้จำหน่าย'}`}
+                  </>
+                ) : (
+                  <>
+                    <b>เอกสารแนบ:</b> ใบสั่งซื้อเลขที่ <b>{po?.po_no || '-'}</b>
+                    {po?.projects?.project_code && ` · โครงการ: ${po.projects.project_code} ${po.projects.project_name || ''}`}
+                  </>
+                )}
               </div>
               <div>
-                วันที่: {po.order_date || '-'} {po.expected_delivery_date ? `· กำหนดส่งมอบ: ${po.expected_delivery_date}` : ''}
+                {isQuotation ? (
+                  `วันที่: ${quotation.issue_date || '-'}`
+                ) : isContact ? (
+                  `วันที่พิมพ์: ${new Date().toLocaleDateString('th-TH')}`
+                ) : (
+                  `วันที่: ${po?.order_date || '-'} ${po?.expected_delivery_date ? `· กำหนดส่งมอบ: ${po.expected_delivery_date}` : ''}`
+                )}
               </div>
             </div>
           </div>

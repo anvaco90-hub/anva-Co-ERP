@@ -14,7 +14,7 @@ export default function POShareModal({ po, onClose }) {
   const projectInfo = po.projects ? `${po.projects.project_code} ${po.projects.project_name}` : 'ของกลางบริษัท'
   const dueDateStr = po.expected_delivery_date ? formatThaiDate(po.expected_delivery_date) : 'ตามตกลง'
 
-  const summaryMessage = `📄 *ใบสั่งซื้อ (Purchase Order) - ANVA & Co.*
+  const summaryMessage = `*ใบสั่งซื้อ (Purchase Order) - ANVA & Co.*
 • เลขที่ PO: ${po.po_no}
 • ผู้ขาย: ${vendorName}
 • ส่งมอบโครงการ: ${projectInfo}
@@ -101,8 +101,8 @@ export default function POShareModal({ po, onClose }) {
           {/* 1. คัดลอกลิงก์ตรง */}
           <div className="space-y-1.5">
             <label className="font-bold text-steel-800 text-xs flex items-center justify-between">
-              <span>🔗 ลิงก์ตรงสำหรับเปิดดูเอกสาร (Web Link):</span>
-              {copiedLink && <span className="text-emerald-600 font-bold flex items-center gap-1">✓ คัดลอกลิงก์แล้ว!</span>}
+              <span>ลิงก์ตรงสำหรับเปิดดูเอกสาร (Web Link):</span>
+              {copiedLink && <span className="text-emerald-600 font-bold flex items-center gap-1"> คัดลอกลิงก์แล้ว!</span>}
             </label>
             <div className="flex gap-2">
               <input
@@ -125,8 +125,8 @@ export default function POShareModal({ po, onClose }) {
           {/* 2. ข้อความสรุปสำหรับส่งในแชท / LINE */}
           <div className="space-y-1.5">
             <label className="font-bold text-steel-800 text-xs flex items-center justify-between">
-              <span>💬 ข้อความสรุปสำหรับส่งแชท (LINE / Email):</span>
-              {copiedText && <span className="text-emerald-600 font-bold flex items-center gap-1">✓ คัดลอกข้อความแล้ว!</span>}
+              <span> ข้อความสรุปสำหรับส่งแชท (LINE / Email):</span>
+              {copiedText && <span className="text-emerald-600 font-bold flex items-center gap-1"> คัดลอกข้อความแล้ว!</span>}
             </label>
             <textarea
               readOnly

@@ -14,7 +14,8 @@ async function api(path, body) {
   const { data: s } = await supabase.auth.getSession();
   const token = s?.session?.access_token;
   if (!token) throw new Error("กรุณาเข้าสู่ระบบใหม่");
-  const res = await fetch(`/api/files/${path}`, {
+  const baseUrl = import.meta.env.VITE_UPLOAD_WORKER_URL || "";
+  const res = await fetch(`${baseUrl}/api/files/${path}`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -103,8 +104,22 @@ export async function uploadFile(file, kind, { onProgress } = {}) {
       size: prepared.size,
     };
   } catch (err) {
-    console.warn("R2 upload API unavailable, using DataURL fallback:", err);
-    // Offline / Local development fallback
+    console.error("R2 upload API error:", err);
+    const isLocalhost =
+      typeof window !== "undefined" &&
+      (window.location.hostname === "localhost" ||
+        window.location.hostname === "127.0.0.1");
+
+    // หากอยู่บน Cloudflare Pages (Preview/Production) ให้โยน error จริงออกมาเสมอ
+    // เพื่อให้ผู้ใช้ทราบปัญหาทันที และไม่เผลอนำข้อมูล Base64 ขนาดใหญ่หลาย MB ไปบันทึกลงใน Supabase
+    if (!isLocalhost) {
+      throw new Error(
+        `ไม่สามารถอัปโหลดไฟล์ไปยัง Cloudflare R2 ได้: ${err.message || "เครือข่ายขัดข้อง หรือสิทธิ์ไม่เพียงพอ"}`,
+      );
+    }
+
+    // Local development fallback (เฉพาะการรันบน localhost)
+    console.warn("Using DataURL fallback for local development:", err.message);
     const dataUrl = await new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => resolve(reader.result);
@@ -120,12 +135,28 @@ export async function uploadFile(file, kind, { onProgress } = {}) {
   }
 }
 
+// ฟังก์ชันเฉพาะสำหรับแต่ละประเภทเอกสาร
+export async function uploadItemImage(file) {
+  const { r2Key } = await uploadFile(file, "items");
+  return r2Key;
+}
+
+export async function uploadQuotationFile(file) {
+  const { r2Key } = await uploadFile(file, "quotations");
+  return r2Key;
+}
+
+export async function uploadDeliveryNoteFile(file) {
+  const { r2Key } = await uploadFile(file, "delivery-notes");
+  return r2Key;
+}
+
 // ---------- ขอ URL สำหรับดูไฟล์ (อายุ 10 นาที) พร้อม cache + รวมคำขอเป็นก้อนเดียว ----------
 const cache = new Map(); // key -> { url, exp }
 let pending = new Map(); // key -> [{ resolve, reject }]
 let timer = null;
 
-const isDirectUrl = (k) => /^(https?:|blob:|data:)/i.test(k);
+const isDirectUrl = (k) => /^(\/|https?:|blob:|data:)/i.test(k);
 
 export function invalidateFileUrl(key) {
   cache.delete(key);
@@ -163,7 +194,13 @@ async function flush() {
             : p.reject(new Error(data.errors?.[k] || "เปิดไฟล์ไม่ได้"));
       }
     } catch (err) {
-      for (const k of chunk) for (const p of batch.get(k)) p.reject(err);
+      console.warn("View URLs API unavailable:", err.message);
+      for (const k of chunk) {
+        for (const p of (batch.get(k) || [])) {
+          // Fallback: หากเป็น key ธรรมดา ให้ resolve เป็น null แทนที่จะ reject ให้เว็บแฮงก์
+          p.resolve(null);
+        }
+      }
     }
   }
 }

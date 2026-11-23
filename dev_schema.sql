@@ -2205,6 +2205,11 @@ ALTER TABLE ONLY "public"."boq_items"
 
 
 
+ALTER TABLE ONLY "public"."boqs"
+    ADD CONSTRAINT "boqs_project_id_fkey" FOREIGN KEY ("project_id") REFERENCES "public"."projects"("id") ON DELETE SET NULL;
+
+
+
 ALTER TABLE ONLY "public"."contact_attachments"
     ADD CONSTRAINT "contact_attachments_contact_id_fkey" FOREIGN KEY ("contact_id") REFERENCES "public"."contacts"("id") ON DELETE CASCADE;
 
@@ -2528,6 +2533,10 @@ CREATE POLICY "allow_all_inventory_stock" ON "public"."inventory_stock" USING (t
 
 
 CREATE POLICY "allow_all_item_categories" ON "public"."item_categories" USING (true) WITH CHECK (true);
+
+
+
+CREATE POLICY "allow_all_payment_transactions" ON "public"."payment_transactions" USING (true) WITH CHECK (true);
 
 
 

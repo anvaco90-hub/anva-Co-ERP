@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '../../lib/supabase'
-import { uploadItemImage } from '../../lib/store'
+import { uploadQuotationFile, openFile } from '../../lib/files'
 import { X, Check, Upload, FileText } from 'lucide-react'
 
 export default function CustomerPoModal({ quotation, onClose, onSuccess }) {
@@ -20,7 +20,7 @@ export default function CustomerPoModal({ quotation, onClose, onSuccess }) {
     try {
       let url = null
       try {
-        url = await uploadItemImage(file)
+        url = await uploadQuotationFile(file)
       } catch (err) {
         console.warn('API upload failed, using DataURL fallback:', err)
         url = await new Promise((resolve, reject) => {
@@ -75,7 +75,7 @@ export default function CustomerPoModal({ quotation, onClose, onSuccess }) {
         {/* Header */}
         <div className="flex items-center justify-between border-b border-steel-200 bg-emerald-900 px-5 py-4 text-white">
           <div className="flex items-center gap-2">
-            <span className="text-xl">✍️</span>
+            <span className="text-xl">️</span>
             <div>
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
                 <span>บันทึกการเซ็น PO ของลูกค้า</span>
@@ -83,7 +83,7 @@ export default function CustomerPoModal({ quotation, onClose, onSuccess }) {
                   {quotation.quotation_no}
                 </span>
               </h3>
-              <p className="text-[11px] text-emerald-200">เอกสารขาย ➔ ลูกค้าเซ็นอนุมัติ PO ➔ ส่งต่อฝ่ายจัดซื้อสั่งของ</p>
+              <p className="text-[11px] text-emerald-200">เอกสารขาย  ลูกค้าเซ็นอนุมัติ PO  ส่งต่อฝ่ายจัดซื้อสั่งของ</p>
             </div>
           </div>
           <button
@@ -100,7 +100,7 @@ export default function CustomerPoModal({ quotation, onClose, onSuccess }) {
           
           <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-3 text-xs text-emerald-900 space-y-1">
             <div className="font-bold flex items-center gap-1.5">
-              <span>🏢 ลูกค้า:</span>
+              <span>ลูกค้า:</span>
               <span>{quotation.customer_name}</span>
             </div>
             <div className="text-[11px] text-emerald-800">
@@ -174,15 +174,14 @@ export default function CustomerPoModal({ quotation, onClose, onSuccess }) {
                     <span>ไฟล์ตัวอย่างจำลองในระบบ</span>
                   </span>
                 ) : (
-                  <a
-                    href={customerPoFileUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-xs text-emerald-700 hover:underline font-bold truncate max-w-[200px]"
+                  <button
+                    type="button"
+                    onClick={() => openFile(customerPoFileUrl)}
+                    className="inline-flex items-center gap-1 text-xs text-emerald-700 hover:underline font-bold truncate max-w-[200px] cursor-pointer"
                   >
                     <FileText className="h-3.5 w-3.5" />
                     <span>ดูไฟล์ที่แนบไว้</span>
-                  </a>
+                  </button>
                 )
               ) : (
                 <span className="text-[11px] text-steel-400">ยังไม่มีไฟล์แนบ</span>

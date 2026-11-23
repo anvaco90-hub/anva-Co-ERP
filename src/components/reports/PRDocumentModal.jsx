@@ -22,7 +22,7 @@ export default function PRDocumentModal({ pr, items, onClose }) {
         {/* แถบควบคุมด้านบน */}
         <div className="no-print flex items-center justify-between border-b border-steel-200 bg-steel-100 px-6 py-3">
           <div className="flex items-center gap-2">
-            <span className="text-xl">📄</span>
+            <span className="text-xl"></span>
             <span className="font-bold text-ink">พิมพ์ใบขอซื้อ / บันทึก PDF (PR: {pr.pr_no})</span>
           </div>
           <div className="flex items-center gap-3">
@@ -30,7 +30,7 @@ export default function PRDocumentModal({ pr, items, onClose }) {
               onClick={handlePrint}
               className="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white shadow-md hover:bg-sky-700 transition"
             >
-              <span>🖨️</span>
+              <span>️</span>
               <span>พิมพ์ใบขอซื้อ / บันทึกเป็น PDF</span>
             </button>
             <button
@@ -69,7 +69,7 @@ export default function PRDocumentModal({ pr, items, onClose }) {
 
             {/* ข้อมูลโครงการ */}
             <div className="my-4 rounded border border-neutral-300 p-3 text-xs space-y-1">
-              <div>โครงการ: <b className="text-sm">{pr.custom_project_name || (pr.projects ? `${pr.projects.project_code} ${pr.projects.project_name}` : '🏢 ของกลางบริษัท / สต็อกส่วนกลาง')}</b></div>
+              <div>โครงการ: <b className="text-sm">{pr.custom_project_name || (pr.projects ? `${pr.projects.project_code} ${pr.projects.project_name}` : 'ของกลางบริษัท / สต็อกส่วนกลาง')}</b></div>
               {pr.customer_name && <div>ลูกค้า / ผู้ว่าจ้าง: <b>{pr.customer_name}</b></div>}
               {pr.suggested_vendor && <div>ร้านค้าแนะนำ / แหล่งซื้อ: <b>{pr.suggested_vendor}</b></div>}
               <div>ผู้ขอซื้อ: <b>{pr.creator?.full_name || 'เจ้าหน้าที่หน้างาน / สโตร์'}</b></div>

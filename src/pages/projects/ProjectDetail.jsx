@@ -89,8 +89,8 @@ export default function ProjectDetail() {
       const [pRes, bRes, poRes, expRes] = await Promise.all([
         supabase.from("projects").select("*").eq("id", id).maybeSingle(),
         supabase.from("project_budget_items").select("*").eq("project_id", id).order("category"),
-        supabase.from("purchase_orders").select("*").eq("project_id", id).catch(() => ({ data: [] })),
-        supabase.from("expenses").select("*").eq("project_id", id).catch(() => ({ data: [] })),
+        Promise.resolve(supabase.from("purchase_orders").select("*").eq("project_id", id)).catch(() => ({ data: [] })),
+        Promise.resolve(supabase.from("expenses").select("*").eq("project_id", id)).catch(() => ({ data: [] })),
       ]);
 
       if (pRes.data) {
@@ -302,7 +302,7 @@ export default function ProjectDetail() {
               </span>
               {isSimulation && (
                 <span className="rounded-md bg-amber-100 text-amber-900 px-2 py-0.5 text-[10px] font-black uppercase">
-                  ✨ Demo Simulation
+                  Demo Simulation
                 </span>
               )}
             </div>
@@ -447,7 +447,7 @@ export default function ProjectDetail() {
                   ? "bg-amber-100 text-amber-800"
                   : "bg-emerald-100 text-emerald-800"
               }`}>
-                {remainingBudget < 0 ? "⚠️ ใช้เกินงบประมาณ" : Number(budgetUsagePct) > 85 ? "⚡ ใช้ใกล้เต็มงบ (>85%)" : "✓ ควบคุมงบได้ตามแผน"}
+                {remainingBudget < 0 ? "ใช้เกินงบประมาณ" : Number(budgetUsagePct) > 85 ? "ใช้ใกล้เต็มงบ (>85%)" : " ควบคุมงบได้ตามแผน"}
               </span>
             </div>
           </div>

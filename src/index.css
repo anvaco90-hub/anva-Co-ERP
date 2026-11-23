@@ -1,25 +1,63 @@
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================================== */
+/* ANVA & CO. SOLAR ERP DESIGN TOKENS (LIGHT & DARK THEMES)      */
+/* ============================================================== */
+:root {
+  --bg: #F6F8F7;
+  --surface: #FFFFFF;
+  --surface-2: #EEF3F0;
+  --border: #DDE5E0;
+  --text: #14201A;
+  --text-muted: #5B6B63;
+  --primary: #16A34A;
+  --primary-hover: #15803D;
+  --primary-soft: #E3F5EA;
+  --warning: #D97706;
+  --danger: #DC2626;
+  --info: #0284C7;
+}
+
+html.dark, .dark {
+  --bg: #0E1512;
+  --surface: #16201B;
+  --surface-2: #1D2A24;
+  --border: #2A3A33;
+  --text: #E6EFEA;
+  --text-muted: #8FA399;
+  --primary: #22C55E;
+  --primary-hover: #4ADE80;
+  --primary-soft: #173A28;
+  --warning: #F59E0B;
+  --danger: #F87171;
+  --info: #38BDF8;
+}
+
 html {
-  font-family: 'IBM Plex Sans Thai', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'IBM Plex Sans Thai', 'Noto Sans Thai', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 body {
-  @apply bg-[#F8FAFC] text-slate-900 font-sans antialiased transition-colors duration-200;
+  background-color: var(--bg);
+  color: var(--text);
+  font-feature-settings: "tnum";
+  font-variant-numeric: tabular-nums;
+  @apply font-sans antialiased transition-colors duration-150;
 }
 
 html.dark body {
-  @apply bg-[#0B0F19] text-slate-100;
+  background-color: var(--bg);
+  color: var(--text);
 }
 
 :focus-visible {
-  outline: 2px solid #059669;
+  outline: 2px solid var(--primary);
   outline-offset: 2px;
 }
 
@@ -321,35 +359,75 @@ html.dark .paper-sheet *,
 #printable-report,
 html.dark #printable-report,
 #printable-report *,
-html.dark #printable-report * {
+html.dark #printable-report *,
+html.dark #printable-envelope,
+#printable-envelope *,
+html.dark #printable-envelope * {
   background-color: #FFFFFF !important;
   color: #000000 !important;
   border-color: #CBD5E1 !important;
 }
 
 @media print {
-  /* ซ่อนทุกองค์ประกอบหน้าจอยกเว้นส่วนที่กำหนดให้ออกรายงาน PDF */
-  body * {
-    visibility: hidden !important;
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
-  #printable-report, #printable-report * {
-    visibility: visible !important;
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+  /* ซ่อน navigation, sidebar, navbar, action buttons และ modal backdrop ที่ไม่เกี่ยวกับการพิมพ์ */
+  nav, header, aside, .no-print, button, .modal-backdrop {
+    display: none !important;
+  }
+  /* ปลดพื้นหลังสีเข้มของ modal ในการพิมพ์ */
+  .fixed, [class*="bg-black"], [class*="backdrop-blur"] {
+    background: transparent !important;
+    backdrop-filter: none !important;
+  }
+  /* ปลดล็อก layout ของ container บรรพบุรุษเพื่อไม่ให้ Chrome/Edge ตัดกระดาษเหลือหน้าเปล่า */
+  html, body, #root, main, .fixed, .overflow-y-auto, .overflow-hidden {
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+    position: static !important;
+  }
+  body * {
+    visibility: hidden;
+  }
+  #printable-report, #printable-report *,
+  #printable-envelope, #printable-envelope * {
+    visibility: visible;
   }
   #printable-report {
     position: absolute !important;
     left: 0 !important;
     top: 0 !important;
     width: 100% !important;
+    max-width: 100% !important;
     margin: 0 !important;
-    padding: 0 !important;
+    padding: 6mm 8mm !important;
     background: #ffffff !important;
     color: #000000 !important;
+    box-shadow: none !important;
+    border: none !important;
   }
-  .no-print {
-    display: none !important;
+  #printable-envelope {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 8mm 10mm !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    box-shadow: none !important;
+    border: none !important;
   }
   @page {
     size: A4;
-    margin: 10mm 12mm 12mm 12mm;
+    margin: 6mm;
   }
 }

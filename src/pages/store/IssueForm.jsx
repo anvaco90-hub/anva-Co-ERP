@@ -20,29 +20,29 @@ const EMPTY_LINE = { item_id: '', quantity: '' }
 const TARGET_OPTIONS = [
   {
     id: 'project',
-    label: '🏗️ โครงการ (Project)',
+    label: 'โครงการ (Project)',
     desc: 'เบิกเข้าโครงการโซล่าเซลล์ (คิดเป็นต้นทุนโครงการ)',
   },
   {
     id: 'office',
-    label: '🏢 ออฟฟิศ (Office)',
+    label: 'ออฟฟิศ (Office)',
     desc: 'เบิกใช้สำนักงานส่วนกลาง (คิดเป็นค่าใช้จ่ายออฟฟิศ)',
   },
   {
     id: 'site',
-    label: '⚡ หน้างาน (Site)',
+    label: 'หน้างาน (Site)',
     desc: 'เบิกไปหน้างานบริการ / ซ่อมบำรุงฉุกเฉิน O&M',
   },
 ]
 
 const ISSUE_REASONS = [
-  { id: 'ตัดวัสดุไปใช้', label: 'ตัดวัสดุไปใช้', icon: '📦' },
-  { id: 'ปรับจำนวนสินค้าจากการนับ', label: 'ปรับจำนวนสินค้าจากการนับ', icon: '📋' },
-  { id: 'สินค้าสูญหาย', label: 'สินค้าสูญหาย', icon: '❓' },
-  { id: 'ทำลายสินค้า', label: 'ทำลายสินค้า', icon: '💥' },
-  { id: 'สินค้าชำรุด/เสื่อมสภาพ', label: 'สินค้าชำรุด/เสื่อมสภาพ', icon: '⚠️' },
-  { id: 'ภัยพิบัติ/เสื่อมสภาพ', label: 'ภัยพิบัติ/เสื่อมสภาพ', icon: '🌊' },
-  { id: 'อื่น ๆ', label: 'อื่น ๆ', icon: '📝' },
+  { id: 'ตัดวัสดุไปใช้', label: 'ตัดวัสดุไปใช้', icon: '' },
+  { id: 'ปรับจำนวนสินค้าจากการนับ', label: 'ปรับจำนวนสินค้าจากการนับ', icon: '' },
+  { id: 'สินค้าสูญหาย', label: 'สินค้าสูญหาย', icon: '' },
+  { id: 'ทำลายสินค้า', label: 'ทำลายสินค้า', icon: '' },
+  { id: 'สินค้าชำรุด/เสื่อมสภาพ', label: 'สินค้าชำรุด/เสื่อมสภาพ', icon: '' },
+  { id: 'ภัยพิบัติ/เสื่อมสภาพ', label: 'ภัยพิบัติ/เสื่อมสภาพ', icon: '' },
+  { id: 'อื่น ๆ', label: 'อื่น ๆ', icon: '' },
 ]
 
 export default function IssueForm() {
@@ -459,7 +459,7 @@ export default function IssueForm() {
                           }
                           title="ลบแถวนี้"
                         >
-                          ✕
+                          
                         </button>
                       </div>
                     </div>
@@ -549,7 +549,7 @@ export default function IssueForm() {
             to="/store/adjust"
             className="text-xs text-emerald-700 dark:text-emerald-400 hover:text-emerald-900 dark:hover:text-emerald-300 font-semibold flex items-center gap-1"
           >
-            <span>💡 หากต้องการนำของเหลือมาคืนสโตร์ ➔ คลิกไปที่ "คืนของ"</span>
+            <span>หากต้องการนำของเหลือมาคืนสโตร์  คลิกไปที่ "คืนของ"</span>
           </Link>
 
           <div className="flex items-center gap-3">

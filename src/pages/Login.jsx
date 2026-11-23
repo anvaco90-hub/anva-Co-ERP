@@ -1,6 +1,9 @@
 import { useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import Snowfall from 'react-snowfall'
+import Snowflake from 'react-snowfall/lib/Snowflake'
+
 
 export default function Login() {
   const { session, signIn } = useAuth()
@@ -21,6 +24,10 @@ export default function Login() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-steel-900 p-4">
+      < Snowfall
+        fullScreen
+        shapes={[Snowflake]}
+      />
       <div className="w-full max-w-sm rounded-lg border-t-8 border-hivis bg-white p-6">
         <h1 className="text-xl font-bold">เข้าสู่ระบบ ERP ก่อสร้าง</h1>
         <div className="mt-5 space-y-3">

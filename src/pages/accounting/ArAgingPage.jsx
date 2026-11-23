@@ -29,7 +29,7 @@ export default function ArAgingPage() {
       const [invRes, custRes] = await Promise.all([
         supabase
           .from('sales_invoices')
-          .select('*, customers(id, company_name, tax_id), projects(project_code, project_name)')
+          .select('*, projects(project_code, project_name)')
           .order('issue_date', { ascending: false }),
         supabase.from('customers').select('id, company_name, tax_id').order('company_name'),
       ])
@@ -189,7 +189,7 @@ export default function ArAgingPage() {
           }`}
         >
           <span>{toastMsg.text}</span>
-          <button onClick={() => setToastMsg({ text: '', type: '' })} className="text-xs">✕</button>
+          <button onClick={() => setToastMsg({ text: '', type: '' })} className="text-xs"></button>
         </div>
       )}
 
@@ -490,12 +490,12 @@ function ArOpeningBalanceModal({ isOpen, onClose, onSuccess, customers = [] }) {
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="text-steel-400 hover:text-steel-600 text-sm">✕</button>
+          <button onClick={onClose} className="text-steel-400 hover:text-steel-600 text-sm"></button>
         </div>
 
         {error && (
           <div className="mt-3 p-3 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-700 font-medium">
-            ⚠️ {error}
+            {error}
           </div>
         )}
 
@@ -589,7 +589,7 @@ function ArOpeningBalanceModal({ isOpen, onClose, onSuccess, customers = [] }) {
               disabled={saving}
               className="px-5 py-2 bg-purple-700 text-white rounded-lg hover:bg-purple-800 font-bold shadow flex items-center gap-1.5 disabled:opacity-50"
             >
-              {saving ? 'กำลังบันทึก...' : '💾 บันทึกยอดยกมา'}
+              {saving ? 'กำลังบันทึก...' : ' บันทึกยอดยกมา'}
             </button>
           </div>
         </form>
