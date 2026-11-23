@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { AlertTriangle, CheckCircle2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { baht } from '../lib/projects'
 
@@ -211,6 +212,8 @@ export default function PaymentActionModal({
   const numericPay = Number(payAmount) || 0
   const numericFee = Number(bankFee) || 0
   const remainingAfter = Math.max(0, Math.round((outstanding - numericPay) * 100) / 100)
+  const isOverpaid = numericPay > Math.round((outstanding + 0.01) * 100) / 100
+  const overpaidAmount = isOverpaid ? Math.round((numericPay - outstanding) * 100) / 100 : 0
 
   const isAlreadyFullyPaid = paymentStatus === 'ชำระครบแล้ว' || (outstanding <= 0.01 && Number(totalAmount) > 0)
 
@@ -219,7 +222,9 @@ export default function PaymentActionModal({
     e.preventDefault()
     if (isAlreadyFullyPaid) return setError('เอกสารนี้ชำระเงินครบถ้วนแล้ว ไม่สามารถทำรายการชำระซ้ำได้')
     if (numericPay <= 0) return setError('ยอดชำระต้องมากกว่า 0 บาท')
-    if (numericPay > outstanding + 0.05) return setError('ยอดชำระเกินยอดค้างชำระ')
+    if (isOverpaid) {
+      return setError(`ยอดเงินที่กรอก (${baht(numericPay)} บาท) เกินกว่ายอดค้างชำระจริง (${baht(outstanding)} บาท) อยู่ ${baht(overpaidAmount)} บาท กรุณากรอกยอดชำระไม่เกิน ${baht(outstanding)} บาท`)
+    }
 
     setSaving(true)
     setError('')
@@ -785,19 +790,47 @@ export default function PaymentActionModal({
                 </div>
 
                 <div>
-                  <label className="font-bold text-steel-700 block mb-1">
-                    ยอดเงินที่โอน (บาท) *
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="font-bold text-steel-700 block text-xs">
+                      ยอดเงินที่โอน (บาท) *
+                    </label>
+                    {outstanding > 0 && (
+                      <span className="text-[10px] text-steel-500 font-mono">
+                        (ค้างจ่าย: {baht(outstanding)} บ.)
+                      </span>
+                    )}
+                  </div>
                   <input
                     type="number"
                     step="0.01"
                     min="0.01"
-                    max={outstanding + 1}
                     required
                     value={payAmount}
                     onChange={(e) => setPayAmount(e.target.value)}
-                    className="w-full p-2 border border-steel-300 rounded-lg bg-white font-mono font-bold text-sky-900"
+                    className={`w-full p-2 border rounded-lg bg-white font-mono font-bold ${
+                      isOverpaid
+                        ? 'border-rose-400 bg-rose-50/50 text-rose-900 focus:border-rose-600'
+                        : 'border-steel-300 text-sky-900 focus:border-sky-500'
+                    }`}
                   />
+                  {isOverpaid && (
+                    <div className="mt-2 p-2.5 rounded-lg bg-rose-50 border border-rose-300 text-xs text-rose-800 space-y-1 shadow-2xs animate-in fade-in">
+                      <div className="font-bold flex items-center gap-1.5 text-rose-950">
+                        <AlertTriangle className="h-4 w-4 text-rose-600 shrink-0" />
+                        <span>ยอดเงินเกินยอดค้างชำระจริง!</span>
+                      </div>
+                      <div className="text-[11px] text-rose-800 leading-relaxed">
+                        คุณกรอกยอด <b>{baht(numericPay)} บาท</b> ซึ่งเกินยอดค้างชำระ (<b>{baht(outstanding)} บาท</b>) อยู่ <b className="text-rose-950 font-mono font-bold underline">+{baht(overpaidAmount)} บาท</b>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setPayAmount(String(outstanding))}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-rose-600 hover:bg-rose-700 text-white font-bold text-[10px] transition cursor-pointer"
+                      >
+                        <span>ปรับเป็นยอด {baht(outstanding)} บาท พอดี</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -907,19 +940,47 @@ export default function PaymentActionModal({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="font-bold text-steel-700 block mb-1">
-                    ยอดเงินตามหน้าเช็ค (บาท) *
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="font-bold text-steel-700 block text-xs">
+                      ยอดเงินตามหน้าเช็ค (บาท) *
+                    </label>
+                    {outstanding > 0 && (
+                      <span className="text-[10px] text-steel-500 font-mono">
+                        (ค้างจ่าย: {baht(outstanding)} บ.)
+                      </span>
+                    )}
+                  </div>
                   <input
                     type="number"
                     step="0.01"
                     min="0.01"
-                    max={outstanding + 1}
                     required
                     value={payAmount}
                     onChange={(e) => setPayAmount(e.target.value)}
-                    className="w-full p-2 border border-steel-300 rounded-lg bg-white font-mono font-bold text-amber-950"
+                    className={`w-full p-2 border rounded-lg bg-white font-mono font-bold ${
+                      isOverpaid
+                        ? 'border-rose-400 bg-rose-50/50 text-rose-900 focus:border-rose-600'
+                        : 'border-steel-300 text-amber-950 focus:border-amber-500'
+                    }`}
                   />
+                  {isOverpaid && (
+                    <div className="mt-2 p-2.5 rounded-lg bg-rose-50 border border-rose-300 text-xs text-rose-800 space-y-1 shadow-2xs animate-in fade-in">
+                      <div className="font-bold flex items-center gap-1.5 text-rose-950">
+                        <AlertTriangle className="h-4 w-4 text-rose-600 shrink-0" />
+                        <span>ยอดเงินเกินยอดค้างชำระจริง!</span>
+                      </div>
+                      <div className="text-[11px] text-rose-800 leading-relaxed">
+                        ยอดที่ระบุ <b>{baht(numericPay)} บาท</b> เกินยอดหนี้คงค้าง (<b>{baht(outstanding)} บาท</b>) อยู่ <b className="text-rose-950 font-mono font-bold underline">+{baht(overpaidAmount)} บาท</b>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setPayAmount(String(outstanding))}
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-rose-600 hover:bg-rose-700 text-white font-bold text-[10px] transition cursor-pointer"
+                      >
+                        <span>ปรับเป็นยอด {baht(outstanding)} บาท พอดี</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 <div>
@@ -977,19 +1038,47 @@ export default function PaymentActionModal({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="font-bold text-steel-700 block mb-1">
-                    ยอดเงินสดที่จ่าย (บาท) *
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="font-bold text-steel-700 block text-xs">
+                      ยอดเงินสดที่จ่าย (บาท) *
+                    </label>
+                    {outstanding > 0 && (
+                      <span className="text-[10px] text-steel-500 font-mono">
+                        (ค้างจ่าย: {baht(outstanding)} บ.)
+                      </span>
+                    )}
+                  </div>
                   <input
                     type="number"
                     step="0.01"
                     min="0.01"
-                    max={outstanding + 1}
                     required
                     value={payAmount}
                     onChange={(e) => setPayAmount(e.target.value)}
-                    className="w-full p-2 border border-steel-300 rounded-lg bg-white font-mono font-bold text-emerald-950"
+                    className={`w-full p-2 border rounded-lg bg-white font-mono font-bold ${
+                      isOverpaid
+                        ? 'border-rose-400 bg-rose-50/50 text-rose-900 focus:border-rose-600'
+                        : 'border-steel-300 text-emerald-950 focus:border-emerald-500'
+                    }`}
                   />
+                  {isOverpaid && (
+                    <div className="mt-2 p-2.5 rounded-lg bg-rose-50 border border-rose-300 text-xs text-rose-800 space-y-1 shadow-2xs animate-in fade-in">
+                      <div className="font-bold flex items-center gap-1.5 text-rose-950">
+                        <AlertTriangle className="h-4 w-4 text-rose-600 shrink-0" />
+                        <span>ยอดเงินเกินยอดค้างชำระจริง!</span>
+                      </div>
+                      <div className="text-[11px] text-rose-800 leading-relaxed">
+                        คุณกรอกยอด <b>{baht(numericPay)} บาท</b> ซึ่งเกินยอดค้างชำระ (<b>{baht(outstanding)} บาท</b>) อยู่ <b className="text-rose-950 font-mono font-bold underline">+{baht(overpaidAmount)} บาท</b>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setPayAmount(String(outstanding))}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-rose-600 hover:bg-rose-700 text-white font-bold text-[10px] transition cursor-pointer"
+                      >
+                        <span>ปรับเป็นยอด {baht(outstanding)} บาท พอดี</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 <div>
@@ -1023,14 +1112,48 @@ export default function PaymentActionModal({
           </div>
 
           {/* สรุปยอดคงเหลือหลังทำจ่าย */}
-          <div className="p-2.5 rounded-lg bg-steel-100 flex items-center justify-between text-xs">
-            <span className="text-steel-600">
-              ยอดคงเหลือหลังการจ่ายครั้งนี้:
+          <div className={`p-2.5 rounded-lg flex items-center justify-between text-xs ${
+            isOverpaid ? 'bg-rose-50 border border-rose-300' : 'bg-steel-100'
+          }`}>
+            <span className={isOverpaid ? 'text-rose-700 font-bold' : 'text-steel-600'}>
+              {isOverpaid ? 'ยอดที่กรอกเกินยอดค้างชำระ:' : 'ยอดคงเหลือหลังการจ่ายครั้งนี้:'}
             </span>
-            <span className={`font-mono font-bold ${remainingAfter <= 0.05 ? 'text-emerald-700' : 'text-amber-700'}`}>
-              {remainingAfter <= 0.05 ? '0.00 บาท (ชำระครบถ้วน )' : `${baht(remainingAfter)} บาท (แบ่งจ่าย )`}
+            <span className={`font-mono font-bold ${
+              isOverpaid
+                ? 'text-rose-700 text-sm'
+                : remainingAfter <= 0.05
+                ? 'text-emerald-700'
+                : 'text-amber-700'
+            }`}>
+              {isOverpaid
+                ? `+${baht(overpaidAmount)} บาท (ไม่อนุญาต)`
+                : remainingAfter <= 0.05
+                ? '0.00 บาท (ชำระครบถ้วน)'
+                : `${baht(remainingAfter)} บาท (แบ่งจ่าย)`}
             </span>
           </div>
+
+          {/* แจ้งเตือนเมื่อกรอกราคาเกิน */}
+          {isOverpaid && (
+            <div className="p-3 rounded-xl bg-rose-100/90 border border-rose-300 text-rose-950 text-xs flex items-center justify-between gap-3 shadow-xs">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-rose-700 shrink-0" />
+                <div>
+                  <div className="font-bold">ไม่สามารถชำระเงินได้เนื่องจากกรอกยอดเกิน</div>
+                  <div className="text-[11px] text-rose-800">
+                    ยอดชำระ ({baht(numericPay)} บ.) เกินยอดค้างชำระ ({baht(outstanding)} บ.) อยู่ <b className="font-mono">{baht(overpaidAmount)}</b> บาท
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPayAmount(String(outstanding))}
+                className="shrink-0 px-2.5 py-1.5 rounded-lg bg-rose-700 hover:bg-rose-800 text-white font-bold text-[11px] transition cursor-pointer"
+              >
+                ปรับยอดพอดี
+              </button>
+            </div>
+          )}
 
           {/* Actions */}
           <div className="flex items-center justify-end gap-2 border-t border-steel-200 pt-3">
@@ -1044,9 +1167,9 @@ export default function PaymentActionModal({
             </button>
             <button
               type="submit"
-              disabled={saving || isAlreadyFullyPaid}
+              disabled={saving || isAlreadyFullyPaid || isOverpaid || numericPay <= 0}
               className={`inline-flex items-center gap-1.5 rounded-lg px-5 py-2 font-bold text-white shadow transition ${
-                isAlreadyFullyPaid
+                isAlreadyFullyPaid || isOverpaid || numericPay <= 0
                   ? 'bg-steel-400 cursor-not-allowed opacity-60'
                   : 'bg-sky-700 hover:bg-sky-800'
               }`}
@@ -1057,6 +1180,8 @@ export default function PaymentActionModal({
                   ? 'กำลังบันทึกและลงบัญชี...'
                   : isAlreadyFullyPaid
                   ? 'ชำระเงินครบแล้ว (ไม่สามารถชำระซ้ำ)'
+                  : isOverpaid
+                  ? `ยอดเงินเกิน (+${baht(overpaidAmount)} บ.)`
                   : `ยืนยันการจ่ายเงิน (${baht(numericPay)} บ.)`}
               </span>
             </button>

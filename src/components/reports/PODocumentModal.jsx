@@ -15,18 +15,18 @@ export default function PODocumentModal({ po, items, onClose }) {
     : '-'
 
   const rawSubtotal = (items ?? []).reduce((s, i) => s + Number(i.quantity || 0) * Number(i.unit_price || 0), 0)
-  const taxType = po.tax_type || 'vat_included'
+  const taxType = po.tax_type || (Number(po.vat_amount) > 0 ? 'vat_excluded' : 'vat_excluded')
   let amountBeforeVat = rawSubtotal
   let vatAmount = Number(po.vat_amount || 0)
   let totalWithVat = Number(po.total_amount || rawSubtotal)
 
-  if (taxType === 'vat_included') {
-    vatAmount = Math.round((rawSubtotal * 7 / 107) * 100) / 100
+  if (taxType === 'vat_included' && Number(po.grand_total) === Number(po.total_amount) && Number(po.total_amount) > 0) {
+    vatAmount = vatAmount > 0 ? vatAmount : Math.round((rawSubtotal * 7 / 107) * 100) / 100
     amountBeforeVat = Math.round((rawSubtotal - vatAmount) * 100) / 100
     totalWithVat = rawSubtotal
-  } else if (taxType === 'vat_excluded') {
+  } else if (taxType === 'vat_excluded' || vatAmount > 0) {
     amountBeforeVat = rawSubtotal
-    vatAmount = Math.round((rawSubtotal * 0.07) * 100) / 100
+    vatAmount = vatAmount > 0 ? vatAmount : Math.round((rawSubtotal * 0.07) * 100) / 100
     totalWithVat = Math.round((rawSubtotal + vatAmount) * 100) / 100
   } else {
     // vat_exempt

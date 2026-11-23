@@ -502,7 +502,55 @@ export default function PODetail() {
 
   const computedItemsTotal = items.reduce((sum, it) => sum + (Number(it.quantity || 1) * Number(it.unit_price || 0)), 0)
   const totalAmountVal = Number(po.total_amount) || computedItemsTotal || 0
-  const grandTotalVal = Number(po.grand_total) || Number(po.net_amount) || totalAmountVal || 0
+  const vatVal = Number(po.vat_amount) || 0
+  const whtVal = Number(po.wht_amount) || 0
+
+  // ตรวจสอบว่าระบบเคยบันทึกแบบราคารวม VAT หรือไม่
+  const isVatIncluded = po.tax_type === 'vat_included' && Number(po.grand_total) === totalAmountVal && Number(po.grand_total) > 0
+  const subtotalBeforeVat = isVatIncluded
+    ? Math.max(0, Math.round((totalAmountVal - vatVal) * 100) / 100)
+    : totalAmountVal
+
+  // คำนวณยอดสุทธิทั้งสิ้น (บวกภาษี VAT 7% เข้ากับราคาวัสดุเสมอเมื่อมีภาษี)
+  let grandTotalVal = Number(po.grand_total) || 0
+  if (vatVal > 0 && grandTotalVal <= totalAmountVal) {
+    // กรณีเดิมยอดสุทธิไม่บวกภาษี ให้บวกภาษีมูลค่าเพิ่มเข้าไปเพื่อให้ถูกต้องพร้อมชำระ
+    grandTotalVal = Math.round((totalAmountVal + vatVal - whtVal) * 100) / 100
+  } else if (!grandTotalVal) {
+    grandTotalVal = Math.round((totalAmountVal + (po.tax_type === 'vat_exempt' ? 0 : vatVal) - whtVal) * 100) / 100
+  }
+
+  // ซิงค์ยอดสุทธิและยอดคงเหลือในฐานข้อมูลอัตโนมัติหากพบว่ายอดเดิมยังไม่ได้บวกภาษี
+  useEffect(() => {
+    if (po && vatVal > 0 && Number(po.grand_total) <= totalAmountVal && Number(po.grand_total) > 0) {
+      const correctedGrandTotal = Math.round((totalAmountVal + vatVal - whtVal) * 100) / 100
+      const correctedRemaining = po.payment_status === 'ชำระครบแล้ว'
+        ? 0
+        : Math.max(0, correctedGrandTotal - Number(po.deposit_paid_amount || 0))
+
+      supabase
+        .from('purchase_orders')
+        .update({
+          grand_total: correctedGrandTotal,
+          net_amount: correctedGrandTotal,
+          remaining_amount: correctedRemaining,
+          tax_type: 'vat_excluded',
+        })
+        .eq('id', po.id)
+        .then(({ error: syncErr }) => {
+          if (!syncErr) {
+            setPo((prev) => prev ? ({
+              ...prev,
+              grand_total: correctedGrandTotal,
+              net_amount: correctedGrandTotal,
+              remaining_amount: correctedRemaining,
+              tax_type: 'vat_excluded',
+            }) : prev)
+          }
+        })
+    }
+  }, [po?.id, vatVal, totalAmountVal, whtVal])
+
   const dueStatus = getPoDueStatus(po)
 
   return (
@@ -1487,14 +1535,14 @@ export default function PODetail() {
 
                   <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/90 dark:border-slate-700/80 space-y-2.5">
                     <div className="flex justify-between py-1 border-b border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400">
-                      <span>มูลค่าสินค้ารวม:</span>
-                      <span className="font-mono font-bold text-slate-900 dark:text-slate-100 text-sm">{baht(totalAmountVal)} บาท</span>
+                      <span>{isVatIncluded ? 'มูลค่าสินค้า (ก่อนภาษี):' : 'มูลค่าสินค้ารวม:'}</span>
+                      <span className="font-mono font-bold text-slate-900 dark:text-slate-100 text-sm">{baht(subtotalBeforeVat)} บาท</span>
                     </div>
 
-                    {Number(po.vat_amount) > 0 && (
+                    {vatVal > 0 && (
                       <div className="flex justify-between py-1 border-b border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400">
                         <span>ภาษีมูลค่าเพิ่ม 7% (VAT):</span>
-                        <span className="font-mono font-semibold text-slate-800 dark:text-slate-200">{baht(po.vat_amount)} บาท</span>
+                        <span className="font-mono font-semibold text-slate-800 dark:text-slate-200">+{baht(vatVal)} บาท</span>
                       </div>
                     )}
 
@@ -1694,19 +1742,19 @@ export default function PODetail() {
               </div>
               <div className="w-72 space-y-1.5 bg-slate-50 p-3 rounded-xl border border-slate-200">
                 <div className="flex justify-between text-slate-700">
-                  <span>รวมเป็นเงิน (Subtotal):</span>
-                  <span className="font-mono font-bold">{baht(totalAmountVal)} บาท</span>
+                  <span>{isVatIncluded ? 'มูลค่าสินค้า (ก่อนภาษี):' : 'รวมเป็นเงิน (Subtotal):'}</span>
+                  <span className="font-mono font-bold">{baht(subtotalBeforeVat)} บาท</span>
                 </div>
-                {Number(po.vat_amount) > 0 && (
+                {vatVal > 0 && (
                   <div className="flex justify-between text-slate-700">
                     <span>ภาษีมูลค่าเพิ่ม (VAT 7%):</span>
-                    <span className="font-mono">+{baht(po.vat_amount)} บาท</span>
+                    <span className="font-mono font-semibold">+{baht(vatVal)} บาท</span>
                   </div>
                 )}
-                {Number(po.wht_amount) > 0 && (
+                {whtVal > 0 && (
                   <div className="flex justify-between text-rose-700">
                     <span>หักภาษี ณ ที่จ่าย (WHT {po.wht_rate}%):</span>
-                    <span className="font-mono">-{baht(po.wht_amount)} บาท</span>
+                    <span className="font-mono">-{baht(whtVal)} บาท</span>
                   </div>
                 )}
                 <div className="flex justify-between text-base font-black text-slate-950 border-t border-slate-900 pt-1.5 mt-1">

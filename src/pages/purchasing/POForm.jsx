@@ -74,7 +74,7 @@ export default function POForm() {
   const [quotationUrl, setQuotationUrl] = useState('')
   const [quotationFile, setQuotationFile] = useState(null)
   const [uploadingQuotation, setUploadingQuotation] = useState(false)
-  const [taxType, setTaxType] = useState('vat_included') // 'vat_included' | 'vat_excluded' | 'vat_exempt'
+  const [taxType, setTaxType] = useState('vat_excluded') // 'vat_excluded' (ราคาแยกภาษี +7% มาตรฐานจัดซื้อ) | 'vat_included' | 'vat_exempt'
   const [whtRate, setWhtRate] = useState('0') // '0' | '1' | '2' | '3' | '5'
   const [vendorTaxInvoiceNo, setVendorTaxInvoiceNo] = useState('')
   const [taxInvoiceDate, setTaxInvoiceDate] = useState('')
