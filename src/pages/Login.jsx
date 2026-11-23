@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import ReactDOM from 'react-dom'
 import Snowfall from 'react-snowfall'
 import Snowflake from 'react-snowfall/lib/Snowflake'
 
