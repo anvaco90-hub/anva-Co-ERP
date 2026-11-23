@@ -48,6 +48,8 @@ import {
   Boxes,
   ExternalLink,
   Workflow,
+  PackageCheck,
+  Coins,
 } from 'lucide-react'
 
 export default function PurchasingHub() {
@@ -1029,14 +1031,14 @@ export default function PurchasingHub() {
         statusOptions={
           activeTab === 'po'
             ? [
-              { value: 'open', label: ' รอรับของ (Open)' },
+              { value: 'open', label: 'รอรับของ (Open)' },
               { value: 'partial', label: 'รับบางส่วน (Partial)' },
               { value: 'received', label: 'รับของครบแล้ว' },
               { value: 'cancelled', label: 'ยกเลิก (Cancelled)' },
             ]
             : activeTab === 'pr'
               ? [
-                { value: 'pending', label: '⏳ รอสั่งซื้อ' },
+                { value: 'pending', label: 'รอสั่งซื้อ' },
                 { value: 'ordered', label: 'สั่งซื้อแล้ว' },
                 { value: 'cancelled', label: 'ยกเลิก' },
               ]
