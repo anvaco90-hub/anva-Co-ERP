@@ -307,6 +307,7 @@ export default function ItemsMaster() {
       }
     } finally {
       setSaving(false)
+      setUploading(false)
     }
   }
 
@@ -382,6 +383,7 @@ export default function ItemsMaster() {
       setError(err.message || 'บันทึกการแก้ไขไม่สำเร็จ')
     } finally {
       setSaving(false)
+      setUploading(false)
     }
   }
 
@@ -422,6 +424,7 @@ export default function ItemsMaster() {
       setError(`ไม่สามารถลบวัสดุได้: ${err.message || 'เกิดข้อผิดพลาดในการลบ'}`)
     } finally {
       setSaving(false)
+      setUploading(false)
     }
   }
 
@@ -459,6 +462,7 @@ export default function ItemsMaster() {
       setError(`ไม่สามารถล้างข้อมูลจำลองได้: ${err.message || 'เกิดข้อผิดพลาด'}`)
     } finally {
       setSaving(false)
+      setUploading(false)
     }
   }
 

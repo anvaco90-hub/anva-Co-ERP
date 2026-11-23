@@ -19,7 +19,7 @@ export default function PRList() {
 
   return (
     <div>
-      {canCreatePurchasing(profile.role) && <Link to="/purchasing/pr/new" className="btn-primary">+ สร้างใบขอซื้อ</Link>}
+      {canCreatePurchasing(profile.role) && <Link to="/purchasing/pr/new" className="btn-primary"> สร้างใบขอซื้อ</Link>}
       {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
       {!rows ? <p className="mt-4 text-steel-500">กำลังโหลด...</p> : rows.length === 0 ? (
         <p className="mt-4 rounded-lg bg-white p-5 text-steel-500">ยังไม่มีใบขอซื้อ</p>

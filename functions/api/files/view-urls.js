@@ -1,6 +1,13 @@
 // POST /api/files/view-urls
 // body: { keys: [..] }  →  { urls: { key: url }, errors: { key: msg }, expiresIn }
-import { KINDS, ANY_ROLE, VIEW_TTL, json, getRole, r2Config, signFor, parseKey } from '../../_lib/files-common.js'
+import { KINDS, ANY_ROLE, VIEW_TTL, json, corsHeaders, getRole, r2Config, signFor, parseKey } from '../../_lib/files-common.js'
+
+export async function onRequestOptions() {
+  return new Response(null, {
+    status: 204,
+    headers: corsHeaders,
+  })
+}
 
 export async function onRequestPost({ request, env }) {
   const cfg = r2Config(env)

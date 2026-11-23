@@ -6,7 +6,7 @@ import { useAuth } from '../../context/AuthContext'
 import { EMPTY_ITEM, itemsValid } from '../../lib/purchasing'
 import { getItemVendorHistory } from '../../lib/purchasingHistory'
 import { baht } from '../../lib/projects'
-import { uploadItemImage } from '../../lib/store'
+import { uploadQuotationFile, openFile } from '../../lib/files'
 import ItemsEditor from './ItemsEditor'
 import ItemProjectUsageModal from '../../components/ItemProjectUsageModal'
 import { FieldError, fieldErrorClass } from '../../components/FieldError'
@@ -457,7 +457,7 @@ export default function POForm() {
       if (quotationFile) {
         setUploadingQuotation(true)
         try {
-          const upUrl = await uploadItemImage(quotationFile)
+          const upUrl = await uploadQuotationFile(quotationFile)
           if (upUrl) finalQuotationUrl = upUrl
         } catch (err) {
           console.warn('Error uploading quotation:', err)
@@ -1170,7 +1170,7 @@ export default function POForm() {
                       setQuotationFile(file)
                       setUploadingQuotation(true)
                       try {
-                        const previewUrl = await uploadItemImage(file)
+                        const previewUrl = await uploadQuotationFile(file)
                         if (previewUrl) setQuotationUrl(previewUrl)
                       } catch (err) {
                         console.warn(err)
@@ -1194,15 +1194,14 @@ export default function POForm() {
                     <span className="font-semibold text-emerald-900 dark:text-emerald-200 truncate max-w-xs">
                       {quotationFile?.name || 'แนบใบเสนอราคาแล้ว'}
                     </span>
-                    <a
-                      href={quotationUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-1 text-xs text-sky-700 dark:text-sky-400 font-bold hover:underline ml-2"
+                    <button
+                      type="button"
+                      onClick={() => openFile(quotationUrl)}
+                      className="inline-flex items-center gap-1 text-xs text-sky-700 dark:text-sky-400 font-bold hover:underline ml-2 cursor-pointer"
                     >
                       <Eye className="h-3.5 w-3.5" />
                       <span>เปิดดูเอกสาร</span>
-                    </a>
+                    </button>
                     <button
                       type="button"
                       onClick={() => {

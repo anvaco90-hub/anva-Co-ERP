@@ -1,3 +1,4 @@
+import { Fragment } from 'react'
 import { baht } from '../../lib/projects'
 
 export default function BOQPrintModal({ boq, items, onClose }) {
@@ -99,8 +100,8 @@ export default function BOQPrintModal({ boq, items, onClose }) {
               </thead>
               <tbody>
                 {Object.entries(grouped).map(([category, catItems], cIdx) => (
-                  <>
-                    <tr key={category} className="bg-neutral-100 font-bold border-y border-neutral-300">
+                  <Fragment key={category}>
+                    <tr className="bg-neutral-100 font-bold border-y border-neutral-300">
                       <td colSpan={7} className="py-1.5 px-2 text-neutral-900">
                         หมวดที่ {cIdx + 1}: {category}
                       </td>
@@ -123,7 +124,7 @@ export default function BOQPrintModal({ boq, items, onClose }) {
                         <td className="py-1.5 px-2 text-right font-mono font-bold">{baht(it.total_amount)}</td>
                       </tr>
                     ))}
-                  </>
+                  </Fragment>
                 ))}
               </tbody>
               <tfoot>

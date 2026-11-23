@@ -423,9 +423,8 @@ export default function BOQForm() {
               return (
                 <div
                   key={idx}
-                  className={`rounded-2xl border p-4 space-y-3 transition shadow-xs ${
-                    nameEmpty || qtyEmpty ? 'border-rose-300 bg-rose-50/20' : 'border-steel-200 bg-white hover:border-steel-300'
-                  }`}
+                  className={`rounded-2xl border p-4 space-y-3 transition shadow-xs ${nameEmpty || qtyEmpty ? 'border-rose-300 bg-rose-50/20' : 'border-steel-200 bg-white hover:border-steel-300'
+                    }`}
                 >
                   {/* แถวบน: หมวดงาน, ชื่อรายการ, จำนวน, หน่วย, ค่าวัสดุ, ค่าแรง, รวมแถว, ลบ */}
                   <div className="grid grid-cols-1 sm:grid-cols-[auto_12rem_1fr_5rem_4.5rem_6.5rem_6.5rem_7.5rem_auto] gap-2.5 items-center">

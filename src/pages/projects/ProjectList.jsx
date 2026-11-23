@@ -142,7 +142,7 @@ export default function ProjectList() {
             className="flex items-center gap-2 rounded-xl bg-hivis hover:bg-amber-400 px-4 py-2.5 text-sm font-bold text-steel-900 transition shadow-sm self-start sm:self-center"
           >
             <Plus className="h-4 w-4" />
-            <span>+ สร้างโครงการใหม่</span>
+            <span> สร้างโครงการใหม่</span>
           </Link>
         )}
       </div>

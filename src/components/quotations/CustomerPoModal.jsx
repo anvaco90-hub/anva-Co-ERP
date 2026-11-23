@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '../../lib/supabase'
-import { uploadItemImage } from '../../lib/store'
+import { uploadQuotationFile } from '../../lib/files'
 import { X, Check, Upload, FileText } from 'lucide-react'
 
 export default function CustomerPoModal({ quotation, onClose, onSuccess }) {
@@ -20,7 +20,7 @@ export default function CustomerPoModal({ quotation, onClose, onSuccess }) {
     try {
       let url = null
       try {
-        url = await uploadItemImage(file)
+        url = await uploadQuotationFile(file)
       } catch (err) {
         console.warn('API upload failed, using DataURL fallback:', err)
         url = await new Promise((resolve, reject) => {

@@ -3,7 +3,7 @@ import { useNavigate, useParams, Link, useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
 import { baht } from '../../lib/projects'
-import { uploadItemImage } from '../../lib/store'
+import { uploadQuotationFile } from '../../lib/files'
 import { FieldError, fieldErrorClass } from '../../components/FieldError'
 
 const EMPTY_ITEM = {
@@ -265,7 +265,7 @@ export default function QuotationForm() {
       setBusy(true)
       let url = null
       try {
-        url = await uploadItemImage(file)
+        url = await uploadQuotationFile(file)
       } catch (uploadErr) {
         console.warn('API upload failed, fallback to DataURL:', uploadErr)
         url = await new Promise((resolve, reject) => {

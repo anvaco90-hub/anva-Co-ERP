@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Fragment } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { baht } from '../../lib/projects'
@@ -347,8 +347,8 @@ export default function BOQDetail() {
             </thead>
             <tbody className="divide-y divide-steel-100">
               {Object.entries(grouped).map(([category, catItems], cIdx) => (
-                <>
-                  <tr key={category} className="bg-steel-50/90 font-bold border-y border-steel-200">
+                <Fragment key={category}>
+                  <tr className="bg-steel-50/90 font-bold border-y border-steel-200">
                     <td colSpan={7} className="py-2 px-3 text-sky-950 flex items-center gap-2">
                       <span className="flex h-5 w-5 items-center justify-center rounded bg-sky-200 text-sky-900 font-mono text-[10px]">
                         {cIdx + 1}
@@ -383,7 +383,7 @@ export default function BOQDetail() {
                       </td>
                     </tr>
                   ))}
-                </>
+                </Fragment>
               ))}
             </tbody>
             <tfoot className="border-t-2 border-steel-200 bg-steel-50/50 text-xs">

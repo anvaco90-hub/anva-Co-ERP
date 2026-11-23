@@ -126,7 +126,7 @@ export default function PRDetail() {
   return (
     <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0B0F19] pb-20 pt-2 font-sans space-y-5">
       <div className="max-w-5xl mx-auto px-4 space-y-4">
-        
+
         {/* 1. Action Bar & Breadcrumbs */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3 sm:p-4 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs">
           {/* ซ้าย: Breadcrumb & เอกสาร */}
@@ -151,22 +151,20 @@ export default function PRDetail() {
               <button
                 type="button"
                 onClick={() => setViewStyle('portal')}
-                className={`px-2.5 py-1 text-xs font-bold rounded-lg transition cursor-pointer flex items-center gap-1 ${
-                  viewStyle === 'portal'
+                className={`px-2.5 py-1 text-xs font-bold rounded-lg transition cursor-pointer flex items-center gap-1 ${viewStyle === 'portal'
                     ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-2xs'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
-                }`}
+                  }`}
               >
                 <span>🌐 เว็บ</span>
               </button>
               <button
                 type="button"
                 onClick={() => setViewStyle('paper')}
-                className={`px-2.5 py-1 text-xs font-bold rounded-lg transition cursor-pointer flex items-center gap-1 ${
-                  viewStyle === 'paper'
+                className={`px-2.5 py-1 text-xs font-bold rounded-lg transition cursor-pointer flex items-center gap-1 ${viewStyle === 'paper'
                     ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-2xs'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
-                }`}
+                  }`}
               >
                 <span>📄 รายงาน A4</span>
               </button>
@@ -436,7 +434,7 @@ export default function PRDetail() {
                       className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900 dark:bg-amber-500 hover:bg-slate-800 text-white dark:text-slate-950 font-bold text-xs shadow-sm transition"
                     >
                       <Plus className="h-4 w-4" />
-                      <span>+ ออกใบสั่งซื้อ (PO) ทันที</span>
+                      <span> ออกใบสั่งซื้อ (PO) ทันที</span>
                     </Link>
                   )}
                 </div>

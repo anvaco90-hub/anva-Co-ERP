@@ -1,5 +1,12 @@
 // POST /api/files/delete   body: { key }   (สิทธิ์เท่ากับสิทธิ์อัปโหลดของประเภทนั้น)
-import { KINDS, UPLOAD_TTL, json, getRole, r2Config, signFor, parseKey } from '../../_lib/files-common.js'
+import { KINDS, UPLOAD_TTL, json, corsHeaders, getRole, r2Config, signFor, parseKey } from '../../_lib/files-common.js'
+
+export async function onRequestOptions() {
+  return new Response(null, {
+    status: 204,
+    headers: corsHeaders,
+  })
+}
 
 export async function onRequestPost({ request, env }) {
   const cfg = r2Config(env)

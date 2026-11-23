@@ -43,7 +43,8 @@ import {
   Mail,
   Share2,
 } from 'lucide-react'
-import { uploadItemImage } from '../../lib/store'
+import { uploadQuotationFile, openFile } from '../../lib/files'
+import R2Image from '../../components/R2Image'
 
 // ฟังก์ชันระบุหมวดหมู่วัสดุและสีสันสไตล์ไทวัสดุ & วิศวกรรมโซลาร์เซลล์
 function getMaterialCategory(itemName = '') {
@@ -124,7 +125,7 @@ export default function PODetail() {
     if (!file || !po?.id) return
     setUploadingQuotation(true)
     try {
-      const upUrl = await uploadItemImage(file)
+      const upUrl = await uploadQuotationFile(file)
       if (upUrl) {
         await supabase.from('purchase_orders').update({ quotation_url: upUrl }).eq('id', po.id)
         setPo((prev) => ({ ...prev, quotation_url: upUrl }))
@@ -169,7 +170,7 @@ export default function PODetail() {
       if (poData?.pr_id) {
         const { data: prRow } = await supabase
           .from('purchase_requisitions')
-          .select('id, pr_no, request_date, status, requester_name, notes, purpose')
+          .select('*')
           .eq('id', poData.pr_id)
           .single()
         setPr(prRow || null)
@@ -203,7 +204,7 @@ export default function PODetail() {
         const lineTotal = Number(it.total_amount) || (qtyVal * unitPrice)
 
         if (Number(it.unit_price) === 0 && unitPrice > 0) {
-          supabase.from('purchase_order_items').update({ unit_price: unitPrice, total_amount: lineTotal }).eq('id', it.id).then(() => {})
+          supabase.from('purchase_order_items').update({ unit_price: unitPrice, total_amount: lineTotal }).eq('id', it.id).then(() => { })
         }
 
         return {
@@ -361,7 +362,7 @@ export default function PODetail() {
         try {
           const { data: noData } = await supabase.rpc('next_doc_no', { p_prefix: 'RI' })
           if (noData) grnNo = noData
-        } catch (_) {}
+        } catch (_) { }
 
         const { data: grnRow, error: grnErr } = await supabase
           .from('goods_receipts')
@@ -532,22 +533,20 @@ export default function PODetail() {
               <button
                 type="button"
                 onClick={() => setViewStyle('portal')}
-                className={`px-2.5 py-1 text-xs font-bold rounded-lg transition cursor-pointer flex items-center gap-1 ${
-                  viewStyle === 'portal'
+                className={`px-2.5 py-1 text-xs font-bold rounded-lg transition cursor-pointer flex items-center gap-1 ${viewStyle === 'portal'
                     ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-2xs'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
-                }`}
+                  }`}
               >
                 <span>🌐 เว็บ</span>
               </button>
               <button
                 type="button"
                 onClick={() => setViewStyle('paper')}
-                className={`px-2.5 py-1 text-xs font-bold rounded-lg transition cursor-pointer flex items-center gap-1 ${
-                  viewStyle === 'paper'
+                className={`px-2.5 py-1 text-xs font-bold rounded-lg transition cursor-pointer flex items-center gap-1 ${viewStyle === 'paper'
                     ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-2xs'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
-                }`}
+                  }`}
               >
                 <span>📄 A4</span>
               </button>
@@ -799,18 +798,16 @@ export default function PODetail() {
                 </div>
 
                 {/* ขั้นที่ 2: ตรวจรับสินค้าเข้าคลัง */}
-                <div className={`flex items-start gap-3 p-3.5 rounded-xl border transition-all ${
-                  isFullyReceived
+                <div className={`flex items-start gap-3 p-3.5 rounded-xl border transition-all ${isFullyReceived
                     ? 'border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/50 dark:bg-emerald-950/20'
                     : po.status === 'partial'
-                    ? 'border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-950/20'
-                    : 'border-sky-300 dark:border-sky-700 bg-sky-50/50 dark:bg-sky-950/20'
-                }`}>
-                  <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-black ${
-                    isFullyReceived
+                      ? 'border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-950/20'
+                      : 'border-sky-300 dark:border-sky-700 bg-sky-50/50 dark:bg-sky-950/20'
+                  }`}>
+                  <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-black ${isFullyReceived
                       ? 'bg-emerald-600 text-white'
                       : 'bg-sky-600 text-white animate-pulse'
-                  }`}>
+                    }`}>
                     {isFullyReceived ? '✓' : '2'}
                   </div>
                   <div className="space-y-0.5 min-w-0">
@@ -833,20 +830,18 @@ export default function PODetail() {
                 </div>
 
                 {/* ขั้นที่ 3: จ่ายชำระเงิน */}
-                <div className={`flex items-start gap-3 p-3.5 rounded-xl border transition-all ${
-                  isPaidInFull
+                <div className={`flex items-start gap-3 p-3.5 rounded-xl border transition-all ${isPaidInFull
                     ? 'border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/50 dark:bg-emerald-950/20'
                     : isFullyReceived
-                    ? 'border-amber-400 dark:border-amber-500 bg-amber-50 dark:bg-amber-950/40 shadow-xs'
-                    : 'border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 opacity-70'
-                }`}>
-                  <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-black ${
-                    isPaidInFull
+                      ? 'border-amber-400 dark:border-amber-500 bg-amber-50 dark:bg-amber-950/40 shadow-xs'
+                      : 'border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 opacity-70'
+                  }`}>
+                  <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-black ${isPaidInFull
                       ? 'bg-emerald-600 text-white'
                       : isFullyReceived
-                      ? 'bg-amber-500 text-slate-950 font-black animate-bounce'
-                      : 'bg-slate-300 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
-                  }`}>
+                        ? 'bg-amber-500 text-slate-950 font-black animate-bounce'
+                        : 'bg-slate-300 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+                    }`}>
                     {isPaidInFull ? '✓' : '3'}
                   </div>
                   <div className="space-y-0.5 min-w-0">
@@ -870,15 +865,14 @@ export default function PODetail() {
               </div>
 
               {/* กล่องสรุปสถานะปัจจุบัน และสิ่งที่ต้องทำต่อไป (Current Status & Next Step Guidance Box) */}
-              <div className={`rounded-xl p-4 border text-xs space-y-1.5 ${
-                po.status === 'cancelled'
+              <div className={`rounded-xl p-4 border text-xs space-y-1.5 ${po.status === 'cancelled'
                   ? 'bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800 text-rose-900 dark:text-rose-200'
                   : isFullyReceived && isPaidInFull
-                  ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800 text-emerald-950 dark:text-emerald-200'
-                  : isFullyReceived && !isPaidInFull
-                  ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-700 text-amber-950 dark:text-amber-200'
-                  : 'bg-sky-50 dark:bg-sky-950/30 border-sky-200 dark:border-sky-800 text-sky-950 dark:text-sky-200'
-              }`}>
+                    ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800 text-emerald-950 dark:text-emerald-200'
+                    : isFullyReceived && !isPaidInFull
+                      ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-700 text-amber-950 dark:text-amber-200'
+                      : 'bg-sky-50 dark:bg-sky-950/30 border-sky-200 dark:border-sky-800 text-sky-950 dark:text-sky-200'
+                }`}>
                 <div className="flex items-center justify-between gap-2">
                   <div className="font-bold flex items-center gap-2">
                     <span className="text-base">
@@ -888,13 +882,13 @@ export default function PODetail() {
                       {po.status === 'cancelled'
                         ? 'สถานะปัจจุบัน: ยกเลิกใบสั่งซื้อแล้ว'
                         : isFullyReceived && isPaidInFull
-                        ? 'สถานะปัจจุบัน: ปิดวงจรจัดซื้อสมบูรณ์ 100% (รับของครบ & จ่ายเงินเรียบร้อย)'
-                        : isFullyReceived
-                        ? 'สถานะปัจจุบัน: ตรวจรับสินค้าเข้าคลังครบแล้ว (รอดำเนินการจ่ายเงิน)'
-                        : 'สถานะปัจจุบัน: สั่งซื้อแล้ว รอนำส่งสินค้าเข้าสโตร์ (รับของก่อนจ่ายเงิน)'}
+                          ? 'สถานะปัจจุบัน: ปิดวงจรจัดซื้อสมบูรณ์ 100% (รับของครบ & จ่ายเงินเรียบร้อย)'
+                          : isFullyReceived
+                            ? 'สถานะปัจจุบัน: ตรวจรับสินค้าเข้าคลังครบแล้ว (รอดำเนินการจ่ายเงิน)'
+                            : 'สถานะปัจจุบัน: สั่งซื้อแล้ว รอนำส่งสินค้าเข้าสโตร์ (รับของก่อนจ่ายเงิน)'}
                     </span>
                   </div>
-                  
+
                   {/* Shortcut Action Button inside banner */}
                   {isFullyReceived && !isPaidInFull && po.status !== 'cancelled' && (
                     <button
@@ -1048,13 +1042,12 @@ export default function PODetail() {
                 <div className="pt-2 border-t border-slate-100 dark:border-slate-800 text-xs space-y-1 text-slate-600 dark:text-slate-400">
                   <div className="flex justify-between items-center">
                     <span>การตรวจรับเข้าคลัง:</span>
-                    <span className={`px-2 py-0.5 rounded text-[11px] font-bold ${
-                      isFullyReceived
+                    <span className={`px-2 py-0.5 rounded text-[11px] font-bold ${isFullyReceived
                         ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800'
                         : grns.length > 0
-                        ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-800'
-                        : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
-                    }`}>
+                          ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-800'
+                          : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
+                      }`}>
                       {isFullyReceived ? 'รับครบแล้ว 100%' : grns.length > 0 ? `รับแล้ว (${grns.length} ครั้ง)` : 'รอของมาส่ง'}
                     </span>
                   </div>
@@ -1116,14 +1109,14 @@ export default function PODetail() {
                 {po.quotation_url ? (
                   <div className="sm:col-span-2 flex flex-wrap items-center gap-3 bg-white dark:bg-slate-800/80 p-2.5 rounded-xl border border-sky-200 dark:border-sky-800/60">
                     {/* Thumbnail if Image */}
-                    {po.quotation_url.match(/\.(jpeg|jpg|png|webp|gif)($|\?)/i) || po.quotation_url.startsWith('data:image') ? (
+                    {po.quotation_url.match(/\.(jpeg|jpg|png|webp|gif)($|\?)/i) || po.quotation_url.startsWith('data:image') || (po.quotation_url.includes('/') && !po.quotation_url.endsWith('.pdf')) ? (
                       <div
-                        onClick={() => setPreviewQuotationModal(po.quotation_url)}
+                        onClick={() => openFile(po.quotation_url)}
                         className="relative h-14 w-20 shrink-0 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 cursor-pointer group bg-slate-100"
                         title="คลิกเพื่อดูรูปขนาดเต็ม"
                       >
-                        <img
-                          src={po.quotation_url}
+                        <R2Image
+                          fileKey={po.quotation_url}
                           alt="Vendor Quotation"
                           className="h-full w-full object-cover group-hover:scale-110 transition duration-200"
                         />
@@ -1132,7 +1125,11 @@ export default function PODetail() {
                         </div>
                       </div>
                     ) : (
-                      <div className="h-14 w-14 shrink-0 rounded-lg bg-sky-100 dark:bg-sky-950 flex items-center justify-center text-sky-700 dark:text-sky-300 text-2xl font-bold">
+                      <div
+                        onClick={() => openFile(po.quotation_url)}
+                        className="h-14 w-14 shrink-0 rounded-lg bg-sky-100 dark:bg-sky-950 flex items-center justify-center text-sky-700 dark:text-sky-300 text-2xl font-bold cursor-pointer hover:bg-sky-200 dark:hover:bg-sky-900 transition"
+                        title="คลิกเพื่อเปิดดูไฟล์เอกสาร"
+                      >
                         📄
                       </div>
                     )}
@@ -1146,22 +1143,12 @@ export default function PODetail() {
                       <div className="flex items-center gap-2 mt-1">
                         <button
                           type="button"
-                          onClick={() => setPreviewQuotationModal(po.quotation_url)}
+                          onClick={() => openFile(po.quotation_url)}
                           className="text-xs font-bold text-sky-700 dark:text-sky-400 hover:underline flex items-center gap-1 cursor-pointer"
                         >
                           <Eye className="h-3.5 w-3.5" />
-                          <span>ดูรูปขนาดใหญ่</span>
+                          <span>เปิดดูเอกสาร / รูปขนาดเต็ม ↗</span>
                         </button>
-                        <span className="text-slate-300">|</span>
-                        <a
-                          href={po.quotation_url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-xs font-bold text-slate-600 dark:text-slate-300 hover:underline flex items-center gap-1"
-                        >
-                          <ExternalLink className="h-3 w-3" />
-                          <span>เปิดลิงก์ไฟล์</span>
-                        </a>
                       </div>
                     </div>
                   </div>
@@ -1195,11 +1182,10 @@ export default function PODetail() {
                   <button
                     type="button"
                     onClick={() => setItemsLayout('cards')}
-                    className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
-                      itemsLayout === 'cards'
+                    className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${itemsLayout === 'cards'
                         ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs'
                         : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                    }`}
+                      }`}
                   >
                     <Grid className="h-3.5 w-3.5" />
                     <span>การ์ดสินค้า (Catalog Cards)</span>
@@ -1207,11 +1193,10 @@ export default function PODetail() {
                   <button
                     type="button"
                     onClick={() => setItemsLayout('table')}
-                    className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
-                      itemsLayout === 'table'
+                    className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${itemsLayout === 'table'
                         ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs'
                         : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                    }`}
+                      }`}
                   >
                     <List className="h-3.5 w-3.5" />
                     <span>ตารางละเอียด (Table View)</span>
@@ -1293,13 +1278,12 @@ export default function PODetail() {
 
                           {/* Stock Status Badge */}
                           <div className="flex items-center justify-between pt-1">
-                            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold border ${
-                              isFullyReceivedItem
+                            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold border ${isFullyReceivedItem
                                 ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
                                 : Number(i.qty_received) > 0
-                                ? 'bg-amber-50 text-amber-900 border-amber-300'
-                                : 'bg-slate-100 text-slate-600 border-slate-200'
-                            }`}>
+                                  ? 'bg-amber-50 text-amber-900 border-amber-300'
+                                  : 'bg-slate-100 text-slate-600 border-slate-200'
+                              }`}>
                               <span>{isFullyReceivedItem ? '✓ รับครบแล้ว' : Number(i.qty_received) > 0 ? '⚡ รับแล้วบางส่วน' : '⏳ รอรับของ'}</span>
                               <span>({Math.round(Number(i.qty_received) || 0)} / {Math.round(Number(i.quantity) || 0)})</span>
                             </span>
@@ -1384,13 +1368,12 @@ export default function PODetail() {
                               {baht(itemTotal)}
                             </td>
                             <td className="py-3 px-3 text-center">
-                              <span className={`inline-block px-2.5 py-0.5 rounded-lg text-xs font-bold ${
-                                isFullyReceivedItem
+                              <span className={`inline-block px-2.5 py-0.5 rounded-lg text-xs font-bold ${isFullyReceivedItem
                                   ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
                                   : Number(i.qty_received) > 0
-                                  ? 'bg-amber-100 text-amber-900 border border-amber-300'
-                                  : 'bg-slate-100 text-slate-600'
-                              }`}>
+                                    ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                                    : 'bg-slate-100 text-slate-600'
+                                }`}>
                                 {Math.round(Number(i.qty_received) || 0)} / {Math.round(Number(i.quantity) || 0)}
                               </span>
                             </td>
@@ -1445,11 +1428,10 @@ export default function PODetail() {
                 <button
                   type="button"
                   onClick={() => setActiveTab('items')}
-                  className={`px-4 py-2 font-bold rounded-xl transition cursor-pointer flex items-center gap-2 ${
-                    activeTab === 'items'
+                  className={`px-4 py-2 font-bold rounded-xl transition cursor-pointer flex items-center gap-2 ${activeTab === 'items'
                       ? 'bg-slate-900 dark:bg-amber-500 text-white dark:text-slate-950 shadow-xs'
                       : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-                  }`}
+                    }`}
                 >
                   <span>💰</span>
                   <span>สรุปยอดเงินและเงื่อนไข</span>
@@ -1458,11 +1440,10 @@ export default function PODetail() {
                 <button
                   type="button"
                   onClick={() => setActiveTab('receiving')}
-                  className={`px-4 py-2 font-bold rounded-xl transition cursor-pointer flex items-center gap-2 ${
-                    activeTab === 'receiving'
+                  className={`px-4 py-2 font-bold rounded-xl transition cursor-pointer flex items-center gap-2 ${activeTab === 'receiving'
                       ? 'bg-slate-900 dark:bg-amber-500 text-white dark:text-slate-950 shadow-xs'
                       : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-                  }`}
+                    }`}
                 >
                   <span>📥</span>
                   <span>ประวัติรับของเข้าสโตร์ ({grns.length})</span>
@@ -1471,11 +1452,10 @@ export default function PODetail() {
                 <button
                   type="button"
                   onClick={() => setActiveTab('payments')}
-                  className={`px-4 py-2 font-bold rounded-xl transition cursor-pointer flex items-center gap-2 ${
-                    activeTab === 'payments'
+                  className={`px-4 py-2 font-bold rounded-xl transition cursor-pointer flex items-center gap-2 ${activeTab === 'payments'
                       ? 'bg-slate-900 dark:bg-amber-500 text-white dark:text-slate-950 shadow-xs'
                       : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-                  }`}
+                    }`}
                 >
                   <span>💸</span>
                   <span>ประวัติจ่ายชำระเงิน ({payments.length})</span>
@@ -1484,11 +1464,10 @@ export default function PODetail() {
                 <button
                   type="button"
                   onClick={() => setActiveTab('lifecycle')}
-                  className={`px-4 py-2 font-bold rounded-xl transition cursor-pointer flex items-center gap-2 ${
-                    activeTab === 'lifecycle'
+                  className={`px-4 py-2 font-bold rounded-xl transition cursor-pointer flex items-center gap-2 ${activeTab === 'lifecycle'
                       ? 'bg-slate-900 dark:bg-amber-500 text-white dark:text-slate-950 shadow-xs'
                       : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-                  }`}
+                    }`}
                 >
                   <span>🔗</span>
                   <span>วงจรเอกสาร (PR ➔ PO ➔ RI ➔ PV)</span>
@@ -1497,11 +1476,10 @@ export default function PODetail() {
                 <button
                   type="button"
                   onClick={() => setActiveTab('audit')}
-                  className={`px-4 py-2 font-bold rounded-xl transition cursor-pointer flex items-center gap-2 ${
-                    activeTab === 'audit'
+                  className={`px-4 py-2 font-bold rounded-xl transition cursor-pointer flex items-center gap-2 ${activeTab === 'audit'
                       ? 'bg-slate-900 dark:bg-amber-500 text-white dark:text-slate-950 shadow-xs'
                       : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-                  }`}
+                    }`}
                 >
                   <span>🛡️</span>
                   <span>บันทึกระบบ (Audit)</span>
@@ -1924,8 +1902,8 @@ export default function PODetail() {
               </div>
 
               <div className="flex-1 overflow-auto max-h-[75vh] flex items-center justify-center bg-slate-950/20 dark:bg-slate-950 rounded-xl p-2">
-                <img
-                  src={previewQuotationModal}
+                <R2Image
+                  fileKey={previewQuotationModal}
                   alt="Full Quotation"
                   className="max-h-full max-w-full object-contain rounded-lg shadow-md"
                 />

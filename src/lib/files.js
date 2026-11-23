@@ -14,7 +14,8 @@ async function api(path, body) {
   const { data: s } = await supabase.auth.getSession();
   const token = s?.session?.access_token;
   if (!token) throw new Error("กรุณาเข้าสู่ระบบใหม่");
-  const res = await fetch(`/api/files/${path}`, {
+  const baseUrl = import.meta.env.VITE_UPLOAD_WORKER_URL || "";
+  const res = await fetch(`${baseUrl}/api/files/${path}`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -88,23 +89,6 @@ export async function uploadFile(file, kind, { onProgress } = {}) {
     throw new Error("รองรับเฉพาะ PDF, JPG, PNG, WebP");
   if (prepared.size > MAX_SIZE) throw new Error("ไฟล์ใหญ่เกิน 15 MB");
 
-  // หากไม่มีการระบุ VITE_UPLOAD_WORKER_URL ใน .env (โหมด Dev หรือไม่ได้ต่อ Cloudflare R2)
-  // ให้แปลงเป็น DataURL อัตโนมัติ เพื่อให้แสดงรูปได้ทันทีและไม่เกิด Error 404 ใน Console
-  if (!import.meta.env.VITE_UPLOAD_WORKER_URL) {
-    const dataUrl = await new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = reject;
-      reader.readAsDataURL(prepared);
-    });
-    return {
-      r2Key: dataUrl,
-      name: prepared.name,
-      contentType: prepared.type,
-      size: prepared.size,
-    };
-  }
-
   try {
     const { key, uploadUrl, headers } = await api("upload-url", {
       kind,
@@ -120,8 +104,22 @@ export async function uploadFile(file, kind, { onProgress } = {}) {
       size: prepared.size,
     };
   } catch (err) {
-    console.warn("R2 upload API unavailable, using DataURL fallback:", err);
-    // Offline / Local development fallback
+    console.error("R2 upload API error:", err);
+    const isLocalhost =
+      typeof window !== "undefined" &&
+      (window.location.hostname === "localhost" ||
+        window.location.hostname === "127.0.0.1");
+
+    // หากอยู่บน Cloudflare Pages (Preview/Production) ให้โยน error จริงออกมาเสมอ
+    // เพื่อให้ผู้ใช้ทราบปัญหาทันที และไม่เผลอนำข้อมูล Base64 ขนาดใหญ่หลาย MB ไปบันทึกลงใน Supabase
+    if (!isLocalhost) {
+      throw new Error(
+        `ไม่สามารถอัปโหลดไฟล์ไปยัง Cloudflare R2 ได้: ${err.message || "เครือข่ายขัดข้อง หรือสิทธิ์ไม่เพียงพอ"}`,
+      );
+    }
+
+    // Local development fallback (เฉพาะการรันบน localhost)
+    console.warn("Using DataURL fallback for local development:", err.message);
     const dataUrl = await new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => resolve(reader.result);
@@ -135,6 +133,22 @@ export async function uploadFile(file, kind, { onProgress } = {}) {
       size: prepared.size,
     };
   }
+}
+
+// ฟังก์ชันเฉพาะสำหรับแต่ละประเภทเอกสาร
+export async function uploadItemImage(file) {
+  const { r2Key } = await uploadFile(file, "items");
+  return r2Key;
+}
+
+export async function uploadQuotationFile(file) {
+  const { r2Key } = await uploadFile(file, "quotations");
+  return r2Key;
+}
+
+export async function uploadDeliveryNoteFile(file) {
+  const { r2Key } = await uploadFile(file, "delivery-notes");
+  return r2Key;
 }
 
 // ---------- ขอ URL สำหรับดูไฟล์ (อายุ 10 นาที) พร้อม cache + รวมคำขอเป็นก้อนเดียว ----------

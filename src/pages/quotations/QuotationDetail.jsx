@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { baht } from '../../lib/projects'
-import { uploadItemImage, formatIntQty } from '../../lib/store'
+import { formatIntQty } from '../../lib/store'
+import { uploadQuotationFile, openFile } from '../../lib/files'
 import QuotationPrintModal from '../../components/reports/QuotationPrintModal'
 
 const STATUS_MAP = {
@@ -74,7 +75,7 @@ export default function QuotationDetail() {
     if (!file) return
     try {
       setPoBusy(true)
-      const url = await uploadItemImage(file)
+      const url = await uploadQuotationFile(file)
       setCustomerPoFileUrl(url)
     } catch (err) {
       alert('อัปโหลดไฟล์ไม่สำเร็จ')

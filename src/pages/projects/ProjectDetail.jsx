@@ -89,8 +89,8 @@ export default function ProjectDetail() {
       const [pRes, bRes, poRes, expRes] = await Promise.all([
         supabase.from("projects").select("*").eq("id", id).maybeSingle(),
         supabase.from("project_budget_items").select("*").eq("project_id", id).order("category"),
-        supabase.from("purchase_orders").select("*").eq("project_id", id).catch(() => ({ data: [] })),
-        supabase.from("expenses").select("*").eq("project_id", id).catch(() => ({ data: [] })),
+        Promise.resolve(supabase.from("purchase_orders").select("*").eq("project_id", id)).catch(() => ({ data: [] })),
+        Promise.resolve(supabase.from("expenses").select("*").eq("project_id", id)).catch(() => ({ data: [] })),
       ]);
 
       if (pRes.data) {
