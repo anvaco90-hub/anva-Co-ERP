@@ -1882,15 +1882,14 @@ export default function PODetail() {
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <a
-                    href={previewQuotationModal}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition flex items-center gap-1"
+                  <button
+                    type="button"
+                    onClick={() => openFile(previewQuotationModal)}
+                    className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition flex items-center gap-1 cursor-pointer"
                   >
                     <ExternalLink className="h-3 w-3" />
                     <span>เปิดภาพต้นฉบับ</span>
-                  </a>
+                  </button>
                   <button
                     type="button"
                     onClick={() => setPreviewQuotationModal(null)}

@@ -3,7 +3,8 @@ import { useNavigate, useParams, Link, useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
 import { baht } from '../../lib/projects'
-import { uploadQuotationFile } from '../../lib/files'
+import { uploadQuotationFile, openFile } from '../../lib/files'
+import R2Image from '../../components/R2Image'
 import { FieldError, fieldErrorClass } from '../../components/FieldError'
 
 const EMPTY_ITEM = {
@@ -992,11 +993,11 @@ export default function QuotationForm() {
               <div className="flex items-center gap-3">
                 {signatureUrl ? (
                   <div className="relative">
-                    <img src={signatureUrl} alt="ลายเซ็น" className="h-14 w-28 object-contain border rounded bg-white" />
+                    <R2Image fileKey={signatureUrl} alt="ลายเซ็น" className="h-14 w-28 object-contain border rounded bg-white" />
                     <button
                       type="button"
                       onClick={() => setSignatureUrl('')}
-                      className="absolute -top-1 -right-1 rounded-full bg-red-600 text-white w-4 h-4 text-[10px] flex items-center justify-center"
+                      className="absolute -top-1 -right-1 rounded-full bg-red-600 text-white w-4 h-4 text-[10px] flex items-center justify-center cursor-pointer"
                     >
                       ✕
                     </button>
@@ -1051,9 +1052,13 @@ export default function QuotationForm() {
                 {attachmentUrl && (
                   <div className="flex items-center gap-1.5 text-xs text-sky-700">
                     <span>✓ แนบแล้ว:</span>
-                    <a href={attachmentUrl} target="_blank" rel="noreferrer" className="underline font-semibold max-w-xs truncate">
+                    <button
+                      type="button"
+                      onClick={() => openFile(attachmentUrl)}
+                      className="underline font-semibold max-w-xs truncate text-sky-700 hover:text-sky-900 cursor-pointer text-left"
+                    >
                       {attachmentName || 'ดูไฟล์แนบ'}
-                    </a>
+                    </button>
                   </div>
                 )}
               </div>

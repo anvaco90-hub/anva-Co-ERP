@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase'
 import { baht } from '../../lib/projects'
 import { formatIntQty } from '../../lib/store'
 import { uploadQuotationFile, openFile } from '../../lib/files'
+import R2Image, { useFileUrl } from '../../components/R2Image'
 import QuotationPrintModal from '../../components/reports/QuotationPrintModal'
 
 const STATUS_MAP = {
@@ -33,6 +34,7 @@ export default function QuotationDetail() {
   const [customerSignerName, setCustomerSignerName] = useState('')
   const [customerPoFileUrl, setCustomerPoFileUrl] = useState('')
   const [poBusy, setPoBusy] = useState(false)
+  const { url: customerPoPreviewUrl } = useFileUrl(quotation?.customer_po_file_url)
 
   const openPoModal = () => {
     setCustomerPoNo(quotation?.customer_po_no || '')
@@ -507,8 +509,8 @@ export default function QuotationDetail() {
                 <div className="text-xs text-steel-400 mb-1">ลายเซ็นอิเล็กทรอนิกส์ & ตราประทับ</div>
                 {quotation.signature_url ? (
                   <div className="p-2 border border-steel-200 rounded-lg bg-steel-50 flex items-center justify-center">
-                    <img
-                      src={quotation.signature_url}
+                    <R2Image
+                      fileKey={quotation.signature_url}
                       alt="Signature"
                       className="max-h-24 max-w-full object-contain"
                     />
@@ -523,15 +525,14 @@ export default function QuotationDetail() {
               <div>
                 <div className="text-xs text-steel-400 mb-1">ไฟล์แนบเอกสารทั่วไป</div>
                 {quotation.attachment_url ? (
-                  <a
-                    href={quotation.attachment_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex items-center gap-2 p-2 rounded-lg border border-steel-200 bg-sky-50 text-xs font-semibold text-sky-700 hover:underline"
+                  <button
+                    type="button"
+                    onClick={() => openFile(quotation.attachment_url)}
+                    className="w-full flex items-center gap-2 p-2 rounded-lg border border-steel-200 bg-sky-50 hover:bg-sky-100 text-xs font-semibold text-sky-700 transition cursor-pointer text-left"
                   >
                     <span>📎</span>
-                    <span className="truncate">ดาวน์โหลดไฟล์แนบ</span>
-                  </a>
+                    <span className="truncate">เปิด / ดาวน์โหลดไฟล์แนบ</span>
+                  </button>
                 ) : (
                   <div className="text-xs text-steel-400 italic bg-steel-50 p-2 rounded text-center">
                     ไม่มีไฟล์แนบ
@@ -713,30 +714,40 @@ export default function QuotationDetail() {
                       <span>📎</span>
                       <span>ไฟล์สแกน / เอกสารใบสั่งซื้อของลูกค้าที่แนบไว้:</span>
                     </span>
-                    <a
-                      href={quotation.customer_po_file_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-xs font-bold text-sky-600 hover:underline flex items-center gap-1"
+                    <button
+                      type="button"
+                      onClick={() => openFile(quotation.customer_po_file_url)}
+                      className="text-xs font-bold text-sky-600 hover:underline flex items-center gap-1 cursor-pointer"
                     >
                       <span>เปิดในแท็บใหม่ ↗</span>
-                    </a>
+                    </button>
                   </div>
                   {quotation.customer_po_file_url.startsWith('data:image') || /\.(png|jpg|jpeg|webp|gif)/i.test(quotation.customer_po_file_url) ? (
                     <div className="flex justify-center bg-slate-100 dark:bg-slate-950 p-2 rounded-xl">
-                      <img
-                        src={quotation.customer_po_file_url}
+                      <R2Image
+                        fileKey={quotation.customer_po_file_url}
                         alt="Customer PO Document"
                         className="max-h-96 max-w-full rounded-lg object-contain shadow-xs"
                       />
                     </div>
-                  ) : (
+                  ) : customerPoPreviewUrl ? (
                     <div className="rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800">
                       <iframe
-                        src={quotation.customer_po_file_url}
+                        src={customerPoPreviewUrl}
                         title="Customer PO PDF"
                         className="w-full h-96 rounded-xl"
                       />
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center p-6 bg-slate-100 dark:bg-slate-950 rounded-xl gap-2">
+                      <p className="text-xs text-steel-500">เอกสาร PDF ใบสั่งซื้อของลูกค้า</p>
+                      <button
+                        type="button"
+                        onClick={() => openFile(quotation.customer_po_file_url)}
+                        className="rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold px-3 py-1.5 text-xs shadow-xs transition cursor-pointer"
+                      >
+                        เปิดดูเอกสาร PDF ↗
+                      </button>
                     </div>
                   )}
                 </div>
@@ -888,15 +899,14 @@ export default function QuotationDetail() {
                   <span>แก้ไขข้อมูล / แนบไฟล์ใหม่</span>
                 </button>
                 {quotation.customer_po_file_url && !quotation.customer_po_file_url.includes('example.com') && (
-                  <a
-                    href={quotation.customer_po_file_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="rounded-xl border border-sky-300 dark:border-sky-700 bg-sky-50 dark:bg-sky-950/40 hover:bg-sky-100 px-3.5 py-2 text-xs font-bold text-sky-800 dark:text-sky-200 transition shadow-2xs flex items-center gap-1.5"
+                  <button
+                    type="button"
+                    onClick={() => openFile(quotation.customer_po_file_url)}
+                    className="rounded-xl border border-sky-300 dark:border-sky-700 bg-sky-50 dark:bg-sky-950/40 hover:bg-sky-100 px-3.5 py-2 text-xs font-bold text-sky-800 dark:text-sky-200 transition shadow-2xs flex items-center gap-1.5 cursor-pointer"
                   >
                     <span>🔗</span>
                     <span>เปิดไฟล์แนบต้นฉบับ</span>
-                  </a>
+                  </button>
                 )}
               </div>
 

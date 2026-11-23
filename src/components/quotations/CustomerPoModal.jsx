@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '../../lib/supabase'
-import { uploadQuotationFile } from '../../lib/files'
+import { uploadQuotationFile, openFile } from '../../lib/files'
 import { X, Check, Upload, FileText } from 'lucide-react'
 
 export default function CustomerPoModal({ quotation, onClose, onSuccess }) {
@@ -174,15 +174,14 @@ export default function CustomerPoModal({ quotation, onClose, onSuccess }) {
                     <span>ไฟล์ตัวอย่างจำลองในระบบ</span>
                   </span>
                 ) : (
-                  <a
-                    href={customerPoFileUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-xs text-emerald-700 hover:underline font-bold truncate max-w-[200px]"
+                  <button
+                    type="button"
+                    onClick={() => openFile(customerPoFileUrl)}
+                    className="inline-flex items-center gap-1 text-xs text-emerald-700 hover:underline font-bold truncate max-w-[200px] cursor-pointer"
                   >
                     <FileText className="h-3.5 w-3.5" />
                     <span>ดูไฟล์ที่แนบไว้</span>
-                  </a>
+                  </button>
                 )
               ) : (
                 <span className="text-[11px] text-steel-400">ยังไม่มีไฟล์แนบ</span>

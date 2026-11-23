@@ -1,4 +1,5 @@
 import { baht } from '../../lib/projects'
+import R2Image from '../R2Image'
 
 export default function QuotationPrintModal({ quotation, items, onClose }) {
   if (!quotation) return null
@@ -180,7 +181,7 @@ export default function QuotationPrintModal({ quotation, items, onClose }) {
                 <p className="font-bold text-neutral-800">ในนาม บริษัท แอนวา คอนสตรัคชั่น แอนด์ เอ็นจิเนียริ่ง จำกัด</p>
                 <div className="h-16 flex items-center justify-center">
                   {quotation.signature_url ? (
-                    <img src={quotation.signature_url} alt="ตราประทับ/ลายเซ็น" className="max-h-16 object-contain" />
+                    <R2Image fileKey={quotation.signature_url} alt="ตราประทับ/ลายเซ็น" className="max-h-16 object-contain" />
                   ) : (
                     <div className="border-b border-dotted border-black w-3/5" />
                   )}
