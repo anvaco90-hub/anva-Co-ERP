@@ -46,6 +46,9 @@ import {
   BookOpen,
 } from 'lucide-react'
 
+
+
+
 const THAI_MONTHS = [
   'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
   'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
@@ -605,8 +608,8 @@ export default function Dashboard() {
         statusColor: !isUnpaid
           ? 'bg-emerald-100 text-emerald-800'
           : remAmt < Number(inv.total_amount || 0)
-          ? 'bg-sky-100 text-sky-800'
-          : 'bg-amber-100 text-amber-800',
+            ? 'bg-sky-100 text-sky-800'
+            : 'bg-amber-100 text-amber-800',
       })
     })
 
@@ -702,11 +705,10 @@ export default function Dashboard() {
             {/* Toggle Demo Simulation Mode Button */}
             <button
               onClick={toggleDemoMode}
-              className={`flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold transition shadow-sm border ${
-                isDemoMode
+              className={`flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold transition shadow-sm border ${isDemoMode
                   ? 'bg-emerald-500 text-white border-emerald-400 ring-2 ring-emerald-400/30 hover:bg-emerald-400 shadow-emerald-500/20'
                   : 'bg-slate-800/80 hover:bg-slate-700 text-white border-slate-600'
-              }`}
+                }`}
               title="สลับระหว่างข้อมูลจำลองสำหรับทดสอบ (Demo) และข้อมูลจริงจากระบบ (Live DB)"
             >
               <span>{isDemoMode ? '✨ ข้อมูลจำลอง (Demo Active)' : '🗄️ ข้อมูลจริง (Live DB)'}</span>
@@ -800,11 +802,10 @@ export default function Dashboard() {
               <button
                 key={preset.id}
                 onClick={() => handlePresetChange(preset.id)}
-                className={`rounded-lg px-2.5 py-1 text-xs font-bold transition cursor-pointer ${
-                  periodPreset === preset.id
+                className={`rounded-lg px-2.5 py-1 text-xs font-bold transition cursor-pointer ${periodPreset === preset.id
                     ? 'bg-emerald-700 dark:bg-amber-500 text-white dark:text-slate-950 shadow-xs'
                     : 'bg-steel-100 dark:bg-slate-800 text-steel-700 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-slate-700'
-                }`}
+                  }`}
               >
                 {preset.label}
               </button>
@@ -1427,20 +1428,18 @@ export default function Dashboard() {
                   </div>
                 </div>
               </div>
-              <span className={`rounded-full px-3 py-1 text-xs font-bold border ${
-                netCashMargin >= 0
+              <span className={`rounded-full px-3 py-1 text-xs font-bold border ${netCashMargin >= 0
                   ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
                   : 'bg-rose-100 text-rose-800 border-rose-200'
-              }`}>
+                }`}>
                 กำไรตามเอกสาร {netMarginPct}%
               </span>
             </div>
 
             <div className="mt-4">
               <div className="text-xs font-semibold text-steel-500">ผลต่างกำไรสุทธิ (Net Margin)</div>
-              <div className={`text-2xl sm:text-3xl font-black font-mono tracking-tight ${
-                netCashMargin >= 0 ? 'text-emerald-700' : 'text-rose-700'
-              }`}>
+              <div className={`text-2xl sm:text-3xl font-black font-mono tracking-tight ${netCashMargin >= 0 ? 'text-emerald-700' : 'text-rose-700'
+                }`}>
                 {baht(netCashMargin)} <span className="text-sm font-bold text-steel-500">บาท</span>
               </div>
             </div>
@@ -1531,21 +1530,19 @@ export default function Dashboard() {
           <div className="flex items-center rounded-xl bg-steel-100 p-1 text-xs font-bold shrink-0">
             <button
               onClick={() => setProductViewTab('products')}
-              className={`rounded-lg px-3 py-1.5 transition ${
-                productViewTab === 'products'
+              className={`rounded-lg px-3 py-1.5 transition ${productViewTab === 'products'
                   ? 'bg-white text-steel-900 shadow-sm'
                   : 'text-steel-600 hover:text-steel-900'
-              }`}
+                }`}
             >
               แยกตามสินค้า / วัสดุ ({salesByProduct.length})
             </button>
             <button
               onClick={() => setProductViewTab('projects')}
-              className={`rounded-lg px-3 py-1.5 transition ${
-                productViewTab === 'projects'
+              className={`rounded-lg px-3 py-1.5 transition ${productViewTab === 'projects'
                   ? 'bg-white text-steel-900 shadow-sm'
                   : 'text-steel-600 hover:text-steel-900'
-              }`}
+                }`}
             >
               แยกตามโครงการ ({salesByProject.length})
             </button>
@@ -1571,11 +1568,10 @@ export default function Dashboard() {
                   {salesByProduct.map((p) => (
                     <tr key={p.name} className="hover:bg-slate-50/80 transition">
                       <td className="py-3 px-3 text-center">
-                        <span className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-black ${
-                          p.rank === 1 ? 'bg-amber-100 text-amber-800 ring-1 ring-amber-300' :
-                          p.rank === 2 ? 'bg-slate-200 text-steel-800' :
-                          p.rank === 3 ? 'bg-orange-100 text-orange-800' : 'bg-steel-100 text-steel-600'
-                        }`}>
+                        <span className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-black ${p.rank === 1 ? 'bg-amber-100 text-amber-800 ring-1 ring-amber-300' :
+                            p.rank === 2 ? 'bg-slate-200 text-steel-800' :
+                              p.rank === 3 ? 'bg-orange-100 text-orange-800' : 'bg-steel-100 text-steel-600'
+                          }`}>
                           {p.rank === 1 ? '🥇' : p.rank === 2 ? '🥈' : p.rank === 3 ? '🥉' : p.rank}
                         </span>
                       </td>
@@ -1629,9 +1625,8 @@ export default function Dashboard() {
                   {salesByProject.map((p) => (
                     <tr key={p.name} className="hover:bg-slate-50/80 transition">
                       <td className="py-3 px-3 text-center">
-                        <span className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-black ${
-                          p.rank === 1 ? 'bg-amber-100 text-amber-800 ring-1 ring-amber-300' : 'bg-steel-100 text-steel-600'
-                        }`}>
+                        <span className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-black ${p.rank === 1 ? 'bg-amber-100 text-amber-800 ring-1 ring-amber-300' : 'bg-steel-100 text-steel-600'
+                          }`}>
                           {p.rank === 1 ? '🥇' : p.rank}
                         </span>
                       </td>
@@ -1793,11 +1788,10 @@ export default function Dashboard() {
                 <button
                   type="button"
                   onClick={() => setShowReceivablesInChart(!showReceivablesInChart)}
-                  className={`flex items-center gap-1.5 font-bold transition px-1.5 py-0.5 rounded cursor-pointer ${
-                    showReceivablesInChart
+                  className={`flex items-center gap-1.5 font-bold transition px-1.5 py-0.5 rounded cursor-pointer ${showReceivablesInChart
                       ? 'bg-amber-100 text-amber-900 border border-amber-300'
                       : 'text-steel-400 hover:text-steel-600 line-through'
-                  }`}
+                    }`}
                   title="คลิกเพื่อเปิด/ปิดแท่งค้างรับ"
                 >
                   <span className={`h-2.5 w-2.5 rounded-sm ${showReceivablesInChart ? 'bg-amber-400' : 'bg-steel-300'}`} />
@@ -1883,17 +1877,15 @@ export default function Dashboard() {
             </button>
             <button
               onClick={() => setRecentDocTab('receivables')}
-              className={`px-2 py-1 rounded-md transition flex items-center gap-1 ${
-                recentDocTab === 'receivables'
+              className={`px-2 py-1 rounded-md transition flex items-center gap-1 ${recentDocTab === 'receivables'
                   ? 'bg-amber-600 text-white shadow-xs'
                   : 'text-amber-800 hover:bg-amber-50'
-              }`}
+                }`}
             >
               <span>ค้างรับ (AR)</span>
               {arInvoicesCount > 0 && (
-                <span className={`px-1 py-0.2 rounded-full text-[9px] font-black ${
-                  recentDocTab === 'receivables' ? 'bg-white text-amber-800' : 'bg-amber-200 text-amber-900'
-                }`}>
+                <span className={`px-1 py-0.2 rounded-full text-[9px] font-black ${recentDocTab === 'receivables' ? 'bg-white text-amber-800' : 'bg-amber-200 text-amber-900'
+                  }`}>
                   {arInvoicesCount}
                 </span>
               )}
@@ -1921,11 +1913,10 @@ export default function Dashboard() {
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5 min-w-0">
-                    <span className={`rounded px-1.5 py-0.5 text-[10px] font-black shrink-0 ${
-                      doc.type === 'INV' ? 'bg-emerald-100 text-emerald-800' :
-                      doc.type === 'EXP' ? 'bg-blue-100 text-blue-800' :
-                      doc.type === 'PO' ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800'
-                    }`}>
+                    <span className={`rounded px-1.5 py-0.5 text-[10px] font-black shrink-0 ${doc.type === 'INV' ? 'bg-emerald-100 text-emerald-800' :
+                        doc.type === 'EXP' ? 'bg-blue-100 text-blue-800' :
+                          doc.type === 'PO' ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800'
+                      }`}>
                       {doc.type}
                     </span>
                     <span className="font-mono text-xs font-bold text-steel-900 truncate">{doc.docNo}</span>
@@ -2035,10 +2026,9 @@ export default function Dashboard() {
                 <div className="min-w-0 pr-3">
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-xs text-steel-900 truncate">{ap.vendor_name}</span>
-                    <span className={`rounded-full px-2 py-0.2 text-[9px] font-bold ${
-                      ap.alert_level === 'urgent' ? 'bg-rose-100 text-rose-800' :
-                      ap.alert_level === 'warning' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'
-                    }`}>
+                    <span className={`rounded-full px-2 py-0.2 text-[9px] font-bold ${ap.alert_level === 'urgent' ? 'bg-rose-100 text-rose-800' :
+                        ap.alert_level === 'warning' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'
+                      }`}>
                       {ap.alert_level === 'urgent' ? 'เกินกำหนด' : ap.alert_level === 'warning' ? 'เตือน' : 'ปกติ'}
                     </span>
                   </div>
