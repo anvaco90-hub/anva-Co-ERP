@@ -19,7 +19,7 @@ export default function LowStockAlert() {
   return (
     <div className="mt-4 rounded-xl border border-red-300 bg-red-50 p-4 text-sm text-steel-900 shadow-sm">
       <div className="font-bold text-red-900 flex items-center gap-2">
-        <span className="text-base">⚠️</span>
+        <span className="text-base"></span>
         <span>แจ้งเตือนวัสดุใกล้หมดคลัง ({low.length} รายการ)</span>
       </div>
       <ul className="mt-2.5 grid grid-cols-1 gap-1.5 sm:grid-cols-2 text-steel-800 text-xs">
@@ -37,7 +37,7 @@ export default function LowStockAlert() {
       {canOpenStore && (
         <div className="mt-3 pt-2 border-t border-red-200/60 flex items-center justify-end">
           <Link to="/store" className="inline-flex items-center gap-1 text-xs font-bold text-red-700 hover:text-red-900 underline">
-            <span>➔ ไปจัดการสต็อกและสั่งซื้อวัสดุที่คลังสินค้า</span>
+            <span> ไปจัดการสต็อกและสั่งซื้อวัสดุที่คลังสินค้า</span>
           </Link>
         </div>
       )}

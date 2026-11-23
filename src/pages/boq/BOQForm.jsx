@@ -300,7 +300,7 @@ export default function BOQForm() {
         {/* ส่วนที่ 1: ข้อมูลทั่วไปของ BOQ */}
         <div className="space-y-4">
           <h2 className="font-bold text-sm text-steel-900 flex items-center gap-2 border-b border-steel-100 pb-2">
-            <span>📋 1. ข้อมูลหัวเอกสารและโครงการ</span>
+            <span>1. ข้อมูลหัวเอกสารและโครงการ</span>
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -390,7 +390,7 @@ export default function BOQForm() {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="font-bold text-sm text-steel-900 flex items-center gap-2">
-                <span>📦 2. รายการถอดแบบพัสดุและค่าแรง (Itemized BOQ)</span>
+                <span>2. รายการถอดแบบพัสดุและค่าแรง (Itemized BOQ)</span>
               </h2>
               <p className="text-[11px] text-steel-500 mt-0.5">
                 รองรับการพิมพ์สเปกแบบขยายลงล่าง (Enter หลายบรรทัด) แยกต้นทุนค่าวัสดุและค่าแรง
@@ -525,7 +525,7 @@ export default function BOQForm() {
                         className="p-1.5 text-steel-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition disabled:opacity-20 cursor-pointer"
                         title="ลบแถวนี้"
                       >
-                        ✕
+                        
                       </button>
                     </div>
                   </div>
@@ -534,7 +534,7 @@ export default function BOQForm() {
                   <div className="pt-1 border-t border-steel-100">
                     <div className="flex items-center justify-between text-[11px] text-steel-500 mb-1">
                       <span className="font-semibold text-steel-700 flex items-center gap-1.5">
-                        <span>📝</span>
+                        <span></span>
                         <span>สเปกวิศวกรรมและเงื่อนไขเทคนิค (กด Enter ขึ้นบรรทัดใหม่ได้อิสระ)</span>
                       </span>
                       <span className="text-[10px] text-steel-400">
@@ -602,7 +602,7 @@ export default function BOQForm() {
             {/* อัตรามาร์กอัปกำไร */}
             <div className="flex items-center justify-between pt-1 border-t border-steel-200">
               <span className="font-bold text-steel-700 flex items-center gap-1.5">
-                <span>📈</span>
+                <span></span>
                 <span>กำไร / มาร์กอัป (Markup %):</span>
               </span>
               <div className="flex items-center gap-1.5">
@@ -650,7 +650,7 @@ export default function BOQForm() {
             className="rounded-xl bg-slate-900 hover:bg-slate-800 text-amber-300 font-black px-6 py-2.5 text-xs transition shadow-sm disabled:opacity-50 flex items-center gap-2 cursor-pointer"
           >
             <CheckCircle2 className="h-4 w-4" />
-            <span>{busy ? 'กำลังบันทึก...' : isEdit ? 'บันทึกการแก้ไข BOQ' : '✓ บันทึกเอกสาร BOQ'}</span>
+            <span>{busy ? 'กำลังบันทึก...' : isEdit ? 'บันทึกการแก้ไข BOQ' : ' บันทึกเอกสาร BOQ'}</span>
           </button>
         </div>
       </div>

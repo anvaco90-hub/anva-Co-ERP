@@ -105,7 +105,7 @@ export default function ExpenseFormModal({ isOpen, onClose, onSuccess, projects 
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)
-      setError('⚠️ ไม่สามารถบันทึกได้: มีช่องที่ยังไม่ได้กรอก (กรุณาตรวจสอบช่องที่มีข้อความเตือนสีแดง)')
+      setError('ไม่สามารถบันทึกได้: มีช่องที่ยังไม่ได้กรอก (กรุณาตรวจสอบช่องที่มีข้อความเตือนสีแดง)')
       return
     }
 
@@ -247,8 +247,7 @@ export default function ExpenseFormModal({ isOpen, onClose, onSuccess, projects 
         <div className="flex items-center justify-between border-b border-steel-200 pb-3">
           <div className="flex items-center gap-2">
             <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-800 font-bold text-lg">
-              💸
-            </span>
+              </span>
             <div>
               <h3 className="font-bold text-ink text-base">
                 บันทึกค่าใช้จ่ายใหม่ (New Expense - EXP)
@@ -259,13 +258,13 @@ export default function ExpenseFormModal({ isOpen, onClose, onSuccess, projects 
             </div>
           </div>
           <button onClick={onClose} className="text-steel-400 hover:text-steel-600 text-base">
-            ✕
+            
           </button>
         </div>
 
         {error && (
           <div className="mt-3 p-3 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-700 font-medium">
-            ⚠️ {error}
+            {error}
           </div>
         )}
 
@@ -299,9 +298,9 @@ export default function ExpenseFormModal({ isOpen, onClose, onSuccess, projects 
                 onChange={(e) => setPaymentMethod(e.target.value)}
                 className="w-full px-3 py-2 border border-steel-300 rounded-lg text-ink focus:ring-2 focus:ring-sky-500 bg-white"
               >
-                <option value="โอนเงิน">🏦 โอนเงินผ่านธนาคาร</option>
-                <option value="เงินสด">💵 เงินสด / เงินสดย่อย</option>
-                <option value="เจ้าหนี้การค้า">📑 ตั้งเจ้าหนี้การค้า (AP)</option>
+                <option value="โอนเงิน"> โอนเงินผ่านธนาคาร</option>
+                <option value="เงินสด"> เงินสด / เงินสดย่อย</option>
+                <option value="เจ้าหนี้การค้า">ตั้งเจ้าหนี้การค้า (AP)</option>
               </select>
             </div>
           </div>
@@ -310,7 +309,7 @@ export default function ExpenseFormModal({ isOpen, onClose, onSuccess, projects 
           <div className="rounded-xl border border-steel-200 bg-steel-50/70 p-3.5 space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <label className="font-bold text-steel-800 text-xs flex items-center gap-1.5">
-                <span>💳</span>
+                <span></span>
                 <span>แหล่งที่มาของเงิน (Payment Source) *</span>
               </label>
               <div className="flex items-center gap-1.5">
@@ -323,7 +322,7 @@ export default function ExpenseFormModal({ isOpen, onClose, onSuccess, projects 
                       : 'bg-white text-steel-700 border-steel-200 hover:bg-steel-100'
                   }`}
                 >
-                  🏦 โอน — บัญชีบริษัท
+                   โอน — บัญชีบริษัท
                 </button>
                 <button
                   type="button"
@@ -334,7 +333,7 @@ export default function ExpenseFormModal({ isOpen, onClose, onSuccess, projects 
                       : 'bg-white text-steel-700 border-steel-200 hover:bg-steel-100'
                   }`}
                 >
-                  💵 เงินสำรองจ่าย (พนักงาน)
+                   เงินสำรองจ่าย (พนักงาน)
                 </button>
               </div>
             </div>
@@ -366,7 +365,7 @@ export default function ExpenseFormModal({ isOpen, onClose, onSuccess, projects 
                     className="w-full px-3 py-1.5 border border-steel-300 rounded-lg text-xs font-mono"
                   />
                   <span className="text-[10px] text-emerald-700 font-semibold mt-0.5 block">
-                    ✓ ตัดเงินจากบัญชีบริษัททันที และลงสมุดรายวัน (GL) สำเร็จ
+                     ตัดเงินจากบัญชีบริษัททันที และลงสมุดรายวัน (GL) สำเร็จ
                   </span>
                 </div>
               </div>
@@ -456,7 +455,7 @@ export default function ExpenseFormModal({ isOpen, onClose, onSuccess, projects 
                 onChange={(e) => setProjectId(e.target.value)}
                 className="w-full px-3 py-2 border border-steel-300 rounded-lg text-ink focus:ring-2 focus:ring-sky-500 bg-white"
               >
-                <option value="">🏢 ค่าใช้จ่ายส่วนกลางบริษัท (Overhead / General)</option>
+                <option value="">ค่าใช้จ่ายส่วนกลางบริษัท (Overhead / General)</option>
                 {projects.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.project_code} - {p.project_name}
@@ -493,7 +492,7 @@ export default function ExpenseFormModal({ isOpen, onClose, onSuccess, projects 
                   onChange={(e) => setIsAsset(e.target.checked)}
                   className="h-4 w-4 rounded border-steel-300 text-sky-600 focus:ring-sky-500"
                 />
-                <span>🏢 บันทึกเป็นสินทรัพย์ถาวร (Record as Fixed Asset)</span>
+                <span>บันทึกเป็นสินทรัพย์ถาวร (Record as Fixed Asset)</span>
               </label>
               <p className="text-[10px] text-steel-500 ml-6 mt-1">
                 ทำเครื่องหมายหากเป็นการซื้อเครื่องจักร ยานพาหนะ หรืออุปกรณ์เพื่อลงทะเบียนทรัพย์สินบริษัท
@@ -520,7 +519,7 @@ export default function ExpenseFormModal({ isOpen, onClose, onSuccess, projects 
           {/* Tax & Amounts Section */}
           <div className="p-4 bg-steel-50 rounded-xl border border-steel-200 space-y-3">
             <h4 className="font-bold text-ink text-xs flex items-center gap-2">
-              <span>🧾</span> รายละเอียดภาษีและการคำนวณเงินสุทธิ
+              <span></span> รายละเอียดภาษีและการคำนวณเงินสุทธิ
             </h4>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -584,7 +583,7 @@ export default function ExpenseFormModal({ isOpen, onClose, onSuccess, projects 
                 </select>
                 {whtFormType && (
                   <span className="text-[10px] text-sky-800 font-bold block mt-1">
-                    📋 แบบฟอร์ม: {whtFormType}
+                    แบบฟอร์ม: {whtFormType}
                   </span>
                 )}
               </div>
@@ -662,7 +661,7 @@ export default function ExpenseFormModal({ isOpen, onClose, onSuccess, projects 
               disabled={saving}
               className="px-5 py-2 bg-sky-700 text-white rounded-lg hover:bg-sky-800 font-bold shadow flex items-center gap-1.5 disabled:opacity-50"
             >
-              {saving ? 'กำลังบันทึก...' : '💾 บันทึกค่าใช้จ่าย'}
+              {saving ? 'กำลังบันทึก...' : ' บันทึกค่าใช้จ่าย'}
             </button>
           </div>
         </form>

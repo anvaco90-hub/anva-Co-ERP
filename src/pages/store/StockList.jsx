@@ -110,13 +110,13 @@ export default function StockList() {
 
   // ตัวเลือกการเรียงลำดับมาตรฐานสำหรับคลังวัสดุ
   const STOCK_SORT_OPTIONS = [
-    { value: 'name_asc', label: '🔤 ชื่อพัสดุ ก ➔ ฮ (A ➔ Z)' },
-    { value: 'name_desc', label: '🔤 ชื่อพัสดุ ฮ ➔ ก (Z ➔ A)' },
-    { value: 'code_asc', label: '🔢 รหัสพัสดุ (น้อย ➔ มาก: 0 ➔ 9)' },
-    { value: 'code_desc', label: '🔢 รหัสพัสดุ (มาก ➔ น้อย: 9 ➔ 0)' },
-    { value: 'qty_desc', label: '📦 จำนวนคงเหลือ (มาก ➔ น้อย)' },
-    { value: 'qty_asc', label: '📦 จำนวนคงเหลือ (น้อย ➔ มาก)' },
-    { value: 'cost_desc', label: '💰 ต้นทุนเฉลี่ย (มาก ➔ น้อย)' },
+    { value: 'name_asc', label: 'ชื่อพัสดุ ก  ฮ (A  Z)' },
+    { value: 'name_desc', label: 'ชื่อพัสดุ ฮ  ก (Z  A)' },
+    { value: 'code_asc', label: 'รหัสพัสดุ (น้อย  มาก: 0  9)' },
+    { value: 'code_desc', label: 'รหัสพัสดุ (มาก  น้อย: 9  0)' },
+    { value: 'qty_desc', label: 'จำนวนคงเหลือ (มาก  น้อย)' },
+    { value: 'qty_asc', label: 'จำนวนคงเหลือ (น้อย  มาก)' },
+    { value: 'cost_desc', label: 'ต้นทุนเฉลี่ย (มาก  น้อย)' },
   ]
 
   // คำนวณรายการที่ผ่านการกรองและการจัดเรียง (ต้องอยู่ก่อน Early Return)
@@ -240,7 +240,7 @@ export default function StockList() {
                   : 'bg-steel-800/80 hover:bg-steel-800 border-steel-700 text-steel-300'
               }`}
             >
-              <div className="text-[11px] font-medium">⚠️ ใกล้หมด</div>
+              <div className="text-[11px] font-medium">ใกล้หมด</div>
               <div className="mt-0.5 text-xl font-black font-mono text-amber-300">
                 {lowCount}
               </div>
@@ -258,7 +258,7 @@ export default function StockList() {
                   : 'bg-steel-800/80 hover:bg-steel-800 border-steel-700 text-steel-300'
               }`}
             >
-              <div className="text-[11px] font-medium">🚨 หมดสต็อก</div>
+              <div className="text-[11px] font-medium">หมดสต็อก</div>
               <div className="mt-0.5 text-xl font-black font-mono text-rose-400">
                 {outCount}
               </div>
@@ -315,7 +315,7 @@ export default function StockList() {
               onChange={(e) => setCat(e.target.value)}
               className="h-8 rounded-lg border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 text-xs font-bold text-steel-800 dark:text-slate-200 focus:outline-none focus:border-amber-500 cursor-pointer shadow-2xs"
             >
-              <option value="">📂 หมวดหมู่ทั้งหมด ({items.length} รายการ)</option>
+              <option value=""> หมวดหมู่ทั้งหมด ({items.length} รายการ)</option>
               {cats.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name} ({items.filter((it) => it.category_id === c.id).length})
@@ -394,7 +394,7 @@ export default function StockList() {
                 onClick={() => setSearch('')}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-steel-400 hover:text-steel-600 dark:hover:text-slate-200"
               >
-                ✕
+                
               </button>
             )}
           </div>
@@ -421,7 +421,7 @@ export default function StockList() {
                 : 'bg-white dark:bg-slate-900 text-steel-700 dark:text-slate-200 border-steel-300 dark:border-slate-700 hover:bg-steel-50 dark:hover:bg-slate-800'
             }`}
           >
-            <span>⚠️</span>
+            <span></span>
             <span>ใกล้หมด ({lowCount})</span>
           </button>
 
@@ -437,7 +437,7 @@ export default function StockList() {
                 : 'bg-white dark:bg-slate-900 text-steel-700 dark:text-slate-200 border-steel-300 dark:border-slate-700 hover:bg-steel-50 dark:hover:bg-slate-800'
             }`}
           >
-            <span>🚨</span>
+            <span></span>
             <span>หมดสต็อก ({outCount})</span>
           </button>
 
@@ -906,7 +906,7 @@ export default function StockList() {
                 onClick={() => setSelectedDetailItem(null)}
                 className="rounded-full p-1 text-steel-400 hover:text-white transition"
               >
-                ✕
+                
               </button>
             </div>
 
@@ -1041,7 +1041,7 @@ export default function StockList() {
               onClick={() => setPreviewImg(null)}
               className="absolute right-4 top-4 rounded-full bg-black/60 p-2 text-white hover:bg-black"
             >
-              ✕
+              
             </button>
           </div>
         </div>

@@ -38,51 +38,51 @@ const THAI_MONTHS = [
 ]
 
 const ADJUST_SORT_OPTIONS = [
-  { value: 'latest', label: '🕒 วันที่ (ล่าสุด ➔ เก่าสุด)' },
-  { value: 'oldest', label: '🕒 วันที่ (เก่าสุด ➔ ล่าสุด)' },
-  { value: 'adj_desc', label: '🔢 เลขที่เอกสาร (มาก ➔ น้อย)' },
-  { value: 'adj_asc', label: '🔢 เลขที่เอกสาร (น้อย ➔ มาก)' },
-  { value: 'qty_desc', label: '📦 จำนวนปรับยอด (มาก ➔ น้อย)' },
-  { value: 'qty_asc', label: '📦 จำนวนปรับยอด (น้อย ➔ มาก)' },
-  { value: 'amount_desc', label: '💰 มูลค่าเงิน (มาก ➔ น้อย)' },
-  { value: 'amount_asc', label: '💰 มูลค่าเงิน (น้อย ➔ มาก)' },
+  { value: 'latest', label: ' วันที่ (ล่าสุด  เก่าสุด)' },
+  { value: 'oldest', label: ' วันที่ (เก่าสุด  ล่าสุด)' },
+  { value: 'adj_desc', label: 'เลขที่เอกสาร (มาก  น้อย)' },
+  { value: 'adj_asc', label: 'เลขที่เอกสาร (น้อย  มาก)' },
+  { value: 'qty_desc', label: 'จำนวนปรับยอด (มาก  น้อย)' },
+  { value: 'qty_asc', label: 'จำนวนปรับยอด (น้อย  มาก)' },
+  { value: 'amount_desc', label: 'มูลค่าเงิน (มาก  น้อย)' },
+  { value: 'amount_asc', label: 'มูลค่าเงิน (น้อย  มาก)' },
 ]
 
 const TARGET_OPTIONS = [
   {
     id: 'project',
-    label: '🏗️ โครงการ (Project)',
+    label: 'โครงการ (Project)',
     desc: 'ของเหลือคืนจากโครงการ หรือ ชำรุดจากไซต์งาน',
   },
   {
     id: 'office',
-    label: '🏢 ออฟฟิศ (Office)',
+    label: 'ออฟฟิศ (Office)',
     desc: 'ของเหลือคืนจากสำนักงาน หรือ ชำรุดในออฟฟิศ',
   },
   {
     id: 'site',
-    label: '⚡ หน้างาน (Site)',
+    label: 'หน้างาน (Site)',
     desc: 'ของเหลือคืนจากหน้างาน หรือ ชำรุดหน้างาน O&M',
   },
 ]
 
 const RETURN_REASONS = [
-  { id: 'ของเหลือใช้จากโครงการ (ปิดงาน)', label: 'ของเหลือจากโครงการ', icon: '🔄' },
-  { id: 'ส่งคืนเครื่องมือ / อุปกรณ์ใช้งาน', label: 'ส่งคืนเครื่องมือ/อุปกรณ์', icon: '🧰' },
-  { id: 'เบิกเกิน / หน้างานยกเลิกงาน', label: 'เบิกเกิน/ยกเลิกงาน', icon: '🔁' },
-  { id: 'เปลี่ยนสเปก / นำมาเปลี่ยนรุ่น', label: 'เปลี่ยนสเปก/เปลี่ยนรุ่น', icon: '⚙️' },
-  { id: 'ตรวจนับสต็อกพบของเกิน', label: 'ตรวจนับสต็อกพบของเกิน', icon: '📋' },
-  { id: 'คืนของชำรุดรอเคลม / รอซ่อม', label: 'ชำรุดรอเคลม/ซ่อม', icon: '⚠️' },
-  { id: 'อื่น ๆ', label: 'อื่น ๆ', icon: '📝' },
+  { id: 'ของเหลือใช้จากโครงการ (ปิดงาน)', label: 'ของเหลือจากโครงการ', icon: '' },
+  { id: 'ส่งคืนเครื่องมือ / อุปกรณ์ใช้งาน', label: 'ส่งคืนเครื่องมือ/อุปกรณ์', icon: '' },
+  { id: 'เบิกเกิน / หน้างานยกเลิกงาน', label: 'เบิกเกิน/ยกเลิกงาน', icon: '' },
+  { id: 'เปลี่ยนสเปก / นำมาเปลี่ยนรุ่น', label: 'เปลี่ยนสเปก/เปลี่ยนรุ่น', icon: '' },
+  { id: 'ตรวจนับสต็อกพบของเกิน', label: 'ตรวจนับสต็อกพบของเกิน', icon: '' },
+  { id: 'คืนของชำรุดรอเคลม / รอซ่อม', label: 'ชำรุดรอเคลม/ซ่อม', icon: '' },
+  { id: 'อื่น ๆ', label: 'อื่น ๆ', icon: '' },
 ]
 
 const REDUCE_REASONS = [
-  { id: 'สินค้าชำรุด/เสื่อมสภาพ', label: 'สินค้าชำรุด/เสื่อมสภาพ', icon: '⚠️' },
-  { id: 'สินค้าสูญหาย', label: 'สินค้าสูญหาย', icon: '❓' },
-  { id: 'ทำลายสินค้า', label: 'ทำลายสินค้า', icon: '💥' },
-  { id: 'ตรวจนับสต็อกแล้วยอดขาด', label: 'ตรวจนับสต็อกยอดขาด', icon: '📉' },
-  { id: 'ภัยพิบัติ / เสื่อมสภาพ', label: 'ภัยพิบัติ/เสื่อมสภาพ', icon: '🌊' },
-  { id: 'อื่น ๆ', label: 'อื่น ๆ', icon: '📝' },
+  { id: 'สินค้าชำรุด/เสื่อมสภาพ', label: 'สินค้าชำรุด/เสื่อมสภาพ', icon: '' },
+  { id: 'สินค้าสูญหาย', label: 'สินค้าสูญหาย', icon: '' },
+  { id: 'ทำลายสินค้า', label: 'ทำลายสินค้า', icon: '' },
+  { id: 'ตรวจนับสต็อกแล้วยอดขาด', label: 'ตรวจนับสต็อกยอดขาด', icon: '' },
+  { id: 'ภัยพิบัติ / เสื่อมสภาพ', label: 'ภัยพิบัติ/เสื่อมสภาพ', icon: '' },
+  { id: 'อื่น ๆ', label: 'อื่น ๆ', icon: '' },
 ]
 
 function parseAdjustReason(rawReason = '') {
@@ -509,7 +509,7 @@ export default function AdjustStock() {
               to="/store/issue/new"
               className="rounded-xl bg-hivis text-steel-950 hover:bg-amber-400 font-black px-4 py-2 text-xs transition shadow-xs flex items-center gap-1.5"
             >
-              <span>📦 ไปที่หน้าเบิกของ</span>
+              <span>ไปที่หน้าเบิกของ</span>
             </Link>
           </div>
         </div>
@@ -543,7 +543,7 @@ export default function AdjustStock() {
             }`}
           >
             <TrendingDown className="h-4 w-4" />
-            <span>🔻 ตัดชำรุด / ปรับลดสต็อก</span>
+            <span> ตัดชำรุด / ปรับลดสต็อก</span>
           </button>
         </div>
 
@@ -989,7 +989,7 @@ export default function AdjustStock() {
                     : 'text-steel-600 dark:text-slate-400 hover:text-emerald-600'
                 }`}
               >
-                <span>📥 คืนของ</span>
+                <span>คืนของ</span>
                 <span className="rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 px-1.5 text-[10px]">
                   {history.filter((h) => Number(h.qty_after) > Number(h.qty_before)).length}
                 </span>
@@ -1003,7 +1003,7 @@ export default function AdjustStock() {
                     : 'text-steel-600 dark:text-slate-400 hover:text-rose-600'
                 }`}
               >
-                <span>🚨 ตัดชำรุด/ลดยอด</span>
+                <span>ตัดชำรุด/ลดยอด</span>
                 <span className="rounded-full bg-rose-100 dark:bg-rose-950 text-rose-800 dark:text-rose-300 px-1.5 text-[10px]">
                   {history.filter((h) => Number(h.qty_after) <= Number(h.qty_before)).length}
                 </span>
@@ -1083,7 +1083,7 @@ export default function AdjustStock() {
                   onChange={(e) => setSelectedProjectId(e.target.value)}
                   className="rounded-lg border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 pl-8 pr-3 py-1.5 text-xs font-semibold text-steel-800 dark:text-slate-100 focus:outline-none focus:border-amber-500 cursor-pointer"
                 >
-                  <option value="all">🏗️ ทุกโครงการ (หรือของกลาง)</option>
+                  <option value="all">ทุกโครงการ (หรือของกลาง)</option>
                   {projects.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.project_code} - {p.project_name}
@@ -1298,15 +1298,15 @@ export default function AdjustStock() {
                               className="inline-flex items-center gap-1 font-semibold text-indigo-900 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/50 px-2 py-1 rounded-lg border border-indigo-200 dark:border-indigo-900 text-xs max-w-[200px] truncate"
                               title={`${proj.project_code} - ${proj.project_name}`}
                             >
-                              🏗️ <span className="font-mono">{proj.project_code}</span> <span className="truncate">{proj.project_name}</span>
+                              <span className="font-mono">{proj.project_code}</span> <span className="truncate">{proj.project_name}</span>
                             </span>
                           ) : (h.reason && h.reason.includes('ออฟฟิศ')) ? (
                             <span className="inline-flex items-center gap-1 text-amber-900 dark:text-amber-300 font-semibold bg-amber-50 dark:bg-amber-950/50 px-2 py-1 rounded-lg border border-amber-200 dark:border-amber-900 text-xs">
-                              🏢 ออฟฟิศส่วนกลาง
+                              ออฟฟิศส่วนกลาง
                             </span>
                           ) : (h.reason && h.reason.includes('หน้างาน')) ? (
                             <span className="inline-flex items-center gap-1 text-cyan-900 dark:text-cyan-300 font-semibold bg-cyan-50 dark:bg-cyan-950/50 px-2 py-1 rounded-lg border border-cyan-200 dark:border-cyan-900 text-xs">
-                              ⚡ ไซต์หน้างาน
+                              ไซต์หน้างาน
                             </span>
                           ) : (
                             <span className="text-steel-400 text-xs">ของกลาง / สโตร์</span>
@@ -1398,7 +1398,7 @@ export default function AdjustStock() {
                           <span className="text-xs font-normal text-steel-500">{unit}</span>
                         </div>
                         <div className="text-[10px] text-steel-400 font-mono mt-0.5">
-                          (เดิม {formatIntQty(h.qty_before)} ➔ {formatIntQty(h.qty_after)})
+                          (เดิม {formatIntQty(h.qty_before)}  {formatIntQty(h.qty_after)})
                         </div>
                       </div>
 

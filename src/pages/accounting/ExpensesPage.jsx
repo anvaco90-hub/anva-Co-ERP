@@ -273,7 +273,7 @@ export default function ExpensesPage() {
                   : 'bg-white text-steel-600 border-steel-200 hover:bg-steel-50'
               }`}
             >
-              📁 เอกสารธุรกิจ (Business EXP)
+               เอกสารธุรกิจ (Business EXP)
             </button>
             <button
               type="button"
@@ -284,7 +284,7 @@ export default function ExpensesPage() {
                   : 'bg-white text-steel-600 border-steel-200 hover:bg-steel-50'
               }`}
             >
-              ⚖️ เอกสารบัญชี (GL Audit)
+              ️ เอกสารบัญชี (GL Audit)
             </button>
           </div>
 
@@ -380,7 +380,7 @@ export default function ExpensesPage() {
                       <div>{row.expense_no}</div>
                       {row.vendor_tax_invoice_no && (
                         <div className="text-[10px] text-emerald-700 font-mono">
-                          🧾 {row.vendor_tax_invoice_no}
+                          {row.vendor_tax_invoice_no}
                         </div>
                       )}
                     </td>
@@ -391,7 +391,7 @@ export default function ExpensesPage() {
                         {row.vendors?.vendor_name || 'คู่ค้าทั่วไป'}
                         {row.is_asset && (
                           <span className="ml-1 text-[10px] bg-purple-100 text-purple-800 px-1.5 py-0.2 rounded font-bold">
-                            🏢 สินทรัพย์
+                            สินทรัพย์
                           </span>
                         )}
                       </div>
@@ -410,13 +410,13 @@ export default function ExpensesPage() {
                       {isAdvance ? (
                         <div className="text-[11px]">
                           <span className="font-bold text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 inline-block">
-                            💵 สำรองจ่าย: {row.advance_payer_name || 'หัวหน้างาน'}
+                             สำรองจ่าย: {row.advance_payer_name || 'หัวหน้างาน'}
                           </span>
                         </div>
                       ) : (
                         <div className="text-[11px]">
                           <span className="font-semibold text-sky-800 bg-sky-50 px-1.5 py-0.5 rounded border border-sky-200 inline-block">
-                            🏦 โอน: {row.company_bank_account === '1110-03' ? 'SCB' : 'KBANK'}
+                             โอน: {row.company_bank_account === '1110-03' ? 'SCB' : 'KBANK'}
                           </span>
                         </div>
                       )}
@@ -434,7 +434,7 @@ export default function ExpensesPage() {
                     <td className="text-center">
                       {row.status === 'จ่ายเงินแล้ว' ? (
                         <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                          ✓ จ่ายเงินแล้ว
+                           จ่ายเงินแล้ว
                         </span>
                       ) : row.status === 'รอคืนเงินสำรองจ่าย' ? (
                         <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300 animate-pulse">
@@ -451,11 +451,11 @@ export default function ExpensesPage() {
                     <td className="text-center">
                       {row.accounting_status === 'อนุมัติแล้ว' ? (
                         <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                          ✅ อนุมัติแล้ว
+                          อนุมัติแล้ว
                         </span>
                       ) : row.accounting_status === 'ยกเลิก' ? (
                         <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
-                          ❌ ยกเลิก
+                          ยกเลิก
                         </span>
                       ) : (
                         <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
@@ -525,8 +525,7 @@ export default function ExpensesPage() {
             <div className="flex items-center justify-between border-b border-steel-200 pb-2.5">
               <div className="flex items-center gap-2">
                 <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-100 text-amber-800 font-bold">
-                  💸
-                </span>
+                  </span>
                 <div>
                   <h3 className="font-bold text-ink text-sm">
                     โอนเงินคืนสำรองจ่าย (Reimburse Staff)
@@ -537,7 +536,7 @@ export default function ExpensesPage() {
                 </div>
               </div>
               <button onClick={() => setReimburseTarget(null)} className="text-steel-400 hover:text-steel-600">
-                ✕
+                
               </button>
             </div>
 
@@ -588,7 +587,7 @@ export default function ExpensesPage() {
               </div>
 
               <div className="p-2.5 bg-steel-100 rounded-lg text-steel-600 text-[11px]">
-                💡 ระบบจะลงสมุดรายวันตัดเงินทันที: <b>Dr. ค่าใช้จ่ายค้างจ่าย (2160-01)</b> / <b>Cr. บัญชีธนาคารบริษัท ({reimburseBank})</b>
+                ระบบจะลงสมุดรายวันตัดเงินทันที: <b>Dr. ค่าใช้จ่ายค้างจ่าย (2160-01)</b> / <b>Cr. บัญชีธนาคารบริษัท ({reimburseBank})</b>
               </div>
 
               <div className="flex justify-end gap-2 pt-2 border-t border-steel-200">

@@ -282,7 +282,7 @@ export default function InventoryReportModal({
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-steel-200 dark:border-slate-700/60 pb-3">
             <div className="flex items-center gap-2">
               <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-600 text-white shadow">
-                🖨️
+                ️
               </span>
               <div>
                 <h2 className="text-base font-bold text-ink dark:text-white">ศูนย์ออกรายงานและพิมพ์เอกสารสต็อก (Stock PDF Generator)</h2>
@@ -296,7 +296,7 @@ export default function InventoryReportModal({
                 onClick={handlePrint}
                 className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-bold text-white shadow-md hover:bg-emerald-700 transition cursor-pointer"
               >
-                <span>🖨️</span>
+                <span>️</span>
                 <span>พิมพ์เอกสาร / บันทึก PDF</span>
               </button>
               <button
@@ -304,7 +304,7 @@ export default function InventoryReportModal({
                 onClick={onClose}
                 className="rounded-lg border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm font-medium text-steel-700 dark:text-slate-300 hover:bg-steel-50 dark:hover:bg-slate-700 transition cursor-pointer"
               >
-                ✕ ปิดหน้าต่าง
+                 ปิดหน้าต่าง
               </button>
             </div>
           </div>
@@ -314,7 +314,7 @@ export default function InventoryReportModal({
             {/* 1. เลือกช่วงเวลา */}
             <div className="bg-white dark:bg-slate-800/90 p-2.5 rounded-lg border border-steel-200 dark:border-slate-700 shadow-sm space-y-1.5">
               <label className="font-bold text-steel-700 dark:text-slate-200 flex items-center gap-1">
-                <span>📅</span> เลือกช่วงเวลารายงาน
+                <span></span> เลือกช่วงเวลารายงาน
               </label>
               <div className="grid grid-cols-2 gap-1">
                 <button
@@ -411,7 +411,7 @@ export default function InventoryReportModal({
             {/* 2. เลือกประเภทรายงาน */}
             <div className="bg-white dark:bg-slate-800/90 p-2.5 rounded-lg border border-steel-200 dark:border-slate-700 shadow-sm space-y-1.5">
               <label className="font-bold text-steel-700 dark:text-slate-200 flex items-center gap-1">
-                <span>📊</span> รูปแบบรายงาน
+                <span></span> รูปแบบรายงาน
               </label>
               <div className="space-y-1">
                 <label className="flex items-center gap-2 cursor-pointer hover:bg-steel-50 dark:hover:bg-slate-700/60 p-1 rounded text-steel-800 dark:text-slate-200">
@@ -421,7 +421,7 @@ export default function InventoryReportModal({
                     checked={reportType === 'balance'}
                     onChange={() => setReportType('balance')}
                   />
-                  <span>📦 ยอดคงเหลือและมูลค่าสต็อก</span>
+                  <span>ยอดคงเหลือและมูลค่าสต็อก</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer hover:bg-steel-50 dark:hover:bg-slate-700/60 p-1 rounded text-steel-800 dark:text-slate-200">
                   <input
@@ -430,7 +430,7 @@ export default function InventoryReportModal({
                     checked={reportType === 'movement'}
                     onChange={() => setReportType('movement')}
                   />
-                  <span>🔄 สรุปความเคลื่อนไหว (รับ/จ่าย)</span>
+                  <span>สรุปความเคลื่อนไหว (รับ/จ่าย)</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer hover:bg-steel-50 dark:hover:bg-slate-700/60 p-1 rounded text-steel-800 dark:text-slate-200">
                   <input
@@ -439,7 +439,7 @@ export default function InventoryReportModal({
                     checked={reportType === 'reorder'}
                     onChange={() => setReportType('reorder')}
                   />
-                  <span>⚠️ รายการใกล้หมด / ต้องสั่งซื้อ</span>
+                  <span>รายการใกล้หมด / ต้องสั่งซื้อ</span>
                 </label>
               </div>
             </div>
@@ -447,7 +447,7 @@ export default function InventoryReportModal({
             {/* 3. กรองหมวดหมู่ & สถานะ */}
             <div className="bg-white dark:bg-slate-800/90 p-2.5 rounded-lg border border-steel-200 dark:border-slate-700 shadow-sm space-y-1.5">
               <label className="font-bold text-steel-700 dark:text-slate-200 flex items-center gap-1">
-                <span>🏷️</span> กรองหมวดหมู่ & สถานะ
+                <span></span> กรองหมวดหมู่ & สถานะ
               </label>
               <select
                 className="w-full h-9 px-2.5 border border-steel-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-xs font-semibold text-steel-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500 shadow-2xs cursor-pointer"
@@ -488,7 +488,7 @@ export default function InventoryReportModal({
             {/* 4. ตัวเลือกเปิด/ปิดคอลัมน์ใน PDF */}
             <div className="bg-white dark:bg-slate-800/90 p-2.5 rounded-lg border border-steel-200 dark:border-slate-700 shadow-sm space-y-1.5">
               <label className="font-bold text-steel-700 dark:text-slate-200 flex items-center gap-1">
-                <span>⚙️</span> ตัวเลือกการแสดงผล PDF
+                <span></span> ตัวเลือกการแสดงผล PDF
               </label>
               <div className="grid grid-cols-2 gap-1 text-[11px] text-steel-800 dark:text-slate-200">
                 <label className="flex items-center gap-1.5 cursor-pointer">
@@ -536,7 +536,7 @@ export default function InventoryReportModal({
                         : 'bg-steel-100 text-steel-600 hover:bg-steel-200'
                       }`}
                   >
-                    📄 แนวนอน (แนะนำ)
+                    แนวนอน (แนะนำ)
                   </button>
                   <button
                     type="button"
@@ -546,7 +546,7 @@ export default function InventoryReportModal({
                         : 'bg-steel-100 text-steel-600 hover:bg-steel-200'
                       }`}
                   >
-                    📄 แนวตั้ง
+                    แนวตั้ง
                   </button>
                 </div>
               </div>

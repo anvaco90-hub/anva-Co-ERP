@@ -302,7 +302,7 @@ export default function ProjectDetail() {
               </span>
               {isSimulation && (
                 <span className="rounded-md bg-amber-100 text-amber-900 px-2 py-0.5 text-[10px] font-black uppercase">
-                  ✨ Demo Simulation
+                  Demo Simulation
                 </span>
               )}
             </div>
@@ -447,7 +447,7 @@ export default function ProjectDetail() {
                   ? "bg-amber-100 text-amber-800"
                   : "bg-emerald-100 text-emerald-800"
               }`}>
-                {remainingBudget < 0 ? "⚠️ ใช้เกินงบประมาณ" : Number(budgetUsagePct) > 85 ? "⚡ ใช้ใกล้เต็มงบ (>85%)" : "✓ ควบคุมงบได้ตามแผน"}
+                {remainingBudget < 0 ? "ใช้เกินงบประมาณ" : Number(budgetUsagePct) > 85 ? "ใช้ใกล้เต็มงบ (>85%)" : " ควบคุมงบได้ตามแผน"}
               </span>
             </div>
           </div>

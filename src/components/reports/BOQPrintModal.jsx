@@ -22,7 +22,7 @@ export default function BOQPrintModal({ boq, items, onClose }) {
         {/* แถบควบคุมบน ไม่แสดงตอนพิมพ์ */}
         <div className="no-print flex items-center justify-between border-b border-steel-200 bg-steel-100 px-6 py-3">
           <div className="flex items-center gap-2">
-            <span className="text-xl">📊</span>
+            <span className="text-xl"></span>
             <span className="font-bold text-ink">พิมพ์เอกสารประมาณราคา BOQ ({boq.boq_no})</span>
           </div>
           <div className="flex items-center gap-3">
@@ -30,7 +30,7 @@ export default function BOQPrintModal({ boq, items, onClose }) {
               onClick={handlePrint}
               className="inline-flex items-center gap-2 rounded-lg bg-sky-700 px-4 py-2 text-sm font-semibold text-white shadow-md hover:bg-sky-800 transition cursor-pointer"
             >
-              <span>🖨️</span>
+              <span>️</span>
               <span>พิมพ์เอกสาร / บันทึก PDF</span>
             </button>
             <button

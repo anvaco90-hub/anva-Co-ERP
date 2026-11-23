@@ -33,14 +33,14 @@ export default function ProjectList() {
   const [isDemo, setIsDemo] = useState(false);
 
   const PROJECT_SORT_OPTIONS = [
-    { value: "code_asc", label: "🔢 รหัสโครงการ (น้อย ➔ มาก: 0 ➔ 9)" },
-    { value: "code_desc", label: "🔢 รหัสโครงการ (มาก ➔ น้อย: 9 ➔ 0)" },
-    { value: "name_asc", label: "🔤 ชื่อโครงการ ก ➔ ฮ (A ➔ Z)" },
-    { value: "name_desc", label: "🔤 ชื่อโครงการ ฮ ➔ ก (Z ➔ A)" },
-    { value: "amount_desc", label: "💰 มูลค่าสัญญา (มาก ➔ น้อย)" },
-    { value: "amount_asc", label: "💰 มูลค่าสัญญา (น้อย ➔ มาก)" },
-    { value: "date_desc", label: "🕒 วันที่โครงการล่าสุด (ใหม่ ➔ เก่า)" },
-    { value: "date_asc", label: "🕒 วันที่โครงการ (เก่า ➔ ใหม่)" },
+    { value: "code_asc", label: "รหัสโครงการ (น้อย  มาก: 0  9)" },
+    { value: "code_desc", label: "รหัสโครงการ (มาก  น้อย: 9  0)" },
+    { value: "name_asc", label: "ชื่อโครงการ ก  ฮ (A  Z)" },
+    { value: "name_desc", label: "ชื่อโครงการ ฮ  ก (Z  A)" },
+    { value: "amount_desc", label: "มูลค่าสัญญา (มาก  น้อย)" },
+    { value: "amount_asc", label: "มูลค่าสัญญา (น้อย  มาก)" },
+    { value: "date_desc", label: " วันที่โครงการล่าสุด (ใหม่  เก่า)" },
+    { value: "date_asc", label: " วันที่โครงการ (เก่า  ใหม่)" },
   ];
 
   useEffect(() => {
@@ -124,7 +124,7 @@ export default function ProjectList() {
             </span>
             {isDemo && (
               <span className="rounded-md bg-amber-100 text-amber-800 px-2 py-0.5 text-[11px] font-bold">
-                ✨ ข้อมูลจำลองสมจริง (Realistic Simulation)
+                ข้อมูลจำลองสมจริง (Realistic Simulation)
               </span>
             )}
           </div>

@@ -1,5 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
+import {
+  FileText, Send, CheckCircle2, ShoppingCart, Truck, FileCheck, Printer,
+  Edit3, Trash2, ArrowRight, ExternalLink, X, Building2, User, FolderGit2,
+  Calendar, CreditCard, ChevronRight, AlertCircle, Eye, Plus, Check
+} from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { baht } from '../../lib/projects'
 import { formatIntQty } from '../../lib/store'
@@ -179,8 +184,8 @@ export default function QuotationDetail() {
 
   return (
     <div className="space-y-6">
-      {/* Top Bar Navigation & Actions (จัดเลเอาต์เรียบหรู ไม่ซ้ำซ้อน ไม่ตกบรรทัด) */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-steel-200 dark:border-slate-800 shadow-xs">
+      {/* Top Bar Navigation & Actions (จัดเลเอาต์เรียบหรู มีลำดับขั้นตอน ไม่ซ้ำซ้อน) */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 bg-white dark:bg-slate-900 p-5 rounded-2xl border border-steel-200 dark:border-slate-800 shadow-xs">
         <div>
           <div className="flex flex-wrap items-center gap-2.5">
             <h1 className="text-2xl sm:text-3xl font-black text-slate-950 dark:text-white tracking-tight font-mono">
@@ -189,54 +194,74 @@ export default function QuotationDetail() {
             <span className={`inline-flex items-center px-3 py-1 text-xs font-bold rounded-full border shadow-2xs ${statusInfo.color}`}>
               {statusInfo.label}
             </span>
+            {quotation.customer_po_no && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800">
+                <FileCheck className="h-3.5 w-3.5" />
+                <span>PO: {quotation.customer_po_no}</span>
+              </span>
+            )}
           </div>
-          <p className="text-xs text-steel-500 dark:text-slate-400 mt-1 flex items-center gap-1.5">
-            <span>📅 สร้างเมื่อ:</span>
-            <span className="font-semibold text-steel-700 dark:text-slate-300 font-mono">
-              {new Date(quotation.created_at).toLocaleString('th-TH')}
+          <div className="text-xs text-steel-500 dark:text-slate-400 mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1">
+            <span className="flex items-center gap-1">
+              <Calendar className="h-3.5 w-3.5 text-steel-400" />
+              <span>ออกเอกสาร: <strong className="font-mono text-steel-700 dark:text-slate-300">{quotation.issue_date ? new Date(quotation.issue_date).toLocaleDateString('th-TH') : '-'}</strong></span>
             </span>
-          </p>
+            {quotation.projects && (
+              <span className="flex items-center gap-1">
+                <FolderGit2 className="h-3.5 w-3.5 text-steel-400" />
+                <span>โครงการ: <strong className="text-sky-700 dark:text-sky-400">[{quotation.projects.project_code}] {quotation.projects.project_name}</strong></span>
+              </span>
+            )}
+            <span className="flex items-center gap-1">
+              <Building2 className="h-3.5 w-3.5 text-steel-400" />
+              <span>ลูกค้า: <strong className="text-steel-800 dark:text-slate-200">{quotation.customer_name}</strong></span>
+            </span>
+          </div>
         </div>
 
         {/* Action Buttons Toolbar */}
         <div className="flex flex-wrap items-center gap-2">
-          {/* ปุ่มพิมพ์ PDF (Primary Action เด่นชัด) */}
+          {/* ปุ่มตามลำดับขั้นตอนหลัก */}
+          {quotation.customer_po_no ? (
+            <div className="flex items-center gap-2">
+              <Link
+                to={`/purchasing/po/new?quotation_id=${quotation.id}`}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 px-4 py-2 text-xs font-black shadow-xs transition"
+                title="ส่งต่อฝ่ายจัดซื้อเพื่อเปิด PO ซื้อของตามรายการนี้"
+              >
+                <ShoppingCart className="h-4 w-4" />
+                <span>ส่งต่อจัดซื้อ (เปิด PO)</span>
+              </Link>
+              <Link
+                to={`/purchasing/pr/new?quotation_id=${quotation.id}`}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white px-3.5 py-2 text-xs font-bold shadow-xs transition"
+                title="เปิดใบขอซื้อพัสดุ (PR)"
+              >
+                <FileText className="h-4 w-4" />
+                <span>เปิด PR</span>
+              </Link>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={openPoModal}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white px-4 py-2 text-xs font-bold shadow-xs transition cursor-pointer"
+            >
+              <FileCheck className="h-4 w-4" />
+              <span>ลูกค้าเซ็นอนุมัติ / บันทึก PO</span>
+            </button>
+          )}
+
+          {/* ปุ่มพิมพ์ PDF */}
           <button
             type="button"
             onClick={() => setShowPrintModal(true)}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-sky-700 hover:bg-sky-800 dark:bg-sky-600 dark:hover:bg-sky-700 text-white px-3.5 py-2 text-xs font-bold shadow-xs transition cursor-pointer"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-sky-300 dark:border-sky-700 bg-sky-50 dark:bg-sky-950/40 hover:bg-sky-100 text-sky-800 dark:text-sky-200 px-3.5 py-2 text-xs font-bold shadow-2xs transition cursor-pointer"
             title="พิมพ์เอกสารใบเสนอราคามาตรฐาน หรือบันทึก PDF"
           >
-            <span>🖨️</span>
+            <Printer className="h-4 w-4" />
             <span>พิมพ์ใบเสนอราคา (PDF)</span>
           </button>
-
-          {/* ปุ่มบันทึกการเซ็น PO ของลูกค้า */}
-          <button
-            type="button"
-            onClick={openPoModal}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white px-3.5 py-2 text-xs font-bold shadow-xs transition cursor-pointer"
-          >
-            <span>✍️</span>
-            <span>{quotation.customer_po_no ? 'แก้ไขข้อมูล PO ลูกค้า' : 'ลูกค้าเซ็นอนุมัติ / บันทึก PO'}</span>
-          </button>
-
-          {/* ปุ่มเชื่อมโยงส่งต่อฝ่ายจัดซื้อ */}
-          <Link
-            to={`/purchasing/po/new?quotation_id=${quotation.id}`}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 px-3.5 py-2 text-xs font-black shadow-xs transition"
-          >
-            <span>🛒</span>
-            <span>ส่งต่อจัดซื้อ (เปิด PO)</span>
-          </Link>
-
-          <Link
-            to={`/purchasing/pr/new?quotation_id=${quotation.id}`}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-steel-800 hover:bg-steel-700 text-white px-3 py-2 text-xs font-bold shadow-xs transition"
-          >
-            <span>📋</span>
-            <span>เปิด PR</span>
-          </Link>
 
           {/* Status Switcher */}
           <select
@@ -257,7 +282,7 @@ export default function QuotationDetail() {
             to={`/quotations/${quotation.id}/edit`}
             className="inline-flex items-center gap-1.5 rounded-xl border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-xs font-semibold text-steel-700 dark:text-slate-200 shadow-2xs hover:bg-steel-50 dark:hover:bg-slate-700 transition"
           >
-            <span>✏️</span>
+            <Edit3 className="h-3.5 w-3.5" />
             <span>แก้ไข</span>
           </Link>
 
@@ -267,90 +292,216 @@ export default function QuotationDetail() {
             onClick={handleDelete}
             disabled={deleting}
             className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/60 px-3 py-2 text-xs font-semibold text-rose-700 dark:text-rose-300 shadow-2xs hover:bg-rose-100 transition cursor-pointer"
+            title="ลบใบเสนอราคา"
           >
-            <span>🗑️</span>
-            <span>ลบ</span>
+            <Trash2 className="h-3.5 w-3.5" />
           </button>
         </div>
       </div>
 
-      {/* 2. Visual Sales Workflow Stepper (เอกสารขาย -> ลูกค้า -> เซ็น PO -> จัดซื้อ) */}
-      <div className="rounded-2xl border border-steel-200 bg-white p-4 shadow-xs">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
-          {/* Step 1 */}
-          <div className="flex items-center gap-2.5">
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-900 text-amber-300 font-bold text-xs shadow-xs">
-              1
-            </span>
+      {/* 2. Visual Sales & Execution Workflow Pipeline (ผังแสดงลำดับขั้นตอนการทำงาน 1 -> 2 -> 3 -> 4 -> 5) */}
+      <div className="rounded-2xl border border-steel-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-steel-100 dark:border-slate-800 pb-3">
+          <div className="flex items-center gap-2">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300">
+              <FolderGit2 className="h-4 w-4" />
+            </div>
             <div>
-              <div className="font-bold text-steel-900">1. ออกใบเสนอราคา</div>
-              <div className="text-[11px] text-steel-500 font-mono">{quotation.quotation_no}</div>
+              <h2 className="text-sm font-bold text-slate-900 dark:text-white">
+                ลำดับขั้นตอนการทำงาน (Sales &amp; Solar EPC Workflow)
+              </h2>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                ผังกระบวนการเริ่มตั้งแต่เสนอราคาจนถึงส่งมอบงาน ชี้ชัดว่าขั้นตอนปัจจุบันอยู่จุดใดและต้องทำอะไรต่อ
+              </p>
             </div>
           </div>
+          <div className="text-xs font-mono font-bold text-slate-700 dark:text-slate-300 bg-steel-50 dark:bg-slate-800 px-3 py-1 rounded-full border border-steel-200 dark:border-slate-700">
+            สถานะปัจจุบัน: <span className="text-sky-600 dark:text-sky-400 font-bold">{statusInfo.label}</span>
+          </div>
+        </div>
 
-          <div className="hidden md:block text-steel-300 font-bold">➔</div>
-
-          {/* Step 2 */}
-          <div className="flex items-center gap-2.5">
-            <span className={`flex h-7 w-7 items-center justify-center rounded-lg font-bold text-xs ${
-              quotation.status !== 'draft' ? 'bg-sky-600 text-white shadow-xs' : 'bg-steel-100 text-steel-500'
-            }`}>
-              2
-            </span>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+          {/* Step 1: ออกใบเสนอราคา */}
+          <div className="rounded-xl border border-emerald-300 bg-emerald-50/50 dark:bg-emerald-950/20 dark:border-emerald-800 p-3.5 flex flex-col justify-between">
             <div>
-              <div className="font-bold text-steel-900">2. ส่งให้ลูกค้าพิจารณา</div>
-              <div className="text-[11px] text-steel-500">
-                {quotation.status === 'draft' ? 'สถานะ: ฉบับร่าง' : 'สถานะ: ส่งลูกค้าแล้ว'}
+              <div className="flex items-center justify-between">
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-600 text-white font-bold text-xs shadow-xs">
+                  <Check className="h-3.5 w-3.5" />
+                </span>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300">
+                  เสร็จสิ้นแล้ว
+                </span>
+              </div>
+              <div className="font-bold text-slate-900 dark:text-white mt-2 text-xs">
+                1. ออกใบเสนอราคา
+              </div>
+              <div className="text-[11px] text-slate-600 dark:text-slate-400 font-mono mt-0.5">
+                {quotation.quotation_no}
+              </div>
+              <div className="text-[11px] text-slate-500 mt-1">
+                สร้างรายการและคำนวณ BOQ ต้นทุนเรียบร้อย
               </div>
             </div>
+            <div className="mt-3 pt-2 border-t border-emerald-200 dark:border-emerald-800/60 text-[11px] font-mono text-emerald-800 dark:text-emerald-300">
+              วันที่: {quotation.issue_date ? new Date(quotation.issue_date).toLocaleDateString('th-TH') : '-'}
+            </div>
           </div>
 
-          <div className="hidden md:block text-steel-300 font-bold">➔</div>
-
-          {/* Step 3 */}
-          <div className="flex items-center gap-2.5">
-            <span className={`flex h-7 w-7 items-center justify-center rounded-lg font-bold text-xs ${
-              quotation.customer_po_no || quotation.status === 'approved'
-                ? 'bg-emerald-600 text-white shadow-xs'
-                : 'bg-steel-100 text-steel-500'
+          {/* Step 2: ส่งให้ลูกค้าพิจารณา */}
+          <div className={`rounded-xl border p-3.5 flex flex-col justify-between ${quotation.status !== 'draft'
+            ? 'border-emerald-300 bg-emerald-50/50 dark:bg-emerald-950/20 dark:border-emerald-800'
+            : 'border-sky-300 bg-sky-50/50 dark:bg-sky-950/20 dark:border-sky-800 ring-2 ring-sky-400/20'
             }`}>
-              {quotation.customer_po_no ? '✓' : '3'}
-            </span>
             <div>
-              <div className="font-bold text-steel-900">3. ลูกค้าเซ็นอนุมัติ / PO</div>
-              <div className="text-[11px] font-mono">
+              <div className="flex items-center justify-between">
+                <span className={`flex h-6 w-6 items-center justify-center rounded-full font-bold text-xs shadow-xs ${quotation.status !== 'draft' ? 'bg-emerald-600 text-white' : 'bg-sky-600 text-white animate-pulse'
+                  }`}>
+                  {quotation.status !== 'draft' ? <Check className="h-3.5 w-3.5" /> : '2'}
+                </span>
+                <span className={`text-[10px] font-bold uppercase tracking-wider ${quotation.status !== 'draft' ? 'text-emerald-800 dark:text-emerald-300' : 'text-sky-800 dark:text-sky-300'
+                  }`}>
+                  {quotation.status !== 'draft' ? 'ส่งลูกค้าแล้ว' : 'กำลังดำเนินการ'}
+                </span>
+              </div>
+              <div className="font-bold text-slate-900 dark:text-white mt-2 text-xs">
+                2. ส่งให้ลูกค้าพิจารณา
+              </div>
+              <div className="text-[11px] text-slate-500 mt-1">
+                {quotation.validity_days ? `ยืนราคา ${quotation.validity_days} วัน` : 'รอผลการพิจารณาข้อเสนอ'}
+              </div>
+            </div>
+            <div className="mt-3 pt-2 border-t border-steel-200 dark:border-slate-800 flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => setShowPrintModal(true)}
+                className="text-sky-700 dark:text-sky-400 hover:underline text-[11px] font-bold flex items-center gap-1 cursor-pointer"
+              >
+                <Printer className="h-3 w-3" />
+                <span>พิมพ์ใบเสนอราคา</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Step 3: ลูกค้าลงนามอนุมัติ / PO ลูกค้า */}
+          <div className={`rounded-xl border p-3.5 flex flex-col justify-between ${quotation.customer_po_no || quotation.status === 'approved'
+            ? 'border-emerald-300 bg-emerald-50/50 dark:bg-emerald-950/20 dark:border-emerald-800'
+            : quotation.status === 'sent'
+              ? 'border-amber-300 bg-amber-50/50 dark:bg-amber-950/20 dark:border-amber-800 ring-2 ring-amber-400/20'
+              : 'border-steel-200 bg-steel-50/40 dark:bg-slate-800/40 dark:border-slate-800 opacity-80'
+            }`}>
+            <div>
+              <div className="flex items-center justify-between">
+                <span className={`flex h-6 w-6 items-center justify-center rounded-full font-bold text-xs shadow-xs ${quotation.customer_po_no || quotation.status === 'approved'
+                  ? 'bg-emerald-600 text-white'
+                  : quotation.status === 'sent'
+                    ? 'bg-amber-500 text-slate-950 font-black'
+                    : 'bg-steel-200 text-steel-600'
+                  }`}>
+                  {quotation.customer_po_no || quotation.status === 'approved' ? <Check className="h-3.5 w-3.5" /> : '3'}
+                </span>
+                <span className={`text-[10px] font-bold uppercase tracking-wider ${quotation.customer_po_no || quotation.status === 'approved'
+                  ? 'text-emerald-800 dark:text-emerald-300'
+                  : 'text-amber-800 dark:text-amber-300'
+                  }`}>
+                  {quotation.customer_po_no ? 'รับ PO แล้ว' : 'รอลูกค้าอนุมัติ'}
+                </span>
+              </div>
+              <div className="font-bold text-slate-900 dark:text-white mt-2 text-xs">
+                3. ลูกค้าลงนามอนุมัติ / PO
+              </div>
+              <div className="text-[11px] text-slate-500 mt-1 font-mono">
                 {quotation.customer_po_no ? (
-                  <span className="font-bold text-emerald-700">PO: {quotation.customer_po_no}</span>
+                  <span className="text-emerald-700 dark:text-emerald-400 font-bold">PO: {quotation.customer_po_no}</span>
                 ) : (
-                  <button
-                    type="button"
-                    onClick={openPoModal}
-                    className="text-emerald-700 hover:underline font-bold"
-                  >
-                    + บันทึก PO ลูกค้า
-                  </button>
+                  'รอลูกค้าออก PO หรือเซ็นรับ'
                 )}
               </div>
             </div>
+            <div className="mt-3 pt-2 border-t border-steel-200 dark:border-slate-800">
+              {quotation.customer_po_no ? (
+                <button
+                  type="button"
+                  onClick={() => setShowCustomerPoDoc(true)}
+                  className="text-emerald-700 dark:text-emerald-400 hover:underline text-[11px] font-bold flex items-center gap-1 cursor-pointer"
+                >
+                  <Eye className="h-3 w-3" />
+                  <span>ดูเอกสาร PO ลูกค้า</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={openPoModal}
+                  className="text-amber-800 dark:text-amber-300 hover:underline text-[11px] font-bold flex items-center gap-1 cursor-pointer"
+                >
+                  <Plus className="h-3 w-3" />
+                  <span>+ บันทึก PO ลูกค้า</span>
+                </button>
+              )}
+            </div>
           </div>
 
-          <div className="hidden md:block text-steel-300 font-bold">➔</div>
-
-          {/* Step 4 */}
-          <div className="flex items-center gap-2.5">
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-500 text-slate-950 font-black text-xs shadow-xs">
-              4
-            </span>
+          {/* Step 4: ส่งต่อจัดซื้อ & สโตร์ */}
+          <div className={`rounded-xl border p-3.5 flex flex-col justify-between ${quotation.customer_po_no || quotation.status === 'approved'
+            ? 'border-amber-400 bg-amber-50/60 dark:bg-amber-950/30 dark:border-amber-700 ring-2 ring-amber-400/20'
+            : 'border-steel-200 bg-steel-50/40 dark:bg-slate-800/40 dark:border-slate-800 opacity-80'
+            }`}>
             <div>
-              <div className="font-bold text-steel-900">4. ส่งต่อจัดซื้อ & สโตร์</div>
-              <div className="text-[11px]">
-                <Link
-                  to={`/purchasing/po/new?quotation_id=${quotation.id}`}
-                  className="text-amber-800 hover:underline font-bold"
-                >
-                  คลิกเปิด PO ซื้อของ ➔
-                </Link>
+              <div className="flex items-center justify-between">
+                <span className={`flex h-6 w-6 items-center justify-center rounded-full font-bold text-xs shadow-xs ${quotation.customer_po_no || quotation.status === 'approved'
+                  ? 'bg-amber-500 text-slate-950 font-black'
+                  : 'bg-steel-200 text-steel-600'
+                  }`}>
+                  4
+                </span>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-amber-900 dark:text-amber-300">
+                  {quotation.customer_po_no ? 'พร้อมจัดซื้อ' : 'ขั้นตอนถัดไป'}
+                </span>
               </div>
+              <div className="font-bold text-slate-900 dark:text-white mt-2 text-xs">
+                4. ส่งต่อจัดซื้อ &amp; สโตร์
+              </div>
+              <div className="text-[11px] text-slate-500 mt-1">
+                เปิด PR หรือออก PO สั่งแผง / อินเวอร์เตอร์ / อุปกรณ์
+              </div>
+            </div>
+            <div className="mt-3 pt-2 border-t border-steel-200 dark:border-slate-800 flex items-center gap-2">
+              <Link
+                to={`/purchasing/po/new?quotation_id=${quotation.id}`}
+                className="text-amber-900 dark:text-amber-300 hover:underline text-[11px] font-bold flex items-center gap-1"
+              >
+                <ShoppingCart className="h-3 w-3" />
+                <span>เปิด PO ซื้อของ</span>
+              </Link>
+              <span className="text-steel-300">|</span>
+              <Link
+                to={`/purchasing/pr/new?quotation_id=${quotation.id}`}
+                className="text-steel-700 dark:text-slate-300 hover:underline text-[11px] font-bold flex items-center gap-1"
+              >
+                <span>เปิด PR</span>
+              </Link>
+            </div>
+          </div>
+
+          {/* Step 5: ติดตั้งส่งมอบ & บัญชี */}
+          <div className="rounded-xl border border-steel-200 bg-steel-50/40 dark:bg-slate-800/40 dark:border-slate-800 p-3.5 flex flex-col justify-between opacity-80">
+            <div>
+              <div className="flex items-center justify-between">
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-steel-200 text-steel-600 font-bold text-xs">
+                  5
+                </span>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-steel-500">
+                  ปลายทางโครงการ
+                </span>
+              </div>
+              <div className="font-bold text-slate-900 dark:text-white mt-2 text-xs">
+                5. ส่งมอบงาน &amp; วางบิล
+              </div>
+              <div className="text-[11px] text-slate-500 mt-1">
+                ติดตั้งระบบ ตรวจรับของ และส่งฝ่ายบัญชีวางบิล
+              </div>
+            </div>
+            <div className="mt-3 pt-2 border-t border-steel-200 dark:border-slate-800 text-[11px] text-steel-500">
+              สถานะ: รอส่งมอบโครงการ
             </div>
           </div>
         </div>
@@ -361,7 +512,7 @@ export default function QuotationDetail() {
         <div className="rounded-2xl border border-emerald-300 dark:border-emerald-800/80 bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 dark:from-emerald-950/40 dark:via-slate-900 dark:to-emerald-950/40 p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3.5">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-xs text-xl">
-              ✍️
+              ️
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
@@ -388,14 +539,14 @@ export default function QuotationDetail() {
               onClick={() => setShowCustomerPoDoc(true)}
               className="rounded-xl border border-emerald-300 dark:border-emerald-700 bg-white dark:bg-slate-800 px-3.5 py-2 text-xs font-bold text-emerald-900 dark:text-emerald-200 hover:bg-emerald-50 dark:hover:bg-slate-700 transition shadow-2xs flex items-center gap-1.5 cursor-pointer"
             >
-              <span>📄</span>
+              <span></span>
               <span>เปิดดูไฟล์ PO ลูกค้า</span>
             </button>
             <Link
               to={`/purchasing/po/new?quotation_id=${quotation.id}`}
               className="rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 px-4 py-2 text-xs font-black shadow-xs transition flex items-center gap-1.5"
             >
-              <span>🛒</span>
+              <span></span>
               <span>สั่งซื้อของตาม PO นี้</span>
             </Link>
           </div>
@@ -409,7 +560,7 @@ export default function QuotationDetail() {
           {/* ข้อมูลลูกค้า */}
           <div className="rounded-xl border border-steel-200 bg-white p-5 shadow-sm">
             <h2 className="text-base font-bold text-ink flex items-center gap-2 border-b border-steel-100 pb-3 mb-4">
-              <span>🏢</span>
+              <Building2 className="h-4 w-4 text-sky-700" />
               <span>ข้อมูลลูกค้า (Customer Details)</span>
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
@@ -439,7 +590,7 @@ export default function QuotationDetail() {
           {/* ข้อมูลโครงการและคลังสินค้า */}
           <div className="rounded-xl border border-steel-200 bg-white p-5 shadow-sm">
             <h2 className="text-base font-bold text-ink flex items-center gap-2 border-b border-steel-100 pb-3 mb-4">
-              <span>🏗️</span>
+              <FolderGit2 className="h-4 w-4 text-amber-700" />
               <span>โครงการและคลังสินค้าอ้างอิง</span>
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
@@ -451,7 +602,7 @@ export default function QuotationDetail() {
                       [{quotation.projects.project_code}] {quotation.projects.project_name}
                     </span>
                   ) : (
-                    <span className="text-steel-500 font-normal">🏢 ของกลางบริษัท / สต็อกส่วนกลาง</span>
+                    <span className="text-steel-500 font-normal">ของกลางบริษัท / สต็อกส่วนกลาง</span>
                   )}
                 </div>
               </div>
@@ -471,7 +622,7 @@ export default function QuotationDetail() {
         <div className="space-y-6">
           <div className="rounded-xl border border-steel-200 bg-white p-5 shadow-sm">
             <h2 className="text-base font-bold text-ink flex items-center gap-2 border-b border-steel-100 pb-3 mb-4">
-              <span>📋</span>
+              <span></span>
               <span>ข้อมูลเอกสาร & การเงิน</span>
             </h2>
             <div className="space-y-3 text-sm">
@@ -489,7 +640,7 @@ export default function QuotationDetail() {
               </div>
               <div className="flex justify-between py-1 border-b border-steel-50">
                 <span className="text-steel-500">พนักงานขาย:</span>
-                <span className="font-semibold text-ink">👤 {quotation.sales_person || '-'}</span>
+                <span className="font-semibold text-ink"> {quotation.sales_person || '-'}</span>
               </div>
               <div className="flex justify-between py-1">
                 <span className="text-steel-500">สกุลเงิน:</span>
@@ -501,7 +652,7 @@ export default function QuotationDetail() {
           {/* ลายเซ็นอิเล็กทรอนิกส์และเอกสารแนบ */}
           <div className="rounded-xl border border-steel-200 bg-white p-5 shadow-sm">
             <h2 className="text-base font-bold text-ink flex items-center gap-2 border-b border-steel-100 pb-3 mb-4">
-              <span>🖋️</span>
+              <span>️</span>
               <span>ลายเซ็นและเอกสารแนบ</span>
             </h2>
             <div className="space-y-4">
@@ -548,7 +699,7 @@ export default function QuotationDetail() {
       <div className="rounded-xl border border-steel-200 bg-white shadow-sm overflow-hidden">
         <div className="bg-steel-50 px-5 py-3 border-b border-steel-200 flex items-center justify-between">
           <h2 className="text-base font-bold text-ink flex items-center gap-2">
-            <span>📦</span>
+            <span></span>
             <span>รายการสินค้าและบริการ (Itemized Table)</span>
           </h2>
           <span className="text-xs text-steel-500 font-medium">
@@ -642,7 +793,7 @@ export default function QuotationDetail() {
         {/* หมายเหตุแสดงให้ลูกค้าเห็น */}
         <div className="rounded-xl border border-steel-200 bg-white p-5 shadow-sm">
           <h3 className="font-bold text-ink text-sm flex items-center gap-2 mb-2">
-            <span>📝</span>
+            <span></span>
             <span>หมายเหตุและเงื่อนไข (แสดงให้ลูกค้าเห็น)</span>
           </h3>
           <div className="whitespace-pre-line text-xs text-steel-600 bg-steel-50 p-4 rounded-lg min-h-[90px] border border-steel-100">
@@ -653,7 +804,7 @@ export default function QuotationDetail() {
         {/* โน้ตภายในบริษัท */}
         <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-5 shadow-sm">
           <h3 className="font-bold text-amber-900 text-sm flex items-center gap-2 mb-2">
-            <span>🔒</span>
+            <span></span>
             <span>โน้ตภายในบริษัท (ทีมงานเห็นเท่านั้น)</span>
           </h3>
           <div className="whitespace-pre-line text-xs text-amber-800 bg-amber-50 p-4 rounded-lg min-h-[90px] border border-amber-200/60">
@@ -671,15 +822,15 @@ export default function QuotationDetail() {
         />
       )}
 
-      {/* โมดัลแสดงเอกสารใบสั่งซื้อจากลูกค้า (Customer PO Document Viewer) */}
+      {/* โมดัลแสดงเอกสารใบสั่งซื้อจากลูกค้า (Customer PO Document Viewer & Printable Report) */}
       {showCustomerPoDoc && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-xs overflow-y-auto">
-          <div className="w-full max-w-3xl rounded-2xl bg-white dark:bg-slate-900 shadow-2xl border border-steel-200 dark:border-slate-800 overflow-hidden my-6 animate-in fade-in zoom-in-95 duration-150">
-            {/* Header */}
-            <div className="bg-slate-900 p-4 sm:p-5 text-white flex items-center justify-between border-b border-slate-800">
+          <div className="w-full max-w-4xl rounded-2xl bg-white dark:bg-slate-900 shadow-2xl border border-steel-200 dark:border-slate-800 overflow-hidden my-6 animate-in fade-in zoom-in-95 duration-150">
+            {/* Header (ซ่อนตอนพิมพ์) */}
+            <div className="no-print bg-slate-900 p-4 sm:p-5 text-white flex items-center justify-between border-b border-slate-800">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-xs text-lg">
-                  ✍️
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-xs">
+                  <FileCheck className="h-5 w-5" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
@@ -687,7 +838,7 @@ export default function QuotationDetail() {
                       ใบสั่งซื้อจากลูกค้า (Customer Purchase Order)
                     </span>
                     <span className="rounded-full bg-emerald-400/20 text-emerald-300 border border-emerald-400/30 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider">
-                      VERIFIED & APPROVED
+                      VERIFIED &amp; APPROVED
                     </span>
                   </div>
                   <p className="text-xs text-slate-400 font-mono">
@@ -698,9 +849,10 @@ export default function QuotationDetail() {
               <button
                 type="button"
                 onClick={() => setShowCustomerPoDoc(false)}
-                className="text-slate-400 hover:text-white rounded-lg p-2 text-lg cursor-pointer"
+                className="text-slate-400 hover:text-white rounded-lg p-2 transition cursor-pointer"
+                title="ปิดหน้าต่าง"
               >
-                ✕
+                <X className="h-5 w-5" />
               </button>
             </div>
 
@@ -758,66 +910,74 @@ export default function QuotationDetail() {
                 {/* PO Header */}
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b border-steel-200 dark:border-slate-800 pb-5">
                   <div>
-                    <span className="text-[11px] font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
-                      CUSTOMER / ผู้สั่งซื้อ
-                    </span>
-                    <h3 className="text-lg font-black text-slate-900 dark:text-white mt-0.5">
-                      {quotation.customer_name}
-                    </h3>
-                    <div className="text-xs text-slate-600 dark:text-slate-400 mt-1 space-y-0.5">
-                      <div>สาขา: {quotation.customer_branch || 'สำนักงานใหญ่'}</div>
-                      <div>เลขประจำตัวผู้เสียภาษี: <span className="font-mono">{quotation.customer_tax_id || '-'}</span></div>
-                      {quotation.customer_address && <div>ที่อยู่: {quotation.customer_address} {quotation.customer_postal_code}</div>}
-                    </div>
+                    <h1 className="text-lg font-black text-black">บริษัท อันวา คอนสตรัคชั่น แอนด์ เอ็นจิเนียริ่ง จำกัด</h1>
+                    <p className="text-xs text-neutral-700 font-semibold">ANVA CONSTRUCTION &amp; ENGINEERING CO., LTD.</p>
+                    <p className="text-[11px] text-neutral-600 mt-1">สำนักงานใหญ่: อาคารเอ็นจิเนียริ่ง คอมเพล็กซ์ กรุงเทพมหานคร | โทร 02-123-4567</p>
+                    <p className="text-[11px] text-neutral-600">เลขประจำตัวผู้เสียภาษีอากร: 0105562098711</p>
                   </div>
-
-                  <div className="sm:text-right bg-emerald-50/70 dark:bg-emerald-950/40 p-4 rounded-xl border border-emerald-200 dark:border-emerald-800/80 sm:min-w-[240px]">
-                    <div className="text-xs font-black text-emerald-800 dark:text-emerald-300 uppercase tracking-wider">
-                      PURCHASE ORDER (PO)
+                  <div className="sm:text-right">
+                    <div className="rounded border-2 border-black bg-neutral-100 px-4 py-2 inline-block text-center">
+                      <h2 className="text-base font-extrabold uppercase tracking-wider text-black">ใบสั่งซื้อจากลูกค้า</h2>
+                      <p className="text-[10px] font-bold text-neutral-700">CUSTOMER PURCHASE ORDER (PO)</p>
                     </div>
-                    <div className="text-base font-black text-emerald-950 dark:text-emerald-100 font-mono mt-0.5">
-                      {quotation.customer_po_no}
-                    </div>
-                    <div className="text-xs text-slate-600 dark:text-slate-400 mt-2 space-y-0.5">
-                      <div>วันที่ออกเอกสาร: <b className="font-mono">{quotation.customer_po_date ? new Date(quotation.customer_po_date).toLocaleDateString('th-TH') : new Date(quotation.issue_date).toLocaleDateString('th-TH')}</b></div>
+                    <div className="mt-2 text-xs space-y-0.5 text-neutral-800">
+                      <div>เลขที่ PO ลูกค้า: <b className="font-mono text-sm text-black">{quotation.customer_po_no}</b></div>
+                      <div>วันที่ออกเอกสาร: <b>{quotation.customer_po_date ? new Date(quotation.customer_po_date).toLocaleDateString('th-TH') : new Date(quotation.issue_date).toLocaleDateString('th-TH')}</b></div>
                       <div>อ้างอิงใบเสนอราคา: <b className="font-mono">{quotation.quotation_no}</b></div>
+                      {quotation.projects && (
+                        <div>โครงการ: <b>[{quotation.projects.project_code}] {quotation.projects.project_name}</b></div>
+                      )}
                     </div>
                   </div>
                 </div>
 
-                {/* ผู้จำหน่าย (Vendor) */}
-                <div className="rounded-xl border border-steel-200 dark:border-slate-800 bg-steel-50/60 dark:bg-slate-800/60 p-3.5 text-xs">
-                  <div className="text-[10px] font-bold text-steel-500 uppercase tracking-wider">สั่งซื้อถึง (VENDOR / SUPPLIER):</div>
-                  <div className="font-bold text-slate-900 dark:text-white mt-0.5">บริษัท แอนวา พาวเวอร์ จำกัด (ANVA POWER CO., LTD.)</div>
-                  <div className="text-slate-600 dark:text-slate-400 text-[11px] mt-0.5">
-                    สำนักงานใหญ่ | เลขประจำตัวผู้เสียภาษี: 0105562098711 | ระบบวิศวกรรมพลังงานแสงอาทิตย์ครบวงจร
+                {/* Grid 2 ช่อง: ข้อมูลลูกค้า & ข้อมูลผู้จำหน่าย */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 rounded border border-neutral-300 p-4 text-xs bg-neutral-50/60">
+                  <div className="space-y-1">
+                    <div className="text-[11px] font-bold uppercase tracking-wider text-neutral-700 border-b border-neutral-200 pb-1">
+                      ผู้สั่งซื้อ (CUSTOMER / CLIENT):
+                    </div>
+                    <div className="text-sm font-extrabold text-black">{quotation.customer_name}</div>
+                    <div>สาขา: {quotation.customer_branch || 'สำนักงานใหญ่'}</div>
+                    <div>เลขประจำตัวผู้เสียภาษี: <span className="font-mono font-bold">{quotation.customer_tax_id || '-'}</span></div>
+                    <div>ที่อยู่: {quotation.customer_address || '-'} {quotation.customer_postal_code || ''}</div>
+                  </div>
+
+                  <div className="space-y-1 sm:border-l sm:border-neutral-300 sm:pl-4">
+                    <div className="text-[11px] font-bold uppercase tracking-wider text-neutral-700 border-b border-neutral-200 pb-1">
+                      สั่งซื้อถึง (SUPPLIER / CONTRACTOR):
+                    </div>
+                    <div className="text-sm font-extrabold text-black">บริษัท อันวา คอนสตรัคชั่น แอนด์ เอ็นจิเนียริ่ง จำกัด</div>
+                    <div>สาขา: สำนักงานใหญ่ (00000)</div>
+                    <div>เลขประจำตัวผู้เสียภาษี: <span className="font-mono font-bold">0105562098711</span></div>
+                    <div>ระบบวิศวกรรมพลังงานแสงอาทิตย์และงานก่อสร้างครบวงจร</div>
                   </div>
                 </div>
 
                 {/* Items Table */}
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs">
+                  <table className="w-full text-left text-xs border border-neutral-300">
                     <thead>
-                      <tr className="border-b border-steel-200 dark:border-slate-800 bg-steel-100/70 dark:bg-slate-800 text-steel-700 dark:text-slate-300 font-bold uppercase">
-                        <th className="py-2.5 px-3 text-center w-10">#</th>
-                        <th className="py-2.5 px-3">รายการสินค้า / บริการที่สั่งซื้อ</th>
-                        <th className="py-2.5 px-3 text-right w-24">จำนวน</th>
-                        <th className="py-2.5 px-3 text-center w-20">หน่วย</th>
-                        <th className="py-2.5 px-3 text-right w-28">ราคา/หน่วย</th>
+                      <tr className="border-b border-neutral-300 bg-neutral-100 text-neutral-800 font-bold uppercase">
+                        <th className="py-2.5 px-3 text-center w-10 border-r border-neutral-300">#</th>
+                        <th className="py-2.5 px-3 border-r border-neutral-300">รายการสินค้า / บริการที่สั่งซื้อ</th>
+                        <th className="py-2.5 px-3 text-right w-24 border-r border-neutral-300">จำนวน</th>
+                        <th className="py-2.5 px-3 text-center w-20 border-r border-neutral-300">หน่วย</th>
+                        <th className="py-2.5 px-3 text-right w-28 border-r border-neutral-300">ราคา/หน่วย</th>
                         <th className="py-2.5 px-3 text-right w-32">จำนวนเงิน</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-steel-100 dark:divide-slate-800">
+                    <tbody className="divide-y divide-neutral-200">
                       {items.map((it, idx) => (
                         <tr key={idx}>
-                          <td className="py-2 px-3 text-center text-slate-400 font-mono">{idx + 1}</td>
-                          <td className="py-2 px-3 font-semibold text-slate-900 dark:text-slate-100">{it.item_name}</td>
-                          <td className="py-2 px-3 text-right font-mono font-bold text-slate-900 dark:text-slate-100">
+                          <td className="py-2 px-3 text-center text-neutral-600 font-mono border-r border-neutral-200">{idx + 1}</td>
+                          <td className="py-2 px-3 font-semibold text-neutral-900 border-r border-neutral-200">{it.item_name}</td>
+                          <td className="py-2 px-3 text-right font-mono font-bold text-neutral-900 border-r border-neutral-200">
                             {formatIntQty(it.quantity)}
                           </td>
-                          <td className="py-2 px-3 text-center text-slate-500">{it.unit || 'รายการ'}</td>
-                          <td className="py-2 px-3 text-right font-mono">{baht(it.unit_price || 0)}</td>
-                          <td className="py-2 px-3 text-right font-mono font-bold text-slate-900 dark:text-slate-100">
+                          <td className="py-2 px-3 text-center text-neutral-600 border-r border-neutral-200">{it.unit || 'รายการ'}</td>
+                          <td className="py-2 px-3 text-right font-mono border-r border-neutral-200">{baht(it.unit_price || 0)}</td>
+                          <td className="py-2 px-3 text-right font-mono font-bold text-neutral-900">
                             {baht(it.total_amount || 0)}
                           </td>
                         </tr>
@@ -827,14 +987,14 @@ export default function QuotationDetail() {
                 </div>
 
                 {/* Summary & Totals */}
-                <div className="flex flex-col sm:flex-row justify-between items-start gap-4 pt-3 border-t border-steel-200 dark:border-slate-800">
-                  <div className="text-xs text-slate-500 space-y-1">
-                    <div>เงื่อนไข: ส่งมอบและติดตั้งตามรายละเอียดโครงการ</div>
+                <div className="flex flex-col sm:flex-row justify-between items-start gap-4 pt-3 border-t-2 border-black">
+                  <div className="text-xs text-neutral-600 space-y-1">
+                    <div>เงื่อนไข: ส่งมอบและติดตั้งตามรายละเอียดสัญญาและใบเสนอราคา</div>
                     <div>สถานที่ส่งมอบ: {quotation.customer_address || 'หน้างานโครงการลูกค้า'}</div>
                   </div>
 
                   <div className="w-full sm:w-72 space-y-1.5 text-xs">
-                    <div className="flex justify-between text-slate-600 dark:text-slate-400">
+                    <div className="flex justify-between text-neutral-700">
                       <span>รวมเป็นเงิน:</span>
                       <span className="font-mono font-semibold">{baht(quotation.subtotal || 0)}</span>
                     </div>
@@ -844,48 +1004,84 @@ export default function QuotationDetail() {
                         <span className="font-mono">-{baht(quotation.discount_amount)}</span>
                       </div>
                     )}
-                    <div className="flex justify-between text-slate-600 dark:text-slate-400">
+                    <div className="flex justify-between text-neutral-700">
                       <span>ภาษีมูลค่าเพิ่ม 7%:</span>
                       <span className="font-mono font-semibold">{baht(quotation.vat_amount || 0)}</span>
                     </div>
-                    <div className="flex justify-between text-sm font-black text-emerald-900 dark:text-emerald-300 pt-2 border-t border-steel-200 dark:border-slate-800">
+                    <div className="flex justify-between text-sm font-black text-black pt-2 border-t border-neutral-300">
                       <span>ยอดสุทธิทั้งสิ้น:</span>
                       <span className="font-mono text-base">{baht(quotation.grand_total || quotation.total_amount || 0)}</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Signer Box */}
-                <div className="pt-4 border-t border-steel-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div className="rounded-xl border border-dashed border-emerald-300 dark:border-emerald-700 bg-emerald-50/50 dark:bg-emerald-950/20 p-3 flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-emerald-600 text-white flex items-center justify-center font-black text-lg">
-                      ✓
+                {/* ถ้ามีไฟล์แนบที่อัปโหลดไว้จริง (รูปภาพ หรือ PDF) ให้แสดงตัวอย่างในเอกสาร */}
+                {quotation.customer_po_file_url && !quotation.customer_po_file_url.includes('example.com') && (
+                  <div className="rounded-xl border border-neutral-300 p-3 bg-neutral-50/50">
+                    <div className="text-xs font-bold text-neutral-800 mb-2 flex items-center justify-between">
+                      <span className="flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-emerald-700" />
+                        <span>หลักฐานเอกสารใบสั่งซื้อของลูกค้าที่แนบไว้:</span>
+                      </span>
+                      <a
+                        href={quotation.customer_po_file_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="no-print text-xs font-bold text-sky-600 hover:underline flex items-center gap-1"
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                        <span>เปิดไฟล์แนบต้นฉบับ ↗</span>
+                      </a>
                     </div>
-                    <div>
-                      <div className="text-[10px] font-black uppercase tracking-wider text-emerald-800 dark:text-emerald-300">
-                        OFFICIAL CUSTOMER APPROVAL
+                    {quotation.customer_po_file_url.startsWith('data:image') || /\.(png|jpg|jpeg|webp|gif)/i.test(quotation.customer_po_file_url) ? (
+                      <div className="flex justify-center bg-white p-2 rounded-lg border border-neutral-200">
+                        <img
+                          src={quotation.customer_po_file_url}
+                          alt="Customer PO Evidence"
+                          className="max-h-72 max-w-full rounded object-contain shadow-2xs"
+                        />
                       </div>
-                      <div className="text-xs font-bold text-emerald-950 dark:text-emerald-100">
-                        เอกสารใบสั่งซื้อได้รับการตรวจสอบและลงนามถูกต้องสมบูรณ์
+                    ) : (
+                      <div className="rounded-lg overflow-hidden border border-neutral-300">
+                        <iframe
+                          src={quotation.customer_po_file_url}
+                          title="Customer PO PDF"
+                          className="w-full h-80 rounded-lg"
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Signatures Dual Box (ช่องลงนาม 2 ฝ่าย พร้อมพิมพ์) */}
+                <div className="pt-6 border-t border-neutral-300 grid grid-cols-2 gap-8 text-center text-xs">
+                  <div className="space-y-4">
+                    <div className="text-neutral-700 font-bold">ผู้มีอำนาจลงนามของผู้สั่งซื้อ (Customer)</div>
+                    <div className="h-14 border-b border-dashed border-neutral-400 mx-6"></div>
+                    <div>
+                      <div className="font-bold text-black">{quotation.customer_signer_name || quotation.customer_name}</div>
+                      <div className="text-neutral-500 text-[11px] mt-0.5">
+                        วันที่: {quotation.customer_po_date ? new Date(quotation.customer_po_date).toLocaleDateString('th-TH') : new Date(quotation.issue_date).toLocaleDateString('th-TH')}
                       </div>
                     </div>
                   </div>
 
-                  <div className="text-right sm:pr-4">
-                    <div className="text-xs text-slate-400">ผู้มีอำนาจลงนามของลูกค้า:</div>
-                    <div className="text-sm font-black text-slate-900 dark:text-white mt-0.5">
-                      {quotation.customer_signer_name || 'ผู้มีอำนาจลงนาม'}
-                    </div>
-                    <div className="text-[11px] text-slate-500 font-mono mt-0.5">
-                      วันที่ลงนาม: {quotation.customer_po_date ? new Date(quotation.customer_po_date).toLocaleDateString('th-TH') : new Date(quotation.issue_date).toLocaleDateString('th-TH')}
+                  <div className="space-y-4">
+                    <div className="text-neutral-700 font-bold">ผู้รับคำสั่งซื้อ (Acknowledged &amp; Accepted By ANVA &amp; CO.)</div>
+                    <div className="h-14 border-b border-dashed border-neutral-400 mx-6"></div>
+                    <div>
+                      <div className="font-bold text-black">บริษัท อันวา คอนสตรัคชั่น แอนด์ เอ็นจิเนียริ่ง จำกัด</div>
+                      <div className="text-neutral-500 text-[11px] mt-0.5">
+                        วันที่: {new Date().toLocaleDateString('th-TH')}
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Modal Actions Footer */}
-            <div className="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-slate-900 px-6 py-4 border-t border-steel-200 dark:border-slate-800">
+            {/* Modal Actions Footer (ซ่อนตอนพิมพ์) */}
+            <div className="no-print flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-slate-900 px-6 py-4 border-t border-steel-200 dark:border-slate-800">
               <div className="flex items-center gap-2">
                 <button
                   type="button"
@@ -895,7 +1091,7 @@ export default function QuotationDetail() {
                   }}
                   className="rounded-xl border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-steel-50 dark:hover:bg-slate-700 px-3.5 py-2 text-xs font-bold text-steel-700 dark:text-slate-200 transition shadow-2xs flex items-center gap-1.5 cursor-pointer"
                 >
-                  <span>✏️</span>
+                  <Edit3 className="h-4 w-4 text-amber-600" />
                   <span>แก้ไขข้อมูล / แนบไฟล์ใหม่</span>
                 </button>
                 {quotation.customer_po_file_url && !quotation.customer_po_file_url.includes('example.com') && (
@@ -904,7 +1100,7 @@ export default function QuotationDetail() {
                     onClick={() => openFile(quotation.customer_po_file_url)}
                     className="rounded-xl border border-sky-300 dark:border-sky-700 bg-sky-50 dark:bg-sky-950/40 hover:bg-sky-100 px-3.5 py-2 text-xs font-bold text-sky-800 dark:text-sky-200 transition shadow-2xs flex items-center gap-1.5 cursor-pointer"
                   >
-                    <span>🔗</span>
+                    <ExternalLink className="h-4 w-4" />
                     <span>เปิดไฟล์แนบต้นฉบับ</span>
                   </button>
                 )}
@@ -914,17 +1110,18 @@ export default function QuotationDetail() {
                 <button
                   type="button"
                   onClick={() => window.print()}
-                  className="rounded-xl border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-steel-50 dark:hover:bg-slate-700 px-4 py-2 text-xs font-bold text-steel-700 dark:text-slate-200 transition shadow-2xs flex items-center gap-1.5 cursor-pointer"
+                  className="rounded-xl bg-sky-700 hover:bg-sky-800 text-white px-5 py-2 text-xs font-bold transition shadow-xs flex items-center gap-1.5 cursor-pointer"
                 >
-                  <span>🖨️</span>
+                  <Printer className="h-4 w-4" />
                   <span>พิมพ์เอกสาร PO</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowCustomerPoDoc(false)}
-                  className="rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600 text-white px-5 py-2 text-xs font-bold transition shadow-xs cursor-pointer"
+                  className="rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600 text-white px-5 py-2 text-xs font-bold transition shadow-xs cursor-pointer flex items-center gap-1.5"
                 >
-                  ✕ ปิดหน้าต่าง
+                  <X className="h-4 w-4" />
+                  <span>ปิดหน้าต่าง</span>
                 </button>
               </div>
             </div>
@@ -948,9 +1145,10 @@ export default function QuotationDetail() {
               <button
                 type="button"
                 onClick={() => setShowPoModal(false)}
-                className="text-steel-400 hover:text-white text-lg cursor-pointer"
+                className="text-steel-400 hover:text-white rounded-lg p-1.5 transition cursor-pointer"
+                title="ปิด"
               >
-                ✕
+                <X className="h-5 w-5" />
               </button>
             </div>
 
@@ -1010,7 +1208,7 @@ export default function QuotationDetail() {
                   />
                   {customerPoFileUrl && (
                     <div className="text-[11px] text-emerald-700 font-semibold flex items-center gap-1.5 bg-emerald-50 p-2 rounded-lg border border-emerald-200">
-                      <span>✓</span>
+                      <span></span>
                       <span>แนบไฟล์เรียบร้อยแล้ว</span>
                       <a href={customerPoFileUrl} target="_blank" rel="noreferrer" className="underline ml-auto">
                         ดูไฟล์
@@ -1021,7 +1219,7 @@ export default function QuotationDetail() {
               </div>
 
               <div className="rounded-xl bg-steel-50 p-3 border border-steel-200 text-steel-600 text-[11px] space-y-1">
-                <div className="font-bold text-steel-800">💡 สิ่งที่จะเกิดขึ้นเมื่อกดยืนยัน:</div>
+                <div className="font-bold text-steel-800">สิ่งที่จะเกิดขึ้นเมื่อกดยืนยัน:</div>
                 <div>1. สถานะใบเสนอราคาจะเปลี่ยนเป็น <b>ลูกค้าอนุมัติ (Approved)</b> ทันที</div>
                 <div>2. บันทึกเลขที่ PO และหลักฐานการเซ็นรับของลูกค้าในระบบ</div>
                 <div>3. พร้อมส่งต่อรายการวัสดุให้ฝ่ายจัดซื้อเปิด PO สั่งซื้อต่อไป</div>
@@ -1038,9 +1236,10 @@ export default function QuotationDetail() {
                 <button
                   type="submit"
                   disabled={poBusy}
-                  className="rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white px-5 py-2 text-xs font-black shadow-sm transition disabled:opacity-50 flex items-center gap-2 cursor-pointer"
+                  className="rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white px-5 py-2 text-xs font-black shadow-sm transition disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
                 >
-                  <span>{poBusy ? 'กำลังบันทึก...' : '✓ บันทึกยืนยัน PO ลูกค้า'}</span>
+                  <CheckCircle2 className="h-4 w-4" />
+                  <span>{poBusy ? 'กำลังบันทึก...' : 'บันทึกยืนยัน PO ลูกค้า'}</span>
                 </button>
               </div>
             </form>

@@ -118,7 +118,7 @@ export default function ChartOfAccountsPage() {
           }`}
         >
           <span>{toastMsg.text}</span>
-          <button onClick={() => setToastMsg({ text: '', type: '' })} className="text-xs">✕</button>
+          <button onClick={() => setToastMsg({ text: '', type: '' })} className="text-xs"></button>
         </div>
       )}
 
@@ -366,12 +366,12 @@ function AccountFormModal({ account, onClose, onSuccess }) {
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="text-steel-400 hover:text-steel-600 text-sm">✕</button>
+          <button onClick={onClose} className="text-steel-400 hover:text-steel-600 text-sm"></button>
         </div>
 
         {error && (
           <div className="mt-3 p-3 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-700 font-medium">
-            ⚠️ {error}
+            {error}
           </div>
         )}
 
@@ -451,7 +451,7 @@ function AccountFormModal({ account, onClose, onSuccess }) {
               disabled={saving}
               className="px-5 py-2 bg-sky-700 text-white rounded-lg hover:bg-sky-800 font-bold shadow flex items-center gap-1.5 disabled:opacity-50"
             >
-              {saving ? 'กำลังบันทึก...' : '💾 บันทึกผังบัญชี'}
+              {saving ? 'กำลังบันทึก...' : ' บันทึกผังบัญชี'}
             </button>
           </div>
         </form>

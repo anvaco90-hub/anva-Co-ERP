@@ -247,7 +247,7 @@ export default function TaxReportsPage() {
                 : 'bg-white text-steel-600 hover:bg-steel-100 border border-steel-200'
             }`}
           >
-            📑 รายงานภาษีขาย (Output VAT - ภ.พ.30)
+            รายงานภาษีขาย (Output VAT - ภ.พ.30)
           </button>
           <button
             onClick={() => setActiveTab('input_vat')}
@@ -257,7 +257,7 @@ export default function TaxReportsPage() {
                 : 'bg-white text-steel-600 hover:bg-steel-100 border border-steel-200'
             }`}
           >
-            🧾 รายงานภาษีซื้อ (Input VAT - ภ.พ.30)
+            รายงานภาษีซื้อ (Input VAT - ภ.พ.30)
           </button>
           <button
             onClick={() => setActiveTab('wht')}
@@ -267,7 +267,7 @@ export default function TaxReportsPage() {
                 : 'bg-white text-steel-600 hover:bg-steel-100 border border-steel-200'
             }`}
           >
-            📋 รายงานภาษีหัก ณ ที่จ่าย (WHT - ภ.ง.ด.3 / 53)
+            รายงานภาษีหัก ณ ที่จ่าย (WHT - ภ.ง.ด.3 / 53)
           </button>
         </div>
 

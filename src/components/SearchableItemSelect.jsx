@@ -102,7 +102,7 @@ export default function SearchableItemSelect({
               onClick={() => setQuery('')}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-steel-400 hover:text-steel-600 dark:text-slate-400 dark:hover:text-slate-200"
             >
-              ✕
+              
             </button>
           )}
 

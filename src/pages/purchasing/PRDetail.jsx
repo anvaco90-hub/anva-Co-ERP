@@ -156,7 +156,7 @@ export default function PRDetail() {
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
                   }`}
               >
-                <span>🌐 เว็บ</span>
+                <span> เว็บ</span>
               </button>
               <button
                 type="button"
@@ -166,7 +166,7 @@ export default function PRDetail() {
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
                   }`}
               >
-                <span>📄 รายงาน A4</span>
+                <span>รายงาน A4</span>
               </button>
             </div>
 
@@ -394,7 +394,7 @@ export default function PRDetail() {
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
                           <span className="font-mono font-bold text-sm text-emerald-800 dark:text-emerald-300">
-                            🛒 {p.po_no}
+                            {p.po_no}
                           </span>
                           <span className="text-[11px] text-slate-500 dark:text-slate-400">
                             ({formatThaiDate(p.order_date)})
@@ -476,8 +476,7 @@ export default function PRDetail() {
             <div className="flex items-start justify-between border-b-2 border-slate-900 pb-4">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-xl bg-slate-900 text-amber-400 font-black flex items-center justify-center text-2xl shadow-sm">
-                  ⚡
-                </div>
+                  </div>
                 <div>
                   <h2 className="text-lg font-black tracking-tight text-slate-900">
                     บริษัท อันวาแอนด์โค จำกัด (ANVA & CO., LTD.)

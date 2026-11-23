@@ -18,7 +18,7 @@ import Button from './Button'
 
 /**
  * ANVA & Co ERP Standard Universal List Toolbar
- * Standard Order: [Search] [Filters ▾] [Date Range ▾] [Status ▾] ... [View Modes] [Export ▾] [Columns ⚙] [+ Primary Action]
+ * Standard Order: [Search] [Filters ▾] [Date Range ▾] [Status ▾] ... [View Modes] [Export ▾] [Columns ] [+ Primary Action]
  */
 export default function ListToolbar({
   search = '',
@@ -306,7 +306,7 @@ export default function ListToolbar({
                     }}
                     className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-input text-[var(--text)] hover:bg-[var(--surface-2)] transition cursor-pointer text-left"
                   >
-                    <span>📊</span>
+                    <span></span>
                     <span>Excel (.xlsx)</span>
                   </button>
                   <button
@@ -317,7 +317,7 @@ export default function ListToolbar({
                     }}
                     className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-input text-[var(--text)] hover:bg-[var(--surface-2)] transition cursor-pointer text-left"
                   >
-                    <span>📄</span>
+                    <span></span>
                     <span>CSV (.csv)</span>
                   </button>
                   <button
@@ -328,7 +328,7 @@ export default function ListToolbar({
                     }}
                     className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-input text-[var(--text)] hover:bg-[var(--surface-2)] transition cursor-pointer text-left"
                   >
-                    <span>📑</span>
+                    <span></span>
                     <span>PDF (.pdf)</span>
                   </button>
                 </div>

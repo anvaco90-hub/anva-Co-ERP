@@ -1,5 +1,6 @@
 import { baht } from '../../lib/projects'
 import { PAYMENT_TYPES } from '../../pages/purchasing/POForm'
+import { Printer, X } from 'lucide-react'
 
 export default function PODocumentModal({ po, items, onClose }) {
   if (!po) return null
@@ -46,20 +47,20 @@ export default function PODocumentModal({ po, items, onClose }) {
         {/* แถบควบคุมด้านบน (ไม่แสดงในตอนพิมพ์) */}
         <div className="no-print flex items-center justify-between border-b border-steel-200 bg-steel-100 px-6 py-3">
           <div className="flex items-center gap-2">
-            <span className="text-xl">📄</span>
+            <Printer className="h-5 w-5 text-emerald-700" />
             <span className="font-bold text-ink">พิมพ์ใบสั่งซื้อ / บันทึก PDF (PO: {po.po_no})</span>
           </div>
           <div className="flex items-center gap-3">
             <button
               onClick={handlePrint}
-              className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-md hover:bg-emerald-700 transition"
+              className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-md hover:bg-emerald-700 transition cursor-pointer"
             >
-              <span>🖨️</span>
+              <Printer className="h-4 w-4" />
               <span>พิมพ์ใบสั่งซื้อ / บันทึกเป็น PDF</span>
             </button>
             <button
               onClick={onClose}
-              className="rounded-lg border border-steel-300 bg-white px-3 py-2 text-sm font-medium text-steel-700 hover:bg-steel-50"
+              className="rounded-lg border border-steel-300 bg-white px-3 py-2 text-sm font-medium text-steel-700 hover:bg-steel-50 cursor-pointer"
             >
               ปิดหน้าต่าง
             </button>
@@ -111,7 +112,7 @@ export default function PODocumentModal({ po, items, onClose }) {
               <div className="space-y-1 border-l border-neutral-200 pl-4">
                 <span className="font-bold text-neutral-700 underline">ส่งมอบให้โครงการ / PROJECT:</span>
                 <div className="font-bold text-sm">
-                  {po.custom_project_name || (po.projects ? `${po.projects.project_code} ${po.projects.project_name}` : '🏢 ของกลางบริษัท / สต็อกส่วนกลาง')}
+                  {po.custom_project_name || (po.projects ? `${po.projects.project_code} ${po.projects.project_name}` : 'ของกลางบริษัท / สต็อกส่วนกลาง')}
                 </div>
                 {po.customer_name && (
                   <div className="text-neutral-800">ลูกค้า / ผู้ว่าจ้าง: <b>{po.customer_name}</b></div>

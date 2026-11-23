@@ -76,7 +76,7 @@ export default function HRDashboard() {
             activeTab === 'employees' ? 'bg-sky-700 text-white shadow' : 'bg-white text-steel-600 hover:bg-steel-100 border border-steel-200'
           }`}
         >
-          👥 ทะเบียนพนักงาน
+          ทะเบียนพนักงาน
         </button>
         <button
           onClick={() => setActiveTab('attendance')}
@@ -84,7 +84,7 @@ export default function HRDashboard() {
             activeTab === 'attendance' ? 'bg-sky-700 text-white shadow' : 'bg-white text-steel-600 hover:bg-steel-100 border border-steel-200'
           }`}
         >
-          📍 ลงเวลา GPS & OT หน้างาน
+           ลงเวลา GPS & OT หน้างาน
         </button>
         <button
           onClick={() => setActiveTab('leaves')}
@@ -92,7 +92,7 @@ export default function HRDashboard() {
             activeTab === 'leaves' ? 'bg-sky-700 text-white shadow' : 'bg-white text-steel-600 hover:bg-steel-100 border border-steel-200'
           }`}
         >
-          📝 การขอลาและอนุมัติ {pendingLeaves > 0 && <span className="ml-1 px-1.5 py-0.2 bg-rose-500 text-white rounded-full text-xs">{pendingLeaves}</span>}
+          การขอลาและอนุมัติ {pendingLeaves > 0 && <span className="ml-1 px-1.5 py-0.2 bg-rose-500 text-white rounded-full text-xs">{pendingLeaves}</span>}
         </button>
         <button
           onClick={() => setActiveTab('assets')}
@@ -100,7 +100,7 @@ export default function HRDashboard() {
             activeTab === 'assets' ? 'bg-sky-700 text-white shadow' : 'bg-white text-steel-600 hover:bg-steel-100 border border-steel-200'
           }`}
         >
-          💻 ทรัพย์สินบริษัท (รถ/คอมพิวเตอร์)
+           ทรัพย์สินบริษัท (รถ/คอมพิวเตอร์)
         </button>
       </div>
 
@@ -175,7 +175,7 @@ export default function HRDashboard() {
                     <td className="px-4 py-3 font-medium text-ink">{a.emp_name}</td>
                     <td className="px-4 py-3 text-center font-mono text-emerald-700 font-bold">{a.check_in_time}</td>
                     <td className="px-4 py-3 text-center font-mono text-sky-700 font-bold">{a.check_out_time}</td>
-                    <td className="px-4 py-3 text-xs text-steel-500">📍 {a.gps_location}</td>
+                    <td className="px-4 py-3 text-xs text-steel-500"> {a.gps_location}</td>
                     <td className="px-4 py-3 text-center font-mono font-bold text-purple-700">
                       {Number(a.ot_hours) > 0 ? `+${a.ot_hours}` : '-'}
                     </td>
@@ -219,7 +219,7 @@ export default function HRDashboard() {
                       <span className={`px-2 py-0.5 rounded font-medium ${
                         l.leave_type === 'sick' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'
                       }`}>
-                        {l.leave_type === 'sick' ? '🩺 ลาป่วย' : '💼 ลากิจ'}
+                        {l.leave_type === 'sick' ? ' ลาป่วย' : ' ลากิจ'}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-xs">{l.start_date} ถึง {l.end_date}</td>
@@ -265,7 +265,7 @@ export default function HRDashboard() {
                     <td className="px-4 py-3 font-semibold text-ink">{ast.asset_name}</td>
                     <td className="px-4 py-3 text-xs text-steel-500">{ast.category}</td>
                     <td className="px-4 py-3 text-xs font-mono text-steel-400">{ast.serial_no || '-'}</td>
-                    <td className="px-4 py-3 text-sm text-steel-700 font-medium">👤 {ast.assigned_to}</td>
+                    <td className="px-4 py-3 text-sm text-steel-700 font-medium"> {ast.assigned_to}</td>
                     <td className="px-4 py-3 text-right font-mono font-semibold text-ink">{baht(ast.purchase_cost)}</td>
                     <td className="px-4 py-3 text-center">
                       <span className="bg-emerald-100 text-emerald-800 text-xs px-2.5 py-0.5 rounded-full font-medium">
