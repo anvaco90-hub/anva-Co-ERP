@@ -1958,64 +1958,88 @@ export default function PurchasingHub() {
                             </td>
                           </tr>
                         ) : (
-                          paginatedReceivedMaterials.map((m) => (
-                            <tr key={m.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
-                              <td className="py-3 px-3 font-medium text-steel-700 dark:text-slate-300 whitespace-nowrap">
-                                {formatThaiDate(m.received_date)}
-                              </td>
-                              <td className="py-3 px-3.5 font-mono font-bold text-sky-800 dark:text-sky-400 whitespace-nowrap">
-                                <span>{m.grn_no}</span>
-                              </td>
-                              <td className="py-3 px-3.5 font-mono font-bold text-emerald-700 dark:text-emerald-400 whitespace-nowrap">
-                                <Link to={`/purchasing/po/${m.po_id}`} className="hover:underline flex items-center gap-1">
-                                  <span></span>
-                                  <span>{m.po_no}</span>
-                                </Link>
-                              </td>
-                              <td className="py-3 px-3.5 font-semibold text-steel-950 dark:text-slate-100">
-                                <div>{m.item_name}</div>
-                                <button
-                                  type="button"
-                                  onClick={() => setSelectedUsageItem({ item_name: m.item_name })}
-                                  className="text-[11px] text-sky-700 dark:text-sky-400 hover:text-sky-900 dark:hover:text-sky-300 hover:underline font-normal cursor-pointer flex items-center gap-1 mt-0.5"
-                                >
-                                  <span>ดูประวัติโครงการที่เคยใช้</span>
-                                </button>
-                              </td>
-                              <td className="py-3 px-3 text-right font-mono font-bold text-steel-900 dark:text-slate-100">
-                                {Math.round(Number(m.quantity) || 0)}
-                              </td>
-                              <td className="py-3 px-3 text-center text-steel-600 dark:text-slate-400 font-medium">
-                                {m.unit}
-                              </td>
-                              <td className="py-3 px-3 text-right font-mono text-steel-700 dark:text-slate-300">
-                                {baht(m.unit_cost)}
-                              </td>
-                              <td className="py-3 px-3.5 text-right font-mono font-black text-steel-950 dark:text-slate-100">
-                                {baht(m.total_value)}
-                              </td>
-                              <td className="py-3 px-3.5 text-steel-800 dark:text-slate-200">
-                                <div className="break-words whitespace-normal leading-relaxed max-w-[200px]" title={m.vendor_name}>
-                                  {m.vendor_name}
-                                </div>
-                              </td>
-                              <td className="py-3 px-3.5 text-steel-700 dark:text-slate-300">
-                                <div className="break-words whitespace-normal leading-relaxed max-w-[200px]" title={m.project_name}>
-                                  {m.project_name}
-                                </div>
-                                {m.customer_name && (
-                                  <div className="text-[11px] leading-relaxed text-sky-800 dark:text-sky-300 break-words whitespace-normal mt-0.5">
-                                    {m.customer_name}
+                          paginatedReceivedMaterials.map((m) => {
+                            const grnItems = m.grn_list && m.grn_list.length > 1
+                              ? m.grn_list
+                              : (typeof m.grn_no === 'string' && m.grn_no.includes(',')
+                                  ? m.grn_no.replace(/\s*\(\d+\s*รอบ\)/, '').split(',').map(s => s.trim()).filter(Boolean)
+                                  : null)
+
+                            return (
+                              <tr key={m.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
+                                <td className="py-3 px-3 font-medium text-steel-700 dark:text-slate-300 whitespace-nowrap align-top">
+                                  {formatThaiDate(m.received_date)}
+                                </td>
+                                <td className="py-3 px-3.5 font-mono font-bold text-sky-800 dark:text-sky-400 align-top">
+                                  {grnItems && grnItems.length > 1 ? (
+                                    <div className="flex flex-col gap-1 items-start">
+                                      {grnItems.map((grn, idx) => (
+                                        <span
+                                          key={idx}
+                                          className="inline-flex items-center px-1.5 py-0.5 rounded bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800 text-[11px] font-mono font-bold whitespace-nowrap"
+                                        >
+                                          {grn}
+                                        </span>
+                                      ))}
+                                      <span className="text-[10px] font-sans font-medium text-slate-500 dark:text-slate-400 whitespace-nowrap mt-0.5">
+                                        ({grnItems.length} รอบ)
+                                      </span>
+                                    </div>
+                                  ) : (
+                                    <span className="whitespace-nowrap">{m.grn_no}</span>
+                                  )}
+                                </td>
+                                <td className="py-3 px-3.5 font-mono font-bold text-emerald-700 dark:text-emerald-400 whitespace-nowrap align-top">
+                                  <Link to={`/purchasing/po/${m.po_id}`} className="hover:underline flex items-center gap-1">
+                                    <span></span>
+                                    <span>{m.po_no}</span>
+                                  </Link>
+                                </td>
+                                <td className="py-3 px-3.5 font-semibold text-steel-950 dark:text-slate-100 align-top">
+                                  <div>{m.item_name}</div>
+                                  <button
+                                    type="button"
+                                    onClick={() => setSelectedUsageItem({ item_name: m.item_name })}
+                                    className="text-[11px] text-sky-700 dark:text-sky-400 hover:text-sky-900 dark:hover:text-sky-300 hover:underline font-normal cursor-pointer flex items-center gap-1 mt-0.5"
+                                  >
+                                    <span>ดูประวัติโครงการที่เคยใช้</span>
+                                  </button>
+                                </td>
+                                <td className="py-3 px-3 text-right font-mono font-bold text-steel-900 dark:text-slate-100 align-top">
+                                  {Math.round(Number(m.quantity) || 0)}
+                                </td>
+                                <td className="py-3 px-3 text-center text-steel-600 dark:text-slate-400 font-medium align-top">
+                                  {m.unit}
+                                </td>
+                                <td className="py-3 px-3 text-right font-mono text-steel-700 dark:text-slate-300 align-top">
+                                  {baht(m.unit_cost)}
+                                </td>
+                                <td className="py-3 px-3.5 text-right font-mono font-black text-steel-950 dark:text-slate-100 align-top">
+                                  {baht(m.total_value)}
+                                </td>
+                                <td className="py-3 px-3.5 text-steel-800 dark:text-slate-200 align-top">
+                                  <div className="break-words whitespace-normal leading-relaxed max-w-[200px]" title={m.vendor_name}>
+                                    {m.vendor_name}
                                   </div>
-                                )}
-                              </td>
-                              <td className="py-3 px-3 text-center whitespace-nowrap">
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
-                                  <span></span> เข้าคลังแล้ว
-                                </span>
-                              </td>
-                            </tr>
-                          ))
+                                </td>
+                                <td className="py-3 px-3.5 text-steel-700 dark:text-slate-300 align-top">
+                                  <div className="break-words whitespace-normal leading-relaxed max-w-[200px]" title={m.project_name}>
+                                    {m.project_name}
+                                  </div>
+                                  {m.customer_name && (
+                                    <div className="text-[11px] leading-relaxed text-sky-800 dark:text-sky-300 break-words whitespace-normal mt-0.5">
+                                      {m.customer_name}
+                                    </div>
+                                  )}
+                                </td>
+                                <td className="py-3 px-3 text-center whitespace-nowrap align-top">
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
+                                    <span></span> เข้าคลังแล้ว
+                                  </span>
+                                </td>
+                              </tr>
+                            )
+                          })
                         )}
                       </tbody>
                     </table>
