@@ -402,7 +402,7 @@ export default function BOQForm() {
               className="rounded-xl border border-steel-300 bg-white hover:bg-steel-50 px-3.5 py-1.5 text-xs font-bold shadow-2xs flex items-center gap-1.5 cursor-pointer"
             >
               <Plus className="h-3.5 w-3.5 text-steel-700" />
-              <span>+ เพิ่มรายการ</span>
+              <span> เพิ่มรายการ</span>
             </button>
           </div>
 
@@ -562,7 +562,7 @@ export default function BOQForm() {
             className="rounded-xl border border-dashed border-steel-300 w-full py-2.5 text-xs font-bold text-steel-600 hover:bg-steel-50 hover:border-steel-400 transition flex items-center justify-center gap-1.5 cursor-pointer"
           >
             <Plus className="h-4 w-4" />
-            <span>+ เพิ่มรายการพัสดุ / บริการใน BOQ</span>
+            <span> เพิ่มรายการพัสดุ / บริการใน BOQ</span>
           </button>
         </div>
 

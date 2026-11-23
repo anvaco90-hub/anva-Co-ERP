@@ -152,8 +152,8 @@ export default function PRDetail() {
                 type="button"
                 onClick={() => setViewStyle('portal')}
                 className={`px-2.5 py-1 text-xs font-bold rounded-lg transition cursor-pointer flex items-center gap-1 ${viewStyle === 'portal'
-                    ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-2xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                  ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-2xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
                   }`}
               >
                 <span>🌐 เว็บ</span>
@@ -162,8 +162,8 @@ export default function PRDetail() {
                 type="button"
                 onClick={() => setViewStyle('paper')}
                 className={`px-2.5 py-1 text-xs font-bold rounded-lg transition cursor-pointer flex items-center gap-1 ${viewStyle === 'paper'
-                    ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-2xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                  ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-2xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
                   }`}
               >
                 <span>📄 รายงาน A4</span>
@@ -187,7 +187,7 @@ export default function PRDetail() {
                 className="inline-flex items-center gap-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-1.5 text-xs font-bold shadow-sm transition"
               >
                 <Plus className="h-3.5 w-3.5" />
-                <span>+ สร้างใบสั่งซื้อ (PO)</span>
+                <span> สร้างใบสั่งซื้อ (PO)</span>
               </Link>
             )}
 

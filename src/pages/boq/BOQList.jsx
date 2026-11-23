@@ -126,7 +126,7 @@ export default function BOQList() {
               className="rounded-xl bg-hivis text-steel-950 hover:bg-amber-400 font-black px-4 py-2 text-xs transition shadow-xs flex items-center gap-1.5"
             >
               <Plus className="h-4 w-4" />
-              <span>+ สร้าง BOQ ใหม่</span>
+              <span> สร้าง BOQ ใหม่</span>
             </Link>
           </div>
         </div>

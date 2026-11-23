@@ -56,7 +56,7 @@ export default function PurchasingHub() {
   const [searchParams, setSearchParams] = useSearchParams()
   const initialTab = searchParams.get('tab') || 'pipeline' // 'pipeline' | 'pr' | 'po' | 'receipts'
   const [activeTab, setActiveTab] = useState(initialTab)
-  
+
   // โมดัลต่าง ๆ
   const [paymentTargetPo, setPaymentTargetPo] = useState(null)
   const [poToCancel, setPoToCancel] = useState(null)
@@ -552,80 +552,80 @@ export default function PurchasingHub() {
   const receivedMaterialsList = useMemo(() => {
     const list = []
 
-    // 1. ดึงจากรายการ goods_receipts
-    ;(grns || []).forEach((gr) => {
-      const poObj = gr.purchase_orders
-      const grnNo = gr.grn_no
-      const recDate = gr.received_date
-      const vName = poObj?.custom_vendor_name || poObj?.vendors?.vendor_name || 'ผู้จำหน่าย'
-      const pName = poObj?.custom_project_name || (poObj?.projects ? `${poObj.projects.project_code} ${poObj.projects.project_name}` : 'ของกลางบริษัท')
+      // 1. ดึงจากรายการ goods_receipts
+      ; (grns || []).forEach((gr) => {
+        const poObj = gr.purchase_orders
+        const grnNo = gr.grn_no
+        const recDate = gr.received_date
+        const vName = poObj?.custom_vendor_name || poObj?.vendors?.vendor_name || 'ผู้จำหน่าย'
+        const pName = poObj?.custom_project_name || (poObj?.projects ? `${poObj.projects.project_code} ${poObj.projects.project_name}` : 'ของกลางบริษัท')
 
-      ;(gr.goods_receipt_items || []).forEach((gri) => {
-        const itName = gri.purchase_order_items?.item_name || 'วัสดุ'
-        const unit = gri.purchase_order_items?.unit || 'หน่วย'
-        const qtyNum = Number(gri.qty_received) || 0
-        let uCost = Number(gri.unit_cost || gri.purchase_order_items?.unit_price || 0)
+          ; (gr.goods_receipt_items || []).forEach((gri) => {
+            const itName = gri.purchase_order_items?.item_name || 'วัสดุ'
+            const unit = gri.purchase_order_items?.unit || 'หน่วย'
+            const qtyNum = Number(gri.qty_received) || 0
+            let uCost = Number(gri.unit_cost || gri.purchase_order_items?.unit_price || 0)
 
-        // กู้คืนราคาหากบันทึกเป็น 0 ไว้ในระบบเดิม (Price Self-Healing จาก PO Total)
-        const matchedPo = (pos || []).find((p) => p.id === gr.po_id) || poObj
-        const poTotal = Number(matchedPo?.total_amount || matchedPo?.grand_total || poObj?.total_amount || poObj?.grand_total || 0)
-        if (uCost === 0 && poTotal > 0) {
-          uCost = Math.round((poTotal / (qtyNum || 1)) * 100) / 100
-        }
-
-        list.push({
-          id: `gr-${gri.id}`,
-          received_date: recDate,
-          grn_no: grnNo,
-          po_id: gr.po_id,
-          po_no: poObj?.po_no || '-',
-          item_name: itName,
-          quantity: qtyNum,
-          unit: unit,
-          unit_cost: uCost,
-          total_value: qtyNum * uCost,
-          vendor_name: vName,
-          project_name: pName,
-          customer_name: poObj?.customer_name || null,
-          source: 'GRN',
-        })
-      })
-    })
-
-    // 2. ดึงจาก purchase_orders (สำหรับรายการที่รับเข้าแล้ว)
-    ;(pos || []).forEach((p) => {
-      const vName = p.custom_vendor_name || p.vendors?.vendor_name || 'ผู้จำหน่าย'
-      const pName = p.custom_project_name || (p.projects ? `${p.projects.project_code} ${p.projects.project_name}` : 'ของกลางบริษัท')
-
-      ;(p.purchase_order_items || []).forEach((pi) => {
-        const recQty = Number(pi.qty_received) || 0
-        if (recQty > 0) {
-          const alreadyInGr = list.some((x) => x.po_id === p.id && x.item_name === pi.item_name)
-          if (!alreadyInGr) {
-            let uCost = Number(pi.unit_price ?? pi.price ?? 0)
-            if (uCost === 0 && Number(p.total_amount) > 0) {
-              uCost = Math.round((Number(p.total_amount) / (Number(pi.quantity) || 1)) * 100) / 100
+            // กู้คืนราคาหากบันทึกเป็น 0 ไว้ในระบบเดิม (Price Self-Healing จาก PO Total)
+            const matchedPo = (pos || []).find((p) => p.id === gr.po_id) || poObj
+            const poTotal = Number(matchedPo?.total_amount || matchedPo?.grand_total || poObj?.total_amount || poObj?.grand_total || 0)
+            if (uCost === 0 && poTotal > 0) {
+              uCost = Math.round((poTotal / (qtyNum || 1)) * 100) / 100
             }
+
             list.push({
-              id: `po-${pi.id}`,
-              received_date: p.order_date,
-              grn_no: 'ตรวจรับเข้าสโตร์',
-              po_id: p.id,
-              po_no: p.po_no,
-              item_name: pi.item_name,
-              quantity: recQty,
-              unit: pi.unit || 'หน่วย',
+              id: `gr-${gri.id}`,
+              received_date: recDate,
+              grn_no: grnNo,
+              po_id: gr.po_id,
+              po_no: poObj?.po_no || '-',
+              item_name: itName,
+              quantity: qtyNum,
+              unit: unit,
               unit_cost: uCost,
-              total_value: recQty * uCost,
+              total_value: qtyNum * uCost,
               vendor_name: vName,
               project_name: pName,
-              customer_name: p.customer_name || null,
-              source: 'PO',
+              customer_name: poObj?.customer_name || null,
+              source: 'GRN',
             })
-          }
-        }
+          })
       })
-    })
+
+      // 2. ดึงจาก purchase_orders (สำหรับรายการที่รับเข้าแล้ว)
+      ; (pos || []).forEach((p) => {
+        const vName = p.custom_vendor_name || p.vendors?.vendor_name || 'ผู้จำหน่าย'
+        const pName = p.custom_project_name || (p.projects ? `${p.projects.project_code} ${p.projects.project_name}` : 'ของกลางบริษัท')
+
+          ; (p.purchase_order_items || []).forEach((pi) => {
+            const recQty = Number(pi.qty_received) || 0
+            if (recQty > 0) {
+              const alreadyInGr = list.some((x) => x.po_id === p.id && x.item_name === pi.item_name)
+              if (!alreadyInGr) {
+                let uCost = Number(pi.unit_price ?? pi.price ?? 0)
+                if (uCost === 0 && Number(p.total_amount) > 0) {
+                  uCost = Math.round((Number(p.total_amount) / (Number(pi.quantity) || 1)) * 100) / 100
+                }
+                list.push({
+                  id: `po-${pi.id}`,
+                  received_date: p.order_date,
+                  grn_no: 'ตรวจรับเข้าสโตร์',
+                  po_id: p.id,
+                  po_no: p.po_no,
+                  item_name: pi.item_name,
+                  quantity: recQty,
+                  unit: pi.unit || 'หน่วย',
+                  unit_cost: uCost,
+                  total_value: recQty * uCost,
+                  vendor_name: vName,
+                  project_name: pName,
+                  customer_name: p.customer_name || null,
+                  source: 'PO',
+                })
+              }
+            }
+          })
+      })
 
     // โหมดรวมรายการตาม PO + ชื่อวัสดุ เพื่อไม่ให้รายการซ้ำซ้อนกัน
     if (receiptGroupMode === 'grouped') {
@@ -789,7 +789,7 @@ export default function PurchasingHub() {
 
   return (
     <div className="space-y-5">
-      
+
       {/* 1. ANVA & Co. Engineering Procurement Brand Hero Banner (สไตล์เดียวกับสโตร์) */}
       <div className="rounded-2xl bg-gradient-to-r from-slate-900 via-steel-900 to-slate-800 p-6 sm:p-7 text-white shadow-md border border-steel-700">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
@@ -814,11 +814,10 @@ export default function PurchasingHub() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 shrink-0">
             <div
               onClick={() => changeTab('pr')}
-              className={`rounded-xl p-3 border cursor-pointer transition text-center ${
-                activeTab === 'pr'
-                  ? 'bg-hivis text-steel-950 font-bold border-hivis shadow-md scale-105'
-                  : 'bg-steel-800/80 hover:bg-steel-800 border-steel-700 text-steel-300'
-              }`}
+              className={`rounded-xl p-3 border cursor-pointer transition text-center ${activeTab === 'pr'
+                ? 'bg-hivis text-steel-950 font-bold border-hivis shadow-md scale-105'
+                : 'bg-steel-800/80 hover:bg-steel-800 border-steel-700 text-steel-300'
+                }`}
             >
               <div className="text-[11px] font-medium text-steel-400">📋 ใบขอซื้อ (PR)</div>
               <div className="mt-0.5 text-xl font-black font-mono text-sky-400">{prs.length}</div>
@@ -827,11 +826,10 @@ export default function PurchasingHub() {
 
             <div
               onClick={() => changeTab('po')}
-              className={`rounded-xl p-3 border cursor-pointer transition text-center ${
-                activeTab === 'po'
-                  ? 'bg-hivis text-steel-950 font-bold border-hivis shadow-md scale-105'
-                  : 'bg-steel-800/80 hover:bg-steel-800 border-steel-700 text-steel-300'
-              }`}
+              className={`rounded-xl p-3 border cursor-pointer transition text-center ${activeTab === 'po'
+                ? 'bg-hivis text-steel-950 font-bold border-hivis shadow-md scale-105'
+                : 'bg-steel-800/80 hover:bg-steel-800 border-steel-700 text-steel-300'
+                }`}
             >
               <div className="text-[11px] font-medium text-steel-400">🛒 ใบสั่งซื้อ (PO)</div>
               <div className="mt-0.5 text-xl font-black font-mono text-amber-300">{pos.length}</div>
@@ -840,11 +838,10 @@ export default function PurchasingHub() {
 
             <div
               onClick={() => changeTab('receipts')}
-              className={`rounded-xl p-3 border cursor-pointer transition text-center ${
-                activeTab === 'receipts'
-                  ? 'bg-hivis text-steel-950 font-bold border-hivis shadow-md scale-105'
-                  : 'bg-steel-800/80 hover:bg-steel-800 border-steel-700 text-steel-300'
-              }`}
+              className={`rounded-xl p-3 border cursor-pointer transition text-center ${activeTab === 'receipts'
+                ? 'bg-hivis text-steel-950 font-bold border-hivis shadow-md scale-105'
+                : 'bg-steel-800/80 hover:bg-steel-800 border-steel-700 text-steel-300'
+                }`}
             >
               <div className="text-[11px] font-medium text-steel-400">📦 รอตรวจรับ</div>
               <div className="mt-0.5 text-xl font-black font-mono text-rose-400">{pendingReceipts.length}</div>
@@ -853,11 +850,10 @@ export default function PurchasingHub() {
 
             <div
               onClick={() => changeTab('pipeline')}
-              className={`rounded-xl p-3 border cursor-pointer transition text-center ${
-                activeTab === 'pipeline'
-                  ? 'bg-hivis text-steel-950 font-bold border-hivis shadow-md scale-105'
-                  : 'bg-steel-800/80 hover:bg-steel-800 border-steel-700 text-steel-300'
-              }`}
+              className={`rounded-xl p-3 border cursor-pointer transition text-center ${activeTab === 'pipeline'
+                ? 'bg-hivis text-steel-950 font-bold border-hivis shadow-md scale-105'
+                : 'bg-steel-800/80 hover:bg-steel-800 border-steel-700 text-steel-300'
+                }`}
             >
               <div className="text-[11px] font-medium text-steel-400">🔄 วงจรเอกสาร</div>
               <div className="mt-0.5 text-xl font-black font-mono text-emerald-400">{completedPos.length}</div>
@@ -889,7 +885,7 @@ export default function PurchasingHub() {
                   className="inline-flex items-center gap-1.5 rounded-xl bg-hivis hover:brightness-110 text-steel-950 px-4 py-2 text-xs font-black shadow-md transition cursor-pointer"
                 >
                   <Plus className="h-4 w-4" />
-                  <span>+ สร้างใบสั่งซื้อ (PO)</span>
+                  <span> สร้างใบสั่งซื้อ (PO)</span>
                 </Link>
               </>
             )}
@@ -923,11 +919,10 @@ export default function PurchasingHub() {
             <button
               type="button"
               onClick={() => setFilterDueStatus(filterDueStatus === 'overdue' ? 'all' : 'overdue')}
-              className={`rounded-xl border p-3.5 text-left transition cursor-pointer ${
-                filterDueStatus === 'overdue'
-                  ? 'border-rose-500 bg-rose-50 ring-2 ring-rose-400'
-                  : 'border-rose-200 bg-rose-50/50 hover:bg-rose-50 hover:border-rose-300'
-              }`}
+              className={`rounded-xl border p-3.5 text-left transition cursor-pointer ${filterDueStatus === 'overdue'
+                ? 'border-rose-500 bg-rose-50 ring-2 ring-rose-400'
+                : 'border-rose-200 bg-rose-50/50 hover:bg-rose-50 hover:border-rose-300'
+                }`}
             >
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-bold text-rose-800 uppercase tracking-wider flex items-center gap-1">
@@ -947,11 +942,10 @@ export default function PurchasingHub() {
             <button
               type="button"
               onClick={() => setFilterDueStatus(filterDueStatus === 'urgent' ? 'all' : 'urgent')}
-              className={`rounded-xl border p-3.5 text-left transition cursor-pointer ${
-                filterDueStatus === 'urgent'
-                  ? 'border-amber-500 bg-amber-50 ring-2 ring-amber-400'
-                  : 'border-amber-200 bg-amber-50/50 hover:bg-amber-50 hover:border-amber-300'
-              }`}
+              className={`rounded-xl border p-3.5 text-left transition cursor-pointer ${filterDueStatus === 'urgent'
+                ? 'border-amber-500 bg-amber-50 ring-2 ring-amber-400'
+                : 'border-amber-200 bg-amber-50/50 hover:bg-amber-50 hover:border-amber-300'
+                }`}
             >
               <div className="text-[11px] font-bold text-amber-800 uppercase tracking-wider flex items-center gap-1">
                 <span>⏰</span> ใกล้ครบกำหนด
@@ -966,11 +960,10 @@ export default function PurchasingHub() {
             <button
               type="button"
               onClick={() => setFilterDueStatus(filterDueStatus === 'on_track' ? 'all' : 'on_track')}
-              className={`rounded-xl border p-3.5 text-left transition cursor-pointer ${
-                filterDueStatus === 'on_track'
-                  ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-400'
-                  : 'border-steel-200 bg-white hover:bg-blue-50/50 hover:border-blue-300'
-              }`}
+              className={`rounded-xl border p-3.5 text-left transition cursor-pointer ${filterDueStatus === 'on_track'
+                ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-400'
+                : 'border-steel-200 bg-white hover:bg-blue-50/50 hover:border-blue-300'
+                }`}
             >
               <div className="text-[11px] font-bold text-blue-800 uppercase tracking-wider flex items-center gap-1">
                 <span>🚚</span> รอนำส่งตามกำหนด
@@ -985,11 +978,10 @@ export default function PurchasingHub() {
             <button
               type="button"
               onClick={() => setFilterDueStatus(filterDueStatus === 'completed' ? 'all' : 'completed')}
-              className={`rounded-xl border p-3.5 text-left transition cursor-pointer ${
-                filterDueStatus === 'completed'
-                  ? 'border-emerald-500 bg-emerald-50 ring-2 ring-emerald-400'
-                  : 'border-steel-200 bg-white hover:bg-emerald-50/50 hover:border-emerald-300'
-              }`}
+              className={`rounded-xl border p-3.5 text-left transition cursor-pointer ${filterDueStatus === 'completed'
+                ? 'border-emerald-500 bg-emerald-50 ring-2 ring-emerald-400'
+                : 'border-steel-200 bg-white hover:bg-emerald-50/50 hover:border-emerald-300'
+                }`}
             >
               <div className="text-[11px] font-bold text-emerald-800 uppercase tracking-wider flex items-center gap-1">
                 <span>✅</span> ส่งมอบครบแล้ว
@@ -1011,8 +1003,8 @@ export default function PurchasingHub() {
           activeTab === 'po'
             ? 'ค้นหาเลขที่ PO, ร้านค้า, โครงการ (กด / เพื่อค้นหา)...'
             : activeTab === 'pr'
-            ? 'ค้นหาเลขที่ PR, ร้านค้าแนะนำ, โครงการ (กด / เพื่อค้นหา)...'
-            : 'ค้นหารายการจัดซื้อ...'
+              ? 'ค้นหาเลขที่ PR, ร้านค้าแนะนำ, โครงการ (กด / เพื่อค้นหา)...'
+              : 'ค้นหารายการจัดซื้อ...'
         }
         filterCount={
           (filterProject ? 1 : 0) +
@@ -1035,18 +1027,18 @@ export default function PurchasingHub() {
         statusOptions={
           activeTab === 'po'
             ? [
-                { value: 'open', label: '🚚 รอรับของ (Open)' },
-                { value: 'partial', label: '⚡ รับบางส่วน (Partial)' },
-                { value: 'received', label: '📦 รับของครบแล้ว' },
-                { value: 'cancelled', label: '❌ ยกเลิก (Cancelled)' },
-              ]
+              { value: 'open', label: '🚚 รอรับของ (Open)' },
+              { value: 'partial', label: '⚡ รับบางส่วน (Partial)' },
+              { value: 'received', label: '📦 รับของครบแล้ว' },
+              { value: 'cancelled', label: '❌ ยกเลิก (Cancelled)' },
+            ]
             : activeTab === 'pr'
-            ? [
+              ? [
                 { value: 'pending', label: '⏳ รอสั่งซื้อ' },
                 { value: 'ordered', label: '✅ สั่งซื้อแล้ว' },
                 { value: 'cancelled', label: '❌ ยกเลิก' },
               ]
-            : []
+              : []
         }
         activeStatus={filterStatus}
         onStatusChange={setFilterStatus}
@@ -1063,8 +1055,8 @@ export default function PurchasingHub() {
             ? activeTab === 'po'
               ? { label: '+ สร้างใบสั่งซื้อ', to: '/purchasing/po/new' }
               : activeTab === 'pr'
-              ? { label: '+ ออกใบขอซื้อ (PR)', to: '/purchasing/pr/new' }
-              : null
+                ? { label: '+ ออกใบขอซื้อ (PR)', to: '/purchasing/pr/new' }
+                : null
             : null
         }
       />
@@ -1566,11 +1558,10 @@ export default function PurchasingHub() {
                                 <button
                                   type="button"
                                   onClick={(e) => toggleDropdown(e, 'po', r)}
-                                  className={`inline-flex items-center justify-center rounded-lg border p-1 text-xs transition shadow-xs cursor-pointer ${
-                                    activeDropdown && activeDropdown.id === r.id && activeDropdown.type === 'po'
-                                      ? 'bg-amber-100 dark:bg-amber-950/80 border-amber-400 text-amber-900 dark:text-amber-200'
-                                      : 'border-steel-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-steel-100 dark:hover:bg-slate-700 text-steel-600 dark:text-slate-300'
-                                  }`}
+                                  className={`inline-flex items-center justify-center rounded-lg border p-1 text-xs transition shadow-xs cursor-pointer ${activeDropdown && activeDropdown.id === r.id && activeDropdown.type === 'po'
+                                    ? 'bg-amber-100 dark:bg-amber-950/80 border-amber-400 text-amber-900 dark:text-amber-200'
+                                    : 'border-steel-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-steel-100 dark:hover:bg-slate-700 text-steel-600 dark:text-slate-300'
+                                    }`}
                                   title="เมนูคำสั่งเพิ่มเติม (พิมพ์, จ่าซอง, แชร์, สร้างซ้ำ, แก้ไข, ลบ)"
                                 >
                                   <MoreVertical className="h-4 w-4" />
@@ -1625,7 +1616,7 @@ export default function PurchasingHub() {
                       className="inline-flex items-center gap-1.5 rounded-xl bg-steel-900 dark:bg-amber-500 hover:bg-steel-800 dark:hover:bg-amber-400 px-3.5 py-1.5 text-xs font-bold text-hivis dark:text-slate-950 shadow-xs transition"
                     >
                       <Plus className="h-3.5 w-3.5" />
-                      <span>+ ออกใบขอซื้อ (PR)</span>
+                      <span> ออกใบขอซื้อ (PR)</span>
                     </Link>
                   )}
                 </div>
@@ -1776,11 +1767,10 @@ export default function PurchasingHub() {
                                 <button
                                   type="button"
                                   onClick={(e) => toggleDropdown(e, 'pr', r)}
-                                  className={`inline-flex items-center justify-center rounded-lg border p-1 text-xs transition shadow-xs cursor-pointer ${
-                                    activeDropdown && activeDropdown.id === r.id && activeDropdown.type === 'pr'
-                                      ? 'bg-sky-100 dark:bg-sky-950/80 border-sky-400 text-sky-900 dark:text-sky-200'
-                                      : 'border-steel-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-steel-100 dark:hover:bg-slate-700 text-steel-600 dark:text-slate-300'
-                                  }`}
+                                  className={`inline-flex items-center justify-center rounded-lg border p-1 text-xs transition shadow-xs cursor-pointer ${activeDropdown && activeDropdown.id === r.id && activeDropdown.type === 'pr'
+                                    ? 'bg-sky-100 dark:bg-sky-950/80 border-sky-400 text-sky-900 dark:text-sky-200'
+                                    : 'border-steel-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-steel-100 dark:hover:bg-slate-700 text-steel-600 dark:text-slate-300'
+                                    }`}
                                   title="เมนูคำสั่งเพิ่มเติม"
                                 >
                                   <MoreVertical className="h-4 w-4" />
@@ -1826,17 +1816,15 @@ export default function PurchasingHub() {
                       setReceiptSubTab('received_items')
                       setCurrentPage(1)
                     }}
-                    className={`px-4 py-2 text-xs font-bold rounded-xl transition shadow-xs flex items-center gap-2 cursor-pointer ${
-                      receiptSubTab === 'received_items'
-                        ? 'bg-emerald-700 text-white shadow-sm dark:bg-emerald-600'
-                        : 'bg-steel-50 dark:bg-slate-800 text-steel-700 dark:text-slate-300 hover:bg-steel-100 dark:hover:bg-slate-700 border border-steel-200 dark:border-slate-700'
-                    }`}
+                    className={`px-4 py-2 text-xs font-bold rounded-xl transition shadow-xs flex items-center gap-2 cursor-pointer ${receiptSubTab === 'received_items'
+                      ? 'bg-emerald-700 text-white shadow-sm dark:bg-emerald-600'
+                      : 'bg-steel-50 dark:bg-slate-800 text-steel-700 dark:text-slate-300 hover:bg-steel-100 dark:hover:bg-slate-700 border border-steel-200 dark:border-slate-700'
+                      }`}
                   >
                     <span>📜</span>
                     <span>ประวัติพัสดุที่เคยรับเข้ามา (Received Materials History)</span>
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
-                      receiptSubTab === 'received_items' ? 'bg-white/25 text-white' : 'bg-steel-200 dark:bg-slate-700 text-steel-700 dark:text-slate-200'
-                    }`}>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${receiptSubTab === 'received_items' ? 'bg-white/25 text-white' : 'bg-steel-200 dark:bg-slate-700 text-steel-700 dark:text-slate-200'
+                      }`}>
                       {filteredReceivedMaterials.length}
                     </span>
                   </button>
@@ -1847,17 +1835,15 @@ export default function PurchasingHub() {
                       setReceiptSubTab('pending')
                       setCurrentPage(1)
                     }}
-                    className={`px-4 py-2 text-xs font-bold rounded-xl transition shadow-xs flex items-center gap-2 cursor-pointer ${
-                      receiptSubTab === 'pending'
-                        ? 'bg-sky-700 text-white shadow-sm dark:bg-sky-600'
-                        : 'bg-steel-50 dark:bg-slate-800 text-steel-700 dark:text-slate-300 hover:bg-steel-100 dark:hover:bg-slate-700 border border-steel-200 dark:border-slate-700'
-                    }`}
+                    className={`px-4 py-2 text-xs font-bold rounded-xl transition shadow-xs flex items-center gap-2 cursor-pointer ${receiptSubTab === 'pending'
+                      ? 'bg-sky-700 text-white shadow-sm dark:bg-sky-600'
+                      : 'bg-steel-50 dark:bg-slate-800 text-steel-700 dark:text-slate-300 hover:bg-steel-100 dark:hover:bg-slate-700 border border-steel-200 dark:border-slate-700'
+                      }`}
                   >
                     <span>⏳</span>
                     <span>รอตรวจรับเข้าสโตร์ (Pending POs)</span>
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
-                      receiptSubTab === 'pending' ? 'bg-white/25 text-white' : 'bg-steel-200 dark:bg-slate-700 text-steel-700 dark:text-slate-200'
-                    }`}>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${receiptSubTab === 'pending' ? 'bg-white/25 text-white' : 'bg-steel-200 dark:bg-slate-700 text-steel-700 dark:text-slate-200'
+                      }`}>
                       {pendingReceipts.length}
                     </span>
                   </button>
@@ -1873,11 +1859,10 @@ export default function PurchasingHub() {
                           setReceiptGroupMode('grouped')
                           setCurrentPage(1)
                         }}
-                        className={`px-3 py-1.5 rounded-lg font-bold transition cursor-pointer flex items-center gap-1.5 ${
-                          receiptGroupMode === 'grouped'
-                            ? 'bg-white dark:bg-slate-900 text-emerald-800 dark:text-emerald-300 shadow-xs'
-                            : 'text-steel-600 dark:text-slate-400 hover:text-steel-900 dark:hover:text-white'
-                        }`}
+                        className={`px-3 py-1.5 rounded-lg font-bold transition cursor-pointer flex items-center gap-1.5 ${receiptGroupMode === 'grouped'
+                          ? 'bg-white dark:bg-slate-900 text-emerald-800 dark:text-emerald-300 shadow-xs'
+                          : 'text-steel-600 dark:text-slate-400 hover:text-steel-900 dark:hover:text-white'
+                          }`}
                         title="รวมรายการตามใบสั่งซื้อและวัสดุ ไม่ให้แสดงแถวซ้ำซ้อน"
                       >
                         <span>🗂️</span>
@@ -1890,11 +1875,10 @@ export default function PurchasingHub() {
                           setReceiptGroupMode('by_grn')
                           setCurrentPage(1)
                         }}
-                        className={`px-3 py-1.5 rounded-lg font-bold transition cursor-pointer flex items-center gap-1.5 ${
-                          receiptGroupMode === 'by_grn'
-                            ? 'bg-white dark:bg-slate-900 text-emerald-800 dark:text-emerald-300 shadow-xs'
-                            : 'text-steel-600 dark:text-slate-400 hover:text-steel-900 dark:hover:text-white'
-                        }`}
+                        className={`px-3 py-1.5 rounded-lg font-bold transition cursor-pointer flex items-center gap-1.5 ${receiptGroupMode === 'by_grn'
+                          ? 'bg-white dark:bg-slate-900 text-emerald-800 dark:text-emerald-300 shadow-xs'
+                          : 'text-steel-600 dark:text-slate-400 hover:text-steel-900 dark:hover:text-white'
+                          }`}
                         title="แสดงแยกตามรอบและเลขที่ใบตรวจรับแต่ละครั้ง (GRN)"
                       >
                         <span>📑</span>
@@ -2221,11 +2205,10 @@ export default function PurchasingHub() {
                     <button
                       type="button"
                       onClick={() => setPipelineViewMode('flow')}
-                      className={`px-3 py-1.5 text-xs font-bold rounded-lg transition flex items-center gap-1.5 cursor-pointer ${
-                        pipelineViewMode === 'flow'
-                          ? 'bg-white dark:bg-slate-700 text-steel-900 dark:text-amber-400 shadow-2xs'
-                          : 'text-steel-600 dark:text-slate-400 hover:text-steel-900 dark:hover:text-slate-200'
-                      }`}
+                      className={`px-3 py-1.5 text-xs font-bold rounded-lg transition flex items-center gap-1.5 cursor-pointer ${pipelineViewMode === 'flow'
+                        ? 'bg-white dark:bg-slate-700 text-steel-900 dark:text-amber-400 shadow-2xs'
+                        : 'text-steel-600 dark:text-slate-400 hover:text-steel-900 dark:hover:text-slate-200'
+                        }`}
                     >
                       <Layers className="h-3.5 w-3.5" />
                       <span>ผังเชื่อมโยง (Flow)</span>
@@ -2233,11 +2216,10 @@ export default function PurchasingHub() {
                     <button
                       type="button"
                       onClick={() => setPipelineViewMode('table')}
-                      className={`px-3 py-1.5 text-xs font-bold rounded-lg transition flex items-center gap-1.5 cursor-pointer ${
-                        pipelineViewMode === 'table'
-                          ? 'bg-white dark:bg-slate-700 text-steel-900 dark:text-amber-400 shadow-2xs'
-                          : 'text-steel-600 dark:text-slate-400 hover:text-steel-900 dark:hover:text-slate-200'
-                      }`}
+                      className={`px-3 py-1.5 text-xs font-bold rounded-lg transition flex items-center gap-1.5 cursor-pointer ${pipelineViewMode === 'table'
+                        ? 'bg-white dark:bg-slate-700 text-steel-900 dark:text-amber-400 shadow-2xs'
+                        : 'text-steel-600 dark:text-slate-400 hover:text-steel-900 dark:hover:text-slate-200'
+                        }`}
                     >
                       <List className="h-3.5 w-3.5" />
                       <span>ตารางรายงาน (Table)</span>
@@ -2392,7 +2374,7 @@ export default function PurchasingHub() {
                                         className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-steel-900 dark:bg-amber-500 hover:bg-steel-800 text-hivis dark:text-slate-950 font-bold text-xs shadow-xs transition"
                                       >
                                         <Plus className="h-3.5 w-3.5" />
-                                        <span>+ ออกใบสั่งซื้อจาก PR นี้</span>
+                                        <span> ออกใบสั่งซื้อจาก PR นี้</span>
                                       </Link>
                                     )}
                                   </div>
