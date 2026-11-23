@@ -672,24 +672,24 @@ export default function StockList() {
         /* -------------------------------------------------------------------- */
         /* Table View Mode                                                      */
         /* -------------------------------------------------------------------- */
-        <div className="overflow-x-auto rounded-2xl border border-steel-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs">
-          <table className="w-full text-xs sm:text-sm">
+        <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs">
+          <table className="w-full text-xs sm:text-sm border-collapse">
             <thead>
-              <tr className="border-b border-steel-200 dark:border-slate-800 bg-steel-50/90 dark:bg-slate-800 text-left text-steel-600 dark:text-slate-200 text-xs font-bold uppercase tracking-wider">
-                <th className="py-3.5 pl-4">รหัสพัสดุ</th>
-                <th>รูปภาพ</th>
-                <th>ชื่อวัสดุ / อุปกรณ์</th>
-                <th className="text-right">คงเหลือในคลัง</th>
-                <th>หน่วย</th>
-                <th>หมวดหมู่</th>
-                <th className="text-right">ราคาเฉลี่ย</th>
-                <th className="text-right">มูลค่ารวม</th>
-                <th className="text-right">จุดเตือน</th>
-                <th className="text-center pr-4">จัดการด่วน</th>
+              <tr className="border-b-2 border-slate-300 dark:border-slate-700 bg-slate-100/90 dark:bg-slate-800 text-left text-slate-700 dark:text-slate-200 text-xs font-bold uppercase tracking-wider">
+                <th className="py-3.5 pl-4 border-r border-slate-200/70 dark:border-slate-700/60">รหัสพัสดุ</th>
+                <th className="py-3.5 px-3 border-r border-slate-200/70 dark:border-slate-700/60">รูปภาพ</th>
+                <th className="py-3.5 px-3.5 min-w-[220px] border-r border-slate-200/70 dark:border-slate-700/60">ชื่อวัสดุ / อุปกรณ์</th>
+                <th className="py-3.5 px-3 text-right border-r border-slate-200/70 dark:border-slate-700/60">คงเหลือในคลัง</th>
+                <th className="py-3.5 px-2.5 text-center border-r border-slate-200/70 dark:border-slate-700/60">หน่วย</th>
+                <th className="py-3.5 px-3 border-r border-slate-200/70 dark:border-slate-700/60">หมวดหมู่</th>
+                <th className="py-3.5 px-3 text-right border-r border-slate-200/70 dark:border-slate-700/60">ราคาเฉลี่ย</th>
+                <th className="py-3.5 px-3 text-right border-r border-slate-200/70 dark:border-slate-700/60">มูลค่ารวม</th>
+                <th className="py-3.5 px-3 text-right border-r border-slate-200/70 dark:border-slate-700/60">จุดเตือน</th>
+                <th className="py-3.5 text-center pr-4">จัดการด่วน</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-steel-100 dark:divide-slate-800">
-              {paginatedItems.map((i) => {
+            <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+              {paginatedItems.map((i, rowIdx) => {
                 const isItemLow = isLow(i)
                 const isItemOut = isOut(i)
                 const isOpen = open === i.id
@@ -697,31 +697,35 @@ export default function StockList() {
                 return (
                   <Fragment key={i.id}>
                     <tr
-                      className={`transition hover:bg-steel-50/80 dark:hover:bg-slate-800/60 ${
-                        isOpen ? 'bg-steel-50 dark:bg-slate-800/80' : ''
-                      }`}
+                      className={`transition border-b border-slate-200 dark:border-slate-800 ${
+                        isOpen
+                          ? 'bg-amber-50/60 dark:bg-slate-800/80'
+                          : rowIdx % 2 === 0
+                            ? 'bg-white dark:bg-slate-900'
+                            : 'bg-slate-50/70 dark:bg-slate-800/40'
+                      } hover:!bg-amber-50/70 dark:hover:!bg-slate-750`}
                     >
                       {/* รหัส */}
                       <td
-                        className="py-3 pl-4 font-mono font-bold text-steel-900 dark:text-amber-400 cursor-pointer"
+                        className="py-3 pl-4 font-mono font-bold text-slate-900 dark:text-amber-400 cursor-pointer border-r border-slate-200/60 dark:border-slate-800/60"
                         onClick={() => setOpen(isOpen ? null : i.id)}
                       >
-                        <span className="mr-1 text-steel-400 dark:text-slate-500">{isOpen ? '▾' : '▸'}</span>
+                        <span className="mr-1 text-slate-400 dark:text-slate-500">{isOpen ? '▾' : '▸'}</span>
                         {i.item_code}
                       </td>
 
                       {/* รูปภาพ */}
-                      <td>
+                      <td className="py-3 px-3 border-r border-slate-200/60 dark:border-slate-800/60">
                         {i.image_url ? (
                           <R2Image
                             fileKey={i.image_url}
                             alt={i.item_name}
-                            className="h-10 w-10 rounded-xl border border-steel-200 dark:border-slate-700 object-cover shadow-xs cursor-pointer hover:opacity-80 transition"
+                            className="h-10 w-10 rounded-xl border border-slate-200 dark:border-slate-700 object-cover shadow-xs cursor-pointer hover:opacity-80 transition"
                             onClick={() => setPreviewImg(i.image_url)}
                             title="คลิกดูรูปใหญ่"
                           />
                         ) : (
-                          <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-dashed border-steel-200 dark:border-slate-700 bg-steel-50 dark:bg-slate-800 text-[10px] text-steel-400 dark:text-slate-500 font-mono">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-dashed border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-[10px] text-slate-400 dark:text-slate-500 font-mono">
                             -
                           </div>
                         )}
@@ -729,21 +733,21 @@ export default function StockList() {
 
                       {/* ชื่อวัสดุ */}
                       <td
-                        className="font-bold text-steel-900 dark:text-slate-100 cursor-pointer max-w-[280px]"
+                        className="py-3 px-3.5 font-bold text-slate-900 dark:text-slate-100 cursor-pointer max-w-[280px] border-r border-slate-200/60 dark:border-slate-800/60"
                         onClick={() => setSelectedDetailItem(i)}
                       >
                         <span className="hover:text-sky-700 dark:hover:text-amber-400 transition">{i.item_name}</span>
                       </td>
 
                       {/* คงเหลือ */}
-                      <td className="text-right font-mono font-bold">
+                      <td className="py-3 px-3 text-right font-mono font-bold border-r border-slate-200/60 dark:border-slate-800/60">
                         <span
                           className={
                             isItemOut
                               ? 'text-rose-600 dark:text-rose-400 font-black'
                               : isItemLow
                               ? 'text-amber-600 dark:text-amber-400'
-                              : 'text-steel-900 dark:text-slate-100'
+                              : 'text-slate-900 dark:text-slate-100'
                           }
                         >
                           {formatIntQty(i.qty_on_hand)}
@@ -760,30 +764,30 @@ export default function StockList() {
                       </td>
 
                       {/* หน่วย */}
-                      <td className="text-steel-600 dark:text-slate-400 text-xs">{i.unit || '-'}</td>
+                      <td className="py-3 px-2.5 text-center text-slate-600 dark:text-slate-400 text-xs border-r border-slate-200/60 dark:border-slate-800/60">{i.unit || '-'}</td>
 
                       {/* หมวด */}
-                      <td className="text-steel-600 dark:text-slate-300 text-xs">
-                        <span className="rounded-md bg-steel-100 dark:bg-slate-800 px-2 py-0.5 font-semibold text-steel-700 dark:text-slate-200 border border-steel-200 dark:border-slate-700">
+                      <td className="py-3 px-3 text-slate-600 dark:text-slate-300 text-xs border-r border-slate-200/60 dark:border-slate-800/60">
+                        <span className="rounded-md bg-slate-100 dark:bg-slate-800 px-2 py-0.5 font-semibold text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700">
                           {i.item_categories?.name ?? '-'}
                         </span>
                       </td>
 
                       {/* ราคา/หน่วย */}
-                      <td className="text-right font-mono text-xs text-steel-800 dark:text-slate-300">{baht(i.avg_unit_cost)} บ.</td>
+                      <td className="py-3 px-3 text-right font-mono text-xs text-slate-800 dark:text-slate-300 border-r border-slate-200/60 dark:border-slate-800/60">{baht(i.avg_unit_cost)} บ.</td>
 
                       {/* มูลค่า */}
-                      <td className="text-right font-mono font-bold text-xs text-steel-900 dark:text-slate-100">
+                      <td className="py-3 px-3 text-right font-mono font-bold text-xs text-slate-900 dark:text-slate-100 border-r border-slate-200/60 dark:border-slate-800/60">
                         {baht(Number(i.qty_on_hand || 0) * Number(i.avg_unit_cost || 0))} บ.
                       </td>
 
                       {/* จุดเตือน */}
-                      <td className="text-right font-mono text-xs text-steel-400 dark:text-slate-500">
+                      <td className="py-3 px-3 text-right font-mono text-xs text-slate-400 dark:text-slate-500 border-r border-slate-200/60 dark:border-slate-800/60">
                         {i.reorder_point ? formatIntQty(i.reorder_point) : '-'}
                       </td>
 
                       {/* ปุ่มจัดการ */}
-                      <td className="text-center pr-4">
+                      <td className="py-3 text-center pr-4">
                         <div className="flex items-center justify-center gap-1.5">
                           <Link
                             to={`/store/issue/new?item_id=${i.id}`}

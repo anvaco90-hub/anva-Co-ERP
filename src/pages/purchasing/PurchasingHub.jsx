@@ -1118,10 +1118,10 @@ export default function PurchasingHub() {
                 >
                   <option value="all">ทุกกำหนดส่ง ({pos.length})</option>
                   <option value="overdue">เกินกำหนดส่งมอบ ({overduePos.length})</option>
-                  <option value="urgent">⏰ ใกล้ครบกำหนด 7 วัน ({dueSoonPos.length})</option>
-                  <option value="on_track"> รอนำส่งตามกำหนด ({onTrackPos.length})</option>
+                  <option value="urgent">ใกล้ครบกำหนด 7 วัน ({dueSoonPos.length})</option>
+                  <option value="on_track">รอนำส่งตามกำหนด ({onTrackPos.length})</option>
                   <option value="completed">ส่งมอบครบแล้ว ({completedPos.length})</option>
-                  <option value="no_date">⏳ ไม่ระบุวันส่งมอบ</option>
+                  <option value="no_date">ไม่ระบุวันส่งมอบ</option>
                 </select>
               </div>
             )}
@@ -1378,32 +1378,39 @@ export default function PurchasingHub() {
                   })}
                 </div>
               ) : (
-                /* มุมมองตาราง (Table View): คอลัมน์สมดุล เลขที่ PO ติดขอบซ้าย และเมนูไม่ทับซ้อน */
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs divide-y divide-steel-200 dark:divide-slate-800">
-                    <thead className="bg-steel-50/90 dark:bg-slate-800 text-steel-700 dark:text-slate-200 font-bold uppercase tracking-wider text-[11px]">
+                /* มุมมองตาราง (Table View): คอลัมน์สมดุล มีเส้นตารางชัดเจน แถบสลับสี และเมนูไม่ทับซ้อน */
+                <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs">
+                  <table className="w-full text-left text-xs divide-y divide-slate-200 dark:divide-slate-800 border-collapse">
+                    <thead className="bg-slate-100/90 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 font-bold uppercase tracking-wider text-[11px] border-b-2 border-slate-300 dark:border-slate-700">
                       <tr>
-                        {isPoColVisible('po_no') && <th className="py-3 px-3.5 w-36">เลขที่ PO / วันที่</th>}
-                        {isPoColVisible('vendor') && <th className="py-3 px-3 min-w-[140px]">ผู้ขาย / ร้านค้า</th>}
-                        {isPoColVisible('project') && <th className="py-3 px-3 min-w-[140px]">โครงการ / ลูกค้า</th>}
-                        {isPoColVisible('amount') && <th className="py-3 px-3 w-28 text-right">ยอดรวม (บาท)</th>}
-                        {isPoColVisible('due_date') && <th className="py-3 px-3 w-40 min-w-[140px]">วันครบกำหนด</th>}
-                        {isPoColVisible('status') && <th className="py-3 px-3 w-36 text-center">สถานะวงจรเอกสาร</th>}
-                        <th className="py-3 px-3.5 w-24 text-right">
+                        {isPoColVisible('po_no') && <th className="py-3.5 px-3.5 w-36 border-r border-slate-200/70 dark:border-slate-700/60 whitespace-nowrap">เลขที่ PO / วันที่</th>}
+                        {isPoColVisible('vendor') && <th className="py-3.5 px-3 min-w-[140px] border-r border-slate-200/70 dark:border-slate-700/60">ผู้ขาย / ร้านค้า</th>}
+                        {isPoColVisible('project') && <th className="py-3.5 px-3 min-w-[140px] border-r border-slate-200/70 dark:border-slate-700/60">โครงการ / ลูกค้า</th>}
+                        {isPoColVisible('amount') && <th className="py-3.5 px-3 w-28 text-right border-r border-slate-200/70 dark:border-slate-700/60">ยอดรวม (บาท)</th>}
+                        {isPoColVisible('due_date') && <th className="py-3.5 px-3 w-40 min-w-[140px] border-r border-slate-200/70 dark:border-slate-700/60">วันครบกำหนด</th>}
+                        {isPoColVisible('status') && <th className="py-3.5 px-3 w-36 text-center border-r border-slate-200/70 dark:border-slate-700/60">สถานะวงจรเอกสาร</th>}
+                        <th className="py-3.5 px-3.5 w-24 text-right">
                           การจัดการ
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-steel-100 dark:divide-slate-800/60 bg-white dark:bg-slate-900">
-                      {paginatedPos.map((r) => {
+                    <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                      {paginatedPos.map((r, rowIdx) => {
                         const dueStatus = getPoDueStatus(r)
                         const isPaid = r.payment_status === 'ชำระครบแล้ว' || (Number(r.remaining_amount) <= 0.05 && Number(r.deposit_paid_amount) > 0)
 
                         return (
-                          <tr key={r.id} className="hover:bg-steel-50/70 dark:hover:bg-slate-800/50 transition-colors group">
+                          <tr
+                            key={r.id}
+                            className={`transition-colors border-b border-slate-200 dark:border-slate-800 group ${
+                              rowIdx % 2 === 0
+                                ? 'bg-white dark:bg-slate-900'
+                                : 'bg-slate-50/70 dark:bg-slate-800/40'
+                            } hover:!bg-amber-50/70 dark:hover:!bg-slate-750`}
+                          >
                             {/* 1. เลขที่ PO + วันที่สั่งซื้อ (Sticky Left ไม่หลุดจอ) */}
                             {isPoColVisible('po_no') && (
-                              <td className="py-3 px-3.5 align-top whitespace-nowrap sticky left-0 z-10 bg-white dark:bg-slate-900 group-hover:bg-steel-50 dark:group-hover:bg-slate-800 shadow-[2px_0_4px_-1px_rgba(0,0,0,0.06)]">
+                              <td className="py-3 px-3.5 align-top whitespace-nowrap sticky left-0 z-10 bg-inherit shadow-[2px_0_4px_-1px_rgba(0,0,0,0.06)] border-r border-slate-200/60 dark:border-slate-800/60">
                                 <Link
                                   to={`/purchasing/po/${r.id}`}
                                   className="font-bold text-emerald-700 dark:text-emerald-400 hover:underline flex items-center gap-1"
@@ -1424,7 +1431,7 @@ export default function PurchasingHub() {
 
                             {/* 2. ผู้ขาย / ร้านค้า */}
                             {isPoColVisible('vendor') && (
-                              <td className="py-3 px-3.5 align-top">
+                              <td className="py-3 px-3.5 align-top border-r border-slate-200/60 dark:border-slate-800/60">
                                 <div className="font-bold text-steel-900 dark:text-slate-100 truncate max-w-[200px]" title={r.custom_vendor_name || r.vendors?.vendor_name}>
                                   {r.custom_vendor_name || r.vendors?.vendor_name || '-'}
                                 </div>
@@ -1438,7 +1445,7 @@ export default function PurchasingHub() {
 
                             {/* 3. โครงการ & ลูกค้า */}
                             {isPoColVisible('project') && (
-                              <td className="py-3 px-3.5 align-top">
+                              <td className="py-3 px-3.5 align-top border-r border-slate-200/60 dark:border-slate-800/60">
                                 <div className="flex flex-col gap-0.5 min-w-0">
                                   <div className="font-bold text-steel-900 dark:text-slate-100 truncate max-w-[190px]" title={r.custom_project_name || (r.projects ? `${r.projects.project_code} ${r.projects.project_name}` : 'ของกลางบริษัท')}>
                                     {r.custom_project_name || (r.projects ? r.projects.project_code : 'ของกลางบริษัท')}
@@ -1458,7 +1465,7 @@ export default function PurchasingHub() {
 
                             {/* 4. ยอดรวมสุทธิ */}
                             {isPoColVisible('amount') && (
-                              <td className="py-3 px-3.5 align-top text-right whitespace-nowrap">
+                              <td className="py-3 px-3.5 align-top text-right whitespace-nowrap border-r border-slate-200/60 dark:border-slate-800/60">
                                 <div className="font-mono font-black text-sm text-steel-900 dark:text-slate-100 tabular-nums">
                                   ฿{baht(r.total_amount)}
                                 </div>
@@ -1626,28 +1633,28 @@ export default function PurchasingHub() {
                 </div>
               </div>
 
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs divide-y divide-steel-200 dark:divide-slate-800">
-                  <thead className="bg-steel-50/90 dark:bg-slate-800 text-steel-700 dark:text-slate-200 font-bold uppercase tracking-wider text-[11px]">
+              <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs">
+                <table className="w-full text-left text-xs divide-y divide-slate-200 dark:divide-slate-800 border-collapse">
+                  <thead className="bg-slate-100/90 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 font-bold uppercase tracking-wider text-[11px] border-b-2 border-slate-300 dark:border-slate-700">
                     <tr>
-                      {isPrColVisible('pr_no') && <th className="py-3 px-3.5 w-36">เลขที่ PR / วันที่ขอ</th>}
-                      {isPrColVisible('project') && <th className="py-3 px-3 min-w-[170px]">โครงการ / ลูกค้า / ผู้ขายแนะนำ</th>}
-                      {isPrColVisible('items') && <th className="py-3 px-3 w-28 text-center">จำนวนรายการ</th>}
-                      {isPrColVisible('status') && <th className="py-3 px-3 w-32 text-center">สถานะ</th>}
-                      {isPrColVisible('linked_po') && <th className="py-3 px-3 min-w-[150px]">ใบสั่งซื้อที่เกี่ยวข้อง (PO)</th>}
-                      <th className="py-3 px-3.5 w-24 text-right">การจัดการ</th>
+                      {isPrColVisible('pr_no') && <th className="py-3.5 px-3.5 w-36 whitespace-nowrap border-r border-slate-200/70 dark:border-slate-700/60">เลขที่ PR / วันที่ขอ</th>}
+                      {isPrColVisible('project') && <th className="py-3.5 px-3 min-w-[170px] border-r border-slate-200/70 dark:border-slate-700/60">โครงการ / ลูกค้า / ผู้ขายแนะนำ</th>}
+                      {isPrColVisible('items') && <th className="py-3.5 px-3 w-28 text-center border-r border-slate-200/70 dark:border-slate-700/60">จำนวนรายการ</th>}
+                      {isPrColVisible('status') && <th className="py-3.5 px-3 w-32 text-center border-r border-slate-200/70 dark:border-slate-700/60">สถานะ</th>}
+                      {isPrColVisible('linked_po') && <th className="py-3.5 px-3 min-w-[150px] border-r border-slate-200/70 dark:border-slate-700/60">ใบสั่งซื้อที่เกี่ยวข้อง (PO)</th>}
+                      <th className="py-3.5 px-3.5 w-24 text-right">การจัดการ</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-steel-100 dark:divide-slate-800/60 bg-white dark:bg-slate-900">
+                  <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
                     {filteredPrs.length === 0 ? (
                       <tr>
-                        <td colSpan={prColumns.filter((c) => c.visible).length + 1} className="py-12 text-center text-steel-400 dark:text-slate-500">
-                          <FileText className="mx-auto h-8 w-8 text-steel-300 dark:text-slate-600 mb-2" />
+                        <td colSpan={prColumns.filter((c) => c.visible).length + 1} className="py-12 text-center text-slate-400 dark:text-slate-500">
+                          <FileText className="mx-auto h-8 w-8 text-slate-300 dark:text-slate-600 mb-2" />
                           <p className="font-semibold text-xs">ไม่พบใบขอซื้อตามเงื่อนไขที่เลือก</p>
                           {canCreate && (
                             <Link
                               to="/purchasing/pr/new"
-                              className="mt-3 inline-flex items-center gap-1 rounded-xl bg-steel-900 dark:bg-amber-500 px-3.5 py-1.5 text-xs font-bold text-hivis dark:text-slate-950 hover:bg-steel-800 dark:hover:bg-amber-400 transition"
+                              className="mt-3 inline-flex items-center gap-1 rounded-xl bg-slate-900 dark:bg-amber-500 px-3.5 py-1.5 text-xs font-bold text-white dark:text-slate-950 hover:bg-slate-800 dark:hover:bg-amber-400 transition"
                             >
                               + ออกใบขอซื้อ (PR) ใหม่
                             </Link>
@@ -1655,21 +1662,27 @@ export default function PurchasingHub() {
                         </td>
                       </tr>
                     ) : (
-                      paginatedPrs.map((r) => {
+                      paginatedPrs.map((r, rowIdx) => {
                         const linkedPos = poByPrId[r.id] || []
                         return (
-                          <tr key={r.id} className="hover:bg-steel-50/70 dark:hover:bg-slate-800/50 transition-colors group">
+                          <tr
+                            key={r.id}
+                            className={`transition-colors border-b border-slate-200 dark:border-slate-800 group ${
+                              rowIdx % 2 === 0
+                                ? 'bg-white dark:bg-slate-900'
+                                : 'bg-slate-50/70 dark:bg-slate-800/40'
+                            } hover:!bg-amber-50/70 dark:hover:!bg-slate-750`}
+                          >
                             {/* 1. เลขที่ PR + วันที่ขอซื้อ */}
                             {isPrColVisible('pr_no') && (
-                              <td className="py-3 px-3.5 align-top whitespace-nowrap">
+                              <td className="py-3 px-3.5 align-top whitespace-nowrap border-r border-slate-200/60 dark:border-slate-800/60">
                                 <Link
                                   to={`/purchasing/pr/${r.id}`}
                                   className="font-bold text-sky-700 dark:text-sky-400 hover:underline flex items-center gap-1"
                                 >
-                                  <span></span>
                                   <span>{r.pr_no}</span>
                                 </Link>
-                                <div className="text-[11px] text-steel-500 dark:text-slate-400 mt-0.5">
+                                <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                                   {formatThaiDate(r.request_date)}
                                 </div>
                               </td>
@@ -1677,7 +1690,7 @@ export default function PurchasingHub() {
 
                             {/* 2. โครงการ / ลูกค้า / ผู้ขายแนะนำ */}
                             {isPrColVisible('project') && (
-                              <td className="py-3 px-3 align-top">
+                              <td className="py-3 px-3 align-top border-r border-slate-200/60 dark:border-slate-800/60">
                                 <div className="flex flex-col gap-0.5 min-w-0">
                                   <div className="font-bold text-steel-900 dark:text-slate-100 truncate max-w-[220px]" title={r.custom_project_name || (r.projects ? `${r.projects.project_code} ${r.projects.project_name}` : 'ของกลางบริษัท')}>
                                     {r.custom_project_name || (r.projects ? r.projects.project_code : 'ของกลางบริษัท')}
@@ -1899,68 +1912,74 @@ export default function PurchasingHub() {
 
               {/* มุมมองที่ 1: รายการพัสดุและวัสดุทั้งหมดที่เคยตรวจรับเข้ามา (Received Materials History) */}
               {receiptSubTab === 'received_items' && (
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {/* Summary Metric Stats */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div className="p-3.5 rounded-xl bg-white dark:bg-slate-900 border border-steel-200 dark:border-slate-800 shadow-xs flex items-center justify-between">
+                    <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 border-l-4 border-l-sky-500 shadow-xs flex items-center justify-between">
                       <div>
-                        <div className="text-[11px] text-steel-500 dark:text-slate-400 font-semibold">รายการวัสดุที่เคยรับเข้า</div>
-                        <div className="text-xl font-black font-mono text-steel-900 dark:text-slate-100 mt-0.5">
-                          {filteredReceivedMaterials.length} <span className="text-xs font-normal text-steel-500 dark:text-slate-400">รายการ</span>
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">รายการวัสดุที่เคยรับเข้า</div>
+                        <div className="text-2xl font-black font-mono text-slate-900 dark:text-slate-100 mt-1">
+                          {filteredReceivedMaterials.length} <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">รายการ</span>
                         </div>
                       </div>
-                      <span className="text-2xl p-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300"></span>
+                      <div className="p-2.5 rounded-xl bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 border border-sky-100 dark:border-sky-800">
+                        <PackageCheck className="h-5 w-5" />
+                      </div>
                     </div>
 
-                    <div className="p-3.5 rounded-xl bg-white dark:bg-slate-900 border border-steel-200 dark:border-slate-800 shadow-xs flex items-center justify-between">
+                    <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 border-l-4 border-l-indigo-500 shadow-xs flex items-center justify-between">
                       <div>
-                        <div className="text-[11px] text-steel-500 dark:text-slate-400 font-semibold">จำนวนหน่วยรับเข้ารวม</div>
-                        <div className="text-xl font-black font-mono text-steel-900 dark:text-slate-100 mt-0.5">
-                          {totalReceivedQuantity.toLocaleString()} <span className="text-xs font-normal text-steel-500 dark:text-slate-400">หน่วย/ชิ้น</span>
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">จำนวนหน่วยรับเข้ารวม</div>
+                        <div className="text-2xl font-black font-mono text-slate-900 dark:text-slate-100 mt-1">
+                          {totalReceivedQuantity.toLocaleString()} <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">หน่วย/ชิ้น</span>
                         </div>
                       </div>
-                      <span className="text-2xl p-2 rounded-lg bg-sky-50 dark:bg-sky-950/50 text-sky-700 dark:text-sky-300"></span>
+                      <div className="p-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-800">
+                        <Layers className="h-5 w-5" />
+                      </div>
                     </div>
 
-                    <div className="p-3.5 rounded-xl bg-white dark:bg-slate-900 border border-steel-200 dark:border-slate-800 shadow-xs flex items-center justify-between">
+                    <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 border-l-4 border-l-emerald-500 shadow-xs flex items-center justify-between">
                       <div>
-                        <div className="text-[11px] text-steel-500 dark:text-slate-400 font-semibold">มูลค่ารับเข้ารวมตามช่วงเวลา</div>
-                        <div className="text-xl font-black font-mono text-emerald-800 dark:text-emerald-400 mt-0.5">
-                          {baht(totalReceivedValue)} <span className="text-xs font-normal text-steel-500 dark:text-slate-400">บาท</span>
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">มูลค่ารับเข้ารวมตามช่วงเวลา</div>
+                        <div className="text-2xl font-black font-mono text-emerald-600 dark:text-emerald-400 mt-1">
+                          {baht(totalReceivedValue)} <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">บาท</span>
                         </div>
                       </div>
-                      <span className="text-2xl p-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300"></span>
+                      <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800">
+                        <Coins className="h-5 w-5" />
+                      </div>
                     </div>
                   </div>
 
-                  {/* ตารางประวัติพัสดุที่เคยรับเข้า */}
-                  <div className="overflow-x-auto rounded-2xl border border-steel-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-xs">
-                    <table className="w-full text-left text-xs min-w-[1000px] divide-y divide-steel-200 dark:divide-slate-800">
-                      <thead className="bg-steel-50/80 dark:bg-slate-800 text-steel-700 dark:text-slate-200 font-bold uppercase tracking-wider text-[11px]">
+                  {/* ตารางประวัติพัสดุที่เคยรับเข้า (จัดรูปแบบ Grid ชัดเจน มีแถบสลับสี และเส้นแบ่งเซลล์) */}
+                  <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs">
+                    <table className="w-full text-left text-xs min-w-[1050px] border-collapse">
+                      <thead className="bg-slate-100/90 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 font-bold uppercase tracking-wider text-[11px] border-b-2 border-slate-300 dark:border-slate-700">
                         <tr>
-                          <th className="py-3 px-3 w-28 whitespace-nowrap">วันที่รับเข้า</th>
-                          <th className="py-3 px-3.5 w-32 whitespace-nowrap">เลขที่รับ (GRN)</th>
-                          <th className="py-3 px-3.5 w-32 whitespace-nowrap">เลขที่ PO</th>
-                          <th className="py-3 px-3.5 min-w-[220px]">รายการวัสดุ / พัสดุ</th>
-                          <th className="py-3 px-3 text-right w-24 whitespace-nowrap">จำนวนที่รับ</th>
-                          <th className="py-3 px-3 text-center w-16 whitespace-nowrap">หน่วย</th>
-                          <th className="py-3 px-3 text-right w-28 whitespace-nowrap">ราคา/หน่วย</th>
-                          <th className="py-3 px-3.5 text-right w-32 whitespace-nowrap">มูลค่ารวม (บาท)</th>
-                          <th className="py-3 px-3.5 min-w-[160px]">ผู้ขาย / ร้านค้า</th>
-                          <th className="py-3 px-3.5 min-w-[160px]">โครงการปลายทาง</th>
-                          <th className="py-3 px-3 text-center w-28 whitespace-nowrap">สถานะ</th>
+                          <th className="py-3.5 px-3.5 w-28 whitespace-nowrap border-r border-slate-200/70 dark:border-slate-700/60">วันที่รับเข้า</th>
+                          <th className="py-3.5 px-3.5 w-36 whitespace-nowrap border-r border-slate-200/70 dark:border-slate-700/60">เลขที่รับ (GRN)</th>
+                          <th className="py-3.5 px-3.5 w-32 whitespace-nowrap border-r border-slate-200/70 dark:border-slate-700/60">เลขที่ PO</th>
+                          <th className="py-3.5 px-4 min-w-[220px] border-r border-slate-200/70 dark:border-slate-700/60">รายการวัสดุ / พัสดุ</th>
+                          <th className="py-3.5 px-3 text-right w-24 whitespace-nowrap border-r border-slate-200/70 dark:border-slate-700/60">จำนวนที่รับ</th>
+                          <th className="py-3.5 px-3 text-center w-16 whitespace-nowrap border-r border-slate-200/70 dark:border-slate-700/60">หน่วย</th>
+                          <th className="py-3.5 px-3.5 text-right w-28 whitespace-nowrap border-r border-slate-200/70 dark:border-slate-700/60">ราคา/หน่วย</th>
+                          <th className="py-3.5 px-3.5 text-right w-32 whitespace-nowrap border-r border-slate-200/70 dark:border-slate-700/60">มูลค่ารวม (บาท)</th>
+                          <th className="py-3.5 px-3.5 min-w-[160px] border-r border-slate-200/70 dark:border-slate-700/60">ผู้ขาย / ร้านค้า</th>
+                          <th className="py-3.5 px-3.5 min-w-[160px] border-r border-slate-200/70 dark:border-slate-700/60">โครงการปลายทาง</th>
+                          <th className="py-3.5 px-3 text-center w-28 whitespace-nowrap">สถานะ</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-steel-100 dark:divide-slate-800/60 bg-white dark:bg-slate-900">
+                      <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
                         {filteredReceivedMaterials.length === 0 ? (
                           <tr>
-                            <td colSpan={11} className="py-12 text-center text-steel-400 dark:text-slate-500">
-                              <span className="text-2xl block mb-1"></span>
-                              ไม่พบประวัติการตรวจรับพัสดุตามเงื่อนไขหรือช่วงเวลาที่เลือก
+                            <td colSpan={11} className="py-12 text-center text-slate-400 dark:text-slate-500">
+                              <Package className="mx-auto h-8 w-8 text-slate-300 dark:text-slate-600 mb-2" />
+                              <p className="font-semibold text-xs">ไม่พบประวัติการตรวจรับพัสดุตามเงื่อนไขหรือช่วงเวลาที่เลือก</p>
                             </td>
                           </tr>
                         ) : (
-                          paginatedReceivedMaterials.map((m) => {
+                          paginatedReceivedMaterials.map((m, rowIdx) => {
                             const grnItems = m.grn_list && m.grn_list.length > 1
                               ? m.grn_list
                               : (typeof m.grn_no === 'string' && m.grn_no.includes(',')
@@ -1968,17 +1987,24 @@ export default function PurchasingHub() {
                                   : null)
 
                             return (
-                              <tr key={m.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
-                                <td className="py-3 px-3 font-medium text-steel-700 dark:text-slate-300 whitespace-nowrap align-top">
+                              <tr
+                                key={m.id || rowIdx}
+                                className={`transition-colors border-b border-slate-200 dark:border-slate-800 ${
+                                  rowIdx % 2 === 0
+                                    ? 'bg-white dark:bg-slate-900'
+                                    : 'bg-slate-50/70 dark:bg-slate-800/40'
+                                } hover:!bg-amber-50/70 dark:hover:!bg-slate-750`}
+                              >
+                                <td className="py-3 px-3.5 font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap align-top border-r border-slate-200/60 dark:border-slate-800/60">
                                   {formatThaiDate(m.received_date)}
                                 </td>
-                                <td className="py-3 px-3.5 font-mono font-bold text-sky-800 dark:text-sky-400 align-top">
+                                <td className="py-3 px-3.5 font-mono font-bold text-sky-800 dark:text-sky-400 align-top border-r border-slate-200/60 dark:border-slate-800/60">
                                   {grnItems && grnItems.length > 1 ? (
                                     <div className="flex flex-col gap-1 items-start">
                                       {grnItems.map((grn, idx) => (
                                         <span
                                           key={idx}
-                                          className="inline-flex items-center px-1.5 py-0.5 rounded bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800 text-[11px] font-mono font-bold whitespace-nowrap"
+                                          className="inline-flex items-center px-2 py-0.5 rounded-md bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800 text-[11px] font-mono font-bold whitespace-nowrap shadow-2xs"
                                         >
                                           {grn}
                                         </span>
@@ -1988,55 +2014,62 @@ export default function PurchasingHub() {
                                       </span>
                                     </div>
                                   ) : (
-                                    <span className="whitespace-nowrap">{m.grn_no}</span>
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800 text-[11px] font-mono font-bold whitespace-nowrap">
+                                      {m.grn_no}
+                                    </span>
                                   )}
                                 </td>
-                                <td className="py-3 px-3.5 font-mono font-bold text-emerald-700 dark:text-emerald-400 whitespace-nowrap align-top">
-                                  <Link to={`/purchasing/po/${m.po_id}`} className="hover:underline flex items-center gap-1">
-                                    <span></span>
+                                <td className="py-3 px-3.5 font-mono font-bold text-emerald-700 dark:text-emerald-400 whitespace-nowrap align-top border-r border-slate-200/60 dark:border-slate-800/60">
+                                  <Link
+                                    to={`/purchasing/po/${m.po_id}`}
+                                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition shadow-2xs"
+                                  >
                                     <span>{m.po_no}</span>
                                   </Link>
                                 </td>
-                                <td className="py-3 px-3.5 font-semibold text-steel-950 dark:text-slate-100 align-top">
-                                  <div>{m.item_name}</div>
+                                <td className="py-3 px-4 font-semibold text-slate-900 dark:text-slate-100 align-top border-r border-slate-200/60 dark:border-slate-800/60">
+                                  <div className="font-bold text-slate-900 dark:text-white leading-snug">{m.item_name}</div>
                                   <button
                                     type="button"
                                     onClick={() => setSelectedUsageItem({ item_name: m.item_name })}
-                                    className="text-[11px] text-sky-700 dark:text-sky-400 hover:text-sky-900 dark:hover:text-sky-300 hover:underline font-normal cursor-pointer flex items-center gap-1 mt-0.5"
+                                    className="text-[11px] text-sky-600 dark:text-sky-400 hover:text-sky-800 dark:hover:text-sky-300 hover:underline font-normal cursor-pointer flex items-center gap-1 mt-1"
                                   >
                                     <span>ดูประวัติโครงการที่เคยใช้</span>
                                   </button>
                                 </td>
-                                <td className="py-3 px-3 text-right font-mono font-bold text-steel-900 dark:text-slate-100 align-top">
-                                  {Math.round(Number(m.quantity) || 0)}
+                                <td className="py-3 px-3 text-right align-top border-r border-slate-200/60 dark:border-slate-800/60">
+                                  <span className="font-mono font-black text-slate-900 dark:text-slate-100 bg-slate-100/90 dark:bg-slate-800 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700">
+                                    {Math.round(Number(m.quantity) || 0)}
+                                  </span>
                                 </td>
-                                <td className="py-3 px-3 text-center text-steel-600 dark:text-slate-400 font-medium align-top">
+                                <td className="py-3 px-3 text-center text-slate-600 dark:text-slate-400 font-medium align-top border-r border-slate-200/60 dark:border-slate-800/60">
                                   {m.unit}
                                 </td>
-                                <td className="py-3 px-3 text-right font-mono text-steel-700 dark:text-slate-300 align-top">
+                                <td className="py-3 px-3.5 text-right font-mono text-slate-700 dark:text-slate-300 align-top border-r border-slate-200/60 dark:border-slate-800/60">
                                   {baht(m.unit_cost)}
                                 </td>
-                                <td className="py-3 px-3.5 text-right font-mono font-black text-steel-950 dark:text-slate-100 align-top">
+                                <td className="py-3 px-3.5 text-right font-mono font-black text-emerald-600 dark:text-emerald-400 align-top border-r border-slate-200/60 dark:border-slate-800/60">
                                   {baht(m.total_value)}
                                 </td>
-                                <td className="py-3 px-3.5 text-steel-800 dark:text-slate-200 align-top">
-                                  <div className="break-words whitespace-normal leading-relaxed max-w-[200px]" title={m.vendor_name}>
+                                <td className="py-3 px-3.5 text-slate-800 dark:text-slate-200 align-top border-r border-slate-200/60 dark:border-slate-800/60">
+                                  <div className="break-words whitespace-normal leading-relaxed max-w-[200px] font-medium" title={m.vendor_name}>
                                     {m.vendor_name}
                                   </div>
                                 </td>
-                                <td className="py-3 px-3.5 text-steel-700 dark:text-slate-300 align-top">
-                                  <div className="break-words whitespace-normal leading-relaxed max-w-[200px]" title={m.project_name}>
+                                <td className="py-3 px-3.5 text-slate-700 dark:text-slate-300 align-top border-r border-slate-200/60 dark:border-slate-800/60">
+                                  <div className="break-words whitespace-normal leading-relaxed max-w-[200px] font-medium text-slate-900 dark:text-slate-100" title={m.project_name}>
                                     {m.project_name}
                                   </div>
                                   {m.customer_name && (
-                                    <div className="text-[11px] leading-relaxed text-sky-800 dark:text-sky-300 break-words whitespace-normal mt-0.5">
+                                    <div className="text-[11px] leading-relaxed text-sky-700 dark:text-sky-300 break-words whitespace-normal mt-0.5 font-normal">
                                       {m.customer_name}
                                     </div>
                                   )}
                                 </td>
                                 <td className="py-3 px-3 text-center whitespace-nowrap align-top">
-                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
-                                    <span></span> เข้าคลังแล้ว
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-bold bg-emerald-100/80 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 shadow-2xs">
+                                    <CheckCircle2 className="h-3 w-3" />
+                                    <span>เข้าคลังแล้ว</span>
                                   </span>
                                 </td>
                               </tr>
