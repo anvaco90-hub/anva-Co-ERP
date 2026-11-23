@@ -657,17 +657,17 @@ export default function ItemsMaster() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <span className="rounded-md bg-hivis text-steel-950 font-black px-2.5 py-0.5 text-xs uppercase tracking-wider">
+              <span className="rounded-md bg-hivis text-slate-950 font-black px-2.5 py-0.5 text-xs uppercase tracking-wider">
                 ANVA & CO. CATALOG
               </span>
-              <span className="text-xs text-steel-300">
+              <span className="text-xs text-slate-200 font-semibold tracking-wide">
                 ระบบจัดการทะเบียนพัสดุและหมวดหมู่วิศวกรรม
               </span>
             </div>
-            <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white">
+            <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white drop-shadow-xs">
               ทะเบียนวัสดุและหมวดหมู่อุปกรณ์ (Item Master & Catalog)
             </h1>
-            <p className="text-xs sm:text-sm text-steel-300">
+            <p className="text-xs sm:text-sm text-slate-200/90 leading-relaxed">
               กำหนดข้อมูลหลัก รหัสพัสดุ จุดเตือนสั่งซื้อ และจัดการรายการแบบปลอดภัย (CRUD) พร้อมบันทึกประวัติการอัปเดต
             </p>
           </div>

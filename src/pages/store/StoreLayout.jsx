@@ -68,7 +68,7 @@ export default function StoreLayout() {
                 <h1 className="text-base sm:text-lg font-black tracking-tight text-white">
                   ANVA & CO. — ระบบบริหารคลังและพัสดุวิศวกรรม
                 </h1>
-                <p className="text-xs text-steel-400">
+                <p className="text-xs text-slate-200/90 font-medium">
                   ระบบคลังวัสดุและอุปกรณ์มาตรฐานวิศวกรรม บริษัท อันวาแอนด์โค จำกัด
                 </p>
               </div>

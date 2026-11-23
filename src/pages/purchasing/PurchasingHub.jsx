@@ -791,21 +791,21 @@ export default function PurchasingHub() {
     <div className="space-y-5">
 
       {/* 1. ANVA & Co. Engineering Procurement Brand Hero Banner (สไตล์เดียวกับสโตร์) */}
-      <div className="rounded-2xl bg-gradient-to-r from-slate-900 via-steel-900 to-slate-800 p-6 sm:p-7 text-white shadow-md border border-steel-700">
+      <div className="rounded-2xl bg-gradient-to-r from-slate-900 via-steel-900 to-slate-800 p-6 sm:p-7 text-white shadow-md border border-slate-700">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
           <div className="space-y-1.5">
             <div className="flex items-center gap-2">
-              <span className="rounded-md bg-hivis text-steel-950 font-black px-2.5 py-0.5 text-xs uppercase tracking-wider">
+              <span className="rounded-md bg-hivis text-slate-950 font-black px-2.5 py-0.5 text-xs uppercase tracking-wider">
                 ENGINEERING PROCUREMENT
               </span>
-              <span className="text-xs text-steel-300">
+              <span className="text-xs text-slate-200 font-semibold tracking-wide">
                 บริษัท อันวาแอนด์โค จำกัด (ANVA & CO., LTD.)
               </span>
             </div>
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight text-white">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight text-white drop-shadow-xs">
               ฝ่ายจัดซื้อและพัสดุวิศวกรรม (Purchasing Hub)
             </h1>
-            <p className="text-xs sm:text-sm text-steel-300 max-w-2xl">
+            <p className="text-xs sm:text-sm text-slate-200/90 leading-relaxed max-w-2xl">
               ระบบบริหารวงจรจัดซื้อ ออกใบขอซื้อ (PR) อนุมัติออกคำสั่งซื้อ (PO) ตรวจรับสินค้าเข้าสต็อก และควบคุมต้นทุนโครงการ
             </p>
           </div>
@@ -815,58 +815,58 @@ export default function PurchasingHub() {
             <div
               onClick={() => changeTab('pr')}
               className={`rounded-xl p-3 border cursor-pointer transition text-center ${activeTab === 'pr'
-                ? 'bg-hivis text-steel-950 font-bold border-hivis shadow-md scale-105'
-                : 'bg-steel-800/80 hover:bg-steel-800 border-steel-700 text-steel-300'
+                ? 'bg-hivis text-slate-950 font-bold border-hivis shadow-md scale-105'
+                : 'bg-slate-800/90 hover:bg-slate-800 border-slate-700 text-slate-200'
                 }`}
             >
-              <div className="text-[11px] font-medium text-steel-400">ใบขอซื้อ (PR)</div>
-              <div className="mt-0.5 text-xl font-black font-mono text-sky-400">{prs.length}</div>
-              <div className="text-[10px] text-steel-400">รายการ</div>
+              <div className={`text-[11px] font-bold ${activeTab === 'pr' ? 'text-slate-900' : 'text-slate-200'}`}>ใบขอซื้อ (PR)</div>
+              <div className={`mt-0.5 text-xl font-black font-mono ${activeTab === 'pr' ? 'text-slate-950' : 'text-sky-300'}`}>{prs.length}</div>
+              <div className={`text-[10px] ${activeTab === 'pr' ? 'text-slate-800 font-bold' : 'text-slate-300 font-medium'}`}>รายการ</div>
             </div>
 
             <div
               onClick={() => changeTab('po')}
               className={`rounded-xl p-3 border cursor-pointer transition text-center ${activeTab === 'po'
-                ? 'bg-hivis text-steel-950 font-bold border-hivis shadow-md scale-105'
-                : 'bg-steel-800/80 hover:bg-steel-800 border-steel-700 text-steel-300'
+                ? 'bg-hivis text-slate-950 font-bold border-hivis shadow-md scale-105'
+                : 'bg-slate-800/90 hover:bg-slate-800 border-slate-700 text-slate-200'
                 }`}
             >
-              <div className="text-[11px] font-medium text-steel-400">ใบสั่งซื้อ (PO)</div>
-              <div className="mt-0.5 text-xl font-black font-mono text-amber-300">{pos.length}</div>
-              <div className="text-[10px] text-steel-400">รายการ</div>
+              <div className={`text-[11px] font-bold ${activeTab === 'po' ? 'text-slate-900' : 'text-slate-200'}`}>ใบสั่งซื้อ (PO)</div>
+              <div className={`mt-0.5 text-xl font-black font-mono ${activeTab === 'po' ? 'text-slate-950' : 'text-amber-300'}`}>{pos.length}</div>
+              <div className={`text-[10px] ${activeTab === 'po' ? 'text-slate-800 font-bold' : 'text-slate-300 font-medium'}`}>รายการ</div>
             </div>
 
             <div
               onClick={() => changeTab('receipts')}
               className={`rounded-xl p-3 border cursor-pointer transition text-center ${activeTab === 'receipts'
-                ? 'bg-hivis text-steel-950 font-bold border-hivis shadow-md scale-105'
-                : 'bg-steel-800/80 hover:bg-steel-800 border-steel-700 text-steel-300'
+                ? 'bg-hivis text-slate-950 font-bold border-hivis shadow-md scale-105'
+                : 'bg-slate-800/90 hover:bg-slate-800 border-slate-700 text-slate-200'
                 }`}
             >
-              <div className="text-[11px] font-medium text-steel-400">รอตรวจรับ</div>
-              <div className="mt-0.5 text-xl font-black font-mono text-rose-400">{pendingReceipts.length}</div>
-              <div className="text-[10px] text-steel-400">ค้างรับเข้าสโตร์</div>
+              <div className={`text-[11px] font-bold ${activeTab === 'receipts' ? 'text-slate-900' : 'text-slate-200'}`}>รอตรวจรับ</div>
+              <div className={`mt-0.5 text-xl font-black font-mono ${activeTab === 'receipts' ? 'text-slate-950' : 'text-rose-400'}`}>{pendingReceipts.length}</div>
+              <div className={`text-[10px] ${activeTab === 'receipts' ? 'text-slate-800 font-bold' : 'text-slate-300 font-medium'}`}>ค้างรับเข้าสโตร์</div>
             </div>
 
             <div
               onClick={() => changeTab('pipeline')}
               className={`rounded-xl p-3 border cursor-pointer transition text-center ${activeTab === 'pipeline'
-                ? 'bg-hivis text-steel-950 font-bold border-hivis shadow-md scale-105'
-                : 'bg-steel-800/80 hover:bg-steel-800 border-steel-700 text-steel-300'
+                ? 'bg-hivis text-slate-950 font-bold border-hivis shadow-md scale-105'
+                : 'bg-slate-800/90 hover:bg-slate-800 border-slate-700 text-slate-200'
                 }`}
             >
-              <div className="text-[11px] font-medium text-steel-400">วงจรเอกสาร</div>
-              <div className="mt-0.5 text-xl font-black font-mono text-emerald-400">{completedPos.length}</div>
-              <div className="text-[10px] text-steel-400">ปิดวงจรสมบูรณ์</div>
+              <div className={`text-[11px] font-bold ${activeTab === 'pipeline' ? 'text-slate-900' : 'text-slate-200'}`}>วงจรเอกสาร</div>
+              <div className={`mt-0.5 text-xl font-black font-mono ${activeTab === 'pipeline' ? 'text-slate-950' : 'text-emerald-300'}`}>{completedPos.length}</div>
+              <div className={`text-[10px] ${activeTab === 'pipeline' ? 'text-slate-800 font-bold' : 'text-slate-300 font-medium'}`}>ปิดวงจรสมบูรณ์</div>
             </div>
           </div>
         </div>
 
         {/* Bottom Bar: Total Value & Actions */}
-        <div className="mt-5 pt-4 border-t border-steel-700/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="mt-5 pt-4 border-t border-slate-700/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <span className="text-xs text-steel-300">มูลค่าสั่งซื้อรวม (ที่แสดง):</span>
-            <span className="text-lg font-black font-mono text-emerald-400">
+            <span className="text-xs font-semibold text-slate-200">มูลค่าสั่งซื้อรวม (ที่แสดง):</span>
+            <span className="text-lg font-black font-mono text-emerald-300 tracking-wide">
               {baht(totalPoNetValue)} บาท
             </span>
           </div>
@@ -876,15 +876,16 @@ export default function PurchasingHub() {
               <>
                 <Link
                   to="/purchasing/pr/new"
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-steel-600 bg-steel-800 hover:bg-steel-700 px-3.5 py-2 text-xs font-bold text-white transition shadow-xs cursor-pointer"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-600 bg-slate-800/90 hover:bg-slate-700 px-3.5 py-2 text-xs font-bold text-white transition shadow-xs cursor-pointer"
                 >
-                  <span>+ ออกใบขอซื้อ (PR)</span>
+                  <Plus className="h-4 w-4 text-hivis" />
+                  <span>ออกใบขอซื้อ (PR)</span>
                 </Link>
                 <Link
                   to="/purchasing/po/new"
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-hivis hover:brightness-110 text-steel-950 px-4 py-2 text-xs font-black shadow-md transition cursor-pointer"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-hivis hover:brightness-110 text-slate-950 px-4 py-2 text-xs font-black shadow-md transition cursor-pointer"
                 >
-                  <Plus className="h-4 w-4" />
+                  <Plus className="h-4 w-4 stroke-[3]" />
                   <span>สร้างใบสั่งซื้อ (PO)</span>
                 </Link>
               </>

@@ -83,7 +83,7 @@ export default function PurchasingLayout() {
                 <h1 className="text-base sm:text-lg font-black tracking-tight text-white flex items-center gap-2">
                   <span>ANVA & CO. — ระบบฝ่ายจัดซื้อและพัสดุวิศวกรรม</span>
                 </h1>
-                <p className="text-xs text-steel-400">
+                <p className="text-xs text-slate-200/90 font-medium">
                   ระบบบริหารวงจรจัดซื้อ ออกใบสั่งซื้อ ตรวจรับพัสดุเข้าสโตร์ และเชื่อมต่อบัญชีการเงิน บริษัท อันวาแอนด์โค จำกัด
                 </p>
               </div>

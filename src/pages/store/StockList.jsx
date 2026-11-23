@@ -194,39 +194,39 @@ export default function StockList() {
       {/* ---------------------------------------------------------------------- */}
       {/* 1. Header Banner: ANVA & Co Solar Engineering Brand Theme             */}
       {/* ---------------------------------------------------------------------- */}
-      <div className="rounded-2xl bg-gradient-to-r from-slate-900 via-steel-900 to-slate-800 p-6 sm:p-7 text-white shadow-md border border-steel-700">
+      <div className="rounded-2xl bg-gradient-to-r from-slate-900 via-steel-900 to-slate-800 p-6 sm:p-7 text-white shadow-md border border-slate-700">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
           <div className="space-y-1.5">
             <div className="flex items-center gap-2">
-              <span className="rounded-md bg-hivis text-steel-950 font-black px-2.5 py-0.5 text-xs uppercase tracking-wider">
+              <span className="rounded-md bg-hivis text-slate-950 font-black px-2.5 py-0.5 text-xs uppercase tracking-wider">
                 ENGINEERING INVENTORY
               </span>
-              <span className="text-xs text-steel-300">
+              <span className="text-xs text-slate-200 font-semibold tracking-wide">
                 บริษัท อันวาแอนด์โค จำกัด (ANVA & CO., LTD.)
               </span>
             </div>
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight text-white">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight text-white drop-shadow-xs">
               คลังพัสดุและอุปกรณ์วิศวกรรม (Stock Inventory)
             </h1>
-            <p className="text-xs sm:text-sm text-steel-300 max-w-2xl">
+            <p className="text-xs sm:text-sm text-slate-200/90 leading-relaxed max-w-2xl">
               ตรวจสอบยอดคงเหลือ จุดเตือนสั่งซื้อ และจัดการเบิกจ่ายเข้าโครงการอย่างเป็นระบบ ถูกต้องตามมาตรฐานงานติดตั้ง
             </p>
           </div>
 
           {/* Core Metrics Boxes */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 shrink-0">
-            <div className="rounded-xl bg-steel-800/80 p-3 border border-steel-700 text-center">
-              <div className="text-[11px] font-medium text-steel-400">พัสดุทั้งหมด</div>
+            <div className="rounded-xl bg-slate-800/90 p-3 border border-slate-700 text-center">
+              <div className="text-[11px] font-bold text-slate-200">พัสดุทั้งหมด</div>
               <div className="mt-0.5 text-xl font-black font-mono text-white">{items.length}</div>
-              <div className="text-[10px] text-steel-400">รายการ</div>
+              <div className="text-[10px] text-slate-300 font-medium">รายการ</div>
             </div>
 
-            <div className="rounded-xl bg-steel-800/80 p-3 border border-steel-700 text-center">
-              <div className="text-[11px] font-medium text-steel-400">พร้อมเบิกใช้งาน</div>
-              <div className="mt-0.5 text-xl font-black font-mono text-emerald-400">
+            <div className="rounded-xl bg-slate-800/90 p-3 border border-slate-700 text-center">
+              <div className="text-[11px] font-bold text-slate-200">พร้อมเบิกใช้งาน</div>
+              <div className="mt-0.5 text-xl font-black font-mono text-emerald-300">
                 {readyCount}
               </div>
-              <div className="text-[10px] text-steel-400">รายการ</div>
+              <div className="text-[10px] text-slate-300 font-medium">รายการ</div>
             </div>
 
             <div
@@ -236,15 +236,15 @@ export default function StockList() {
               }}
               className={`rounded-xl p-3 border cursor-pointer transition text-center ${
                 onlyLow
-                  ? 'bg-hivis text-steel-950 font-bold border-hivis shadow-md scale-105'
-                  : 'bg-steel-800/80 hover:bg-steel-800 border-steel-700 text-steel-300'
+                  ? 'bg-hivis text-slate-950 font-bold border-hivis shadow-md scale-105'
+                  : 'bg-slate-800/90 hover:bg-slate-800 border-slate-700 text-slate-200'
               }`}
             >
-              <div className="text-[11px] font-medium">ใกล้หมด</div>
-              <div className="mt-0.5 text-xl font-black font-mono text-amber-300">
+              <div className={`text-[11px] font-bold ${onlyLow ? 'text-slate-900' : 'text-slate-200'}`}>ใกล้หมด</div>
+              <div className={`mt-0.5 text-xl font-black font-mono ${onlyLow ? 'text-slate-950' : 'text-amber-300'}`}>
                 {lowCount}
               </div>
-              <div className="text-[10px] opacity-80">เตือนสั่งซื้อ</div>
+              <div className={`text-[10px] ${onlyLow ? 'text-slate-800 font-bold' : 'text-slate-300 font-medium'}`}>เตือนสั่งซื้อ</div>
             </div>
 
             <div
@@ -255,23 +255,23 @@ export default function StockList() {
               className={`rounded-xl p-3 border cursor-pointer transition text-center ${
                 onlyOut
                   ? 'bg-rose-600 text-white font-bold border-rose-600 shadow-md scale-105'
-                  : 'bg-steel-800/80 hover:bg-steel-800 border-steel-700 text-steel-300'
+                  : 'bg-slate-800/90 hover:bg-slate-800 border-slate-700 text-slate-200'
               }`}
             >
-              <div className="text-[11px] font-medium">หมดสต็อก</div>
-              <div className="mt-0.5 text-xl font-black font-mono text-rose-400">
+              <div className={`text-[11px] font-bold ${onlyOut ? 'text-white' : 'text-slate-200'}`}>หมดสต็อก</div>
+              <div className={`mt-0.5 text-xl font-black font-mono ${onlyOut ? 'text-white' : 'text-rose-400'}`}>
                 {outCount}
               </div>
-              <div className="text-[10px] opacity-80">ต้องออก PR</div>
+              <div className={`text-[10px] ${onlyOut ? 'text-rose-100 font-bold' : 'text-slate-300 font-medium'}`}>ต้องออก PR</div>
             </div>
           </div>
         </div>
 
         {/* Total Valuation Bar */}
-        <div className="mt-6 pt-4 border-t border-steel-700 flex flex-col sm:flex-row sm:items-center sm:justify-between text-xs gap-3">
+        <div className="mt-6 pt-4 border-t border-slate-700 flex flex-col sm:flex-row sm:items-center sm:justify-between text-xs gap-3">
           <div className="flex items-center gap-2">
-            <span className="text-steel-300">มูลค่าสินค้าคงคลังรวม (ที่แสดง):</span>
-            <span className="font-mono text-lg font-black text-hivis">
+            <span className="text-slate-200 font-semibold text-xs">มูลค่าสินค้าคงคลังรวม (ที่แสดง):</span>
+            <span className="font-mono text-lg font-black text-emerald-300 tracking-wide">
               {baht(totalValue)} บาท
             </span>
           </div>
@@ -280,14 +280,14 @@ export default function StockList() {
             <button
               type="button"
               onClick={() => setShowReport(true)}
-              className="rounded-xl bg-steel-800 hover:bg-steel-700 text-steel-200 border border-steel-600 font-bold px-3.5 py-1.5 transition flex items-center gap-1.5 shadow-xs"
+              className="rounded-xl bg-slate-800 hover:bg-slate-700 text-white border border-slate-600 font-bold px-3.5 py-1.5 transition flex items-center gap-1.5 shadow-xs"
             >
               <Printer className="h-4 w-4 text-hivis" />
               <span>พิมพ์รายงานสต็อก (PDF)</span>
             </button>
             <Link
               to="/store/items"
-              className="rounded-xl bg-hivis text-steel-950 hover:bg-amber-400 font-black px-3.5 py-1.5 transition flex items-center gap-1.5 shadow-xs"
+              className="rounded-xl bg-hivis text-slate-950 hover:bg-emerald-400 font-black px-3.5 py-1.5 transition flex items-center gap-1.5 shadow-xs"
             >
               <span>+ เพิ่มพัสดุใหม่</span>
             </Link>
