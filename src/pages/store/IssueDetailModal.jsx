@@ -16,7 +16,9 @@ import {
   CheckCircle2,
   DollarSign,
   Layers,
-  Info
+  Info,
+  Warehouse,
+  FolderGit2
 } from 'lucide-react'
 import { baht } from '../../lib/projects'
 import { formatIntQty } from '../../lib/store'
@@ -36,9 +38,9 @@ export default function IssueDetailModal({ record, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-3 sm:p-4 backdrop-blur-xs animate-in fade-in">
-      <div className="flex max-h-[92vh] w-full max-w-4xl flex-col rounded-2xl bg-white dark:bg-slate-900 shadow-2xl border border-steel-200 dark:border-slate-800 overflow-hidden text-steel-800 dark:text-slate-100">
+      <div className="flex max-h-[92vh] w-full max-w-5xl flex-col rounded-2xl bg-white dark:bg-slate-900 shadow-2xl border border-steel-200 dark:border-slate-800 overflow-hidden text-steel-800 dark:text-slate-100">
         
-        {/* 1. Header ระดับบริหาร สไตล์โมดัลมาตรฐาน (#0f172a เหมือนทะเบียนคู่ค้า) */}
+        {/* 1. Header ระดับบริหาร สไตล์โมดัลมาตรฐาน (#0f172a เหมือนศูนย์งานขาย & ทะเบียนคู่ค้า) */}
         <div className="flex flex-wrap items-center justify-between border-b border-slate-800 bg-[#0f172a] px-5 sm:px-6 py-4 text-white gap-3">
           <div className="flex items-center gap-3.5 min-w-0">
             <div
@@ -85,7 +87,7 @@ export default function IssueDetailModal({ record, onClose }) {
                 </span>
               </div>
 
-              <div className="text-xs text-slate-400 mt-1 flex items-center gap-2 flex-wrap">
+              <div className="text-xs text-slate-400 mt-1.5 flex items-center gap-2 flex-wrap">
                 <span className="flex items-center gap-1">
                   <Calendar className="h-3.5 w-3.5 text-slate-400" />
                   <span>{record.dateTimeStr}</span>
@@ -95,6 +97,15 @@ export default function IssueDetailModal({ record, onClose }) {
                   <User className="h-3.5 w-3.5 text-slate-400" />
                   <span>ผู้ทำรายการ: <strong className="text-slate-200">{record.userName}</strong></span>
                 </span>
+                {record.projectName && (
+                  <>
+                    <span>·</span>
+                    <span className="flex items-center gap-1 text-sky-300 font-medium">
+                      <FolderGit2 className="h-3.5 w-3.5 text-sky-400 shrink-0" />
+                      <span>โครงการ: <strong>[{record.projectCode}] {record.projectName}</strong></span>
+                    </span>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -103,8 +114,8 @@ export default function IssueDetailModal({ record, onClose }) {
             <button
               type="button"
               onClick={handlePrint}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 px-3 py-1.5 text-xs font-bold text-white transition cursor-pointer shadow-xs"
-              title="พิมพ์เอกสารใบเบิก-คืนพัสดุ"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 px-3.5 py-2 text-xs font-bold text-white transition cursor-pointer shadow-xs"
+              title="พิมพ์เอกสารใบเบิก-คืนพัสดุ (A4 Voucher)"
             >
               <Printer className="h-3.5 w-3.5 text-amber-400" />
               <span>พิมพ์เอกสาร</span>
@@ -120,12 +131,20 @@ export default function IssueDetailModal({ record, onClose }) {
           </div>
         </div>
 
-        {/* 2. Quick Metrics Bar (แถบสรุปตัวเลข 4 ช่อง เหมือนในรูปโมดัลคู่ค้า) */}
+        {/* 2. Quick Metrics Bar (แถบสรุปตัวเลข 4 ช่อง สมดุล อ่านง่าย ไม่ตัดคำ) */}
         <div className="grid grid-cols-2 sm:grid-cols-4 border-b border-steel-200 dark:border-slate-800 bg-steel-50/70 dark:bg-slate-800/60 p-3.5 text-xs gap-3">
           <div className="px-3 border-r border-steel-200 dark:border-slate-700">
             <div className="text-[11px] text-steel-500 dark:text-slate-400 font-medium">ประเภทรายการ</div>
             <div className="font-bold text-sm text-steel-900 dark:text-slate-100 mt-0.5">
               {isIssue ? 'เบิกไปใช้งาน' : isReturn ? 'รับคืนเข้าสโตร์' : 'ปรับยอดสต็อก'}
+            </div>
+          </div>
+
+          <div className="px-3 border-r border-steel-200 dark:border-slate-700">
+            <div className="text-[11px] text-steel-500 dark:text-slate-400 font-medium">คลังจัดเก็บ / สโตร์</div>
+            <div className="font-bold text-sm text-steel-900 dark:text-slate-100 flex items-center gap-1.5 mt-0.5">
+              <Warehouse className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+              <span>สโตร์หลัก (Main)</span>
             </div>
           </div>
 
@@ -136,7 +155,7 @@ export default function IssueDetailModal({ record, onClose }) {
             </div>
           </div>
 
-          <div className="px-3 border-r border-steel-200 dark:border-slate-700">
+          <div className="px-3">
             <div className="text-[11px] text-steel-500 dark:text-slate-400 font-medium">มูลค่ารวมทั้งสิ้น</div>
             <div
               className={`font-black text-sm font-mono mt-0.5 ${
@@ -150,109 +169,116 @@ export default function IssueDetailModal({ record, onClose }) {
               {baht(record.totalAmount)} บ.
             </div>
           </div>
-
-          <div className="px-3">
-            <div className="text-[11px] text-steel-500 dark:text-slate-400 font-medium">ปลายทาง / โครงการ</div>
-            <div className="font-bold text-xs text-steel-800 dark:text-slate-200 truncate mt-0.5" title={record.projectName || record.targetType}>
-              {record.projectName ? (
-                <span>[{record.projectCode}] {record.projectName}</span>
-              ) : record.targetType === 'office' ? (
-                <span>ออฟฟิศส่วนกลาง</span>
-              ) : (
-                <span>ของกลางบริษัท</span>
-              )}
-            </div>
-          </div>
         </div>
 
         {/* 3. เนื้อหาหลักในโมดัล (Scrollable Body) */}
-        <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-5">
+        <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-4">
           
-          {/* ข้อมูล 2 การ์ด (ปลายทาง & ข้อมูลการออกเอกสาร) */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            
-            {/* การ์ดซ้าย: ข้อมูลโครงการและปลายทาง */}
-            <div className="rounded-2xl border border-steel-200 dark:border-slate-800 bg-white dark:bg-slate-800/40 p-4 space-y-3 shadow-2xs">
-              <div className="flex items-center gap-2 border-b border-steel-100 dark:border-slate-800 pb-2 text-xs font-bold text-steel-900 dark:text-slate-100 uppercase tracking-wider">
-                <Briefcase className="h-4 w-4 text-sky-600 dark:text-sky-400" />
-                <span>ข้อมูลโครงการและปลายทาง (Destination)</span>
-              </div>
-
-              <div className="space-y-2 text-xs">
-                <div>
-                  <span className="text-steel-400 dark:text-slate-400">โครงการในระบบ:</span>
-                  <div className="font-bold text-steel-900 dark:text-white mt-0.5">
+          {/* การ์ดโครงการและปลายทาง (Project & Destination Card) - แถบกว้างเต็มพื้นที่ เห็นชื่อโครงการครบ 100% ไม่ถูกตัดคำ */}
+          <div className="rounded-2xl border border-sky-200/80 dark:border-sky-900/60 bg-gradient-to-r from-sky-50/70 via-slate-50/40 to-blue-50/40 dark:from-slate-800/90 dark:via-slate-800/60 dark:to-sky-950/20 p-4 sm:p-5 shadow-2xs">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <div className="flex items-start gap-3.5 min-w-0">
+                <div className="p-2.5 rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-400/20 shrink-0 mt-0.5">
+                  <Briefcase className="h-5 w-5" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-[11px] font-bold text-sky-700 dark:text-sky-400 uppercase tracking-wider flex items-center gap-2 flex-wrap">
+                    <span>โครงการในระบบ (Project Assignment)</span>
+                    {record.projectCode && (
+                      <span className="font-mono text-[10px] px-2 py-0.5 rounded-md bg-sky-100 dark:bg-sky-900/60 text-sky-800 dark:text-sky-300 font-bold border border-sky-300/50 dark:border-sky-700/50">
+                        {record.projectCode}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-base sm:text-lg font-black text-steel-900 dark:text-white mt-1 break-words leading-snug">
                     {record.projectName ? (
-                      <span className="text-sky-700 dark:text-sky-400">
+                      <span className="text-steel-900 dark:text-slate-100">
                         [{record.projectCode}] {record.projectName}
                       </span>
                     ) : (
-                      <span className="text-steel-500 dark:text-slate-400">ไม่ได้ผูกกับโครงการ (เบิกใช้งานทั่วไป)</span>
+                      <span className="text-steel-500 dark:text-slate-400 font-medium text-sm">
+                        ไม่ได้ผูกกับโครงการ (การเบิก/คืนใช้งานทั่วไปในองค์กร)
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* ป้ายกำกับปลายทางด้านขวา */}
+              <div className="flex flex-wrap items-center gap-3 shrink-0 pt-2 lg:pt-0 border-t lg:border-t-0 border-steel-200 dark:border-slate-700/60">
+                <div className="flex flex-col gap-1 text-xs">
+                  <span className="text-[11px] text-steel-500 dark:text-slate-400 font-medium">วัตถุประสงค์ปลายทาง:</span>
+                  <div className="font-semibold text-steel-800 dark:text-slate-200">
+                    {record.targetType === 'office' ? (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 font-bold">
+                        <Building2 className="h-3.5 w-3.5" /> ออฟฟิศส่วนกลาง
+                      </span>
+                    ) : record.targetType === 'site' ? (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-cyan-50 dark:bg-cyan-950/50 text-cyan-700 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800 font-bold">
+                        <MapPin className="h-3.5 w-3.5" /> หน้างานโครงการ
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 font-bold">
+                        <Briefcase className="h-3.5 w-3.5" /> งานโครงการวิศวกรรม
+                      </span>
                     )}
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 pt-1">
-                  <div>
-                    <span className="text-steel-400 dark:text-slate-400">วัตถุประสงค์ปลายทาง:</span>
-                    <div className="font-semibold text-steel-800 dark:text-slate-200 mt-0.5">
-                      {record.targetType === 'office' ? (
-                        <span className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 font-bold">
-                          <Building2 className="h-3 w-3" /> ออฟฟิศส่วนกลาง
-                        </span>
-                      ) : record.targetType === 'site' ? (
-                        <span className="inline-flex items-center gap-1 text-cyan-600 dark:text-cyan-400 font-bold">
-                          <MapPin className="h-3 w-3" /> หน้างานโครงการ
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-bold">
-                          <Briefcase className="h-3 w-3" /> งานโครงการวิศวกรรม
-                        </span>
-                      )}
+                {record.targetLocation && (
+                  <div className="flex flex-col gap-1 text-xs pl-3 border-l border-steel-200 dark:border-slate-700">
+                    <span className="text-[11px] text-steel-500 dark:text-slate-400 font-medium">สถานที่ส่งมอบ/แผนก:</span>
+                    <div className="font-semibold text-steel-800 dark:text-slate-200 px-2.5 py-1 rounded-lg bg-steel-100 dark:bg-slate-800 text-xs">
+                      {record.targetLocation}
                     </div>
                   </div>
+                )}
+              </div>
+            </div>
+          </div>
 
-                  <div>
-                    <span className="text-steel-400 dark:text-slate-400">สถานที่ส่งมอบ/แผนก:</span>
-                    <div className="font-medium text-steel-800 dark:text-slate-200 mt-0.5">
-                      {record.targetLocation || '-'}
-                    </div>
-                  </div>
+          {/* รายละเอียดและหมายเหตุการเบิก-คืน (Voucher Notes Card) */}
+          <div className="rounded-2xl border border-steel-200 dark:border-slate-800 bg-white dark:bg-slate-800/40 p-4 sm:p-5 space-y-3 shadow-2xs">
+            <div className="flex items-center justify-between border-b border-steel-100 dark:border-slate-800 pb-2.5 text-xs font-bold text-steel-900 dark:text-slate-100 uppercase tracking-wider">
+              <div className="flex items-center gap-2">
+                <FileText className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                <span>รายละเอียดและหมายเหตุ (Voucher Notes & Audit Trail)</span>
+              </div>
+              <span className="text-[11px] text-steel-400 font-normal normal-case">
+                บันทึกเมื่อ: <strong className="font-mono text-steel-700 dark:text-slate-200">{record.dateTimeStr}</strong>
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+              <div>
+                <span className="text-steel-400 dark:text-slate-400">ผู้ทำรายการ (Staff):</span>
+                <div className="font-bold text-steel-900 dark:text-slate-100 mt-1 flex items-center gap-1.5">
+                  <User className="h-3.5 w-3.5 text-sky-500" />
+                  <span>{record.userName}</span>
+                </div>
+              </div>
+
+              <div>
+                <span className="text-steel-400 dark:text-slate-400">คลังพัสดุ:</span>
+                <div className="font-bold text-steel-900 dark:text-slate-100 mt-1 flex items-center gap-1.5">
+                  <Warehouse className="h-3.5 w-3.5 text-amber-500" />
+                  <span>สโตร์หลัก (Main Store)</span>
+                </div>
+              </div>
+
+              <div>
+                <span className="text-steel-400 dark:text-slate-400">การบันทึกสถานะ:</span>
+                <div className="font-bold text-emerald-600 dark:text-emerald-400 mt-1 flex items-center gap-1.5">
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  <span>บันทึกสต็อกและประวัติเรียบร้อย</span>
                 </div>
               </div>
             </div>
 
-            {/* การ์ดขวา: ผู้ทำรายการและหมายเหตุ */}
-            <div className="rounded-2xl border border-steel-200 dark:border-slate-800 bg-white dark:bg-slate-800/40 p-4 space-y-3 shadow-2xs">
-              <div className="flex items-center gap-2 border-b border-steel-100 dark:border-slate-800 pb-2 text-xs font-bold text-steel-900 dark:text-slate-100 uppercase tracking-wider">
-                <FileText className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                <span>รายละเอียดและหมายเหตุ (Voucher Notes)</span>
-              </div>
-
-              <div className="space-y-2 text-xs">
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <span className="text-steel-400 dark:text-slate-400">ผู้ทำรายการ (Staff):</span>
-                    <div className="font-bold text-steel-900 dark:text-slate-100 mt-0.5 flex items-center gap-1">
-                      <User className="h-3 w-3 text-steel-400" />
-                      <span>{record.userName}</span>
-                    </div>
-                  </div>
-
-                  <div>
-                    <span className="text-steel-400 dark:text-slate-400">วันที่ทำรายการ:</span>
-                    <div className="font-mono font-semibold text-steel-800 dark:text-slate-200 mt-0.5">
-                      {record.dateTimeStr}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="pt-1">
-                  <span className="text-steel-400 dark:text-slate-400">หมายเหตุ / วัตถุประสงค์การเบิก-คืน:</span>
-                  <div className="mt-1 p-2.5 rounded-xl border border-steel-200 dark:border-slate-700 bg-steel-50/70 dark:bg-slate-800/80 text-steel-800 dark:text-slate-200 text-xs leading-relaxed whitespace-pre-line font-medium min-h-[44px]">
-                    {record.notes || record.reason || 'ไม่มีระบุหมายเหตุเพิ่มเติม'}
-                  </div>
-                </div>
+            <div className="pt-1">
+              <span className="text-steel-500 dark:text-slate-400 text-xs font-medium">หมายเหตุ / วัตถุประสงค์การเบิก-คืน:</span>
+              <div className="mt-1.5 p-3 rounded-xl border border-steel-200 dark:border-slate-700/80 bg-steel-50/80 dark:bg-slate-800/80 text-steel-800 dark:text-slate-200 text-xs leading-relaxed whitespace-pre-line font-medium min-h-[50px]">
+                {record.notes || record.reason || 'ไม่มีระบุหมายเหตุเพิ่มเติม'}
               </div>
             </div>
           </div>
