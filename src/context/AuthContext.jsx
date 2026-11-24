@@ -18,11 +18,27 @@ export function AuthProvider({ children }) {
     setProfile(error ? null : data)
   }
 
+  // ล้าง token ที่หมดอายุหรือไม่ถูกต้องออกจาก localStorage เพื่อป้องกัน 400 Bad Request ลูปซ้ำ
+  const clearStaleSession = () => {
+    try {
+      Object.keys(localStorage).forEach((key) => {
+        if (key.startsWith('sb-') && key.endsWith('-auth-token')) {
+          localStorage.removeItem(key)
+        }
+      })
+    } catch (e) {
+      console.warn('Unable to access localStorage to clear stale token:', e)
+    }
+  }
+
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data, error }) => {
       if (error) {
         console.warn('Session recovery error, resetting stale auth:', error.message)
-        await supabase.auth.signOut()
+        clearStaleSession()
+        try {
+          await supabase.auth.signOut({ scope: 'local' })
+        } catch (_) {}
         setSession(null)
         setProfile(null)
       } else {
@@ -32,14 +48,24 @@ export function AuthProvider({ children }) {
       setLoading(false)
     }).catch(async (err) => {
       console.warn('Failed to retrieve session:', err)
-      await supabase.auth.signOut()
+      clearStaleSession()
+      try {
+        await supabase.auth.signOut({ scope: 'local' })
+      } catch (_) {}
       setSession(null)
       setProfile(null)
       setLoading(false)
     })
 
-    const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
+    const { data: sub } = supabase.auth.onAuthStateChange(async (event, s) => {
       if (event === 'SIGNED_OUT' || !s) {
+        setSession(null)
+        setProfile(null)
+      } else if (event === 'TOKEN_REFRESH_FAILED') {
+        clearStaleSession()
+        try {
+          await supabase.auth.signOut({ scope: 'local' })
+        } catch (_) {}
         setSession(null)
         setProfile(null)
       } else {
