@@ -20,6 +20,7 @@ import {
 } from 'lucide-react'
 import { baht } from '../../lib/projects'
 import { formatIntQty } from '../../lib/store'
+import { printElement } from '../../lib/printElement'
 
 export default function IssueDetailModal({ record, onClose }) {
   if (!record) return null
@@ -29,7 +30,8 @@ export default function IssueDetailModal({ record, onClose }) {
   const isAdjust = record.kind === 'adjust'
 
   const handlePrint = () => {
-    window.print()
+    const docTitle = `${isIssue ? 'ใบเบิกพัสดุ' : isReturn ? 'ใบรับคืนพัสดุ' : 'ใบปรับยอดพัสดุ'}-${record.code}`
+    printElement('printable-report', docTitle)
   }
 
   return (
