@@ -385,111 +385,61 @@ export default function BOQDetail() {
         </div>
       </div>
 
-      {/* 4. รายการพัสดุและค่าแรง แยกเป็นกล่องหมวดหมู่งาน พร้อมแผงค้นหาและเลือกหมวดหมู่ */}
+      {/* 4. รายการพัสดุและค่าแรง: แผงเลือกหมวดหมู่และค้นหามาตรฐานเดียวกับระบบคลังสินค้า */}
       <div className="space-y-4">
-        {/* Header bar */}
-        <div className="flex flex-wrap items-center justify-between gap-3 px-1">
-          <div className="flex items-center gap-2">
-            <Layers className="h-5 w-5 text-sky-700 dark:text-sky-400" />
-            <h2 className="font-bold text-base text-slate-900 dark:text-slate-100">
-              รายการพัสดุและค่าแรงตามหมวดหมู่งาน
-            </h2>
-            <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-              {Object.keys(grouped).length} หมวด · {filteredItems.length} รายการ
+        {/* 4.1 Category Filter Card (สไตล์มาตรฐานเดียวกับหน้าคลังสินค้า ItemsMaster / StockList) */}
+        <div className="rounded-2xl border border-steel-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-xs space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-3 text-xs font-bold text-steel-700 dark:text-slate-300">
+            <span className="flex items-center gap-1.5 text-steel-900 dark:text-slate-100">
+              <Layers className="h-4 w-4 text-steel-700 dark:text-amber-400" />
+              <span>เลือกดูตามหมวดหมู่งาน</span>
             </span>
-          </div>
 
-          <div className="flex items-center gap-2">
-            {/* ปุ่มย่อทั้งหมด / ขยายทั้งหมด */}
-            {Object.keys(grouped).length > 0 && (
-              <button
-                type="button"
-                onClick={toggleCollapseAll}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-750 transition shadow-2xs cursor-pointer"
+            <div className="flex items-center gap-2">
+              <span className="text-steel-400 dark:text-slate-400 font-normal hidden sm:inline">
+                แสดง {filteredItems.length} จาก {items.length} รายการ
+              </span>
+              {/* Dropdown เลือกหมวดหมู่ */}
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="h-8 rounded-lg border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 text-xs font-bold text-steel-800 dark:text-slate-200 focus:outline-none focus:border-amber-500 cursor-pointer shadow-2xs"
               >
-                {isAllCollapsed ? (
-                  <>
-                    <ChevronDown className="h-3.5 w-3.5 text-sky-600" />
-                    <span>ขยายทุกหมวด</span>
-                  </>
-                ) : (
-                  <>
-                    <ChevronUp className="h-3.5 w-3.5 text-slate-500" />
-                    <span>ย่อทุกหมวด</span>
-                  </>
-                )}
-              </button>
-            )}
-
-            <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">
-              มาร์กอัปกำไร: <b className="text-emerald-700 dark:text-emerald-400">+{boq.markup_percent || 15}%</b>
-            </span>
-          </div>
-        </div>
-
-        {/* แผงควบคุมการค้นหา และ ตัวกรองหมวดหมู่ที่ต้องการดู (Search & Filter Bar) */}
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-2xs space-y-3">
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-            {/* Search Input Box */}
-            <div className="relative flex-1 min-w-[240px]">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="ค้นหารายการพัสดุ, งานบริการ, สเปกสินค้า..."
-                className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 pl-10 pr-9 py-2 text-xs font-medium text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:border-sky-500 focus:bg-white dark:focus:bg-slate-800 focus:outline-none transition shadow-2xs"
-              />
-              {searchQuery && (
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition cursor-pointer"
-                  title="ล้างคำค้นหา"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              )}
+                <option value="all">หมวดหมู่ทั้งหมด ({items.length} รายการ)</option>
+                {allCategories.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat} ({items.filter((it) => (it.category || 'งานทั่วไป') === cat).length} รายการ)
+                  </option>
+                ))}
+              </select>
             </div>
-
-            {/* Quick Summary Pill of Filter */}
-            {(selectedCategory !== 'all' || searchQuery) && (
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedCategory('all')
-                  setSearchQuery('')
-                }}
-                className="text-xs text-rose-600 dark:text-rose-400 hover:underline font-bold self-end sm:self-center shrink-0 cursor-pointer"
-              >
-                ล้างตัวกรองทั้งหมด
-              </button>
-            )}
           </div>
 
-          {/* แถบเลือกหมวดหมู่ที่ต้องการดู (Category Selector Pills) */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pt-1 pb-1 scrollbar-thin">
-            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 shrink-0 flex items-center gap-1 mr-1">
-              <Filter className="h-3.5 w-3.5 text-slate-400" />
-              <span>เลือกดูหมวด:</span>
-            </span>
-
-            {/* ปุ่มดูทั้งหมด */}
+          {/* Category Pills (ห่อบรรทัดอย่างเป็นระเบียบ ไม่มี Scrollbar เกะกะ) */}
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={() => setSelectedCategory('all')}
-              className={`rounded-xl px-3 py-1.5 text-xs font-bold transition shrink-0 cursor-pointer border ${
+              className={`rounded-lg px-3 py-1.5 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
                 selectedCategory === 'all'
-                  ? 'bg-sky-700 text-white border-sky-800 shadow-xs'
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200'
+                  ? 'bg-steel-900 dark:bg-amber-500 text-hivis dark:text-slate-950 font-black shadow-xs'
+                  : 'bg-steel-100 dark:bg-slate-800 text-steel-700 dark:text-slate-200 hover:bg-steel-200 dark:hover:bg-slate-700'
               }`}
             >
-              ทั้งหมด ({items.length})
+              <span>ทั้งหมด</span>
+              <span
+                className={`rounded-full px-1.5 py-0.2 text-[10px] ${
+                  selectedCategory === 'all'
+                    ? 'bg-steel-800 dark:bg-amber-600 text-hivis dark:text-slate-950'
+                    : 'bg-steel-200 dark:bg-slate-700 text-steel-800 dark:text-slate-200'
+                }`}
+              >
+                {items.length}
+              </span>
             </button>
 
-            {/* ปุ่มแต่ละหมวดหมู่ */}
-            {allCategories.map((cat, idx) => {
-              const countInCat = items.filter((it) => (it.category || 'งานทั่วไป') === cat).length
+            {allCategories.map((cat) => {
+              const count = items.filter((it) => (it.category || 'งานทั่วไป') === cat).length
               const isSelected = selectedCategory === cat
 
               return (
@@ -497,24 +447,92 @@ export default function BOQDetail() {
                   key={cat}
                   type="button"
                   onClick={() => setSelectedCategory(cat)}
-                  className={`rounded-xl px-3 py-1.5 text-xs font-bold transition shrink-0 cursor-pointer border flex items-center gap-1.5 ${
+                  className={`rounded-lg px-3 py-1.5 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
                     isSelected
-                      ? 'bg-sky-700 text-white border-sky-800 shadow-xs'
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200'
+                      ? 'bg-steel-900 dark:bg-amber-500 text-hivis dark:text-slate-950 font-black shadow-xs'
+                      : 'bg-steel-100 dark:bg-slate-800 text-steel-700 dark:text-slate-200 hover:bg-steel-200 dark:hover:bg-slate-700'
                   }`}
                 >
-                  <span className={`flex h-4 w-4 items-center justify-center rounded text-[10px] font-mono ${
-                    isSelected ? 'bg-white/20 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
-                  }`}>
-                    {idx + 1}
-                  </span>
                   <span>{cat}</span>
-                  <span className={`text-[10px] font-normal ${isSelected ? 'text-white/80' : 'text-slate-500'}`}>
-                    ({countInCat})
+                  <span
+                    className={`rounded-full px-1.5 py-0.2 text-[10px] ${
+                      isSelected
+                        ? 'bg-steel-800 dark:bg-amber-600 text-hivis dark:text-slate-950'
+                        : 'bg-steel-200 dark:bg-slate-700 text-steel-800 dark:text-slate-200'
+                    }`}
+                  >
+                    {count}
                   </span>
                 </button>
               )
             })}
+          </div>
+        </div>
+
+        {/* 4.2 แถบตัวกรองและค้นหามาตรฐาน (Search, Collapse All & Actions Toolbar) */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex flex-1 flex-wrap items-center gap-2">
+            {/* ช่องค้นหา */}
+            <div className="relative flex-1 min-w-[240px] max-w-md">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-steel-400 dark:text-slate-500 pointer-events-none" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="ค้นหารายการพัสดุ, งานบริการ, สเปกสินค้า..."
+                className="w-full rounded-xl border border-steel-200 dark:border-slate-700 bg-white dark:bg-slate-800 pl-10 pr-9 py-2 text-xs font-medium text-steel-900 dark:text-slate-100 placeholder:text-steel-400 focus:border-amber-500 focus:outline-none transition shadow-2xs"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 text-steel-400 hover:text-steel-700 dark:hover:text-slate-200 transition cursor-pointer"
+                  title="ล้างคำค้นหา"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+
+            {(selectedCategory !== 'all' || searchQuery) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedCategory('all')
+                  setSearchQuery('')
+                }}
+                className="text-xs text-rose-600 dark:text-rose-400 hover:underline font-bold px-2 py-1 cursor-pointer"
+              >
+                ล้างตัวกรองทั้งหมด
+              </button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2.5 self-end sm:self-center">
+            {/* ปุ่มย่อทุกหมวด / ขยายทุกหมวด */}
+            {Object.keys(grouped).length > 0 && (
+              <button
+                type="button"
+                onClick={toggleCollapseAll}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-steel-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-bold text-steel-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition cursor-pointer shadow-2xs"
+              >
+                {isAllCollapsed ? (
+                  <>
+                    <ChevronDown className="h-3.5 w-3.5 text-amber-600" />
+                    <span>ขยายทุกหมวด</span>
+                  </>
+                ) : (
+                  <>
+                    <ChevronUp className="h-3.5 w-3.5 text-steel-500" />
+                    <span>ย่อทุกหมวด</span>
+                  </>
+                )}
+              </button>
+            )}
+
+            <span className="text-xs text-steel-500 dark:text-slate-400 font-mono">
+              มาร์กอัปกำไร: <b className="text-emerald-700 dark:text-emerald-400">+{boq.markup_percent || 15}%</b>
+            </span>
           </div>
         </div>
 
