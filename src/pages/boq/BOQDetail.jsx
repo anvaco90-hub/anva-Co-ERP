@@ -385,36 +385,177 @@ export default function BOQDetail() {
         </div>
       </div>
 
-      {/* 4. รายการพัสดุและค่าแรง แยกเป็นกล่องหมวดหมู่งานอย่างชัดเจน (Web Category Cards) */}
+      {/* 4. รายการพัสดุและค่าแรง แยกเป็นกล่องหมวดหมู่งาน พร้อมแผงค้นหาและเลือกหมวดหมู่ */}
       <div className="space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+        {/* Header bar */}
+        <div className="flex flex-wrap items-center justify-between gap-3 px-1">
           <div className="flex items-center gap-2">
             <Layers className="h-5 w-5 text-sky-700 dark:text-sky-400" />
             <h2 className="font-bold text-base text-slate-900 dark:text-slate-100">
               รายการพัสดุและค่าแรงตามหมวดหมู่งาน
             </h2>
             <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-              {Object.keys(grouped).length} หมวดหมู่ · {items.length} รายการ
+              {Object.keys(grouped).length} หมวด · {filteredItems.length} รายการ
             </span>
           </div>
-          <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">
-            มาร์กอัปกำไร: <b className="text-emerald-700 dark:text-emerald-400">+{boq.markup_percent || 15}%</b>
-          </span>
+
+          <div className="flex items-center gap-2">
+            {/* ปุ่มย่อทั้งหมด / ขยายทั้งหมด */}
+            {Object.keys(grouped).length > 0 && (
+              <button
+                type="button"
+                onClick={toggleCollapseAll}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-750 transition shadow-2xs cursor-pointer"
+              >
+                {isAllCollapsed ? (
+                  <>
+                    <ChevronDown className="h-3.5 w-3.5 text-sky-600" />
+                    <span>ขยายทุกหมวด</span>
+                  </>
+                ) : (
+                  <>
+                    <ChevronUp className="h-3.5 w-3.5 text-slate-500" />
+                    <span>ย่อทุกหมวด</span>
+                  </>
+                )}
+              </button>
+            )}
+
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">
+              มาร์กอัปกำไร: <b className="text-emerald-700 dark:text-emerald-400">+{boq.markup_percent || 15}%</b>
+            </span>
+          </div>
         </div>
 
-        {/* วนลูปแสดงแยกกล่องหมวดหมู่งาน แต่ละหมวดหมู่เป็นการ์ดแยกกันชัดเจน ไม่ปนกัน */}
+        {/* แผงควบคุมการค้นหา และ ตัวกรองหมวดหมู่ที่ต้องการดู (Search & Filter Bar) */}
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-2xs space-y-3">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+            {/* Search Input Box */}
+            <div className="relative flex-1 min-w-[240px]">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="ค้นหารายการพัสดุ, งานบริการ, สเปกสินค้า..."
+                className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 pl-10 pr-9 py-2 text-xs font-medium text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:border-sky-500 focus:bg-white dark:focus:bg-slate-800 focus:outline-none transition shadow-2xs"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition cursor-pointer"
+                  title="ล้างคำค้นหา"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+
+            {/* Quick Summary Pill of Filter */}
+            {(selectedCategory !== 'all' || searchQuery) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedCategory('all')
+                  setSearchQuery('')
+                }}
+                className="text-xs text-rose-600 dark:text-rose-400 hover:underline font-bold self-end sm:self-center shrink-0 cursor-pointer"
+              >
+                ล้างตัวกรองทั้งหมด
+              </button>
+            )}
+          </div>
+
+          {/* แถบเลือกหมวดหมู่ที่ต้องการดู (Category Selector Pills) */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pt-1 pb-1 scrollbar-thin">
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 shrink-0 flex items-center gap-1 mr-1">
+              <Filter className="h-3.5 w-3.5 text-slate-400" />
+              <span>เลือกดูหมวด:</span>
+            </span>
+
+            {/* ปุ่มดูทั้งหมด */}
+            <button
+              type="button"
+              onClick={() => setSelectedCategory('all')}
+              className={`rounded-xl px-3 py-1.5 text-xs font-bold transition shrink-0 cursor-pointer border ${
+                selectedCategory === 'all'
+                  ? 'bg-sky-700 text-white border-sky-800 shadow-xs'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200'
+              }`}
+            >
+              ทั้งหมด ({items.length})
+            </button>
+
+            {/* ปุ่มแต่ละหมวดหมู่ */}
+            {allCategories.map((cat, idx) => {
+              const countInCat = items.filter((it) => (it.category || 'งานทั่วไป') === cat).length
+              const isSelected = selectedCategory === cat
+
+              return (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`rounded-xl px-3 py-1.5 text-xs font-bold transition shrink-0 cursor-pointer border flex items-center gap-1.5 ${
+                    isSelected
+                      ? 'bg-sky-700 text-white border-sky-800 shadow-xs'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200'
+                  }`}
+                >
+                  <span className={`flex h-4 w-4 items-center justify-center rounded text-[10px] font-mono ${
+                    isSelected ? 'bg-white/20 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+                  }`}>
+                    {idx + 1}
+                  </span>
+                  <span>{cat}</span>
+                  <span className={`text-[10px] font-normal ${isSelected ? 'text-white/80' : 'text-slate-500'}`}>
+                    ({countInCat})
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* กรณีค้นหาไม่พบรายการ */}
+        {Object.keys(grouped).length === 0 && (
+          <div className="rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-12 text-center space-y-2">
+            <Search className="h-8 w-8 text-slate-300 mx-auto" />
+            <p className="font-bold text-sm text-slate-700 dark:text-slate-300">
+              ไม่พบรายการที่ตรงกับคำค้นหา "{searchQuery}" {selectedCategory !== 'all' ? `ในหมวด "${selectedCategory}"` : ''}
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setSearchQuery('')
+                setSelectedCategory('all')
+              }}
+              className="text-xs font-bold text-sky-700 dark:text-sky-400 hover:underline cursor-pointer"
+            >
+              ล้างตัวกรองเพื่อแสดงรายการทั้งหมด
+            </button>
+          </div>
+        )}
+
+        {/* วนลูปแสดงแยกกล่องหมวดหมู่งาน แต่ละหมวดหมู่เป็นการ์ดแยกกันชัดเจน พับ/ขยายได้ */}
         {Object.entries(grouped).map(([category, catItems], cIdx) => {
           const catMatCost = catItems.reduce((s, it) => s + (Number(it.material_unit_cost || 0) * Number(it.quantity || 0)), 0)
           const catLabCost = catItems.reduce((s, it) => s + (Number(it.labor_unit_cost || 0) * Number(it.quantity || 0)), 0)
           const catTotal = catItems.reduce((s, it) => s + Number(it.total_amount || 0), 0)
+          const isCollapsed = Boolean(collapsedCategories[category])
 
           return (
             <div
               key={category}
               className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs overflow-hidden transition-all"
             >
-              {/* Category Card Header */}
-              <div className="bg-slate-50/90 dark:bg-slate-800/80 px-5 py-3 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
+              {/* Category Card Header with Accordion Toggle */}
+              <div
+                onClick={() => toggleCategoryCollapse(category)}
+                className="bg-slate-50/90 dark:bg-slate-800/80 px-5 py-3 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 cursor-pointer select-none hover:bg-slate-100/80 dark:hover:bg-slate-800 transition"
+                title={isCollapsed ? 'คลิกเพื่อขยายดูรายการ' : 'คลิกเพื่อย่อหมวดหมู่นี้'}
+              >
                 <div className="flex items-center gap-2.5">
                   <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-sky-600 text-white font-mono text-xs font-black shadow-2xs">
                     {cIdx + 1}
@@ -433,80 +574,85 @@ export default function BOQDetail() {
                   <span className="text-slate-500 dark:text-slate-400">
                     รวมเฉพาะหมวดนี้: <b className="font-mono text-slate-900 dark:text-slate-100 text-sm">฿{baht(catTotal)}</b>
                   </span>
+                  <div className="flex items-center justify-center h-6 w-6 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300">
+                    {isCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+                  </div>
                 </div>
               </div>
 
-              {/* Items Table inside Category */}
-              <div className="overflow-x-auto">
-                <table className="table-auto w-full text-xs divide-y divide-slate-200 dark:divide-slate-800 border-collapse">
-                  <thead className="bg-slate-100/60 dark:bg-slate-800/50 text-slate-700 dark:text-slate-200 font-bold uppercase tracking-wider text-[11px] border-b border-slate-200 dark:border-slate-700">
-                    <tr>
-                      <th className="py-2.5 px-3 text-center w-12 border-r border-slate-200/60 dark:border-slate-700/60 whitespace-nowrap">#</th>
-                      <th className="py-2.5 px-4 min-w-[240px] text-left border-r border-slate-200/60 dark:border-slate-700/60">รายการพัสดุและบริการ</th>
-                      <th className="py-2.5 px-3 text-right w-24 border-r border-slate-200/60 dark:border-slate-700/60 whitespace-nowrap">จำนวน</th>
-                      <th className="py-2.5 px-3 text-center w-20 border-r border-slate-200/60 dark:border-slate-700/60 whitespace-nowrap">หน่วย</th>
-                      <th className="py-2.5 px-3.5 text-right w-32 border-r border-slate-200/60 dark:border-slate-700/60 whitespace-nowrap">ค่าวัสดุ/หน่วย</th>
-                      <th className="py-2.5 px-3.5 text-right w-32 border-r border-slate-200/60 dark:border-slate-700/60 whitespace-nowrap">ค่าแรง/หน่วย</th>
-                      <th className="py-2.5 px-4 text-right w-36 whitespace-nowrap">รวมเป็นเงิน</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-200 dark:divide-slate-800 bg-white dark:bg-slate-900">
-                    {catItems.map((it, idx) => (
-                      <tr
-                        key={it.id || idx}
-                        className={`transition-colors border-b border-slate-200 dark:border-slate-800 ${
-                          idx % 2 === 0
-                            ? 'bg-white dark:bg-slate-900'
-                            : 'bg-slate-50/50 dark:bg-slate-800/30'
-                        } hover:!bg-amber-50/60 dark:hover:!bg-slate-750`}
-                      >
-                        <td className="py-3 px-3 text-center text-slate-400 dark:text-slate-500 font-mono align-middle border-r border-slate-200/60 dark:border-slate-800/60">
-                          {idx + 1}
+              {/* Items Table inside Category (Rendered only when not collapsed) */}
+              {!isCollapsed && (
+                <div className="overflow-x-auto">
+                  <table className="table-auto w-full text-xs divide-y divide-slate-200 dark:divide-slate-800 border-collapse">
+                    <thead className="bg-slate-100/60 dark:bg-slate-800/50 text-slate-700 dark:text-slate-200 font-bold uppercase tracking-wider text-[11px] border-b border-slate-200 dark:border-slate-700">
+                      <tr>
+                        <th className="py-2.5 px-3 text-center w-12 border-r border-slate-200/60 dark:border-slate-700/60 whitespace-nowrap">#</th>
+                        <th className="py-2.5 px-4 min-w-[240px] text-left border-r border-slate-200/60 dark:border-slate-700/60">รายการพัสดุและบริการ</th>
+                        <th className="py-2.5 px-3 text-right w-24 border-r border-slate-200/60 dark:border-slate-700/60 whitespace-nowrap">จำนวน</th>
+                        <th className="py-2.5 px-3 text-center w-20 border-r border-slate-200/60 dark:border-slate-700/60 whitespace-nowrap">หน่วย</th>
+                        <th className="py-2.5 px-3.5 text-right w-32 border-r border-slate-200/60 dark:border-slate-700/60 whitespace-nowrap">ค่าวัสดุ/หน่วย</th>
+                        <th className="py-2.5 px-3.5 text-right w-32 border-r border-slate-200/60 dark:border-slate-700/60 whitespace-nowrap">ค่าแรง/หน่วย</th>
+                        <th className="py-2.5 px-4 text-right w-36 whitespace-nowrap">รวมเป็นเงิน</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200 dark:divide-slate-800 bg-white dark:bg-slate-900">
+                      {catItems.map((it, idx) => (
+                        <tr
+                          key={it.id || idx}
+                          className={`transition-colors border-b border-slate-200 dark:border-slate-800 ${
+                            idx % 2 === 0
+                              ? 'bg-white dark:bg-slate-900'
+                              : 'bg-slate-50/50 dark:bg-slate-800/30'
+                          } hover:!bg-amber-50/60 dark:hover:!bg-slate-750`}
+                        >
+                          <td className="py-3 px-3 text-center text-slate-400 dark:text-slate-500 font-mono align-middle border-r border-slate-200/60 dark:border-slate-800/60">
+                            {idx + 1}
+                          </td>
+                          <td className="py-3 px-4 align-middle border-r border-slate-200/60 dark:border-slate-800/60">
+                            <div className="font-bold text-slate-900 dark:text-slate-100 text-sm">{it.item_name}</div>
+                            {it.description && (
+                              <div className="text-[11px] text-slate-600 dark:text-slate-400 mt-1 whitespace-pre-line leading-relaxed bg-slate-50 dark:bg-slate-800/60 p-2 rounded-xl border border-slate-200 dark:border-slate-700">
+                                {it.description}
+                              </div>
+                            )}
+                          </td>
+                          <td className="py-3 px-3 text-right font-mono font-bold text-slate-800 dark:text-slate-200 align-middle border-r border-slate-200/60 dark:border-slate-800/60 tabular-nums">
+                            {Number(it.quantity || 0).toLocaleString()}
+                          </td>
+                          <td className="py-3 px-3 text-center text-slate-600 dark:text-slate-400 align-middle border-r border-slate-200/60 dark:border-slate-800/60">
+                            {it.unit}
+                          </td>
+                          <td className="py-3 px-3.5 text-right font-mono text-slate-700 dark:text-slate-300 align-middle border-r border-slate-200/60 dark:border-slate-800/60 tabular-nums">
+                            {baht(it.material_unit_cost || 0)}
+                          </td>
+                          <td className="py-3 px-3.5 text-right font-mono text-amber-800 dark:text-amber-400 align-middle border-r border-slate-200/60 dark:border-slate-800/60 tabular-nums font-semibold">
+                            {baht(it.labor_unit_cost || 0)}
+                          </td>
+                          <td className="py-3 px-4 text-right font-mono font-bold text-slate-900 dark:text-slate-100 align-middle tabular-nums">
+                            {baht(it.total_amount || 0)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot className="bg-slate-50/70 dark:bg-slate-800/60 text-xs border-t border-slate-200 dark:border-slate-700">
+                      <tr>
+                        <td colSpan={4} className="py-2.5 px-4 text-right text-slate-500 dark:text-slate-400 font-medium border-r border-slate-200 dark:border-slate-700">
+                          รวมเฉพาะหมวดที่ {cIdx + 1} ({category}):
                         </td>
-                        <td className="py-3 px-4 align-middle border-r border-slate-200/60 dark:border-slate-800/60">
-                          <div className="font-bold text-slate-900 dark:text-slate-100 text-sm">{it.item_name}</div>
-                          {it.description && (
-                            <div className="text-[11px] text-slate-600 dark:text-slate-400 mt-1 whitespace-pre-line leading-relaxed bg-slate-50 dark:bg-slate-800/60 p-2 rounded-xl border border-slate-200 dark:border-slate-700">
-                              {it.description}
-                            </div>
-                          )}
+                        <td className="py-2.5 px-3.5 text-right font-mono text-slate-800 dark:text-slate-200 border-r border-slate-200 dark:border-slate-700 tabular-nums">
+                          {baht(catMatCost)}
                         </td>
-                        <td className="py-3 px-3 text-right font-mono font-bold text-slate-800 dark:text-slate-200 align-middle border-r border-slate-200/60 dark:border-slate-800/60 tabular-nums">
-                          {Number(it.quantity || 0).toLocaleString()}
+                        <td className="py-2.5 px-3.5 text-right font-mono text-amber-800 dark:text-amber-400 border-r border-slate-200 dark:border-slate-700 tabular-nums font-semibold">
+                          {baht(catLabCost)}
                         </td>
-                        <td className="py-3 px-3 text-center text-slate-600 dark:text-slate-400 align-middle border-r border-slate-200/60 dark:border-slate-800/60">
-                          {it.unit}
-                        </td>
-                        <td className="py-3 px-3.5 text-right font-mono text-slate-700 dark:text-slate-300 align-middle border-r border-slate-200/60 dark:border-slate-800/60 tabular-nums">
-                          {baht(it.material_unit_cost || 0)}
-                        </td>
-                        <td className="py-3 px-3.5 text-right font-mono text-amber-800 dark:text-amber-400 align-middle border-r border-slate-200/60 dark:border-slate-800/60 tabular-nums font-semibold">
-                          {baht(it.labor_unit_cost || 0)}
-                        </td>
-                        <td className="py-3 px-4 text-right font-mono font-bold text-slate-900 dark:text-slate-100 align-middle tabular-nums">
-                          {baht(it.total_amount || 0)}
+                        <td className="py-2.5 px-4 text-right font-mono font-bold text-slate-900 dark:text-slate-100 tabular-nums">
+                          ฿{baht(catTotal)}
                         </td>
                       </tr>
-                    ))}
-                  </tbody>
-                  <tfoot className="bg-slate-50/70 dark:bg-slate-800/60 text-xs border-t border-slate-200 dark:border-slate-700">
-                    <tr>
-                      <td colSpan={4} className="py-2.5 px-4 text-right text-slate-500 dark:text-slate-400 font-medium border-r border-slate-200 dark:border-slate-700">
-                        รวมเฉพาะหมวดที่ {cIdx + 1} ({category}):
-                      </td>
-                      <td className="py-2.5 px-3.5 text-right font-mono text-slate-800 dark:text-slate-200 border-r border-slate-200 dark:border-slate-700 tabular-nums">
-                        {baht(catMatCost)}
-                      </td>
-                      <td className="py-2.5 px-3.5 text-right font-mono text-amber-800 dark:text-amber-400 border-r border-slate-200 dark:border-slate-700 tabular-nums font-semibold">
-                        {baht(catLabCost)}
-                      </td>
-                      <td className="py-2.5 px-4 text-right font-mono font-bold text-slate-900 dark:text-slate-100 tabular-nums">
-                        ฿{baht(catTotal)}
-                      </td>
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
+                    </tfoot>
+                  </table>
+                </div>
+              )}
             </div>
           )
         })}

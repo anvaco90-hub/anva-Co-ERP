@@ -35,6 +35,8 @@ import {
   Building2,
   RefreshCw,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
   ExternalLink,
   Layers,
   ArrowRight,
@@ -44,6 +46,8 @@ import {
   Boxes,
   Briefcase,
   BookOpen,
+  Search,
+  X,
 } from 'lucide-react'
 
 
@@ -89,9 +93,17 @@ export default function Dashboard() {
   const [customStartDate, setCustomStartDate] = useState('')
   const [customEndDate, setCustomEndDate] = useState('')
 
-  // UI view toggles
+  // UI view toggles & Filters
   const [productViewTab, setProductViewTab] = useState('products') // 'products' | 'projects'
+  const [salesSearch, setSalesSearch] = useState('')
+  const [salesLimit, setSalesLimit] = useState('5') // '5' | '10' | '20' | 'all'
+  const [salesCollapsed, setSalesCollapsed] = useState(false)
+
   const [recentDocTab, setRecentDocTab] = useState('all') // 'all' | 'revenue' | 'receivables' | 'expenses' | 'purchasing'
+  const [recentDocSearch, setRecentDocSearch] = useState('')
+  const [recentDocLimit, setRecentDocLimit] = useState('6') // '6' | '12' | '24' | 'all'
+  const [recentDocCollapsed, setRecentDocCollapsed] = useState(false)
+
   const [showReceivablesInChart, setShowReceivablesInChart] = useState(true)
 
   // Helper to switch to Simulation Demo Data
@@ -367,6 +379,40 @@ export default function Dashboard() {
       percent: ((item.totalAmount / grandTotal) * 100).toFixed(1),
     }))
   }, [filteredInvoices])
+
+  // Filtered & Limited Sales by Product (ค้นหาและเลือกจำนวนบรรทัด)
+  const filteredSalesByProduct = useMemo(() => {
+    let list = salesByProduct
+    if (salesSearch.trim()) {
+      const q = salesSearch.toLowerCase().trim()
+      list = list.filter((p) => p.name?.toLowerCase().includes(q))
+    }
+    return list
+  }, [salesByProduct, salesSearch])
+
+  const displayedSalesByProduct = useMemo(() => {
+    if (salesLimit === 'all') return filteredSalesByProduct
+    return filteredSalesByProduct.slice(0, Number(salesLimit))
+  }, [filteredSalesByProduct, salesLimit])
+
+  // Filtered & Limited Sales by Project (ค้นหาและเลือกจำนวนบรรทัด)
+  const filteredSalesByProject = useMemo(() => {
+    let list = salesByProject
+    if (salesSearch.trim()) {
+      const q = salesSearch.toLowerCase().trim()
+      list = list.filter(
+        (p) =>
+          p.name?.toLowerCase().includes(q) ||
+          p.code?.toLowerCase().includes(q)
+      )
+    }
+    return list
+  }, [salesByProject, salesSearch])
+
+  const displayedSalesByProject = useMemo(() => {
+    if (salesLimit === 'all') return filteredSalesByProject
+    return filteredSalesByProject.slice(0, Number(salesLimit))
+  }, [filteredSalesByProject, salesLimit])
 
   // (2) สรุปยอดเก็บเงิน (Collected Revenue / Receipts Summary)
   const totalInvoiced = useMemo(() => {
@@ -667,12 +713,24 @@ export default function Dashboard() {
     // Sort descending by date
     list.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0))
 
-    if (recentDocTab === 'revenue') return list.filter((d) => d.category === 'revenue')
-    if (recentDocTab === 'receivables') return list.filter((d) => d.type === 'INV' && d.remainingAmount > 0)
-    if (recentDocTab === 'expenses') return list.filter((d) => d.category === 'expense')
-    if (recentDocTab === 'purchasing') return list.filter((d) => d.category === 'purchasing')
-    return list
-  }, [filteredInvoices, filteredExpenses, filteredApList, filteredPurchaseOrders, recentDocTab])
+    let filtered = list
+    if (recentDocTab === 'revenue') filtered = filtered.filter((d) => d.category === 'revenue')
+    else if (recentDocTab === 'receivables') filtered = filtered.filter((d) => d.type === 'INV' && d.remainingAmount > 0)
+    else if (recentDocTab === 'expenses') filtered = filtered.filter((d) => d.category === 'expense')
+    else if (recentDocTab === 'purchasing') filtered = filtered.filter((d) => d.category === 'purchasing')
+
+    if (recentDocSearch.trim()) {
+      const q = recentDocSearch.toLowerCase().trim()
+      filtered = filtered.filter(
+        (d) =>
+          d.docNo?.toLowerCase().includes(q) ||
+          d.party?.toLowerCase().includes(q) ||
+          d.project?.toLowerCase().includes(q)
+      )
+    }
+
+    return filtered
+  }, [filteredInvoices, filteredExpenses, filteredApList, filteredPurchaseOrders, recentDocTab, recentDocSearch])
 
   // ----------------------------------------------------------------------------
   // Render
@@ -1871,47 +1929,72 @@ export default function Dashboard() {
           </span>
         </div>
 
-        {/* Subtabs for Documents Feed (ตัวกรองประเภทเอกสาร) */}
-        <div className="flex items-center gap-1.5 border-b border-steel-100 dark:border-slate-800 pb-3 text-xs font-bold flex-wrap">
-          <button
-            onClick={() => setRecentDocTab('all')}
-            className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${recentDocTab === 'all' ? 'bg-steel-900 text-white shadow-xs' : 'bg-steel-50 dark:bg-slate-800 text-steel-600 dark:text-slate-300 hover:bg-steel-100 dark:hover:bg-slate-700'}`}
-          >
-            ทั้งหมด ({recentDocuments.length})
-          </button>
-          <button
-            onClick={() => setRecentDocTab('revenue')}
-            className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${recentDocTab === 'revenue' ? 'bg-emerald-700 text-white shadow-xs' : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100'}`}
-          >
-            รายได้ (INV)
-          </button>
-          <button
-            onClick={() => setRecentDocTab('receivables')}
-            className={`px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5 ${recentDocTab === 'receivables'
-              ? 'bg-amber-600 text-white shadow-xs'
-              : 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 hover:bg-amber-100'
-              }`}
-          >
-            <span>ค้างรับ (AR)</span>
-            {arInvoicesCount > 0 && (
-              <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${recentDocTab === 'receivables' ? 'bg-white text-amber-800' : 'bg-amber-200 text-amber-900'
-                }`}>
-                {arInvoicesCount}
-              </span>
+        {/* Search Bar & Subtabs for Documents Feed (ตัวกรองและค้นหาเอกสาร) */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-b border-steel-100 dark:border-slate-800 pb-3">
+          {/* Subtabs for Documents Feed */}
+          <div className="flex items-center gap-1.5 text-xs font-bold flex-wrap">
+            <button
+              onClick={() => setRecentDocTab('all')}
+              className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${recentDocTab === 'all' ? 'bg-steel-900 text-white shadow-xs' : 'bg-steel-50 dark:bg-slate-800 text-steel-600 dark:text-slate-300 hover:bg-steel-100 dark:hover:bg-slate-700'}`}
+            >
+              ทั้งหมด
+            </button>
+            <button
+              onClick={() => setRecentDocTab('revenue')}
+              className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${recentDocTab === 'revenue' ? 'bg-emerald-700 text-white shadow-xs' : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100'}`}
+            >
+              รายได้ (INV)
+            </button>
+            <button
+              onClick={() => setRecentDocTab('receivables')}
+              className={`px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5 ${recentDocTab === 'receivables'
+                ? 'bg-amber-600 text-white shadow-xs'
+                : 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 hover:bg-amber-100'
+                }`}
+            >
+              <span>ค้างรับ (AR)</span>
+              {arInvoicesCount > 0 && (
+                <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${recentDocTab === 'receivables' ? 'bg-white text-amber-800' : 'bg-amber-200 text-amber-900'
+                  }`}>
+                  {arInvoicesCount}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={() => setRecentDocTab('expenses')}
+              className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${recentDocTab === 'expenses' ? 'bg-rose-700 text-white shadow-xs' : 'bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300 hover:bg-rose-100'}`}
+            >
+              รายจ่าย (EXP)
+            </button>
+            <button
+              onClick={() => setRecentDocTab('purchasing')}
+              className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${recentDocTab === 'purchasing' ? 'bg-amber-700 text-white shadow-xs' : 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 hover:bg-amber-100'}`}
+            >
+              จัดซื้อ (PO)
+            </button>
+          </div>
+
+          {/* Search Box in Recent Documents */}
+          <div className="relative min-w-[220px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+            <input
+              type="text"
+              value={recentDocSearch}
+              onChange={(e) => setRecentDocSearch(e.target.value)}
+              placeholder="ค้นหาเลขที่บิล, คู่ค้า, โครงการ..."
+              className="w-full rounded-xl border border-steel-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 pl-8.5 pr-8 py-1.5 text-xs text-steel-900 dark:text-slate-100 placeholder:text-steel-400 focus:border-sky-500 focus:bg-white dark:focus:bg-slate-800 focus:outline-none transition"
+            />
+            {recentDocSearch && (
+              <button
+                type="button"
+                onClick={() => setRecentDocSearch('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition"
+                title="ล้างคำค้นหา"
+              >
+                <X className="h-3 w-3" />
+              </button>
             )}
-          </button>
-          <button
-            onClick={() => setRecentDocTab('expenses')}
-            className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${recentDocTab === 'expenses' ? 'bg-rose-700 text-white shadow-xs' : 'bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300 hover:bg-rose-100'}`}
-          >
-            รายจ่าย (EXP)
-          </button>
-          <button
-            onClick={() => setRecentDocTab('purchasing')}
-            className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${recentDocTab === 'purchasing' ? 'bg-amber-700 text-white shadow-xs' : 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 hover:bg-amber-100'}`}
-          >
-            จัดซื้อ (PO)
-          </button>
+          </div>
         </div>
 
         {/* Spacious 2-Column Responsive Feed Cards - ข้อความอ่านได้ต่อเนื่อง ไม่ถูกตัด ไม่เบียด */}
