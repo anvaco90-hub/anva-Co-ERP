@@ -1084,8 +1084,17 @@ export default function IssueList() {
                   </div>
                 )}
 
-                {/* Footer Creator */}
-                <div className="flex flex-wrap items-center justify-end gap-2 text-[11px] text-steel-500 dark:text-slate-400 pt-1">
+                {/* Footer Creator & Details Button */}
+                <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-steel-500 dark:text-slate-400 pt-2 border-t border-steel-100 dark:border-slate-800 mt-1">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedRecord(r)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-steel-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-sky-50 dark:hover:bg-slate-700 hover:border-sky-300 text-steel-800 dark:text-slate-200 hover:text-sky-600 font-bold text-xs transition cursor-pointer shadow-2xs"
+                  >
+                    <Eye className="h-3.5 w-3.5 text-sky-500" />
+                    <span>ดูรายละเอียดเอกสาร ({r.items.length} รายการ)</span>
+                  </button>
+
                   <div className="flex items-center gap-1 text-steel-400 dark:text-slate-400 shrink-0">
                     <User className="h-3 w-3" />
                     <span>ผู้บันทึก: {r.userName}</span>
@@ -1112,6 +1121,14 @@ export default function IssueList() {
             pageSizeOptions={[5, 10, 20, 50]}
           />
         </div>
+      )}
+
+      {/* Modal ป๊อปอัปแสดงรายละเอียดเอกสารสโตร์ระดับบริหาร (เหมือนโมดัลคู่ค้า) */}
+      {selectedRecord && (
+        <IssueDetailModal
+          record={selectedRecord}
+          onClose={() => setSelectedRecord(null)}
+        />
       )}
     </div>
   )
