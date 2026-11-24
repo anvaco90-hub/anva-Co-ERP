@@ -15,6 +15,7 @@ import {
   Clock,
   Printer,
   ChevronRight,
+  Eye,
 } from 'lucide-react'
 
 const STATUS_MAP = {
@@ -209,81 +210,106 @@ export default function BOQList() {
             </Link>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs text-left">
-              <thead className="bg-steel-50 text-steel-600 font-semibold border-b border-steel-200">
+          <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs">
+            <table className="table-auto w-full text-xs min-w-[950px] divide-y divide-slate-200 dark:divide-slate-800 border-collapse">
+              <thead className="bg-slate-100/90 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 font-bold uppercase tracking-wider text-[11px] border-b-2 border-slate-300 dark:border-slate-700">
                 <tr>
-                  <th className="py-2.5 px-3">เลขที่ BOQ</th>
-                  <th className="py-2.5 px-3">ชื่องาน / รายละเอียดโครงการ</th>
-                  <th className="py-2.5 px-3">ลูกค้า / โครงการ</th>
-                  <th className="py-2.5 px-3 text-right">ขนาด (kWp)</th>
-                  <th className="py-2.5 px-3 text-right">ค่าวัสดุ</th>
-                  <th className="py-2.5 px-3 text-right">ค่าแรง</th>
-                  <th className="py-2.5 px-3 text-right">ราคาเสนอขาย (สุทธิ)</th>
-                  <th className="py-2.5 px-3 text-center">สถานะ</th>
-                  <th className="py-2.5 px-3 text-center">จัดการ</th>
+                  <th className="py-3.5 px-3 text-center w-36 border-r border-slate-200/70 dark:border-slate-700/60 whitespace-nowrap">เลขที่ BOQ</th>
+                  <th className="py-3.5 px-3.5 min-w-[200px] border-r border-slate-200/70 dark:border-slate-700/60">ชื่องาน / รายละเอียดโครงการ</th>
+                  <th className="py-3.5 px-3.5 min-w-[180px] border-r border-slate-200/70 dark:border-slate-700/60">ลูกค้า / โครงการ</th>
+                  <th className="py-3.5 px-3 text-center w-28 border-r border-slate-200/70 dark:border-slate-700/60 whitespace-nowrap">ขนาด (kWp)</th>
+                  <th className="py-3.5 px-3 text-right w-28 border-r border-slate-200/70 dark:border-slate-700/60 whitespace-nowrap">ค่าวัสดุ</th>
+                  <th className="py-3.5 px-3 text-right w-28 border-r border-slate-200/70 dark:border-slate-700/60 whitespace-nowrap">ค่าแรง</th>
+                  <th className="py-3.5 px-3.5 text-right w-36 border-r border-slate-200/70 dark:border-slate-700/60 whitespace-nowrap">ราคาเสนอขาย (สุทธิ)</th>
+                  <th className="py-3.5 px-3 text-center w-36 border-r border-slate-200/70 dark:border-slate-700/60 whitespace-nowrap">สถานะ</th>
+                  <th className="py-3.5 px-3 text-center w-28 whitespace-nowrap">การจัดการ</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-steel-100">
-                {paginatedBoqs.map((b) => {
+              <tbody className="divide-y divide-slate-200 dark:divide-slate-800 bg-white dark:bg-slate-900">
+                {paginatedBoqs.map((b, rowIdx) => {
                   const st = STATUS_MAP[b.status] || {
                     label: b.status,
-                    color: 'bg-steel-100 text-steel-700 border-steel-200',
+                    color: 'bg-slate-100 text-slate-700 border-slate-300',
                   }
                   return (
-                    <tr key={b.id} className="hover:bg-steel-50/60 transition">
-                      <td className="py-3 px-3 font-mono font-bold text-sky-900">
+                    <tr
+                      key={b.id}
+                      className={`transition-colors border-b border-slate-200 dark:border-slate-800 ${
+                        rowIdx % 2 === 0
+                          ? 'bg-white dark:bg-slate-900'
+                          : 'bg-slate-50/70 dark:bg-slate-800/40'
+                      } hover:!bg-amber-50/70 dark:hover:!bg-slate-750`}
+                    >
+                      {/* 1. เลขที่ BOQ */}
+                      <td className="py-3 px-3 text-center font-mono font-bold text-sky-800 dark:text-sky-400 whitespace-nowrap align-middle border-r border-slate-200/60 dark:border-slate-800/60">
                         <Link to={`/boq/${b.id}`} className="hover:underline">
                           {b.boq_no}
                         </Link>
                       </td>
-                      <td className="py-3 px-3">
-                        <div className="font-bold text-steel-900">{b.title}</div>
-                        <div className="text-[11px] text-steel-500 line-clamp-1">
-                          {b.notes || '-'}
+
+                      {/* 2. ชื่องาน / รายละเอียดโครงการ */}
+                      <td className="py-3 px-3.5 align-middle border-r border-slate-200/60 dark:border-slate-800/60">
+                        <div className="font-bold text-slate-900 dark:text-slate-100 truncate max-w-[220px]" title={b.title}>
+                          {b.title}
                         </div>
+                        {b.notes && (
+                          <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-[220px] mt-0.5" title={b.notes}>
+                            {b.notes}
+                          </div>
+                        )}
                       </td>
-                      <td className="py-3 px-3">
-                        <div className="font-semibold text-steel-800">
+
+                      {/* 3. ลูกค้า / โครงการ */}
+                      <td className="py-3 px-3.5 align-middle border-r border-slate-200/60 dark:border-slate-800/60">
+                        <div className="font-semibold text-slate-800 dark:text-slate-200 truncate max-w-[200px]" title={b.customer_name}>
                           {b.customer_name || '-'}
                         </div>
                         {b.projects && (
-                          <div className="text-[10px] text-sky-700 font-mono">
+                          <div className="text-[11px] text-sky-700 dark:text-sky-300 font-mono truncate max-w-[200px] mt-0.5" title={`[${b.projects.project_code}] ${b.projects.project_name}`}>
                             [{b.projects.project_code}] {b.projects.project_name}
                           </div>
                         )}
                       </td>
-                      <td className="py-3 px-3 text-right font-mono font-bold text-amber-700">
+
+                      {/* 4. ขนาด (kWp) */}
+                      <td className="py-3 px-3 text-center align-middle border-r border-slate-200/60 dark:border-slate-800/60 whitespace-nowrap font-mono font-bold text-amber-700 dark:text-amber-400">
                         {Number(b.system_size_kwp || 0) > 0
                           ? `${Number(b.system_size_kwp).toLocaleString()} kWp`
                           : '-'}
                       </td>
-                      <td className="py-3 px-3 text-right font-mono text-steel-600">
+
+                      {/* 5. ค่าวัสดุ */}
+                      <td className="py-3 px-3 text-right font-mono text-slate-600 dark:text-slate-300 align-middle border-r border-slate-200/60 dark:border-slate-800/60 tabular-nums">
                         {baht(b.total_material_cost || 0)}
                       </td>
-                      <td className="py-3 px-3 text-right font-mono text-steel-600">
+
+                      {/* 6. ค่าแรง */}
+                      <td className="py-3 px-3 text-right font-mono text-amber-800 dark:text-amber-400 align-middle border-r border-slate-200/60 dark:border-slate-800/60 tabular-nums">
                         {baht(b.total_labor_cost || 0)}
                       </td>
-                      <td className="py-3 px-3 text-right font-mono font-black text-emerald-800 text-sm">
-                        {baht(b.grand_total || 0)}
+
+                      {/* 7. ราคาเสนอขาย (สุทธิ) */}
+                      <td className="py-3 px-3.5 text-right font-mono font-black text-emerald-700 dark:text-emerald-400 text-sm align-middle border-r border-slate-200/60 dark:border-slate-800/60 tabular-nums">
+                        ฿{baht(b.grand_total || 0)}
                       </td>
-                      <td className="py-3 px-3 text-center">
-                        <span
-                          className={`inline-block px-2 py-0.5 text-[10px] font-bold rounded-full border ${st.color}`}
-                        >
+
+                      {/* 8. สถานะ */}
+                      <td className="py-3 px-3 text-center align-middle border-r border-slate-200/60 dark:border-slate-800/60 whitespace-nowrap">
+                        <span className={`inline-block px-2.5 py-0.5 text-[10px] font-bold rounded-full border ${st.color}`}>
                           {st.label}
                         </span>
                       </td>
-                      <td className="py-3 px-3 text-center">
-                        <div className="flex items-center justify-center gap-1.5">
-                          <Link
-                            to={`/boq/${b.id}`}
-                            className="rounded-lg bg-steel-100 hover:bg-steel-200 text-steel-800 px-2.5 py-1 text-xs font-bold transition flex items-center gap-1"
-                          >
-                            <span>ดู</span>
-                            <ChevronRight className="h-3 w-3" />
-                          </Link>
-                        </div>
+
+                      {/* 9. การจัดการ */}
+                      <td className="py-3 px-3 text-center whitespace-nowrap align-middle">
+                        <Link
+                          to={`/boq/${b.id}`}
+                          className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-sky-50 dark:bg-sky-950/60 hover:bg-sky-100 dark:hover:bg-sky-900/60 text-sky-800 dark:text-sky-200 border border-sky-300 dark:border-sky-700 px-3 py-1.5 text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95"
+                          title="ดูรายละเอียดและถอดแบบ BOQ"
+                        >
+                          <Eye className="h-3.5 w-3.5 text-sky-600 dark:text-sky-400" />
+                          <span>ดู BOQ</span>
+                        </Link>
                       </td>
                     </tr>
                   )
