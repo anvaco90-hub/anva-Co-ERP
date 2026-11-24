@@ -410,32 +410,29 @@ export default function ContactsPage() {
         </div>
       </div>
 
-      {/* 4. Table: Contact List (จัดระเบียบตารางทางการแบบ ERP Data Grid สลับสี มีเส้นตารางชัดเจน) */}
+      {/* 4. Table: Contact List (จัดระเบียบตารางทางการแบบ Modern ERP 4 คอลัมน์หลัก แสดงจบในหน้าเดียว ไม่ต้องเลื่อน >> <<) */}
       <div className="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs">
         <div className="overflow-x-auto">
-          <table className="table-auto w-full text-left text-xs divide-y divide-slate-200 dark:divide-slate-800 border-collapse min-w-[900px]">
+          <table className="w-full text-left text-xs divide-y divide-slate-200 dark:divide-slate-800 border-collapse">
             <thead className="bg-slate-100/90 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 font-bold uppercase tracking-wider text-[11px] border-b-2 border-slate-300 dark:border-slate-700">
               <tr>
-                <th className="py-3.5 px-3.5 text-center w-36 border-r border-slate-200/70 dark:border-slate-700/60 whitespace-nowrap">รหัส / ประเภท</th>
-                <th className="py-3.5 px-3.5 min-w-[240px] border-r border-slate-200/70 dark:border-slate-700/60">ชื่อคู่ค้า / บริษัท / ร้านค้า</th>
-                <th className="py-3.5 px-3.5 text-center w-40 border-r border-slate-200/70 dark:border-slate-700/60 whitespace-nowrap">เลขผู้เสียภาษี / สาขา</th>
-                <th className="py-3.5 px-3.5 min-w-[180px] border-r border-slate-200/70 dark:border-slate-700/60">ผู้ติดต่อ & เบอร์โทร</th>
-                <th className="py-3.5 px-3 text-center w-32 border-r border-slate-200/70 dark:border-slate-700/60 whitespace-nowrap">บทบาทในระบบ</th>
-                <th className="py-3.5 px-3 text-center w-28 border-r border-slate-200/70 dark:border-slate-700/60 whitespace-nowrap">สถานะ</th>
-                <th className="py-3.5 px-3.5 text-center w-24 whitespace-nowrap">การจัดการ</th>
+                <th className="py-3 px-3.5 text-center w-40 border-r border-slate-200/70 dark:border-slate-700/60 whitespace-nowrap">รหัส & บทบาท & สถานะ</th>
+                <th className="py-3 px-4 border-r border-slate-200/70 dark:border-slate-700/60">ชื่อคู่ค้า / บริษัท & ข้อมูลภาษี</th>
+                <th className="py-3 px-4 text-left w-56 border-r border-slate-200/70 dark:border-slate-700/60">ผู้ติดต่อ & เบอร์โทร</th>
+                <th className="py-3 px-3 text-center w-24 whitespace-nowrap">การจัดการ</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 dark:divide-slate-800 bg-white dark:bg-slate-900">
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-slate-400 dark:text-slate-500">
+                  <td colSpan={4} className="py-12 text-center text-slate-400 dark:text-slate-500">
                     <RefreshCw className="mx-auto h-6 w-6 animate-spin text-sky-600 mb-2" />
                     <p className="text-xs font-semibold">กำลังโหลดข้อมูลทะเบียนคู่ค้า...</p>
                   </td>
                 </tr>
               ) : filteredContacts.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-slate-400 dark:text-slate-500">
+                  <td colSpan={4} className="py-12 text-center text-slate-400 dark:text-slate-500">
                     <Building2 className="mx-auto h-8 w-8 text-slate-300 dark:text-slate-600 mb-2" />
                     <p className="text-xs font-semibold">ไม่พบข้อมูลคู่ค้าที่ค้นหา</p>
                     <button
@@ -459,7 +456,7 @@ export default function ContactsPage() {
                   return (
                     <tr
                       key={c.id}
-                      className={`transition-colors border-b border-slate-200 dark:border-slate-800 ${
+                      className={`transition-colors border-b border-slate-200 dark:border-slate-800 [&>td]:align-middle ${
                         rowIdx % 2 === 0
                           ? 'bg-white dark:bg-slate-900'
                           : 'bg-slate-50/70 dark:bg-slate-800/40'
@@ -467,104 +464,92 @@ export default function ContactsPage() {
                         c.is_active === false ? 'opacity-60 bg-slate-50/40' : ''
                       } hover:!bg-amber-50/70 dark:hover:!bg-slate-750`}
                     >
-                      {/* 1. รหัส / ประเภท (จัดกึ่งกลาง บน-ล่าง ซ้าย-ขวา) */}
-                      <td className="py-3 px-3.5 text-center align-middle whitespace-nowrap border-r border-slate-200/60 dark:border-slate-800/60">
-                        <div className="font-mono text-xs font-bold text-sky-700 dark:text-sky-400">
-                          {c.contact_code || '-'}
-                        </div>
-                        <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 flex items-center justify-center gap-1">
-                          {c.entity_type === 'individual' ? (
-                            <span className="text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 px-1.5 py-0.2 rounded border border-amber-200 dark:border-amber-800">บุคคลธรรมดา</span>
+                      {/* 1. รหัส & บทบาท & สถานะ (2 บรรทัดกึ่งกลาง กะทัดรัด) */}
+                      <td className="py-3 px-3 text-center whitespace-nowrap border-r border-slate-200/60 dark:border-slate-800/60">
+                        <div className="flex items-center justify-center gap-1.5">
+                          <span className="font-mono text-xs font-bold text-sky-700 dark:text-sky-400">
+                            {c.contact_code || '-'}
+                          </span>
+                          {c.is_active !== false ? (
+                            <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-400" title="สถานะ: ใช้งาน">
+                              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                            </span>
                           ) : (
-                            <span className="text-sky-800 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/60 px-1.5 py-0.2 rounded border border-sky-200 dark:border-sky-800 font-semibold">นิติบุคคล</span>
-                          )}
-                        </div>
-                      </td>
-
-                      {/* 2. ชื่อคู่ค้า / บริษัท (กึ่งกลางบน-ล่าง ย่อข้อความ มี title อ่านได้) */}
-                      <td className="py-3 px-3.5 align-middle border-r border-slate-200/60 dark:border-slate-800/60">
-                        <div
-                          onClick={() => setSelectedContactForDetail(c)}
-                          className="font-bold text-slate-900 dark:text-slate-100 hover:text-sky-700 dark:hover:text-sky-400 hover:underline cursor-pointer truncate max-w-sm text-sm"
-                          title={bName}
-                        >
-                          {bName}
-                        </div>
-                        <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-sm mt-0.5" title={c.registered_address || c.address || 'ไม่ระบุที่อยู่'}>
-                          {c.registered_address || c.address || 'ไม่ระบุที่อยู่'}
-                        </div>
-                      </td>
-
-                      {/* 3. เลขผู้เสียภาษี / สาขา (จัดกึ่งกลาง บน-ล่าง ซ้าย-ขวา) */}
-                      <td className="py-3 px-3.5 text-center align-middle whitespace-nowrap border-r border-slate-200/60 dark:border-slate-800/60">
-                        <div className="font-mono text-xs font-semibold text-slate-800 dark:text-slate-200">
-                          {c.tax_id || '-'}
-                        </div>
-                        <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 font-medium">
-                          {branchText}
-                        </div>
-                      </td>
-
-                      {/* 4. ผู้ติดต่อ & เบอร์โทร (กึ่งกลางบน-ล่าง ย่อข้อความ มี title อ่านได้) */}
-                      <td className="py-3 px-3.5 align-middle border-r border-slate-200/60 dark:border-slate-800/60">
-                        <div className="font-semibold text-slate-800 dark:text-slate-200 truncate max-w-[180px]" title={c.contact_person_name || c.contact_person || '-'}>
-                          {c.contact_person_name || c.contact_person || '-'}
-                        </div>
-                        <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-2">
-                          {(c.office_phone || c.phone || c.contact_person_mobile) && (
-                            <span className="flex items-center gap-0.5">
-                              <Phone className="h-3 w-3 text-slate-400" />
-                              <span>{c.office_phone || c.contact_person_mobile || c.phone}</span>
+                            <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-rose-700 dark:text-rose-400" title="สถานะ: ระงับ">
+                              <span className="h-1.5 w-1.5 rounded-full bg-rose-500"></span>
                             </span>
                           )}
                         </div>
-                      </td>
-
-                      {/* 5. บทบาทคู่ค้า (Badges) (จัดกึ่งกลาง บน-ล่าง ซ้าย-ขวา) */}
-                      <td className="py-3 px-3 align-middle text-center whitespace-nowrap border-r border-slate-200/60 dark:border-slate-800/60">
-                        <div className="flex flex-col items-center justify-center gap-1">
+                        <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 flex items-center justify-center gap-1 flex-wrap">
                           {c.is_customer && (
-                            <span className="inline-block rounded-full bg-sky-50 dark:bg-sky-950/60 text-sky-800 dark:text-sky-300 border border-sky-200 dark:border-sky-800 px-2 py-0.5 text-[10px] font-bold">
+                            <span className="rounded bg-sky-50 dark:bg-sky-950/60 text-sky-800 dark:text-sky-300 border border-sky-200 dark:border-sky-800 px-1.5 py-0.2 font-bold">
                               ลูกค้า
                             </span>
                           )}
                           {c.is_vendor && (
-                            <span className="inline-block rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 px-2 py-0.5 text-[10px] font-bold">
+                            <span className="rounded bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 px-1.5 py-0.2 font-bold">
                               ผู้จำหน่าย
                             </span>
                           )}
-                          {!c.is_customer && !c.is_vendor && (
-                            <span className="text-slate-400 text-[10px]">-</span>
+                          <span className="text-slate-400">
+                            {c.entity_type === 'individual' ? 'บุคคล' : 'นิติบุคคล'}
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* 2. ชื่อคู่ค้า / บริษัท & ข้อมูลภาษี (คอลัมน์หลัก อ่านง่าย ชัดเจน 100%) */}
+                      <td className="py-3 px-4 border-r border-slate-200/60 dark:border-slate-800/60">
+                        <div
+                          onClick={() => setSelectedContactForDetail(c)}
+                          className="font-bold text-slate-900 dark:text-slate-100 hover:text-sky-700 dark:hover:text-sky-400 hover:underline cursor-pointer text-sm leading-snug line-clamp-1"
+                          title={bName}
+                        >
+                          {bName}
+                        </div>
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-2 flex-wrap">
+                          <span>
+                            เลขภาษี: <b className="font-mono text-slate-700 dark:text-slate-300">{c.tax_id || '-'}</b>
+                          </span>
+                          <span>·</span>
+                          <span className="font-medium">{branchText}</span>
+                          {(c.registered_address || c.address) && (
+                            <>
+                              <span>·</span>
+                              <span className="truncate max-w-[260px] text-slate-400" title={c.registered_address || c.address}>
+                                {c.registered_address || c.address}
+                              </span>
+                            </>
                           )}
                         </div>
                       </td>
 
-                      {/* 6. สถานะ (จัดกึ่งกลาง บน-ล่าง ซ้าย-ขวา) */}
-                      <td className="py-3 px-3 align-middle text-center whitespace-nowrap border-r border-slate-200/60 dark:border-slate-800/60">
-                        {c.is_active !== false ? (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 text-[10px] font-bold text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
-                            <span>ใช้งาน</span>
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 dark:bg-rose-950/60 px-2 py-0.5 text-[10px] font-bold text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
-                            <span className="h-1.5 w-1.5 rounded-full bg-rose-500"></span>
-                            <span>ระงับ</span>
-                          </span>
-                        )}
+                      {/* 3. ผู้ติดต่อ & เบอร์โทร (2 บรรทัด สะอาดตา) */}
+                      <td className="py-3 px-4 border-r border-slate-200/60 dark:border-slate-800/60">
+                        <div className="font-semibold text-slate-800 dark:text-slate-200 line-clamp-1 text-xs" title={c.contact_person_name || c.contact_person || '-'}>
+                          {c.contact_person_name || c.contact_person || 'ไม่ระบุผู้ติดต่อ'}
+                        </div>
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                          {(c.office_phone || c.phone || c.contact_person_mobile) ? (
+                            <span className="flex items-center gap-1 font-mono">
+                              <Phone className="h-3 w-3 text-slate-400 shrink-0" />
+                              <span>{c.office_phone || c.contact_person_mobile || c.phone}</span>
+                            </span>
+                          ) : (
+                            <span className="text-slate-400">-</span>
+                          )}
+                        </div>
                       </td>
 
-                      {/* 7. การจัดการ (ปุ่ม 'ดู' + เมนูเพิ่มเติม 3 จุด จัดการเหมือนโมดูลอื่น) */}
-                      <td className={`py-3 px-3.5 align-middle text-center whitespace-nowrap relative ${isMenuOpen ? 'z-40' : 'z-10'}`}>
-                        <div className="flex items-center justify-center gap-1.5">
+                      {/* 4. การจัดการ (ตัดคำว่า 'ดู' ออกตามคำสั่งผู้ใช้ เหลือเฉพาะไอคอนกะทัดรัด) */}
+                      <td className={`py-3 px-3 text-center whitespace-nowrap relative ${isMenuOpen ? 'z-40' : 'z-10'}`}>
+                        <div className="flex items-center justify-center gap-1">
                           <button
                             type="button"
                             onClick={() => setSelectedContactForDetail(c)}
-                            className="inline-flex items-center gap-1 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-sky-50 dark:hover:bg-sky-950 text-slate-700 dark:text-slate-200 hover:text-sky-800 dark:hover:text-sky-300 px-2.5 py-1 text-xs font-bold transition border border-slate-200 dark:border-slate-700 hover:border-sky-300 cursor-pointer shadow-2xs"
+                            className="inline-flex items-center justify-center h-7 w-7 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-sky-50 dark:hover:bg-sky-950 text-slate-600 dark:text-slate-300 hover:text-sky-600 dark:hover:text-sky-400 transition border border-slate-200 dark:border-slate-700 hover:border-sky-300 cursor-pointer shadow-2xs"
                             title="ดูข้อมูลคู่ค้า & ประวัติธุรกรรม"
                           >
-                            <Eye className="h-3.5 w-3.5 text-sky-600 dark:text-sky-400" />
-                            <span>ดู</span>
+                            <Eye className="h-3.5 w-3.5" />
                           </button>
                           <button
                             type="button"
@@ -572,14 +557,14 @@ export default function ContactsPage() {
                               e.stopPropagation()
                               setActionMenuId(isMenuOpen ? null : c.id)
                             }}
-                            className={`rounded-xl p-1.5 transition cursor-pointer border ${
+                            className={`inline-flex items-center justify-center h-7 w-7 rounded-lg transition cursor-pointer border ${
                               isMenuOpen
                                 ? 'bg-sky-50 dark:bg-sky-950/80 text-sky-700 dark:text-sky-300 border-sky-300 dark:border-sky-700 ring-2 ring-sky-400/20'
                                 : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 border-transparent'
                             }`}
                             title="เมนูเพิ่มเติม"
                           >
-                            <MoreVertical className="h-4 w-4" />
+                            <MoreVertical className="h-3.5 w-3.5" />
                           </button>
                         </div>
 
