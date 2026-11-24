@@ -31,28 +31,7 @@ export default function TaxReportsPage() {
   const loadData = async () => {
     setLoading(true)
     try {
-      // 1. ลองดึงข้อมูลพร้อม foreign table join หากฐานข้อมูลมี relationship
-      const joinQuery = await supabase
-        .from('tax_records')
-        .select('*, contacts(company_name, business_name, tax_id, branch_code, address), projects(project_code, project_name)')
-        .eq('tax_year', selectedYear)
-        .eq('tax_month', selectedMonth)
-        .order('document_date', { ascending: true })
-
-      if (!joinQuery.error && joinQuery.data) {
-        const normalized = joinQuery.data.map((r) => ({
-          ...r,
-          contacts: r.contacts ? {
-            ...r.contacts,
-            company_name: r.contacts.company_name || r.contacts.business_name,
-          } : null,
-        }))
-        setTaxRecords(normalized)
-        return
-      }
-
-      // 2. Fallback ปลอดภัย: หากไม่มี Foreign Key ใน schema cache ให้ดึง tax_records และ join ใน JavaScript
-      console.warn('Direct FK join failed, running safe relationship mapping:', joinQuery.error)
+      // ดึงข้อมูล tax_records โดยตรงเพื่อป้องกัน HTTP 400 จาก PostgREST เนื่องจาก schema ไม่มี FK constraint ไปยัง contacts
       const { data: taxList, error: taxErr } = await supabase
         .from('tax_records')
         .select('*')
@@ -61,7 +40,7 @@ export default function TaxReportsPage() {
         .order('document_date', { ascending: true })
 
       if (taxErr) {
-        console.warn('Cannot load tax_records directly, using empty list:', taxErr)
+        console.warn('Cannot load tax_records:', taxErr)
         setTaxRecords([])
         return
       }

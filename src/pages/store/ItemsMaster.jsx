@@ -1057,9 +1057,10 @@ export default function ItemsMaster() {
               <button
                 type="button"
                 onClick={() => setSearch('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-steel-400 hover:text-steel-600 dark:hover:text-slate-200"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-steel-400 hover:text-steel-600 dark:hover:text-slate-200 cursor-pointer"
+                title="ล้างคำค้นหา"
               >
-                
+                <X className="h-4 w-4" />
               </button>
             )}
           </div>

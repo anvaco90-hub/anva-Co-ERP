@@ -732,6 +732,12 @@ export default function Dashboard() {
     return filtered
   }, [filteredInvoices, filteredExpenses, filteredApList, filteredPurchaseOrders, recentDocTab, recentDocSearch])
 
+  // Filtered & Limited Recent Documents (เลือกจำนวนบรรทัดที่ต้องการแสดง)
+  const displayedRecentDocs = useMemo(() => {
+    if (recentDocLimit === 'all') return recentDocuments
+    return recentDocuments.slice(0, Number(recentDocLimit))
+  }, [recentDocuments, recentDocLimit])
+
   // ----------------------------------------------------------------------------
   // Render
   // ----------------------------------------------------------------------------
@@ -1567,160 +1573,255 @@ export default function Dashboard() {
       {/* ------------------------------------------------------------------------ */}
       {/* 5. Section 1: ยอดขายตามสินค้าและบริการ (Sales by Product / Project Table)  */}
       {/* ------------------------------------------------------------------------ */}
-      <div id="sales-by-product" className="rounded-2xl border border-steel-200/90 bg-white p-6 shadow-sm scroll-mt-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-steel-100 pb-4">
+      <div id="sales-by-product" className="rounded-2xl border border-steel-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm scroll-mt-6 space-y-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-steel-100 dark:border-slate-800 pb-4">
           <div className="flex items-center gap-3 min-w-0">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-800">
               <Package className="h-5 w-5" />
             </div>
             <div className="min-w-0">
-              <h2 className="text-base sm:text-lg font-bold text-steel-900 truncate">
+              <h2 className="text-base sm:text-lg font-bold text-steel-900 dark:text-slate-100 truncate">
                 1. ยอดขายตามสินค้าและบริการ (Sales by Product / Service)
               </h2>
-              <p className="text-xs text-steel-500">
+              <p className="text-xs text-steel-500 dark:text-slate-400">
                 วิเคราะห์สัดส่วนรายได้และปริมาณการขายแยกตามประเภทสินค้า วัสดุอุปกรณ์ และงานบริการ
               </p>
             </div>
           </div>
 
-          {/* Toggle between Product View vs Project View */}
-          <div className="flex items-center rounded-xl bg-steel-100 p-1 text-xs font-bold shrink-0">
+          <div className="flex items-center gap-2.5 flex-wrap self-start sm:self-center shrink-0">
+            {/* Toggle between Product View vs Project View */}
+            <div className="flex items-center rounded-xl bg-steel-100 dark:bg-slate-800 p-1 text-xs font-bold shrink-0">
+              <button
+                type="button"
+                onClick={() => setProductViewTab('products')}
+                className={`rounded-lg px-3 py-1.5 transition cursor-pointer ${productViewTab === 'products'
+                  ? 'bg-white dark:bg-slate-900 text-steel-900 dark:text-slate-100 shadow-sm'
+                  : 'text-steel-600 dark:text-slate-400 hover:text-steel-900'
+                  }`}
+              >
+                แยกตามสินค้า / วัสดุ ({salesByProduct.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setProductViewTab('projects')}
+                className={`rounded-lg px-3 py-1.5 transition cursor-pointer ${productViewTab === 'projects'
+                  ? 'bg-white dark:bg-slate-900 text-steel-900 dark:text-slate-100 shadow-sm'
+                  : 'text-steel-600 dark:text-slate-400 hover:text-steel-900'
+                  }`}
+              >
+                แยกตามโครงการ ({salesByProject.length})
+              </button>
+            </div>
+
+            {/* ปุ่มย่อ / ขยาย ตาราง */}
             <button
-              onClick={() => setProductViewTab('products')}
-              className={`rounded-lg px-3 py-1.5 transition ${productViewTab === 'products'
-                ? 'bg-white text-steel-900 shadow-sm'
-                : 'text-steel-600 hover:text-steel-900'
-                }`}
+              type="button"
+              onClick={() => setSalesCollapsed(!salesCollapsed)}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-steel-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-bold text-steel-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition cursor-pointer shadow-2xs"
+              title={salesCollapsed ? 'ขยายตาราง' : 'ย่อตาราง'}
             >
-              แยกตามสินค้า / วัสดุ ({salesByProduct.length})
-            </button>
-            <button
-              onClick={() => setProductViewTab('projects')}
-              className={`rounded-lg px-3 py-1.5 transition ${productViewTab === 'projects'
-                ? 'bg-white text-steel-900 shadow-sm'
-                : 'text-steel-600 hover:text-steel-900'
-                }`}
-            >
-              แยกตามโครงการ ({salesByProject.length})
+              {salesCollapsed ? (
+                <>
+                  <ChevronDown className="h-3.5 w-3.5 text-amber-600" />
+                  <span>ขยายตาราง</span>
+                </>
+              ) : (
+                <>
+                  <ChevronUp className="h-3.5 w-3.5 text-steel-500" />
+                  <span>ย่อตาราง</span>
+                </>
+              )}
             </button>
           </div>
         </div>
 
+        {/* แผงควบคุม ค้นหา และ เลือกจำนวนบรรทัดที่ต้องการให้แสดง (Search & Row Limit Bar) */}
+        {!salesCollapsed && (
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-1 pb-1">
+            {/* Search Input Box with proper pl-9 to prevent icon overlapping */}
+            <div className="relative flex-1 min-w-[240px]">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+              <input
+                type="text"
+                value={salesSearch}
+                onChange={(e) => setSalesSearch(e.target.value)}
+                placeholder={productViewTab === 'products' ? 'ค้นหาชื่อสินค้า, วัสดุ, บริการ...' : 'ค้นหาชื่อโครงการ, รหัสโครงการ...'}
+                className="w-full rounded-xl border border-steel-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 pl-9 pr-8 py-1.5 text-xs text-steel-900 dark:text-slate-100 placeholder:text-steel-400 focus:border-amber-500 focus:bg-white dark:focus:bg-slate-800 focus:outline-none transition shadow-2xs"
+              />
+              {salesSearch && (
+                <button
+                  type="button"
+                  onClick={() => setSalesSearch('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition cursor-pointer"
+                  title="ล้างคำค้นหา"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              )}
+            </div>
+
+            {/* Row Limit Selector (เลือกจำนวนบรรทัดที่ต้องการแสดง) */}
+            <div className="flex items-center gap-1.5 text-xs shrink-0 self-end sm:self-center">
+              <span className="text-steel-500 dark:text-slate-400 font-semibold text-[11px]">แสดง:</span>
+              {[
+                { id: '5', label: '5 บรรทัด' },
+                { id: '10', label: '10 บรรทัด' },
+                { id: '20', label: '20 บรรทัด' },
+                { id: 'all', label: 'ทั้งหมด' },
+              ].map((opt) => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => setSalesLimit(opt.id)}
+                  className={`rounded-lg px-2.5 py-1 text-xs font-bold transition cursor-pointer ${
+                    salesLimit === opt.id
+                      ? 'bg-amber-600 text-white shadow-2xs'
+                      : 'bg-steel-100 dark:bg-slate-800 text-steel-600 dark:text-slate-300 hover:bg-steel-200 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Product / Project Sales Table & Visual Bars */}
-        <div className="mt-4 overflow-x-auto rounded-xl border border-steel-100">
-          {productViewTab === 'products' ? (
-            salesByProduct.length > 0 ? (
-              <table className="w-full text-left text-xs min-w-[720px]">
-                <thead>
-                  <tr className="border-b border-steel-100 bg-steel-50/70 text-steel-600 font-bold uppercase tracking-wider">
-                    <th className="py-3 px-3 w-14 text-center">อันดับ</th>
-                    <th className="py-3 px-3.5">รายการสินค้า / บริการ</th>
-                    <th className="py-3 px-3 text-right">จำนวน</th>
-                    <th className="py-3 px-3 text-center">หน่วย</th>
-                    <th className="py-3 px-3.5 text-right">มูลค่ายอดขายรวม (บาท)</th>
-                    <th className="py-3 px-3.5 w-48 text-right">สัดส่วนยอดขาย (%)</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-steel-50 bg-white">
-                  {salesByProduct.map((p) => (
-                    <tr key={p.name} className="hover:bg-slate-50/80 transition">
-                      <td className="py-3 px-3 text-center">
-                        <span className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-black ${p.rank === 1 ? 'bg-amber-100 text-amber-800 ring-1 ring-amber-300' :
-                          p.rank === 2 ? 'bg-slate-200 text-steel-800' :
-                            p.rank === 3 ? 'bg-orange-100 text-orange-800' : 'bg-steel-100 text-steel-600'
-                          }`}>
-                          {p.rank === 1 ? '' : p.rank === 2 ? '' : p.rank === 3 ? '' : p.rank}
-                        </span>
-                      </td>
-                      <td className="py-3 px-3.5 font-bold text-steel-900 break-words leading-snug max-w-md" title={p.name}>
-                        {p.name}
-                      </td>
-                      <td className="py-3 px-3 text-right font-mono font-medium text-steel-700">
-                        {Number(p.totalQty).toLocaleString('th-TH')}
-                      </td>
-                      <td className="py-3 px-3 text-center text-steel-500 font-medium">
-                        {p.unit}
-                      </td>
-                      <td className="py-3 px-3.5 text-right font-mono font-bold text-steel-900">
-                        {baht(p.totalAmount)}
-                      </td>
-                      <td className="py-3 px-3.5 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <div className="h-2 w-24 overflow-hidden rounded-full bg-steel-100">
-                            <div
-                              className="h-full bg-gradient-to-r from-amber-500 to-amber-400"
-                              style={{ width: `${p.percent}%` }}
-                            />
-                          </div>
-                          <span className="font-mono font-bold text-steel-700 w-12 text-right">{p.percent}%</span>
-                        </div>
-                      </td>
+        {!salesCollapsed && (
+          <div className="overflow-x-auto rounded-xl border border-steel-100 dark:border-slate-800">
+            {productViewTab === 'products' ? (
+              displayedSalesByProduct.length > 0 ? (
+                <table className="w-full text-left text-xs min-w-[720px]">
+                  <thead>
+                    <tr className="border-b border-steel-100 dark:border-slate-800 bg-steel-50/70 dark:bg-slate-800/60 text-steel-600 dark:text-slate-300 font-bold uppercase tracking-wider">
+                      <th className="py-3 px-3 w-14 text-center">อันดับ</th>
+                      <th className="py-3 px-3.5">รายการสินค้า / บริการ</th>
+                      <th className="py-3 px-3 text-right">จำนวน</th>
+                      <th className="py-3 px-3 text-center">หน่วย</th>
+                      <th className="py-3 px-3.5 text-right">มูลค่ายอดขายรวม (บาท)</th>
+                      <th className="py-3 px-3.5 w-48 text-right">สัดส่วนยอดขาย (%)</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            ) : (
-              <div className="py-12 text-center text-steel-400 text-xs">
-                ไม่มีข้อมูลยอดขายตามสินค้าในช่วงเวลาที่เลือก
-              </div>
-            )
-          ) : (
-            /* By Project */
-            salesByProject.length > 0 ? (
-              <table className="w-full text-left text-xs min-w-[720px]">
-                <thead>
-                  <tr className="border-b border-steel-100 bg-steel-50/70 text-steel-600 font-bold uppercase tracking-wider">
-                    <th className="py-3 px-3 w-14 text-center">อันดับ</th>
-                    <th className="py-3 px-3.5">ชื่อโครงการ / สัญญา</th>
-                    <th className="py-3 px-3 text-center">รหัส</th>
-                    <th className="py-3 px-3 text-center">จำนวนบิล</th>
-                    <th className="py-3 px-3.5 text-right">มูลค่ายอดขายรวม (บาท)</th>
-                    <th className="py-3 px-3.5 w-48 text-right">สัดส่วนยอดขาย (%)</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-steel-50 bg-white">
-                  {salesByProject.map((p) => (
-                    <tr key={p.name} className="hover:bg-slate-50/80 transition">
-                      <td className="py-3 px-3 text-center">
-                        <span className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-black ${p.rank === 1 ? 'bg-amber-100 text-amber-800 ring-1 ring-amber-300' : 'bg-steel-100 text-steel-600'
-                          }`}>
-                          {p.rank === 1 ? '' : p.rank}
-                        </span>
-                      </td>
-                      <td className="py-3 px-3.5 font-bold text-steel-900 break-words leading-snug max-w-md" title={p.name}>
-                        {p.name}
-                      </td>
-                      <td className="py-3 px-3 text-center font-mono text-steel-500 font-medium">
-                        {p.code}
-                      </td>
-                      <td className="py-3 px-3 text-center font-medium text-steel-700">
-                        {p.count} งวด
-                      </td>
-                      <td className="py-3 px-3.5 text-right font-mono font-bold text-steel-900">
-                        {baht(p.totalAmount)}
-                      </td>
-                      <td className="py-3 px-3.5 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <div className="h-2 w-24 overflow-hidden rounded-full bg-steel-100">
-                            <div
-                              className="h-full bg-gradient-to-r from-blue-500 to-indigo-500"
-                              style={{ width: `${p.percent}%` }}
-                            />
+                  </thead>
+                  <tbody className="divide-y divide-steel-50 dark:divide-slate-800 bg-white dark:bg-slate-900">
+                    {displayedSalesByProduct.map((p) => (
+                      <tr key={p.name} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition">
+                        <td className="py-3 px-3 text-center">
+                          <span className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-black ${p.rank === 1 ? 'bg-amber-100 text-amber-800 ring-1 ring-amber-300' :
+                            p.rank === 2 ? 'bg-slate-200 text-steel-800' :
+                              p.rank === 3 ? 'bg-orange-100 text-orange-800' : 'bg-steel-100 dark:bg-slate-800 text-steel-600 dark:text-slate-300'
+                            }`}>
+                            {p.rank === 1 ? '' : p.rank === 2 ? '' : p.rank === 3 ? '' : p.rank}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3.5 font-bold text-steel-900 dark:text-slate-100 break-words leading-snug max-w-md" title={p.name}>
+                          {p.name}
+                        </td>
+                        <td className="py-3 px-3 text-right font-mono font-medium text-steel-700 dark:text-slate-300">
+                          {Number(p.totalQty).toLocaleString('th-TH')}
+                        </td>
+                        <td className="py-3 px-3 text-center text-steel-500 dark:text-slate-400 font-medium">
+                          {p.unit}
+                        </td>
+                        <td className="py-3 px-3.5 text-right font-mono font-bold text-steel-900 dark:text-slate-100">
+                          {baht(p.totalAmount)}
+                        </td>
+                        <td className="py-3 px-3.5 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <div className="h-2 w-24 overflow-hidden rounded-full bg-steel-100 dark:bg-slate-800">
+                              <div
+                                className="h-full bg-gradient-to-r from-amber-500 to-amber-400"
+                                style={{ width: `${p.percent}%` }}
+                              />
+                            </div>
+                            <span className="font-mono font-bold text-steel-700 dark:text-slate-300 w-12 text-right">{p.percent}%</span>
                           </div>
-                          <span className="font-mono font-bold text-steel-700 w-12 text-right">{p.percent}%</span>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <div className="py-12 text-center text-steel-400 text-xs space-y-2">
+                  <p>ไม่พบข้อมูลยอดขายตามสินค้าที่ตรงกับคำค้นหา "{salesSearch}"</p>
+                  {salesSearch && (
+                    <button
+                      type="button"
+                      onClick={() => setSalesSearch('')}
+                      className="text-xs font-bold text-amber-700 hover:underline cursor-pointer"
+                    >
+                      ล้างคำค้นหา
+                    </button>
+                  )}
+                </div>
+              )
             ) : (
-              <div className="py-12 text-center text-steel-400 text-xs">
-                ไม่มีข้อมูลยอดขายตามโครงการในช่วงเวลาที่เลือก
-              </div>
-            )
-          )}
-        </div>
+              /* By Project */
+              displayedSalesByProject.length > 0 ? (
+                <table className="w-full text-left text-xs min-w-[720px]">
+                  <thead>
+                    <tr className="border-b border-steel-100 dark:border-slate-800 bg-steel-50/70 dark:bg-slate-800/60 text-steel-600 dark:text-slate-300 font-bold uppercase tracking-wider">
+                      <th className="py-3 px-3 w-14 text-center">อันดับ</th>
+                      <th className="py-3 px-3.5">ชื่อโครงการ / สัญญา</th>
+                      <th className="py-3 px-3 text-center">รหัส</th>
+                      <th className="py-3 px-3 text-center">จำนวนบิล</th>
+                      <th className="py-3 px-3.5 text-right">มูลค่ายอดขายรวม (บาท)</th>
+                      <th className="py-3 px-3.5 w-48 text-right">สัดส่วนยอดขาย (%)</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-steel-50 dark:divide-slate-800 bg-white dark:bg-slate-900">
+                    {displayedSalesByProject.map((p) => (
+                      <tr key={p.name} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition">
+                        <td className="py-3 px-3 text-center">
+                          <span className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-black ${p.rank === 1 ? 'bg-amber-100 text-amber-800 ring-1 ring-amber-300' : 'bg-steel-100 dark:bg-slate-800 text-steel-600 dark:text-slate-300'
+                            }`}>
+                            {p.rank === 1 ? '' : p.rank}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3.5 font-bold text-steel-900 dark:text-slate-100 break-words leading-snug max-w-md" title={p.name}>
+                          {p.name}
+                        </td>
+                        <td className="py-3 px-3 text-center font-mono text-steel-500 dark:text-slate-400 font-medium">
+                          {p.code}
+                        </td>
+                        <td className="py-3 px-3 text-center font-medium text-steel-700 dark:text-slate-300">
+                          {p.count} งวด
+                        </td>
+                        <td className="py-3 px-3.5 text-right font-mono font-bold text-steel-900 dark:text-slate-100">
+                          {baht(p.totalAmount)}
+                        </td>
+                        <td className="py-3 px-3.5 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <div className="h-2 w-24 overflow-hidden rounded-full bg-steel-100 dark:bg-slate-800">
+                              <div
+                                className="h-full bg-gradient-to-r from-blue-500 to-indigo-500"
+                                style={{ width: `${p.percent}%` }}
+                              />
+                            </div>
+                            <span className="font-mono font-bold text-steel-700 dark:text-slate-300 w-12 text-right">{p.percent}%</span>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <div className="py-12 text-center text-steel-400 text-xs space-y-2">
+                  <p>ไม่พบข้อมูลยอดขายตามโครงการที่ตรงกับคำค้นหา "{salesSearch}"</p>
+                  {salesSearch && (
+                    <button
+                      type="button"
+                      onClick={() => setSalesSearch('')}
+                      className="text-xs font-bold text-blue-700 hover:underline cursor-pointer"
+                    >
+                      ล้างคำค้นหา
+                    </button>
+                  )}
+                </div>
+              )
+            )}
+          </div>
+        )}
       </div>
 
       {/* ------------------------------------------------------------------------ */}
@@ -1924,131 +2025,204 @@ export default function Dashboard() {
               </p>
             </div>
           </div>
-          <span className="text-xs font-semibold px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-steel-700 dark:text-slate-300 border border-steel-200 dark:border-slate-700 self-start sm:self-center">
-            {recentDocuments.length} รายการ
-          </span>
-        </div>
 
-        {/* Search Bar & Subtabs for Documents Feed (ตัวกรองและค้นหาเอกสาร) */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-b border-steel-100 dark:border-slate-800 pb-3">
-          {/* Subtabs for Documents Feed */}
-          <div className="flex items-center gap-1.5 text-xs font-bold flex-wrap">
+          <div className="flex items-center gap-2.5 self-start sm:self-center shrink-0">
+            <span className="text-xs font-semibold px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-steel-700 dark:text-slate-300 border border-steel-200 dark:border-slate-700">
+              {recentDocuments.length} รายการ
+            </span>
+
+            {/* ปุ่มย่อ / ขยาย รายการเอกสาร */}
             <button
-              onClick={() => setRecentDocTab('all')}
-              className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${recentDocTab === 'all' ? 'bg-steel-900 text-white shadow-xs' : 'bg-steel-50 dark:bg-slate-800 text-steel-600 dark:text-slate-300 hover:bg-steel-100 dark:hover:bg-slate-700'}`}
+              type="button"
+              onClick={() => setRecentDocCollapsed(!recentDocCollapsed)}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-steel-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-bold text-steel-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition cursor-pointer shadow-2xs"
+              title={recentDocCollapsed ? 'ขยายรายการ' : 'ย่อรายการ'}
             >
-              ทั้งหมด
-            </button>
-            <button
-              onClick={() => setRecentDocTab('revenue')}
-              className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${recentDocTab === 'revenue' ? 'bg-emerald-700 text-white shadow-xs' : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100'}`}
-            >
-              รายได้ (INV)
-            </button>
-            <button
-              onClick={() => setRecentDocTab('receivables')}
-              className={`px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5 ${recentDocTab === 'receivables'
-                ? 'bg-amber-600 text-white shadow-xs'
-                : 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 hover:bg-amber-100'
-                }`}
-            >
-              <span>ค้างรับ (AR)</span>
-              {arInvoicesCount > 0 && (
-                <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${recentDocTab === 'receivables' ? 'bg-white text-amber-800' : 'bg-amber-200 text-amber-900'
-                  }`}>
-                  {arInvoicesCount}
-                </span>
+              {recentDocCollapsed ? (
+                <>
+                  <ChevronDown className="h-3.5 w-3.5 text-sky-600" />
+                  <span>ขยายรายการ</span>
+                </>
+              ) : (
+                <>
+                  <ChevronUp className="h-3.5 w-3.5 text-steel-500" />
+                  <span>ย่อรายการ</span>
+                </>
               )}
             </button>
-            <button
-              onClick={() => setRecentDocTab('expenses')}
-              className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${recentDocTab === 'expenses' ? 'bg-rose-700 text-white shadow-xs' : 'bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300 hover:bg-rose-100'}`}
-            >
-              รายจ่าย (EXP)
-            </button>
-            <button
-              onClick={() => setRecentDocTab('purchasing')}
-              className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${recentDocTab === 'purchasing' ? 'bg-amber-700 text-white shadow-xs' : 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 hover:bg-amber-100'}`}
-            >
-              จัดซื้อ (PO)
-            </button>
           </div>
+        </div>
 
-          {/* Search Box in Recent Documents */}
-          <div className="relative min-w-[220px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-            <input
-              type="text"
-              value={recentDocSearch}
-              onChange={(e) => setRecentDocSearch(e.target.value)}
-              placeholder="ค้นหาเลขที่บิล, คู่ค้า, โครงการ..."
-              className="w-full rounded-xl border border-steel-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 pl-8.5 pr-8 py-1.5 text-xs text-steel-900 dark:text-slate-100 placeholder:text-steel-400 focus:border-sky-500 focus:bg-white dark:focus:bg-slate-800 focus:outline-none transition"
-            />
-            {recentDocSearch && (
+        {/* Search Bar, Row Limit, & Subtabs for Documents Feed (ตัวกรอง, ค้นหา, และเลือกจำนวนบรรทัด) */}
+        {!recentDocCollapsed && (
+          <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 border-b border-steel-100 dark:border-slate-800 pb-3">
+            {/* Subtabs for Documents Feed */}
+            <div className="flex items-center gap-1.5 text-xs font-bold flex-wrap">
               <button
                 type="button"
-                onClick={() => setRecentDocSearch('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition"
-                title="ล้างคำค้นหา"
+                onClick={() => setRecentDocTab('all')}
+                className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${recentDocTab === 'all' ? 'bg-steel-900 text-white shadow-xs' : 'bg-steel-50 dark:bg-slate-800 text-steel-600 dark:text-slate-300 hover:bg-steel-100 dark:hover:bg-slate-700'}`}
               >
-                <X className="h-3 w-3" />
+                ทั้งหมด
               </button>
-            )}
-          </div>
-        </div>
+              <button
+                type="button"
+                onClick={() => setRecentDocTab('revenue')}
+                className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${recentDocTab === 'revenue' ? 'bg-emerald-700 text-white shadow-xs' : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100'}`}
+              >
+                รายได้ (INV)
+              </button>
+              <button
+                type="button"
+                onClick={() => setRecentDocTab('receivables')}
+                className={`px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5 ${recentDocTab === 'receivables'
+                  ? 'bg-amber-600 text-white shadow-xs'
+                  : 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 hover:bg-amber-100'
+                  }`}
+              >
+                <span>ค้างรับ (AR)</span>
+                {arInvoicesCount > 0 && (
+                  <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${recentDocTab === 'receivables' ? 'bg-white text-amber-800' : 'bg-amber-200 text-amber-900'
+                    }`}>
+                    {arInvoicesCount}
+                  </span>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => setRecentDocTab('expenses')}
+                className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${recentDocTab === 'expenses' ? 'bg-rose-700 text-white shadow-xs' : 'bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300 hover:bg-rose-100'}`}
+              >
+                รายจ่าย (EXP)
+              </button>
+              <button
+                type="button"
+                onClick={() => setRecentDocTab('purchasing')}
+                className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${recentDocTab === 'purchasing' ? 'bg-amber-700 text-white shadow-xs' : 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 hover:bg-amber-100'}`}
+              >
+                จัดซื้อ (PO)
+              </button>
+            </div>
 
-        {/* Spacious 2-Column Responsive Feed Cards - ข้อความอ่านได้ต่อเนื่อง ไม่ถูกตัด ไม่เบียด */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-          {recentDocuments.slice(0, 12).map((doc, idx) => (
-            <div
-              key={`${doc.type}-${doc.id}-${idx}`}
-              className="rounded-xl border border-steel-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 hover:border-sky-300 dark:hover:border-sky-600 hover:shadow-xs transition flex flex-col justify-between"
-            >
-              <div>
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className={`rounded-lg px-2 py-0.5 text-xs font-black shrink-0 ${doc.type === 'INV' ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800' :
-                      doc.type === 'EXP' ? 'bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800' :
-                        doc.type === 'PO' ? 'bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800' : 'bg-rose-100 dark:bg-rose-950 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
-                      }`}>
-                      {doc.type}
-                    </span>
-                    <span className="font-mono text-xs font-bold text-steel-900 dark:text-slate-100">{doc.docNo}</span>
-                  </div>
-                  <span className="text-xs text-steel-400 dark:text-slate-500 font-mono shrink-0">{doc.date}</span>
-                </div>
-
-                {/* Party Name - ข้อความอ่านได้ต่อเนื่อง ไม่ truncate */}
-                <div className="mt-2 text-sm font-bold text-steel-900 dark:text-slate-100 break-words leading-snug" title={doc.party}>
-                  {doc.party}
-                </div>
-
-                {/* Project / Description - ข้อความอ่านได้ต่อเนื่อง */}
-                <div className="text-xs text-steel-600 dark:text-slate-400 mt-1 break-words leading-relaxed" title={doc.project}>
-                  {doc.project}
-                </div>
+            <div className="flex items-center gap-3 flex-wrap">
+              {/* Search Box in Recent Documents with proper pl-9 (Fix icon overlap) */}
+              <div className="relative flex-1 sm:w-64 min-w-[200px]">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                <input
+                  type="text"
+                  value={recentDocSearch}
+                  onChange={(e) => setRecentDocSearch(e.target.value)}
+                  placeholder="ค้นหาเลขที่บิล, คู่ค้า, โครงการ..."
+                  className="w-full rounded-xl border border-steel-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 pl-9 pr-8 py-1.5 text-xs text-steel-900 dark:text-slate-100 placeholder:text-steel-400 focus:border-sky-500 focus:bg-white dark:focus:bg-slate-800 focus:outline-none transition shadow-2xs"
+                />
+                {recentDocSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setRecentDocSearch('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition cursor-pointer"
+                    title="ล้างคำค้นหา"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
               </div>
 
-              <div className="mt-3 flex items-center justify-between border-t border-steel-100 dark:border-slate-800 pt-2.5">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold ${doc.statusColor}`}>
-                    {doc.statusText}
-                  </span>
-                  {doc.type === 'INV' && doc.remainingAmount > 0 && (
-                    <span className="rounded-md bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-300 font-mono text-[11px] font-bold px-2 py-0.5">
-                      ค้างรับ {baht(doc.remainingAmount)} บ.
-                    </span>
-                  )}
-                </div>
-                <div className="text-right">
-                  <div className="font-mono font-bold text-sm text-steel-900 dark:text-slate-100">
-                    {baht(doc.amount)} <span className="text-xs font-normal text-steel-500 dark:text-slate-400">บ.</span>
-                  </div>
-                </div>
+              {/* Row Limit Selector (เลือกจำนวนบรรทัดที่ต้องการแสดง) */}
+              <div className="flex items-center gap-1.5 text-xs shrink-0">
+                <span className="text-steel-500 dark:text-slate-400 font-semibold text-[11px]">แสดง:</span>
+                {[
+                  { id: '6', label: '6 รายการ' },
+                  { id: '12', label: '12 รายการ' },
+                  { id: '24', label: '24 รายการ' },
+                  { id: 'all', label: 'ทั้งหมด' },
+                ].map((opt) => (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => setRecentDocLimit(opt.id)}
+                    className={`rounded-lg px-2.5 py-1 text-xs font-bold transition cursor-pointer ${
+                      recentDocLimit === opt.id
+                        ? 'bg-sky-700 text-white shadow-2xs'
+                        : 'bg-steel-100 dark:bg-slate-800 text-steel-600 dark:text-slate-300 hover:bg-steel-200 dark:hover:bg-slate-700'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
               </div>
             </div>
-          ))}
-        </div>
+          </div>
+        )}
+
+        {/* Spacious 2-Column Responsive Feed Cards - ข้อความอ่านได้ต่อเนื่อง ไม่ถูกตัด ไม่เบียด */}
+        {!recentDocCollapsed && (
+          displayedRecentDocs.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+              {displayedRecentDocs.map((doc, idx) => (
+                <div
+                  key={`${doc.type}-${doc.id}-${idx}`}
+                  className="rounded-xl border border-steel-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 hover:border-sky-300 dark:hover:border-sky-600 hover:shadow-xs transition flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className={`rounded-lg px-2 py-0.5 text-xs font-black shrink-0 ${doc.type === 'INV' ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800' :
+                          doc.type === 'EXP' ? 'bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800' :
+                            doc.type === 'PO' ? 'bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800' : 'bg-rose-100 dark:bg-rose-950 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
+                          }`}>
+                          {doc.type}
+                        </span>
+                        <span className="font-mono text-xs font-bold text-steel-900 dark:text-slate-100">{doc.docNo}</span>
+                      </div>
+                      <span className="text-xs text-steel-400 dark:text-slate-500 font-mono shrink-0">{doc.date}</span>
+                    </div>
+
+                    {/* Party Name - ข้อความอ่านได้ต่อเนื่อง ไม่ truncate */}
+                    <div className="mt-2 text-sm font-bold text-steel-900 dark:text-slate-100 break-words leading-snug" title={doc.party}>
+                      {doc.party}
+                    </div>
+
+                    {/* Project / Description - ข้อความอ่านได้ต่อเนื่อง */}
+                    <div className="text-xs text-steel-600 dark:text-slate-400 mt-1 break-words leading-relaxed" title={doc.project}>
+                      {doc.project}
+                    </div>
+                  </div>
+
+                  <div className="mt-3 flex items-center justify-between border-t border-steel-100 dark:border-slate-800 pt-2.5">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold ${doc.statusColor}`}>
+                        {doc.statusText}
+                      </span>
+                      {doc.type === 'INV' && doc.remainingAmount > 0 && (
+                        <span className="rounded-md bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-300 font-mono text-[11px] font-bold px-2 py-0.5">
+                          ค้างรับ {baht(doc.remainingAmount)} บ.
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-right">
+                      <div className="font-mono font-bold text-sm text-steel-900 dark:text-slate-100">
+                        {baht(doc.amount)} <span className="text-xs font-normal text-steel-500 dark:text-slate-400">บ.</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="py-12 text-center text-steel-400 text-xs space-y-2 border border-dashed rounded-xl">
+              <p>ไม่พบเอกสารที่ตรงกับคำค้นหา "{recentDocSearch}"</p>
+              {recentDocSearch && (
+                <button
+                  type="button"
+                  onClick={() => setRecentDocSearch('')}
+                  className="text-xs font-bold text-sky-700 hover:underline cursor-pointer"
+                >
+                  ล้างคำค้นหา
+                </button>
+              )}
+            </div>
+          )
+        )}
       </div>
 
       {/* ------------------------------------------------------------------------ */}
