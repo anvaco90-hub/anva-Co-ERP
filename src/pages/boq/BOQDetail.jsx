@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, Fragment } from 'react'
+import { useEffect, useState, useMemo, Fragment, useRef } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { baht } from '../../lib/projects'
@@ -23,6 +23,8 @@ import {
   Calendar,
   Building2,
   FolderGit2,
+  MoreVertical,
+  Copy,
 } from 'lucide-react'
 
 const STATUS_MAP = {
@@ -49,6 +51,22 @@ export default function BOQDetail() {
   const [categoryMode, setCategoryMode] = useState('work') // 'work' (หมวดหมู่งาน) | 'material' (หมวดหมู่วัสดุและอุปกรณ์)
   const [catSearchQuery, setCatSearchQuery] = useState('')
   const [collapsedCategories, setCollapsedCategories] = useState({})
+  const [showMoreMenu, setShowMoreMenu] = useState(false)
+  const moreMenuRef = useRef(null)
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (moreMenuRef.current && !moreMenuRef.current.contains(e.target)) {
+        setShowMoreMenu(false)
+      }
+    }
+    if (showMoreMenu) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showMoreMenu])
 
   const fetchDetail = async () => {
     setLoading(true)
@@ -351,19 +369,17 @@ export default function BOQDetail() {
   return (
     <div className="space-y-6 font-sans text-slate-800 w-full">
       {/* 1. แบนเนอร์หัวหน้าเอกสารระดับบริหาร (Executive Corporate ERP Banner - เลย์เอาต์ 2 ชั้น สมดุลเต็มความกว้าง) */}
-      <div className="rounded-2xl border border-slate-800 bg-[#0f172a] p-5 text-white shadow-sm space-y-3.5">
-        {/* ชั้นที่ 1: รหัสเอกสาร + ป้ายสถานะ (ซ้าย) และ ปุ่ม Action คำสั่ง (ขวา) */}
-        <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
+      <div className="rounded-2xl border border-slate-800 bg-[#0f172a] p-5 text-white shadow-sm space-y-4">
+        {/* ชั้นที่ 1: ส่วนหัวเรื่อง + ป้ายกำกับ (ซ้าย) และ แถบเครื่องมือคำสั่ง Action Toolbar (ขวา) */}
+        <div className="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-4">
           {/* ข้อมูลหัวเรื่อง รหัส และป้ายสถานะ */}
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-sky-500/15 border border-sky-400/20 text-sky-400 shrink-0">
+          <div className="flex items-start gap-3.5 min-w-0">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-sky-500/15 border border-sky-400/20 text-sky-400 shrink-0 mt-0.5">
               <FileSpreadsheet className="h-5 w-5" />
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 space-y-1.5">
+              {/* แถบป้ายกำกับด้านบน (Badge Row) - แยกบรรทัดอย่างเป็นระเบียบ ไม่โดนปุ่มขวาเบียด */}
               <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-2xl font-black tracking-tight text-white font-mono whitespace-nowrap">
-                  {boq.boq_no}
-                </h1>
                 <span className="text-[10px] font-mono uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-sky-500/15 text-sky-300 border border-sky-400/25 font-bold whitespace-nowrap">
                   BOQ DOCUMENT
                 </span>
@@ -380,14 +396,20 @@ export default function BOQDetail() {
                   </Link>
                 )}
               </div>
-              <p className="text-xs text-slate-400 mt-0.5 truncate">
+
+              {/* รหัสเอกสาร BOQ */}
+              <h1 className="text-2xl font-black tracking-tight text-white font-mono whitespace-nowrap">
+                {boq.boq_no}
+              </h1>
+
+              <p className="text-xs text-slate-400 truncate">
                 {boq.title || 'เอกสารถอดแบบและประมาณราคาค่าวัสดุและค่าแรง (Bill of Quantities)'}
               </p>
             </div>
           </div>
 
-          {/* แถบปุ่ม Action ด้านขวา (จัดเรียงเป็นแถวสมดุล สัดส่วนคงที่ h-9) */}
-          <div className="flex items-center gap-2 flex-wrap shrink-0">
+          {/* แถบปุ่ม Action ด้านขวา (จัดเรียงเป็นแถวสมดุล สัดส่วนคงที่ h-9 - Option A) */}
+          <div className="flex items-center gap-2 flex-wrap xl:justify-end shrink-0">
             {/* ปุ่มแปลงเป็นใบเสนอราคา (ถ้าแปลงแล้วจะเปิดดูใบเดิม ป้องกันกดซ้ำ) */}
             {existingQuotation ? (
               <Link
@@ -422,7 +444,7 @@ export default function BOQDetail() {
               <span>พิมพ์ BOQ</span>
             </button>
 
-            {/* ปุ่มแก้ไข */}
+            {/* ทางเลือก A: ปุ่มแก้ไข อยู่ด้านนอก เป็น 1-Click Action */}
             <Link
               to={`/boq/${boq.id}/edit`}
               className="inline-flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800/90 hover:bg-slate-700 h-9 px-3 text-xs font-bold text-slate-200 hover:text-white transition shadow-xs"
@@ -431,15 +453,37 @@ export default function BOQDetail() {
               <span>แก้ไข</span>
             </Link>
 
-            {/* ปุ่มลบ (ถังขยะ) */}
-            <button
-              type="button"
-              onClick={handleDelete}
-              className="inline-flex items-center justify-center rounded-xl border border-rose-500/30 bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 h-9 w-9 text-xs transition cursor-pointer shadow-xs"
-              title="ลบเอกสาร BOQ"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </button>
+            {/* ทางเลือก A: เมนูเพิ่มเติม [ ⋮ ] รวมปุ่มลบเอกสาร */}
+            <div className="relative" ref={moreMenuRef}>
+              <button
+                type="button"
+                onClick={() => setShowMoreMenu((prev) => !prev)}
+                className={`inline-flex items-center justify-center rounded-xl border h-9 w-9 text-xs transition cursor-pointer shadow-xs ${
+                  showMoreMenu
+                    ? 'border-sky-400 bg-sky-500/20 text-sky-300'
+                    : 'border-slate-700 bg-slate-800/90 hover:bg-slate-700 text-slate-300'
+                }`}
+                title="ตัวเลือกเพิ่มเติม"
+              >
+                <MoreVertical className="h-4 w-4" />
+              </button>
+
+              {showMoreMenu && (
+                <div className="absolute right-0 mt-2 w-48 rounded-xl border border-slate-700 bg-slate-800 py-1.5 text-xs shadow-xl z-50 animate-in fade-in zoom-in-95">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowMoreMenu(false)
+                      handleDelete()
+                    }}
+                    className="w-full flex items-center gap-2 px-3.5 py-2 text-left text-rose-400 hover:bg-rose-500/15 transition cursor-pointer font-bold"
+                  >
+                    <Trash2 className="h-3.5 w-3.5 text-rose-400" />
+                    <span>ลบเอกสาร BOQ</span>
+                  </button>
+                </div>
+              )}
+            </div>
 
             {/* ปุ่มย้อนกลับ */}
             <Link
@@ -454,39 +498,31 @@ export default function BOQDetail() {
 
         {/* ชั้นที่ 2: แถบข้อมูลสรุปอ้างอิงเต็มความกว้าง (โครงการและข้อมูลทั้งหมดอยู่บรรทัดเดียวกันแบบเต็มจอ ไม่โดนปุ่มบีบ) */}
         <div className="pt-3 border-t border-slate-800/80 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-slate-300">
-          <span className="flex items-center gap-1.5 shrink-0">
+          <span className="flex items-center gap-1.5 shrink-0 whitespace-nowrap">
             <Calendar className="h-3.5 w-3.5 text-sky-400 shrink-0" />
             <span>สร้างเมื่อ: <strong className="text-white font-mono">{new Date(boq.created_at).toLocaleString('th-TH')}</strong></span>
           </span>
 
           {boq.system_size_kwp && (
-            <span className="flex items-center gap-1.5 shrink-0">
+            <span className="flex items-center gap-1.5 shrink-0 whitespace-nowrap">
               <Sun className="h-3.5 w-3.5 text-amber-400 shrink-0" />
               <span>ขนาดติดตั้ง: <strong className="text-white">{boq.system_size_kwp} kWp</strong></span>
             </span>
           )}
 
           {(boq.customer_name || boq.projects?.client_name) && (
-            <span className="flex items-center gap-1.5 shrink-0">
+            <span className="flex items-center gap-1.5 shrink-0 whitespace-nowrap">
               <Building2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
               <span>ลูกค้า: <strong className="text-white">{boq.customer_name || boq.projects?.client_name}</strong></span>
             </span>
           )}
 
           {boq.projects && (
-            <span className="flex items-center gap-1.5 shrink-0">
+            <span className="flex items-center gap-1.5 shrink-0 whitespace-nowrap">
               <FolderGit2 className="h-3.5 w-3.5 text-purple-400 shrink-0" />
               <span>โครงการ: <strong className="text-sky-300">[{boq.projects.project_code}] {boq.projects.project_name}</strong></span>
             </span>
           )}
-        </div>
-      </div>
-              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800/90 hover:bg-slate-700 h-9 px-3 text-xs font-bold text-slate-200 hover:text-white transition shadow-xs"
-            >
-              <ArrowLeft className="h-3.5 w-3.5" />
-              <span>กลับ</span>
-            </Link>
-          </div>
         </div>
       </div>
 
