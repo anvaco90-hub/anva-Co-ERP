@@ -554,9 +554,18 @@ export default function ContactsPage() {
                         )}
                       </td>
 
-                      {/* 7. การจัดการ (Action Popover) (จัดกึ่งกลาง บน-ล่าง ซ้าย-ขวา) */}
+                      {/* 7. การจัดการ (ปุ่ม 'ดู' + เมนูเพิ่มเติม 3 จุด จัดการเหมือนโมดูลอื่น) */}
                       <td className={`py-3 px-3.5 align-middle text-center whitespace-nowrap relative ${isMenuOpen ? 'z-40' : 'z-10'}`}>
-                        <div className="flex items-center justify-center">
+                        <div className="flex items-center justify-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedContactForDetail(c)}
+                            className="inline-flex items-center gap-1 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-sky-50 dark:hover:bg-sky-950 text-slate-700 dark:text-slate-200 hover:text-sky-800 dark:hover:text-sky-300 px-2.5 py-1 text-xs font-bold transition border border-slate-200 dark:border-slate-700 hover:border-sky-300 cursor-pointer shadow-2xs"
+                            title="ดูข้อมูลคู่ค้า & ประวัติธุรกรรม"
+                          >
+                            <Eye className="h-3.5 w-3.5 text-sky-600 dark:text-sky-400" />
+                            <span>ดู</span>
+                          </button>
                           <button
                             type="button"
                             onClick={(e) => {
@@ -568,7 +577,7 @@ export default function ContactsPage() {
                                 ? 'bg-sky-50 dark:bg-sky-950/80 text-sky-700 dark:text-sky-300 border-sky-300 dark:border-sky-700 ring-2 ring-sky-400/20'
                                 : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 border-transparent'
                             }`}
-                            title="เมนูการจัดการ"
+                            title="เมนูเพิ่มเติม"
                           >
                             <MoreVertical className="h-4 w-4" />
                           </button>
