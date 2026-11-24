@@ -376,7 +376,7 @@ export default function IssueList() {
   }
 
   return (
-    <div className="max-w-5xl space-y-6 font-sans text-slate-900 dark:text-slate-100 pb-12">
+    <div className="w-full space-y-6 font-sans text-slate-900 dark:text-slate-100 pb-12">
       {/* 1. Header Banner */}
       <div className="rounded-2xl bg-gradient-to-r from-slate-900 via-steel-900 to-slate-800 p-6 text-white shadow-md border border-steel-700">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -676,18 +676,18 @@ export default function IssueList() {
       ) : viewMode === 'table' ? (
         /* โหมดตารางมาตรฐานระดับสากล เหมือน ReceiptsList และ ItemsMaster */
         <div className="overflow-x-auto rounded-2xl border border-steel-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs">
-          <table className="w-full text-xs min-w-[950px] divide-y divide-steel-200 dark:divide-slate-800">
+          <table className="w-full text-xs divide-y divide-steel-200 dark:divide-slate-800">
             <thead className="bg-steel-50/90 dark:bg-slate-800 text-steel-700 dark:text-slate-200 font-bold uppercase tracking-wider text-[11px]">
               <tr>
                 <th className="py-3.5 pl-3 pr-1 w-9 text-center"></th>
                 <th className="py-3.5 px-3 whitespace-nowrap">วันที่ / เวลา</th>
                 <th className="py-3.5 px-3 whitespace-nowrap">ประเภท</th>
                 <th className="py-3.5 px-3 whitespace-nowrap">เลขที่เอกสาร</th>
-                <th className="py-3.5 px-3 whitespace-nowrap">โครงการ / ปลายทาง</th>
-                <th className="py-3.5 px-3 whitespace-nowrap">รายการพัสดุ</th>
+                <th className="py-3.5 px-3">โครงการ / ปลายทาง</th>
+                <th className="py-3.5 px-3">รายการพัสดุ</th>
                 <th className="py-3.5 px-3 text-right whitespace-nowrap">จำนวนรวม</th>
                 <th className="py-3.5 px-3 text-right whitespace-nowrap">มูลค่ารวม (บาท)</th>
-                <th className="py-3.5 pl-2 pr-4 text-center w-28 whitespace-nowrap">รายละเอียด</th>
+                <th className="py-3.5 pl-2 pr-3 text-center w-12 whitespace-nowrap">ดูข้อมูล</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-steel-100 dark:divide-slate-800">
@@ -713,7 +713,7 @@ export default function IssueList() {
                         <button
                           type="button"
                           onClick={() => toggleExpandRow(r.id)}
-                          className={`rounded-lg p-1 transition cursor-pointer ${
+                          className={`rounded-lg p-1.5 transition cursor-pointer ${
                             isExpanded
                               ? 'bg-amber-100 text-amber-900 dark:bg-amber-950/80 dark:text-amber-300'
                               : 'text-steel-400 hover:bg-steel-100 dark:hover:bg-slate-800 hover:text-steel-700 dark:hover:text-slate-200'
@@ -724,7 +724,7 @@ export default function IssueList() {
                         </button>
                       </td>
 
-                      {/* 1. วันที่และเวลา (2 บรรทัดมาตรฐาน ERP สากล) */}
+                      {/* 1. วันที่และเวลา */}
                       <td className="py-3 px-3 whitespace-nowrap">
                         <div className="flex flex-col text-xs leading-tight">
                           <span className="font-semibold text-steel-800 dark:text-slate-200">{date}</span>
@@ -768,24 +768,25 @@ export default function IssueList() {
                       </td>
 
                       {/* 4. โครงการ / ปลายทาง */}
-                      <td className="py-3 px-3 whitespace-nowrap">
+                      <td className="py-3 px-3">
                         {r.projectName ? (
                           <span className="inline-flex items-center gap-1 rounded-lg bg-steel-100 dark:bg-slate-800 px-2 py-0.5 font-semibold text-steel-800 dark:text-slate-200 border border-steel-200 dark:border-slate-700 text-xs">
-                            <Briefcase className="h-3 w-3 text-steel-500" />
-                            <span className="font-bold">{r.projectCode}</span> {r.projectName}
+                            <Briefcase className="h-3 w-3 text-steel-500 shrink-0" />
+                            <span className="font-bold">{r.projectCode}</span>
+                            <span className="truncate max-w-[200px]">{r.projectName}</span>
                           </span>
                         ) : r.targetType === 'office' ? (
-                          <span className="inline-flex items-center gap-1 rounded-lg bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 text-xs font-bold text-blue-900 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                          <span className="inline-flex items-center gap-1 rounded-lg bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 text-xs font-bold text-blue-900 dark:text-blue-300 border border-blue-200 dark:border-blue-800 whitespace-nowrap">
                             ออฟฟิศส่วนกลาง
                           </span>
                         ) : (
-                          <span className="text-steel-400 dark:text-slate-500 text-xs">ของกลางบริษัท</span>
+                          <span className="text-steel-400 dark:text-slate-500 text-xs whitespace-nowrap">ของกลางบริษัท</span>
                         )}
                       </td>
 
                       {/* 5. รายการพัสดุ */}
-                      <td className="py-3 px-3 max-w-[240px]">
-                        <div className="font-semibold text-steel-900 dark:text-slate-100 truncate" title={r.items.map((i) => i.name).join(', ')}>
+                      <td className="py-3 px-3">
+                        <div className="font-semibold text-steel-900 dark:text-slate-100 truncate max-w-[220px]" title={r.items.map((i) => i.name).join(', ')}>
                           {r.items[0]?.name || '-'}
                           {r.items.length > 1 && (
                             <span className="ml-1 text-[11px] text-steel-500 dark:text-slate-400 font-normal">
@@ -795,14 +796,13 @@ export default function IssueList() {
                         </div>
                       </td>
 
-                      {/* 6. จำนวนรวม (จัดการหน่วยนับอย่างถูกต้อง ป้องกันการรวมตัวเลขข้ามหน่วย) */}
+                      {/* 6. จำนวนรวม */}
                       <td className="py-3 px-3 text-right whitespace-nowrap">
                         {r.items.length <= 1 ? (
                           <span className="font-mono font-bold text-steel-800 dark:text-slate-200">
                             {r.items[0] ? `${formatIntQty(r.items[0].quantity)} ${r.items[0].unit || 'ชิ้น'}` : '-'}
                           </span>
                         ) : uniqueUnits.length === 1 ? (
-                          /* กรณีมีหลายรายการแต่เป็นหน่วยเดียวกันทั้งหมด */
                           <div className="flex flex-col items-end leading-tight cursor-default" title={breakdownFull}>
                             <span className="font-mono font-bold text-steel-800 dark:text-slate-200">
                               {formatIntQty(totalItemsQty)} {uniqueUnits[0]}
@@ -812,12 +812,11 @@ export default function IssueList() {
                             </span>
                           </div>
                         ) : (
-                          /* กรณีมีหลายรายการและหน่วยต่างกัน (เช่น ตู้ + เมตร) แสดงจำนวนรายการและแจกแจงหน่วย */
                           <div className="flex flex-col items-end leading-tight cursor-default" title={breakdownFull}>
                             <span className="font-mono font-bold text-steel-900 dark:text-slate-100">
                               {r.items.length} รายการ
                             </span>
-                            <span className="text-[10px] text-steel-500 dark:text-slate-400 font-mono font-normal max-w-[150px] truncate" title={breakdownFull}>
+                            <span className="text-[10px] text-steel-500 dark:text-slate-400 font-mono font-normal max-w-[140px] truncate" title={breakdownFull}>
                               {breakdownShort}
                             </span>
                           </div>
@@ -831,76 +830,113 @@ export default function IssueList() {
                         </span>
                       </td>
 
-                      {/* 8. คอลัมน์ปุ่มเปิด Modal ป๊อปอัป */}
-                      <td className="py-3 pl-2 pr-4 text-center whitespace-nowrap">
+                      {/* 8. คอลัมน์ปุ่มเปิด Modal ป๊อปอัป (กะทัดรัด ไม่ดันตารางล้น) */}
+                      <td className="py-3 pl-2 pr-3 text-center whitespace-nowrap">
                         <button
                           type="button"
                           onClick={() => setSelectedRecord(r)}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl border border-steel-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-sky-50 dark:hover:bg-slate-700 hover:border-sky-300 text-steel-700 dark:text-slate-200 hover:text-sky-600 dark:hover:text-sky-300 font-bold text-xs transition cursor-pointer shadow-2xs"
+                          className="inline-flex items-center justify-center h-7 w-7 rounded-lg border border-steel-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-sky-50 dark:hover:bg-slate-700 hover:border-sky-300 text-steel-600 dark:text-slate-300 hover:text-sky-600 dark:hover:text-sky-400 transition cursor-pointer shadow-2xs"
                           title="เปิดป๊อปอัปดูรายละเอียดเต็มรูปแบบ"
                         >
-                          <Eye className="h-3.5 w-3.5 text-sky-500" />
-                          <span>ดูข้อมูล</span>
+                          <Eye className="h-3.5 w-3.5" />
                         </button>
                       </td>
                     </tr>
 
-                    {/* Dropdown Detail Row: แถบขยายดูรายละเอียดพัสดุในตาราง */}
+                    {/* Dropdown Detail Row: แถบขยายดูรายละเอียดพัสดุในตาราง (เต็มความกว้าง อ่านง่าย ชัดเจน 100%) */}
                     {isExpanded && (
                       <tr className="bg-steel-50/70 dark:bg-slate-800/40 border-b border-steel-200 dark:border-slate-800 animate-in fade-in">
-                        <td colSpan={9} className="p-3 sm:px-6">
-                          <div className="rounded-xl border border-steel-200 dark:border-slate-700 bg-white dark:bg-slate-800/90 p-3.5 space-y-2.5 shadow-2xs">
-                            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-steel-100 dark:border-slate-700 pb-2">
-                              <div className="flex items-center gap-2">
-                                <Package className="h-4 w-4 text-sky-600 dark:text-sky-400" />
-                                <span className="font-bold text-xs text-steel-900 dark:text-white">
-                                  รายละเอียดพัสดุในเอกสาร <span className="font-mono text-sky-600 dark:text-sky-400">{r.code}</span> ({r.items.length} รายการ)
+                        <td colSpan={9} className="p-4 sm:px-6">
+                          <div className="rounded-2xl border border-steel-200 dark:border-slate-700 bg-white dark:bg-slate-800/95 p-4 sm:p-5 space-y-4 shadow-sm">
+                            {/* แถบหัวเรื่อง Dropdown: ข้อมูลเอกสาร & ปุ่มดูป๊อปอัป */}
+                            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-steel-100 dark:border-slate-700/80 pb-3">
+                              <div className="flex items-center gap-2.5 flex-wrap">
+                                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-sky-500/15 text-sky-600 dark:text-sky-400">
+                                  <Package className="h-4 w-4" />
+                                </div>
+                                <span className="font-bold text-sm text-steel-900 dark:text-white">
+                                  รายละเอียดพัสดุในเอกสาร <strong className="font-mono text-sky-600 dark:text-amber-400">{r.code}</strong>
                                 </span>
-                              </div>
-                              <div className="flex items-center gap-3 text-xs">
-                                {r.notes && (
-                                  <span className="text-steel-500 dark:text-slate-400 max-w-md truncate">
-                                    หมายเหตุ: <strong className="text-steel-800 dark:text-slate-200 font-normal">{r.notes}</strong>
+                                <span className="rounded-full bg-steel-100 dark:bg-slate-700 px-2.5 py-0.5 text-xs font-bold text-steel-700 dark:text-slate-300">
+                                  {r.items.length} รายการ
+                                </span>
+                                {isIssue ? (
+                                  <span className="rounded-full bg-amber-100 dark:bg-amber-950/80 px-2.5 py-0.5 text-xs font-bold text-amber-900 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                                    เบิกของ
+                                  </span>
+                                ) : isReturn ? (
+                                  <span className="rounded-full bg-emerald-100 dark:bg-emerald-950/80 px-2.5 py-0.5 text-xs font-bold text-emerald-900 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                                    คืนของเข้าสโตร์
+                                  </span>
+                                ) : (
+                                  <span className="rounded-full bg-rose-100 dark:bg-rose-950/80 px-2.5 py-0.5 text-xs font-bold text-rose-900 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
+                                    ตัดชำรุด/ปรับยอด
                                   </span>
                                 )}
-                                <button
-                                  type="button"
-                                  onClick={() => setSelectedRecord(r)}
-                                  className="inline-flex items-center gap-1 text-sky-600 dark:text-sky-400 hover:underline font-bold cursor-pointer"
-                                >
-                                  <Eye className="h-3.5 w-3.5" />
-                                  <span>เปิดดูแบบป๊อปอัป</span>
-                                </button>
                               </div>
+
+                              <button
+                                type="button"
+                                onClick={() => setSelectedRecord(r)}
+                                className="inline-flex items-center gap-1.5 rounded-xl border border-sky-300 dark:border-sky-700 bg-sky-50 dark:bg-sky-950/40 hover:bg-sky-100 dark:hover:bg-sky-900/60 text-sky-700 dark:text-sky-300 px-3 py-1.5 text-xs font-bold transition cursor-pointer shadow-2xs"
+                                title="เปิดดูแบบป๊อปอัปสไตล์ทะเบียนคู่ค้า"
+                              >
+                                <Eye className="h-3.5 w-3.5" />
+                                <span>เปิดดูแบบป๊อปอัปเต็มจอ</span>
+                              </button>
                             </div>
 
-                            {/* ตารางพัสดุย่อยใน dropdown detail */}
-                            <div className="overflow-x-auto">
-                              <table className="w-full text-xs text-left">
-                                <thead className="bg-steel-50 dark:bg-slate-700/60 text-[10px] uppercase font-bold text-steel-600 dark:text-slate-300">
+                            {/* กล่องแสดงหมายเหตุและวัตถุประสงค์ (แสดงเต็มความกว้าง ไม่อัดย่อ ไม่ตัดคำ ... อ่านเข้าใจง่าย 100%) */}
+                            {(r.notes || r.reason) && (
+                              <div className="rounded-xl border border-amber-300/80 dark:border-amber-800/60 bg-amber-50/70 dark:bg-amber-950/30 p-3.5 text-xs leading-relaxed text-steel-800 dark:text-slate-200">
+                                <div className="flex items-start gap-2">
+                                  <span className="font-bold text-amber-800 dark:text-amber-400 shrink-0">
+                                    📝 วัตถุประสงค์ &amp; หมายเหตุ:
+                                  </span>
+                                  <span className="font-medium whitespace-pre-line break-words flex-1">
+                                    {r.notes || r.reason}
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* ตารางพัสดุย่อยใน dropdown detail (เต็มความกว้าง 100% สัดส่วนสมดุล) */}
+                            <div className="overflow-hidden rounded-xl border border-steel-200 dark:border-slate-700">
+                              <table className="w-full text-xs text-left divide-y divide-steel-200 dark:divide-slate-700">
+                                <thead className="bg-steel-50/90 dark:bg-slate-700/60 text-[11px] uppercase font-bold text-steel-700 dark:text-slate-200">
                                   <tr>
-                                    <th className="py-2 px-3 w-10 text-center">#</th>
-                                    <th className="py-2 px-3 w-28 font-mono">รหัสพัสดุ</th>
-                                    <th className="py-2 px-3">ชื่อรายการพัสดุ</th>
-                                    <th className="py-2 px-3 text-right w-24">จำนวน</th>
-                                    <th className="py-2 px-3 text-center w-20">หน่วย</th>
-                                    <th className="py-2 px-3 text-right w-28">ราคา/หน่วย</th>
-                                    <th className="py-2 px-3 text-right w-32">มูลค่ารวม</th>
+                                    <th className="py-2.5 px-3 w-10 text-center">#</th>
+                                    <th className="py-2.5 px-3 w-32 font-mono">รหัสพัสดุ</th>
+                                    <th className="py-2.5 px-3">ชื่อรายการพัสดุ</th>
+                                    <th className="py-2.5 px-3 text-right w-24">จำนวน</th>
+                                    <th className="py-2.5 px-3 text-center w-20">หน่วย</th>
+                                    <th className="py-2.5 px-3 text-right w-28">ราคา/หน่วย</th>
+                                    <th className="py-2.5 pl-3 pr-4 text-right w-36">มูลค่ารวม</th>
                                   </tr>
                                 </thead>
-                                <tbody className="divide-y divide-steel-100 dark:divide-slate-700/60">
+                                <tbody className="divide-y divide-steel-100 dark:divide-slate-700/60 bg-white dark:bg-slate-800">
                                   {r.items.map((it, idx) => (
                                     <tr key={it.id || idx} className="hover:bg-steel-50/50 dark:hover:bg-slate-700/40">
-                                      <td className="py-1.5 px-3 text-center font-mono text-steel-400 text-[11px]">{idx + 1}</td>
-                                      <td className="py-1.5 px-3 font-mono font-bold text-steel-700 dark:text-amber-400">{it.code || '-'}</td>
-                                      <td className="py-1.5 px-3 font-semibold text-steel-900 dark:text-slate-100">{it.name}</td>
-                                      <td className="py-1.5 px-3 text-right font-mono font-bold text-steel-900 dark:text-white">{formatIntQty(it.quantity)}</td>
-                                      <td className="py-1.5 px-3 text-center text-steel-500 dark:text-slate-400">{it.unit || 'ชิ้น'}</td>
-                                      <td className="py-1.5 px-3 text-right font-mono text-steel-600 dark:text-slate-400">{baht(it.unitCost)}</td>
-                                      <td className="py-1.5 px-3 text-right font-mono font-bold text-steel-900 dark:text-white">{baht(it.totalCost)} บ.</td>
+                                      <td className="py-2 px-3 text-center font-mono text-steel-400 text-[11px]">{idx + 1}</td>
+                                      <td className="py-2 px-3 font-mono font-bold text-steel-700 dark:text-amber-400">{it.code || '-'}</td>
+                                      <td className="py-2 px-3 font-semibold text-steel-900 dark:text-slate-100">{it.name}</td>
+                                      <td className="py-2 px-3 text-right font-mono font-bold">{formatIntQty(it.quantity)}</td>
+                                      <td className="py-2 px-3 text-center text-steel-500 dark:text-slate-400">{it.unit || 'ชิ้น'}</td>
+                                      <td className="py-2 px-3 text-right font-mono text-steel-600 dark:text-slate-400">{baht(it.unitCost)}</td>
+                                      <td className="py-2 pl-3 pr-4 text-right font-mono font-bold text-steel-900 dark:text-white">{baht(it.totalCost)} บ.</td>
                                     </tr>
                                   ))}
                                 </tbody>
+                                <tfoot className="bg-steel-50/80 dark:bg-slate-700/60 font-bold border-t border-steel-200 dark:border-slate-700 text-xs">
+                                  <tr>
+                                    <td colSpan={5} className="py-2.5 px-3 text-right text-steel-600 dark:text-slate-400">
+                                      รวมมูลค่าทั้งสิ้น:
+                                    </td>
+                                    <td colSpan={2} className="py-2.5 pl-3 pr-4 text-right font-mono text-sm font-black text-sky-800 dark:text-sky-400">
+                                      {baht(r.totalAmount)} บาท
+                                    </td>
+                                  </tr>
+                                </tfoot>
                               </table>
                             </div>
                           </div>

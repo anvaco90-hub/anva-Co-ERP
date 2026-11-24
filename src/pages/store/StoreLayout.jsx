@@ -118,7 +118,7 @@ export default function StoreLayout() {
       </div>
 
       {/* Main Page Content */}
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 mt-6">
+      <div className="mx-auto w-full max-w-[1600px] px-3 sm:px-6 lg:px-8 mt-6">
         <Outlet />
       </div>
     </div>
