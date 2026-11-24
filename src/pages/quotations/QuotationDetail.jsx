@@ -192,16 +192,16 @@ export default function QuotationDetail() {
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
           {/* ข้อมูลหัวเรื่องและ Metadata */}
           <div className="space-y-2.5 min-w-0">
-            {/* ป้ายกำกับประเภทและสถานะ (Badges) */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-[10px] font-mono uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-sky-500/15 text-sky-300 border border-sky-400/25 font-bold">
+            {/* ป้ายกำกับประเภทและสถานะ (Badges - ล็อกเป็นแนวนอนเสมอ ไม่ตกเป็น 3 แถว) */}
+            <div className="flex items-center gap-2 flex-nowrap overflow-hidden">
+              <span className="text-[10px] font-mono uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-sky-500/15 text-sky-300 border border-sky-400/25 font-bold whitespace-nowrap shrink-0">
                 QUOTATION DOCUMENT
               </span>
-              <span className={`inline-flex items-center px-2.5 py-0.5 text-xs font-bold rounded-full border shadow-2xs ${statusInfo.color}`}>
+              <span className={`inline-flex items-center px-2.5 py-0.5 text-xs font-bold rounded-full border shadow-2xs whitespace-nowrap shrink-0 ${statusInfo.color}`}>
                 {statusInfo.label}
               </span>
               {quotation.customer_po_no && (
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-bold rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-400/30">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-bold rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-400/30 whitespace-nowrap shrink-0">
                   <FileCheck className="h-3 w-3" />
                   <span>PO: {quotation.customer_po_no}</span>
                 </span>
