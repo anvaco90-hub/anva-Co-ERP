@@ -573,60 +573,72 @@ export default function QuotationList() {
             </div>
           </div>
 
-          {/* Pipeline Linkage Table */}
-          <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-2xs">
-            <table className="w-full text-left text-xs divide-y divide-slate-200">
-              <thead className="bg-slate-50 text-slate-600 font-semibold uppercase text-[11px]">
+          {/* Pipeline Linkage Table (จัดระเบียบตารางทางการ สลับสี มีเส้นตารางชัดเจน) */}
+          <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs">
+            <table className="table-auto w-full text-left text-xs divide-y divide-slate-200 dark:divide-slate-800 border-collapse">
+              <thead className="bg-slate-100/90 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 font-bold uppercase tracking-wider text-[11px] border-b-2 border-slate-300 dark:border-slate-700">
                 <tr>
-                  <th className="py-2.5 px-3.5">ใบเสนอราคา (QT)</th>
-                  <th className="py-2.5 px-3.5">ลูกค้า</th>
-                  <th className="py-2.5 px-3.5">สถานะลูกค้าเซ็น PO</th>
-                  <th className="py-2.5 px-3.5 text-right">ยอดรวมสุทธิ</th>
-                  <th className="py-2.5 px-3.5 text-right">ส่งต่อฝ่ายจัดซื้อ</th>
+                  <th className="py-3.5 px-3.5 text-center w-40 border-r border-slate-200/70 dark:border-slate-700/60 whitespace-nowrap">เลขที่เอกสาร (QT)</th>
+                  <th className="py-3.5 px-4 min-w-[220px] border-r border-slate-200/70 dark:border-slate-700/60">ชื่อลูกค้า / โครงการ</th>
+                  <th className="py-3.5 px-3 text-center w-48 border-r border-slate-200/70 dark:border-slate-700/60 whitespace-nowrap">สถานะใบสั่งซื้อลูกค้า (PO)</th>
+                  <th className="py-3.5 px-3.5 text-right w-36 border-r border-slate-200/70 dark:border-slate-700/60 whitespace-nowrap">ยอดรวมสุทธิ (บาท)</th>
+                  <th className="py-3.5 px-3.5 text-center w-36 whitespace-nowrap">ส่งต่อฝ่ายจัดซื้อ</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 bg-white">
-                {quotations.map((q) => {
+              <tbody className="divide-y divide-slate-200 dark:divide-slate-800 bg-white dark:bg-slate-900">
+                {quotations.map((q, rowIdx) => {
                   const hasPo = Boolean(q.customer_po_no)
                   return (
-                    <tr key={q.id} className="hover:bg-slate-50/70 transition">
-                      <td className="py-2.5 px-3.5">
-                        <Link to={`/quotations/${q.id}`} className="font-semibold text-sky-800 hover:underline">
+                    <tr
+                      key={q.id}
+                      className={`transition-colors border-b border-slate-200 dark:border-slate-800 ${
+                        rowIdx % 2 === 0
+                          ? 'bg-white dark:bg-slate-900'
+                          : 'bg-slate-50/70 dark:bg-slate-800/40'
+                      } hover:!bg-amber-50/70 dark:hover:!bg-slate-750`}
+                    >
+                      <td className="py-3 px-3.5 text-center whitespace-nowrap align-top border-r border-slate-200/60 dark:border-slate-800/60">
+                        <Link to={`/quotations/${q.id}`} className="font-bold text-sky-800 dark:text-sky-400 hover:underline font-mono text-xs block">
                           {q.quotation_no}
                         </Link>
-                        <div className="text-[10px] text-slate-400">วันที่: {q.quotation_date || q.issue_date}</div>
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                          วันที่: {q.quotation_date || q.issue_date}
+                        </div>
                       </td>
-                      <td className="py-2.5 px-3.5">
-                        <div className="font-medium text-slate-900 truncate max-w-[220px]">{q.customer_name}</div>
-                        <div className="text-[11px] text-slate-500 truncate max-w-[220px]">{q.projects?.project_name || 'ทั่วไป'}</div>
+                      <td className="py-3 px-4 align-top border-r border-slate-200/60 dark:border-slate-800/60">
+                        <div className="font-bold text-slate-900 dark:text-slate-100 truncate max-w-[240px]" title={q.customer_name}>
+                          {q.customer_name || '-'}
+                        </div>
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-[240px] mt-0.5" title={q.projects?.project_name || 'ทั่วไป'}>
+                          {q.projects ? `${q.projects.project_code} • ${q.projects.project_name}` : 'ทั่วไป'}
+                        </div>
                       </td>
-                      <td className="py-2.5 px-3.5">
+                      <td className="py-3 px-3 text-center align-middle whitespace-nowrap border-r border-slate-200/60 dark:border-slate-800/60">
                         {hasPo ? (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800 border border-emerald-200">
-                            <span></span>
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                             <span>PO: {q.customer_po_no}</span>
                           </span>
                         ) : (
-                          <span className="text-slate-400 text-[11px]">รอลูกค้าเซ็น PO</span>
+                          <span className="text-slate-400 dark:text-slate-500 text-[11px] font-medium">รอลูกค้าเซ็น PO</span>
                         )}
                       </td>
-                      <td className="py-2.5 px-3.5 text-right font-bold text-slate-900 font-mono">
-                        {baht(q.grand_total || q.total_amount)}
+                      <td className="py-3 px-3.5 text-right font-black text-slate-900 dark:text-slate-100 font-mono align-middle whitespace-nowrap border-r border-slate-200/60 dark:border-slate-800/60 tabular-nums">
+                        ฿{baht(q.grand_total || q.total_amount)}
                       </td>
-                      <td className="py-2.5 px-3.5 text-right">
+                      <td className="py-3 px-3.5 text-center align-middle whitespace-nowrap">
                         {hasPo ? (
                           <Link
                             to={`/purchasing/po/new?quotation_id=${q.id}`}
-                            className="inline-flex items-center gap-1 rounded-lg bg-slate-900 hover:bg-slate-800 px-2.5 py-1 text-xs font-semibold text-white shadow-2xs"
+                            className="inline-flex items-center gap-1 rounded-lg bg-slate-900 hover:bg-slate-800 dark:bg-amber-500 dark:hover:bg-amber-400 px-2.5 py-1 text-xs font-bold text-white dark:text-slate-950 shadow-2xs transition"
                           >
-                            <ShoppingCart className="h-3 w-3 text-amber-400" />
+                            <ShoppingCart className="h-3 w-3 text-amber-400 dark:text-slate-950" />
                             <span>เปิด PO จัดซื้อ</span>
                           </Link>
                         ) : (
                           <button
                             type="button"
                             onClick={() => setCustomerPoTarget(q)}
-                            className="text-xs text-sky-700 hover:underline font-medium cursor-pointer"
+                            className="text-xs text-sky-700 dark:text-sky-400 hover:underline font-semibold cursor-pointer"
                           >
                             + บันทึก PO ก่อน
                           </button>
@@ -643,19 +655,19 @@ export default function QuotationList() {
       ) : (
 
         /* TAB 1 & 2: ตารางหลัก (High-Legibility Table - สบายตา ไม่ซับซ้อน) */
-        <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs min-h-[380px] pb-16">
-          <table className="w-full text-left text-xs divide-y divide-slate-200 dark:divide-slate-800">
-            <thead className="bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-semibold uppercase text-[11px] tracking-wider">
+        <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs min-h-[380px] pb-16">
+          <table className="table-auto w-full text-left text-xs divide-y divide-slate-200 dark:divide-slate-800 border-collapse">
+            <thead className="bg-slate-100/90 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 font-bold uppercase tracking-wider text-[11px] border-b-2 border-slate-300 dark:border-slate-700">
               <tr>
-                <th className="py-3 px-3.5 w-40">เลขที่เอกสาร</th>
-                <th className="py-3 px-3.5 min-w-[220px]">ลูกค้า / โครงการ</th>
-                <th className="py-3 px-3.5 w-32 text-right">ยอดสุทธิ (บาท)</th>
-                <th className="py-3 px-3.5 w-36">กำหนดยืนราคา</th>
-                <th className="py-3 px-3 text-center w-36">สถานะ</th>
-                <th className="py-3 px-3.5 w-28 text-right">จัดการ</th>
+                <th className="py-3.5 px-3.5 text-center w-40 border-r border-slate-200/70 dark:border-slate-700/60 whitespace-nowrap">เลขที่เอกสาร (QT)</th>
+                <th className="py-3.5 px-4 min-w-[220px] border-r border-slate-200/70 dark:border-slate-700/60">ชื่อลูกค้า / โครงการ</th>
+                <th className="py-3.5 px-3 text-center w-36 border-r border-slate-200/70 dark:border-slate-700/60 whitespace-nowrap">กำหนดยืนราคา</th>
+                <th className="py-3.5 px-3.5 text-right w-36 border-r border-slate-200/70 dark:border-slate-700/60 whitespace-nowrap">ยอดรวมสุทธิ (บาท)</th>
+                <th className="py-3.5 px-3 text-center w-36 border-r border-slate-200/70 dark:border-slate-700/60 whitespace-nowrap">สถานะเอกสาร</th>
+                <th className="py-3.5 px-3.5 text-center w-28 whitespace-nowrap">การจัดการ</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900">
+            <tbody className="divide-y divide-slate-200 dark:divide-slate-800 bg-white dark:bg-slate-900">
               {filtered.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="py-12 text-center text-slate-400 dark:text-slate-500">
@@ -665,7 +677,7 @@ export default function QuotationList() {
                   </td>
                 </tr>
               ) : (
-                paginatedQuotations.map((q) => {
+                paginatedQuotations.map((q, rowIdx) => {
                   const status = STATUS_CONFIG[q.status] || STATUS_CONFIG.draft
                   const expInfo = getExpiryInfo(q)
                   const isMenuOpen = actionMenuId === q.id
@@ -674,70 +686,73 @@ export default function QuotationList() {
                   return (
                     <tr
                       key={q.id}
-                      className={`hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors ${isMenuOpen ? 'relative z-30' : ''
-                        }`}
+                      className={`transition-colors border-b border-slate-200 dark:border-slate-800 ${
+                        rowIdx % 2 === 0
+                          ? 'bg-white dark:bg-slate-900'
+                          : 'bg-slate-50/70 dark:bg-slate-800/40'
+                      } ${isMenuOpen ? 'relative z-30' : ''} hover:!bg-amber-50/70 dark:hover:!bg-slate-750`}
                     >
-                      {/* 1. เลขที่ QT + วันที่ */}
-                      <td className="py-3 px-3.5 align-top whitespace-nowrap">
+                      {/* 1. เลขที่ QT + วันที่ (จัดกึ่งกลาง) */}
+                      <td className="py-3 px-3.5 text-center align-top whitespace-nowrap border-r border-slate-200/60 dark:border-slate-800/60">
                         <Link
                           to={`/quotations/${q.id}`}
-                          className="font-bold text-sky-800 hover:underline font-mono text-xs"
+                          className="font-bold text-sky-800 dark:text-sky-400 hover:underline font-mono text-xs block"
                         >
                           {q.quotation_no}
                         </Link>
-                        <div className="text-[11px] text-slate-400 mt-0.5">
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                           {q.quotation_date || q.issue_date}
                         </div>
                         {hasCustomerPo && (
-                          <div className="mt-1">
-                            <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
-                              <span></span> PO: {q.customer_po_no}
+                          <div className="mt-1 flex justify-center">
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-semibold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                              <span>PO: {q.customer_po_no}</span>
                             </span>
                           </div>
                         )}
                       </td>
 
-                      {/* 2. ลูกค้า / โครงการ (ลำดับชั้นข้อความชัดเจน) */}
-                      <td className="py-3 px-3.5 align-top">
-                        <div className="font-semibold text-slate-900 truncate max-w-[240px]" title={q.customer_name}>
+                      {/* 2. ลูกค้า / โครงการ (ลำดับชั้นข้อความชัดเจน ย่อข้อความแต่ hover อ่านได้) */}
+                      <td className="py-3 px-4 align-top border-r border-slate-200/60 dark:border-slate-800/60">
+                        <div className="font-bold text-slate-900 dark:text-slate-100 truncate max-w-[240px]" title={q.customer_name}>
                           {q.customer_name || '-'}
                         </div>
-                        <div className="text-[11px] text-slate-500 truncate max-w-[240px] mt-0.5">
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-[240px] mt-0.5" title={q.projects ? `${q.projects.project_code} • ${q.projects.project_name}` : (q.ref_no || 'โครงการทั่วไป')}>
                           {q.projects ? `${q.projects.project_code} • ${q.projects.project_name}` : (q.ref_no || 'โครงการทั่วไป')}
                         </div>
                       </td>
 
-                      {/* 3. ยอดสุทธิ */}
-                      <td className="py-3 px-3.5 align-top text-right whitespace-nowrap font-mono">
-                        <div className="font-bold text-slate-900 text-xs">
-                          {baht(q.grand_total || q.total_amount || q.net_amount)}
-                        </div>
-                        <div className="text-[10px] text-slate-400 font-sans">รวม VAT 7%</div>
-                      </td>
-
-                      {/* 4. วันสิ้นสุดยืนราคา */}
-                      <td className="py-3 px-3.5 align-top whitespace-nowrap">
-                        <div className="text-slate-700 font-mono text-xs">
+                      {/* 3. วันสิ้นสุดยืนราคา (จัดกึ่งกลาง) */}
+                      <td className="py-3 px-3 text-center align-top whitespace-nowrap border-r border-slate-200/60 dark:border-slate-800/60">
+                        <div className="text-slate-700 dark:text-slate-300 font-mono text-xs font-semibold">
                           {q.valid_until || q.expiry_date || '-'}
                         </div>
                         {expInfo && (
-                          <div className="flex items-center gap-1.5 mt-0.5 text-[11px]">
+                          <div className="flex items-center justify-center gap-1.5 mt-0.5 text-[11px]">
                             <span className={`h-1.5 w-1.5 rounded-full ${expInfo.dot}`}></span>
                             <span className={expInfo.cls}>{expInfo.text}</span>
                           </div>
                         )}
                       </td>
 
-                      {/* 5. สถานะ (Single Status Badge สะอาดตา) */}
-                      <td className="py-3 px-3 align-top text-center">
-                        <span className={`inline-block px-2.5 py-0.5 rounded-full text-[11px] border ${status.cls}`}>
+                      {/* 4. ยอดสุทธิ (จัดชิดขวาตามแบบการเงิน) */}
+                      <td className="py-3 px-3.5 align-top text-right whitespace-nowrap font-mono border-r border-slate-200/60 dark:border-slate-800/60 tabular-nums">
+                        <div className="font-black text-slate-900 dark:text-slate-100 text-xs">
+                          ฿{baht(q.grand_total || q.total_amount || q.net_amount)}
+                        </div>
+                        <div className="text-[10px] text-slate-400 font-sans">รวม VAT 7%</div>
+                      </td>
+
+                      {/* 5. สถานะ (Single Status Badge สะอาดตา จัดกึ่งกลาง) */}
+                      <td className="py-3 px-3 align-top text-center whitespace-nowrap border-r border-slate-200/60 dark:border-slate-800/60">
+                        <span className={`inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${status.cls}`}>
                           {status.label}
                         </span>
                       </td>
 
-                      {/* 6. การจัดการ (Action Menu กะทัดรัด) */}
-                      <td className="py-3 px-3.5 align-top text-right whitespace-nowrap">
-                        <div className="flex items-center justify-end gap-1">
+                      {/* 6. การจัดการ (Action Menu กะทัดรัด จัดกึ่งกลาง) */}
+                      <td className="py-3 px-3.5 align-top text-center whitespace-nowrap">
+                        <div className="flex items-center justify-center gap-1">
 
                           {/* Quick Link to Details */}
                           <Link
