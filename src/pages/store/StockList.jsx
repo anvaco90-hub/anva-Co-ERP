@@ -46,6 +46,7 @@ export default function StockList() {
   // View & Filter States
   const [viewMode, setViewMode] = useState('grid') // 'grid' | 'table'
   const [cat, setCat] = useState('') // category_id filter
+  const [catSearchQuery, setCatSearchQuery] = useState('')
   const [search, setSearch] = useState('')
   const [sortBy, setSortBy] = useState('name_asc')
   const [onlyLow, setOnlyLow] = useState(false)
@@ -102,6 +103,13 @@ export default function StockList() {
     Number(i?.qty_on_hand) <= Number(i?.reorder_point) &&
     Number(i?.qty_on_hand) > 0
   const isOut = (i) => Number(i?.qty_on_hand) <= 0
+
+  // กรองหมวดหมู่ตามคำค้นหาหมวดหมู่ (Search Categories)
+  const filteredCats = useMemo(() => {
+    if (!catSearchQuery.trim()) return cats
+    const q = catSearchQuery.toLowerCase().trim()
+    return cats.filter((c) => c.name.toLowerCase().includes(q))
+  }, [cats, catSearchQuery])
 
   // รีเซ็ตหน้ากลับไปหน้าที่ 1 เมื่อตัวกรองหรือคำค้นหาเปลี่ยน (ต้องอยู่ก่อน Early Return ตามกฎของ React Hooks)
   useEffect(() => {
@@ -296,8 +304,7 @@ export default function StockList() {
       </div>
 
       {/* ---------------------------------------------------------------------- */}
-      {/* 2. Category Filter Pills (เลือกตามหมวดหมู่ - ไม่เลื่อน ไม่ล้น)          */}
-      {/* ---------------------------------------------------------------------- */}
+      {/* 2. Category Filter Pills (เลือกตามหมวดหมู่ - พร้อมช่องค้นหาหมวดหมู่) */}
       <div className="rounded-2xl border border-steel-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-xs space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3 text-xs font-bold text-steel-700 dark:text-slate-300">
           <span className="flex items-center gap-1.5 text-steel-900 dark:text-slate-100">
@@ -305,18 +312,41 @@ export default function StockList() {
             <span>เลือกดูตามหมวดหมู่วัสดุและอุปกรณ์</span>
           </span>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* ช่องค้นหาหมวดหมู่ (Search Categories) */}
+            <div className="relative min-w-[160px] sm:w-52">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-steel-400 pointer-events-none" />
+              <input
+                type="text"
+                value={catSearchQuery}
+                onChange={(e) => setCatSearchQuery(e.target.value)}
+                placeholder="ค้นหาหมวดหมู่..."
+                className="h-8 w-full rounded-lg border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 pl-8 pr-7 text-xs font-normal text-steel-800 dark:text-slate-200 placeholder:text-steel-400 focus:outline-none focus:border-amber-500 shadow-2xs"
+              />
+              {catSearchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setCatSearchQuery('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-steel-400 hover:text-steel-600"
+                  title="ล้างคำค้นหาหมวดหมู่"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              )}
+            </div>
+
             <span className="text-steel-400 dark:text-slate-300 font-normal hidden sm:inline">
               แสดง {shown.length} จาก {items.length} รายการ
             </span>
-            {/* Dropdown เลือกหมวดหมู่ (สำหรับกรณีหมวดหมู่เยอะหรือเลือกผ่าน Dropdown) */}
+
+            {/* Dropdown เลือกหมวดหมู่ */}
             <select
               value={cat}
               onChange={(e) => setCat(e.target.value)}
               className="h-8 rounded-lg border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 text-xs font-bold text-steel-800 dark:text-slate-200 focus:outline-none focus:border-amber-500 cursor-pointer shadow-2xs"
             >
               <option value=""> หมวดหมู่ทั้งหมด ({items.length} รายการ)</option>
-              {cats.map((c) => (
+              {filteredCats.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name} ({items.filter((it) => it.category_id === c.id).length})
                 </option>
@@ -345,7 +375,7 @@ export default function StockList() {
             </span>
           </button>
 
-          {cats.map((c) => {
+          {filteredCats.map((c) => {
             const count = items.filter((it) => it.category_id === c.id).length
             const isSelected = cat === c.id
 
@@ -363,6 +393,21 @@ export default function StockList() {
                 <span>{c.name}</span>
                 <span
                   className={`rounded-full px-1.5 py-0.2 text-[10px] ${
+                    isSelected ? 'bg-steel-800 dark:bg-amber-600 text-hivis dark:text-slate-950' : 'bg-steel-200 dark:bg-slate-700 text-steel-800 dark:text-slate-200'
+                  }`}
+                >
+                  {count}
+                </span>
+              </button>
+            )
+          })}
+
+          {filteredCats.length === 0 && catSearchQuery && (
+            <span className="text-xs text-steel-400 py-1">
+              ไม่พบหมวดหมู่ที่ตรงกับ "{catSearchQuery}"
+            </span>
+          )}
+        </div>
                     isSelected ? 'bg-steel-800 dark:bg-amber-600 text-hivis dark:text-slate-950' : 'bg-steel-200 dark:bg-slate-700 text-steel-800 dark:text-slate-200'
                   }`}
                 >

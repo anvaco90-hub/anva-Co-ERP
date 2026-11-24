@@ -625,6 +625,13 @@ export default function ItemsMaster() {
   const lowCount = items.filter(isLow).length
   const outCount = items.filter(isOut).length
 
+  // กรองหมวดหมู่ตามคำค้นหาหมวดหมู่ (Search Categories)
+  const filteredCats = useMemo(() => {
+    if (!catSearchQuery.trim()) return cats
+    const q = catSearchQuery.toLowerCase().trim()
+    return cats.filter((c) => c.name.toLowerCase().includes(q))
+  }, [cats, catSearchQuery])
+
   const shownItems = useMemo(() => {
     const q = search.trim().toLowerCase()
     const filtered = items.filter((it) => {
@@ -960,7 +967,7 @@ export default function ItemsMaster() {
         </div>
       )}
 
-      {/* 2.5 Category Filter Pills (เลือกตามหมวดหมู่ - สไตล์มาตรฐานเดียวกับหน้าสต็อก) */}
+      {/* 2.5 Category Filter Pills (เลือกตามหมวดหมู่ - สไตล์มาตรฐานเดียวกับหน้าสต็อก พร้อมช่องค้นหาหมวดหมู่) */}
       <div className="rounded-2xl border border-steel-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-xs space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3 text-xs font-bold text-steel-700 dark:text-slate-300">
           <span className="flex items-center gap-1.5 text-steel-900 dark:text-slate-100">
@@ -968,18 +975,41 @@ export default function ItemsMaster() {
             <span>เลือกดูตามหมวดหมู่วัสดุและอุปกรณ์</span>
           </span>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* ช่องค้นหาหมวดหมู่ (Search Categories) */}
+            <div className="relative min-w-[160px] sm:w-52">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-steel-400 pointer-events-none" />
+              <input
+                type="text"
+                value={catSearchQuery}
+                onChange={(e) => setCatSearchQuery(e.target.value)}
+                placeholder="ค้นหาหมวดหมู่..."
+                className="h-8 w-full rounded-lg border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 pl-8 pr-7 text-xs font-normal text-steel-800 dark:text-slate-200 placeholder:text-steel-400 focus:outline-none focus:border-amber-500 shadow-2xs"
+              />
+              {catSearchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setCatSearchQuery('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-steel-400 hover:text-steel-600"
+                  title="ล้างคำค้นหาหมวดหมู่"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              )}
+            </div>
+
             <span className="text-steel-400 dark:text-slate-300 font-normal hidden sm:inline">
               แสดง {shownItems.length} จาก {items.length} รายการ
             </span>
-            {/* Dropdown เลือกหมวดหมู่ (สำหรับกรณีหมวดหมู่เยอะหรือค้นหาทาง Dropdown) */}
+
+            {/* Dropdown เลือกหมวดหมู่ */}
             <select
               value={selectedCatFilter}
               onChange={(e) => setSelectedCatFilter(e.target.value)}
               className="h-8 rounded-lg border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 text-xs font-bold text-steel-800 dark:text-slate-200 focus:outline-none focus:border-amber-500 cursor-pointer shadow-2xs"
             >
               <option value="all"> หมวดหมู่ทั้งหมด ({items.length} รายการ)</option>
-              {cats.map((c) => (
+              {filteredCats.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name} ({items.filter((it) => it.category_id === c.id).length})
                 </option>
@@ -1010,7 +1040,7 @@ export default function ItemsMaster() {
             </span>
           </button>
 
-          {cats.map((c) => {
+          {filteredCats.map((c) => {
             const count = items.filter((it) => it.category_id === c.id).length
             const isSelected = selectedCatFilter === c.id
 
@@ -1038,6 +1068,12 @@ export default function ItemsMaster() {
               </button>
             )
           })}
+
+          {filteredCats.length === 0 && catSearchQuery && (
+            <span className="text-xs text-steel-400 py-1">
+              ไม่พบหมวดหมู่ที่ตรงกับ "{catSearchQuery}"
+            </span>
+          )}
         </div>
       </div>
 
