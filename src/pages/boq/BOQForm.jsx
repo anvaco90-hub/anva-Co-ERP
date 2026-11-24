@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, Fragment } from 'react'
 import { useNavigate, useParams, Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { baht } from '../../lib/projects'
@@ -191,7 +191,13 @@ export default function BOQForm() {
   const updItem = (index, key, val) => {
     const next = items.map((it, idx) => {
       if (idx !== index) return it
-      const updated = { ...it, [key]: val }
+      let processedVal = val
+      // ข้อกำหนด: จำนวน ต้องเป็นจำนวนเต็ม (int)
+      if (key === 'quantity' && val !== '') {
+        const parsed = parseInt(val, 10)
+        processedVal = isNaN(parsed) ? '' : String(Math.max(1, parsed))
+      }
+      const updated = { ...it, [key]: processedVal }
 
       // Auto-suggest unit & price จาก catalog ถ้าเลือกชื่อวัสดุตรงกัน
       if (key === 'item_name') {
@@ -211,9 +217,9 @@ export default function BOQForm() {
     setItems(next)
   }
 
-  // คำนวณสรุปตัวเลข (Financial Calculations)
+  // คำนวณสรุปตัวเลข (Financial Calculations - จำนวนเป็น Int)
   const lineCalcs = items.map((it) => {
-    const qty = Number(it.quantity) || 0
+    const qty = parseInt(it.quantity, 10) || 0
     const matUnit = Number(it.material_unit_cost) || 0
     const labUnit = Number(it.labor_unit_cost) || 0
     const totalMat = qty * matUnit
@@ -293,7 +299,7 @@ export default function BOQForm() {
           item_code: it.item_code || null,
           item_name: it.item_name.trim(),
           description: it.description?.trim() || null,
-          quantity: Number(it.quantity) || 1,
+          quantity: parseInt(it.quantity, 10) || 1,
           unit: it.unit || 'ชุด',
           material_unit_cost: c.matUnit,
           labor_unit_cost: c.labUnit,
@@ -504,190 +510,190 @@ export default function BOQForm() {
             ))}
           </datalist>
 
-          {/* ข้อ 1 & 3: แถบหัวตาราง (Table Header) และตารางแบบเลื่อนแนวนอน ป้องกันตกขอบจอ และมองเห็นถังขยะชัดเจน 100% */}
-          <div className="overflow-x-auto pb-2">
-            <div className="min-w-[1020px] space-y-3">
-              <div className="grid grid-cols-[2.5rem_12.5rem_1fr_4.5rem_4.5rem_6.5rem_6.5rem_7.5rem_3rem] gap-2 px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider items-center shadow-2xs">
-                <span className="text-center">#</span>
-                <span>หมวดหมู่งาน</span>
-                <span>ชื่อรายการพัสดุ / บริการ (มีรายชื่อให้เลือก)</span>
-                <span className="text-right">จำนวน</span>
-                <span className="text-center">หน่วย</span>
-                <span className="text-right text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/60 py-1 px-1.5 rounded-lg border border-sky-200/60 dark:border-sky-800">
-                  ค่าวัสดุ/หน่วย
-                </span>
-                {/* ข้อ 4: แยกค่าแรงออก ต่างหาก ชัดเจน */}
-                <span className="text-right text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 py-1 px-1.5 rounded-lg border border-amber-200/60 dark:border-amber-800 flex items-center justify-end gap-1">
-                  <Wrench className="h-3 w-3 text-amber-600 dark:text-amber-400" />
-                  <span>ค่าแรง/หน่วย</span>
-                </span>
-                <span className="text-right text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 py-1 px-1.5 rounded-lg border border-emerald-200/60 dark:border-emerald-800">
-                  รวมเงิน (บ.)
-                </span>
-                <span className="text-center text-rose-600 dark:text-rose-400">ลบ</span>
-              </div>
+          {/* เลย์เอาต์ 2 บรรทัด พอดีหน้าจอ 100% ไม่ต้องเลื่อนจอเพื่อลบ จัดกึ่งกลางสมดุล และแยกค่าแรงออกต่างหาก */}
+          <div className="space-y-4">
+            {items.map((it, idx) => {
+              const c = lineCalcs[idx]
+              const nameEmpty = showItemErrors && !it.item_name?.trim()
+              const qtyEmpty = showItemErrors && (!it.quantity || parseInt(it.quantity, 10) <= 0)
 
-              {/* รายการแถวถอดแบบ (BOQ Item Rows) */}
-              {items.map((it, idx) => {
-                const c = lineCalcs[idx]
-                const nameEmpty = showItemErrors && !it.item_name?.trim()
-                const qtyEmpty = showItemErrors && (!it.quantity || Number(it.quantity) <= 0)
-
-                return (
-                  <div
-                    key={idx}
-                    className={`rounded-2xl border p-3.5 space-y-3 transition shadow-xs ${nameEmpty || qtyEmpty
-                      ? 'border-rose-300 dark:border-rose-800 bg-rose-50/20 dark:bg-rose-950/20'
+              return (
+                <div
+                  key={idx}
+                  className={`rounded-2xl border p-4 space-y-3.5 transition shadow-xs ${
+                    nameEmpty || qtyEmpty
+                      ? 'border-rose-300 dark:border-rose-800 bg-rose-50/25 dark:bg-rose-950/20'
                       : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 hover:border-slate-300 dark:hover:border-slate-700'
-                      }`}
-                  >
-                    {/* แถวข้อมูลหลัก: Grid คงที่ตามหัวตาราง */}
-                    <div className="grid grid-cols-[2.5rem_12.5rem_1fr_4.5rem_4.5rem_6.5rem_6.5rem_7.5rem_3rem] gap-2 items-center">
-                      {/* 1. ลำดับ */}
-                      <div className="flex items-center justify-center">
-                        <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 font-mono font-bold text-xs text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-                          #{idx + 1}
-                        </span>
-                      </div>
+                  }`}
+                >
+                  {/* บรรทัดที่ 1: ลำดับ, หมวดหมู่งาน, ชื่อรายการพัสดุ/บริการ, และปุ่มลบอยู่ขวาสุด (มองเห็นทันที 100% ไม่ต้องเลื่อนจอ) */}
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+                    {/* ลำดับ (#) */}
+                    <div className="flex items-center justify-between sm:justify-start gap-2 shrink-0">
+                      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 font-mono font-bold text-xs text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                        #{idx + 1}
+                      </span>
+                      <span className="text-xs font-bold text-slate-500 sm:hidden">
+                        รายการที่ {idx + 1}
+                      </span>
+                    </div>
 
-                      {/* 2. หมวดหมู่งาน (ค่าว่างเริ่มต้นเพื่อให้ผู้ใช้เลือกเอง) */}
-                      <div>
-                        <select
-                          className="input text-xs w-full font-bold text-sky-900 dark:text-sky-300 bg-sky-50/60 dark:bg-sky-950/40 border-sky-200 dark:border-sky-800"
-                          value={it.category}
-                          onChange={(e) => updItem(idx, 'category', e.target.value)}
-                        >
-                          <option value="">-- เลือกหมวดหมู่งาน --</option>
-                          {SOLAR_BOQ_CATEGORIES.map((cat) => (
-                            <option key={cat} value={cat}>
-                              {cat}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
+                    {/* หมวดหมู่งาน */}
+                    <div className="sm:w-64 shrink-0">
+                      <select
+                        className="input text-xs w-full text-center font-bold text-sky-900 dark:text-sky-300 bg-sky-50/60 dark:bg-sky-950/40 border-sky-200 dark:border-sky-800"
+                        value={it.category}
+                        onChange={(e) => updItem(idx, 'category', e.target.value)}
+                      >
+                        <option value="">-- เลือกหมวดหมู่งาน --</option>
+                        {SOLAR_BOQ_CATEGORIES.map((cat) => (
+                          <option key={cat} value={cat}>
+                            {cat}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
-                      {/* 3. ชื่อรายการพัสดุ / บริการ (มี datalist แนะนำจากคลัง) */}
-                      <div>
-                        <input
-                          list="boq-catalog-items"
-                          type="text"
-                          className={fieldErrorClass(
-                            nameEmpty,
-                            'input text-xs w-full font-bold text-slate-900 dark:text-slate-100 placeholder:font-normal'
-                          )}
-                          placeholder="พิมพ์ชื่อพัสดุ หรือเลือกจากคลัง..."
-                          value={it.item_name}
-                          onChange={(e) => updItem(idx, 'item_name', e.target.value)}
-                        />
-                      </div>
+                    {/* ชื่อรายการพัสดุ / บริการ */}
+                    <div className="flex-1 min-w-[200px]">
+                      <input
+                        list="boq-catalog-items"
+                        type="text"
+                        className={fieldErrorClass(
+                          nameEmpty,
+                          'input text-xs w-full font-bold text-slate-900 dark:text-slate-100 placeholder:font-normal'
+                        )}
+                        placeholder="พิมพ์ชื่อพัสดุ / บริการ หรือเลือกจากคลังสินค้า..."
+                        value={it.item_name}
+                        onChange={(e) => updItem(idx, 'item_name', e.target.value)}
+                      />
+                    </div>
 
-                      {/* 4. จำนวน (ค่าว่างเพื่อให้ผู้ใช้กรอกเอง) */}
-                      <div>
+                    {/* ปุ่มลบ (ถังขยะสีแดง มองเห็นทันที ไม่ต้องเลื่อนจอไปไหน) */}
+                    <div className="shrink-0 flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveRow(idx)}
+                        className="h-9 px-3 text-rose-500 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 dark:hover:bg-rose-900/60 rounded-xl transition cursor-pointer border border-rose-200 dark:border-rose-900 shadow-2xs flex items-center justify-center gap-1.5 font-bold text-xs"
+                        title={items.length <= 1 ? 'ล้างข้อมูลแถวนี้เป็นค่าว่าง' : 'ลบแถวนี้'}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        <span className="hidden md:inline">ลบ</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* บรรทัดที่ 2: ช่องตัวเลขคำนวณ จัดกึ่งกลางสมดุล พอดีหน้าจอ 100% พร้อมแยกค่าแรงออกต่างหาก */}
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 pt-2.5 border-t border-slate-100 dark:border-slate-800/80">
+                    {/* ช่องที่ 1: จำนวน (Int) และ หน่วยนับ จัดกึ่งกลาง */}
+                    <div className="rounded-xl p-2.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700">
+                      <span className="block text-center text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                        จำนวน (Int) & หน่วยนับ
+                      </span>
+                      <div className="grid grid-cols-2 gap-1.5">
                         <input
                           type="number"
-                          min="0.01"
-                          step="0.01"
+                          step="1"
+                          min="1"
                           className={fieldErrorClass(
                             qtyEmpty,
-                            'input text-xs text-right w-full font-mono font-bold'
+                            'input text-xs text-center w-full font-mono font-bold bg-white dark:bg-slate-900'
                           )}
                           placeholder="จำนวน"
+                          title="ระบุจำนวน (จำนวนเต็ม)"
                           value={it.quantity}
                           onChange={(e) => updItem(idx, 'quantity', e.target.value)}
                         />
-                      </div>
-
-                      {/* 5. หน่วยนับ */}
-                      <div>
                         <input
                           list="boq-unit-list"
                           type="text"
-                          className="input text-xs text-center w-full"
+                          className="input text-xs text-center w-full bg-white dark:bg-slate-900"
                           placeholder="หน่วย"
+                          title="ระบุหน่วยนับ"
                           value={it.unit}
                           onChange={(e) => updItem(idx, 'unit', e.target.value)}
                         />
                       </div>
-
-                      {/* 6. ค่าวัสดุ/หน่วย */}
-                      <div>
-                        <input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          className="input text-xs text-right w-full font-mono text-slate-900 dark:text-slate-100"
-                          placeholder="ค่าวัสดุ"
-                          title="ต้นทุนค่าวัสดุต่อหน่วย"
-                          value={it.material_unit_cost}
-                          onChange={(e) => updItem(idx, 'material_unit_cost', e.target.value)}
-                        />
-                      </div>
-
-                      {/* 7. ค่าแรง/หน่วย (ข้อ 4: แยกค่าแรงออก ต่างหาก) */}
-                      <div>
-                        <input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          className="input text-xs text-right w-full font-mono text-amber-800 dark:text-amber-300 font-bold bg-amber-50/40 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900/60 focus:border-amber-500"
-                          placeholder="ค่าแรง"
-                          title="ต้นทุนค่าแรงต่อหน่วย (แยกต่างหาก)"
-                          value={it.labor_unit_cost}
-                          onChange={(e) => updItem(idx, 'labor_unit_cost', e.target.value)}
-                        />
-                      </div>
-
-                      {/* 8. ราคารวมแถว */}
-                      <div>
-                        <div className="text-right font-mono font-black text-xs text-slate-900 dark:text-emerald-400 bg-slate-50 dark:bg-slate-800/80 py-2 px-2 rounded-xl border border-slate-200 dark:border-slate-700">
-                          {baht(c.totalLine)}
-                        </div>
-                      </div>
-
-                      {/* 9. ปุ่มลบ (ไอคอนถังขยะสีแดง มองเห็นชัดเจน 100% ไม่ถูกปิดหรือหลุดขอบ) */}
-                      <div className="flex justify-center">
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveRow(idx)}
-                          className="p-1.5 text-rose-500 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 dark:hover:bg-rose-900/60 rounded-xl transition cursor-pointer border border-rose-200 dark:border-rose-900 shadow-2xs"
-                          title={items.length <= 1 ? "ล้างข้อมูลแถวนี้เป็นค่าว่าง" : "ลบแถวนี้"}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
+                      <div className="text-[10px] text-center text-slate-400 mt-1 font-mono">
+                        ปริมาณ: <span className="font-bold text-slate-700 dark:text-slate-300">{it.quantity || '0'}</span> {it.unit || '-'}
                       </div>
                     </div>
 
-                    {/* แถวล่าง: สเปกวิศวกรรม (กด Enter ได้อิสระ) + ป้ายแยกค่าวัสดุและค่าแรงชัดเจน */}
-                    <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
-                      <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500 dark:text-slate-400 mb-1">
-                        <span className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                          <Info className="h-3 w-3 text-slate-400" />
-                          <span>สเปกวิศวกรรมและเงื่อนไขเทคนิค (กด Enter ขึ้นบรรทัดใหม่ได้อิสระ)</span>
-                        </span>
-
-                        {/* ข้อ 4: สรุปแยกค่าวัสดุ และค่าแรงอย่างเด่นชัด */}
-                        <div className="flex items-center gap-2">
-                          <span className="rounded-md bg-sky-50 dark:bg-sky-950/50 border border-sky-200/80 dark:border-sky-800 text-sky-800 dark:text-sky-300 font-mono text-[11px] px-2 py-0.5">
-                            วัสดุรวม: {baht(c.totalMat)} บ.
-                          </span>
-                          <span className="rounded-md bg-amber-50 dark:bg-amber-950/50 border border-amber-200/80 dark:border-amber-800 text-amber-800 dark:text-amber-300 font-mono font-bold text-[11px] px-2 py-0.5 flex items-center gap-1">
-                            <Wrench className="h-2.5 w-2.5" />
-                            <span>แรงรวม: {baht(c.totalLab)} บ.</span>
-                          </span>
-                        </div>
-                      </div>
-                      <textarea
-                        rows={2}
-                        className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 p-2.5 text-xs text-slate-800 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:bg-white dark:focus:bg-slate-800 focus:border-slate-900 dark:focus:border-amber-500 focus:outline-none transition leading-relaxed font-sans"
-                        placeholder="เช่น • สเปกแผง Tier-1 Mono Half-cell&#10;• รางอลูมิเนียมอะโนไดซ์ 6005-T5&#10;• รับประกันงานติดตั้ง 2 ปี"
-                        value={it.description || ''}
-                        onChange={(e) => updItem(idx, 'description', e.target.value)}
+                    {/* ช่องที่ 2: ค่าวัสดุ/หน่วย (ธีมสีฟ้า จัดกึ่งกลาง) */}
+                    <div className="rounded-xl p-2.5 bg-sky-50/40 dark:bg-sky-950/20 border border-sky-200/80 dark:border-sky-800">
+                      <span className="block text-center text-[11px] font-bold text-sky-800 dark:text-sky-300 mb-1.5 flex items-center justify-center gap-1">
+                        <Package className="h-3.5 w-3.5 text-sky-600 dark:text-sky-400" />
+                        <span>ค่าวัสดุ/หน่วย (บ.)</span>
+                      </span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        className="input text-xs text-center w-full font-mono text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-900"
+                        placeholder="ค่าวัสดุ"
+                        title="ต้นทุนค่าวัสดุต่อหน่วย"
+                        value={it.material_unit_cost}
+                        onChange={(e) => updItem(idx, 'material_unit_cost', e.target.value)}
                       />
+                      <div className="text-[10px] text-center font-mono text-sky-700 dark:text-sky-300 mt-1 font-semibold">
+                        รวมวัสดุ: {baht(c.totalMat)} บ.
+                      </div>
+                    </div>
+
+                    {/* ช่องที่ 3: ค่าแรง/หน่วย (ธีมสีส้มอำพัน แยกค่าแรงออกต่างหาก จัดกึ่งกลาง) */}
+                    <div className="rounded-xl p-2.5 bg-amber-50/60 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-800">
+                      <span className="block text-center text-[11px] font-bold text-amber-800 dark:text-amber-300 mb-1.5 flex items-center justify-center gap-1">
+                        <Wrench className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                        <span>ค่าแรง/หน่วย (แยกต่างหาก)</span>
+                      </span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        className="input text-xs text-center w-full font-mono text-amber-800 dark:text-amber-300 font-bold bg-white dark:bg-slate-900 border-amber-300 dark:border-amber-700 focus:border-amber-500"
+                        placeholder="ค่าแรง"
+                        title="ต้นทุนค่าแรงต่อหน่วย (แยกต่างหาก)"
+                        value={it.labor_unit_cost}
+                        onChange={(e) => updItem(idx, 'labor_unit_cost', e.target.value)}
+                      />
+                      <div className="text-[10px] text-center font-mono font-bold text-amber-800 dark:text-amber-300 mt-1">
+                        รวมแรง: {baht(c.totalLab)} บ.
+                      </div>
+                    </div>
+
+                    {/* ช่องที่ 4: รวมเงินสุทธิของรายการ (ธีมสีเขียวมรกต จัดกึ่งกลาง) */}
+                    <div className="rounded-xl p-2.5 bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 flex flex-col justify-between">
+                      <span className="block text-center text-[11px] font-bold text-emerald-800 dark:text-emerald-300 mb-1.5">
+                        รวมเงินสุทธิ (บ.)
+                      </span>
+                      <div className="h-9 flex items-center justify-center font-mono font-black text-sm text-slate-900 dark:text-emerald-400 bg-white dark:bg-slate-900 rounded-xl border border-emerald-200 dark:border-emerald-800 shadow-2xs">
+                        {baht(c.totalLine)}
+                      </div>
+                      <div className="text-[10px] text-center text-slate-400 mt-1 font-mono">
+                        (วัสดุ {baht(c.totalMat)} + แรง {baht(c.totalLab)})
+                      </div>
                     </div>
                   </div>
-                )
-              })}
-            </div>
+
+                  {/* บรรทัดที่ 3: สเปกวิศวกรรมและเงื่อนไขเทคนิค (กด Enter ขึ้นบรรทัดใหม่ได้อิสระ) */}
+                  <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80">
+                    <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mb-1">
+                      <span className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5 text-[11px]">
+                        <Info className="h-3.5 w-3.5 text-slate-400" />
+                        <span>สเปกวิศวกรรมและเงื่อนไขเทคนิคสำหรับรายการ #{idx + 1} (กด Enter ได้อิสระ)</span>
+                      </span>
+                    </div>
+                    <textarea
+                      rows={2}
+                      className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 p-2.5 text-xs text-slate-800 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:bg-white dark:focus:bg-slate-800 focus:border-slate-900 dark:focus:border-amber-500 focus:outline-none transition leading-relaxed font-sans"
+                      placeholder="เช่น • สเปกแผง Tier-1 Mono Half-cell&#10;• รางอลูมิเนียมอะโนไดซ์ 6005-T5&#10;• รับประกันงานติดตั้ง 2 ปี"
+                      value={it.description || ''}
+                      onChange={(e) => updItem(idx, 'description', e.target.value)}
+                    />
+                  </div>
+                </div>
+              )
+            })}
           </div>
 
           <FieldError error={errors.items} />
