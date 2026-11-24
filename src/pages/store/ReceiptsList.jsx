@@ -876,29 +876,26 @@ export default function ReceiptsList() {
           </div>
 
           <div className="overflow-x-auto rounded-2xl border border-steel-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs">
-            <table className="w-full text-left text-xs min-w-[900px] divide-y divide-steel-200 dark:divide-slate-800">
-              <thead className="bg-steel-50/80 dark:bg-slate-800 text-steel-700 dark:text-slate-200 font-bold uppercase tracking-wider text-[11px]">
+            <table className="table-auto w-full text-left text-xs divide-y divide-slate-200 dark:divide-slate-800 border-collapse">
+              <thead className="bg-slate-100/90 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 font-bold uppercase tracking-wider text-[11px] border-b-2 border-slate-300 dark:border-slate-700">
                 <tr>
-                  <th className="py-3 px-3">วันที่สั่งซื้อ</th>
-                  <th className="py-3 px-3">เลขที่ใบสั่งซื้อ (PO)</th>
-                  <th className="py-3 px-3">ผู้ขาย / ร้านค้า</th>
-                  <th className="py-3 px-3">โครงการ / ไซต์งาน</th>
-                  <th className="py-3 px-3">กำหนดส่งมอบ</th>
-                  <th className="py-3 px-3">รายการพัสดุใน PO</th>
-                  <th className="py-3 px-3 text-right">ยอดรวม (บ.)</th>
-                  <th className="py-3 px-3 text-center">สถานะการรับ</th>
-                  <th className="py-3 px-3 text-center">ตรวจรับของ</th>
+                  <th className="py-3 px-3 text-center w-36 border-r border-slate-200/70 dark:border-slate-700/60 whitespace-nowrap">เลขที่ PO</th>
+                  <th className="py-3 px-4 min-w-[200px] border-r border-slate-200/70 dark:border-slate-700/60">ร้านค้า / ผู้ขาย</th>
+                  <th className="py-3 px-4 text-center w-48 border-r border-slate-200/70 dark:border-slate-700/60 whitespace-nowrap">กำหนดส่งมอบ</th>
+                  <th className="py-3 px-4 text-center w-48 whitespace-nowrap">การดำเนินการ</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-steel-100 dark:divide-slate-800">
+              <tbody className="divide-y divide-slate-200 dark:divide-slate-800 bg-white dark:bg-slate-900">
                 {filteredPendingPos.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="py-12 text-center text-steel-400 dark:text-slate-500 text-xs">
+                    <td colSpan={4} className="py-12 text-center text-steel-400 dark:text-slate-500 text-xs">
                       {search ? 'ไม่พบใบสั่งซื้อที่ตรงกับคำค้นหา' : 'ไม่มีใบสั่งซื้อที่ค้างรับของ (รับของเข้าสโตร์ครบทุกใบแล้ว )'}
                     </td>
                   </tr>
                 ) : (
-                  paginatedPendingPos.map((po) => {
+                  paginatedPendingPos.map((po, rowIdx) => {
+                    const isExpanded = expandedPendingPoIds.has(po.id)
+                    const dueStatus = getPoDueStatus(po)
                     const vendorName = po.vendors?.vendor_name || po.custom_vendor_name || 'ไม่ระบุผู้ขาย'
                     const projCode = po.projects?.project_code || ''
                     const projName = po.projects?.project_name || po.custom_project_name || 'ของกลางบริษัท'
@@ -908,76 +905,189 @@ export default function ReceiptsList() {
                     const isPartial = receivedQty > 0 && receivedQty < totalQty
 
                     return (
-                      <tr key={po.id} className="hover:bg-steel-50/80 dark:hover:bg-slate-800/60 transition text-xs">
-                        <td className="py-3 px-3 font-mono text-steel-700 dark:text-slate-300 whitespace-nowrap">
-                          {po.order_date}
-                        </td>
-                        <td className="py-3 px-3 whitespace-nowrap">
-                          <Link
-                            to={`/purchasing/po/${po.id}`}
-                            className="font-mono font-bold text-sky-700 dark:text-sky-400 hover:underline flex items-center gap-1"
-                          >
-                            <span>{po.po_no}</span>
-                          </Link>
-                        </td>
-                        <td className="py-3 px-3 font-medium text-steel-900 dark:text-slate-100 max-w-[200px] break-words whitespace-normal leading-relaxed" title={vendorName}>
-                          {vendorName}
-                        </td>
-                        <td className="py-3 px-3 text-steel-700 dark:text-slate-300 max-w-[200px] break-words whitespace-normal leading-relaxed" title={`${projCode} ${projName}`}>
-                          {projCode ? <span className="font-mono font-bold text-amber-700 dark:text-amber-400 mr-1">{projCode}</span> : null}
-                          <span>{projName}</span>
-                        </td>
-                        <td className="py-3 px-3 whitespace-nowrap">
-                          {po.expected_delivery_date ? (
-                            <span className="font-mono text-steel-700 dark:text-slate-300">
-                              {po.expected_delivery_date}
-                            </span>
-                          ) : (
-                            <span className="text-steel-400 italic">ไม่ระบุ</span>
-                          )}
-                        </td>
-                        <td className="py-3 px-3 min-w-[200px]">
-                          <div className="space-y-1">
-                            {itemsList.slice(0, 3).map((it, idx) => (
-                              <div key={idx} className="text-[11px] text-steel-700 dark:text-slate-300 flex items-start justify-between gap-2">
-                                <span className="break-words whitespace-normal leading-tight font-medium">• {it.item_name}</span>
-                                <span className="font-mono text-steel-500 dark:text-slate-400 shrink-0">
-                                  {Number(it.qty_received) || 0}/{Number(it.quantity) || 0} {it.unit}
+                      <Fragment key={po.id}>
+                        {/* แถวหลัก (Collapsed Row) แสดง 4 คอลัมน์สำคัญ สะอาดตา พอดีหน้าจอ 100% */}
+                        <tr
+                          className={`transition-colors border-b border-slate-200 dark:border-slate-800 ${
+                            isExpanded
+                              ? 'bg-amber-50/70 dark:bg-amber-950/40'
+                              : rowIdx % 2 === 0
+                              ? 'bg-white dark:bg-slate-900'
+                              : 'bg-slate-50/70 dark:bg-slate-800/40'
+                          } hover:!bg-amber-50/70 dark:hover:!bg-slate-750`}
+                        >
+                          {/* 1. เลขที่ PO + ป้ายสถานะ */}
+                          <td className="py-3 px-3 text-center font-bold text-emerald-700 dark:text-emerald-400 whitespace-nowrap align-middle border-r border-slate-200/60 dark:border-slate-800/60">
+                            <Link
+                              to={`/purchasing/po/${po.id}`}
+                              className="hover:underline font-mono inline-flex items-center justify-center gap-1 text-xs"
+                            >
+                              <span>{po.po_no}</span>
+                            </Link>
+                            <div className="mt-0.5">
+                              {isPartial ? (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-700">
+                                  รับแล้วบางส่วน
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-700">
+                                  รอรับเข้าสโตร์
+                                </span>
+                              )}
+                            </div>
+                          </td>
+
+                          {/* 2. ร้านค้า / ผู้ขาย + ยอดเงินย่อ */}
+                          <td className="py-3 px-4 align-middle border-r border-slate-200/60 dark:border-slate-800/60">
+                            <div className="font-bold text-slate-900 dark:text-slate-100 text-sm">
+                              {vendorName}
+                            </div>
+                            <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 flex flex-wrap items-center gap-2">
+                              <span>สั่งเมื่อ {formatThaiDate(po.order_date)}</span>
+                              <span className="text-slate-300 dark:text-slate-600">•</span>
+                              <span className="font-semibold text-slate-700 dark:text-slate-300">ยอดรวม ฿{baht(po.grand_total || po.total_amount || 0)}</span>
+                            </div>
+                          </td>
+
+                          {/* 3. กำหนดส่งมอบ */}
+                          <td className="py-3 px-4 text-center align-middle border-r border-slate-200/60 dark:border-slate-800/60 whitespace-nowrap">
+                            <div className="font-mono text-xs font-bold text-steel-800 dark:text-slate-200">
+                              {po.expected_delivery_date ? formatThaiDate(po.expected_delivery_date) : '-'}
+                            </div>
+                            {dueStatus && (
+                              <div className="mt-1 flex justify-center">
+                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${dueStatus.badgeCls}`}>
+                                  <span>{dueStatus.icon}</span>
+                                  <span>{dueStatus.label}</span>
                                 </span>
                               </div>
-                            ))}
-                            {itemsList.length > 2 && (
-                              <div className="text-[10px] text-steel-400 italic">
-                                + อีก {itemsList.length - 2} รายการ...
-                              </div>
                             )}
-                          </div>
-                        </td>
-                        <td className="py-3 px-3 text-right font-mono font-bold text-steel-900 dark:text-slate-100 whitespace-nowrap">
-                          {baht(po.grand_total || po.total_amount || 0)}
-                        </td>
-                        <td className="py-3 px-3 text-center whitespace-nowrap">
-                          {isPartial ? (
-                            <span className="bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800 px-2.5 py-1 rounded-full text-[10px] font-bold">
-                              รับบางส่วน ({receivedQty}/{totalQty})
-                            </span>
-                          ) : (
-                            <span className="bg-sky-100 dark:bg-sky-950 text-sky-800 dark:text-sky-300 border border-sky-300 dark:border-sky-800 px-2.5 py-1 rounded-full text-[10px] font-bold">
-                              ⏳ รอส่งมอบ (ยังไม่ได้รับ)
-                            </span>
-                          )}
-                        </td>
-                        <td className="py-3 px-3 text-center whitespace-nowrap">
-                          <button
-                            type="button"
-                            onClick={() => handleOpenReceiveModal(po)}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition cursor-pointer"
-                            title="เปิดตรวจนับและยืนยันรับเข้าสโตร์"
-                          >
-                            <span>ตรวจรับเข้าสโตร์</span>
-                          </button>
-                        </td>
-                      </tr>
+                          </td>
+
+                          {/* 4. ปุ่มตรวจรับเข้าสโตร์ + ปุ่มขยายดูรายละเอียดเพิ่มเติม */}
+                          <td className="py-3 px-4 text-center whitespace-nowrap align-middle">
+                            <div className="flex items-center justify-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => handleOpenReceiveModal(po)}
+                                className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:shadow transition-all transform active:scale-95 cursor-pointer"
+                                title="เปิดตรวจนับและยืนยันรับเข้าสโตร์"
+                              >
+                                <PackageCheck className="w-3.5 h-3.5" />
+                                <span>ตรวจรับเข้าสโตร์</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => toggleExpandPendingPo(po.id)}
+                                className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border text-[11px] font-bold transition-all cursor-pointer ${
+                                  isExpanded
+                                    ? 'bg-amber-100 dark:bg-amber-900/80 text-amber-800 dark:text-amber-200 border-amber-300 dark:border-amber-700'
+                                    : 'bg-slate-100/80 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200/80 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700'
+                                }`}
+                                title={isExpanded ? 'ย่อรายละเอียด' : 'เลื่อนลงดูรายละเอียดเพิ่มเติม'}
+                              >
+                                <span>{isExpanded ? 'ย่อ' : 'รายละเอียด'}</span>
+                                {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+
+                        {/* แถวขยายข้อมูล (Accordion Detail Panel - เลื่อนลงมาให้เห็นชัดเจน) */}
+                        {isExpanded && (
+                          <tr className="bg-amber-50/50 dark:bg-amber-950/25 border-b-2 border-amber-200 dark:border-amber-800 animate-in fade-in duration-150">
+                            <td colSpan={4} className="py-3.5 px-4 sm:px-6">
+                              <div className="bg-white dark:bg-slate-900 rounded-xl p-3.5 border border-amber-200 dark:border-amber-800 shadow-xs space-y-3">
+                                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-2">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs font-bold text-amber-900 dark:text-amber-300">
+                                      ข้อมูลโครงการและรายการพัสดุ ({po.po_no})
+                                    </span>
+                                    {isPartial ? (
+                                      <span className="text-[10px] font-mono bg-amber-50 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-700 px-2 py-0.5 rounded-full">
+                                        รับแล้ว {receivedQty}/{totalQty} หน่วย
+                                      </span>
+                                    ) : null}
+                                  </div>
+                                  <Link
+                                    to={`/purchasing/po/${po.id}`}
+                                    className="text-xs font-bold text-amber-700 dark:text-amber-400 hover:underline inline-flex items-center gap-1"
+                                  >
+                                    <span>เปิดดูใบสั่งซื้อฉบับเต็ม</span>
+                                    <ExternalLink className="w-3 h-3" />
+                                  </Link>
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                                  {/* 1. โครงการเป้าหมาย */}
+                                  <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
+                                    <div className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold">โครงการเป้าหมาย</div>
+                                    <div className="font-bold text-slate-800 dark:text-slate-200 mt-0.5 truncate" title={`${projCode} ${projName}`}>
+                                      {projCode ? <span className="font-mono text-amber-600 mr-1">{projCode}</span> : null}
+                                      {projName}
+                                    </div>
+                                  </div>
+
+                                  {/* 2. ลูกค้า / ผู้ว่าจ้าง */}
+                                  <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
+                                    <div className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold">ลูกค้า / ผู้ว่าจ้าง</div>
+                                    <div className="font-bold text-blue-700 dark:text-sky-300 mt-0.5 truncate" title={po.customer_name}>
+                                      {po.customer_name || '-'}
+                                    </div>
+                                  </div>
+
+                                  {/* 3. ยอดเงินสั่งซื้อ */}
+                                  <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
+                                    <div className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold">มูลค่าสั่งซื้อรวม</div>
+                                    <div className="font-mono font-bold text-emerald-700 dark:text-emerald-400 mt-0.5 text-sm">
+                                      ฿{baht(po.grand_total || po.total_amount || 0)}
+                                    </div>
+                                  </div>
+
+                                  {/* 4. สถานะรับของ */}
+                                  <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
+                                    <div className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold">สถานะการส่งมอบ</div>
+                                    <div className="mt-0.5 font-bold text-slate-700 dark:text-slate-300">
+                                      {isPartial ? `ทยอยรับแล้ว (${receivedQty}/${totalQty})` : 'รอส่งมอบทั้งหมด 100%'}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* รายการพัสดุใน PO */}
+                                {itemsList.length > 0 && (
+                                  <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+                                    <div className="text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1.5">
+                                      <Package className="w-3.5 h-3.5 text-slate-500" />
+                                      <span>รายการพัสดุที่ต้องตรวจรับ ({itemsList.length} รายการ):</span>
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                                      {itemsList.map((it, idx) => {
+                                        const itRemain = Math.max(0, Number(it.quantity || 0) - Number(it.qty_received || 0))
+                                        return (
+                                          <div key={idx} className="p-2 rounded-lg bg-slate-50 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between text-[11px]">
+                                            <span className="font-medium text-slate-800 dark:text-slate-200 truncate pr-2" title={it.item_name}>
+                                              • {it.item_name}
+                                            </span>
+                                            <span className="font-mono shrink-0 font-bold text-slate-600 dark:text-slate-300">
+                                              {Number(it.qty_received) || 0}/{Number(it.quantity) || 0} {it.unit}
+                                              {itRemain > 0 && (
+                                                <span className="ml-1 text-[10px] text-amber-600 dark:text-amber-400">
+                                                  (ค้าง {itRemain})
+                                                </span>
+                                              )}
+                                            </span>
+                                          </div>
+                                        )
+                                      })}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </Fragment>
                     )
                   })
                 )}
