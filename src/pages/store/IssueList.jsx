@@ -677,7 +677,14 @@ export default function IssueList() {
                 const { date, time } = formatDateTimeParts(r.createdAt)
                 const isIssue = r.kind === 'issue'
                 const isReturn = r.kind === 'return'
+                const uniqueUnits = [...new Set(r.items.map((it) => it.unit).filter(Boolean))]
                 const totalItemsQty = r.items.reduce((s, it) => s + Number(it.quantity || 0), 0)
+                const breakdownFull = r.items
+                  .map((it) => `${it.name}: ${formatIntQty(it.quantity)} ${it.unit || 'ชิ้น'}`)
+                  .join('\n')
+                const breakdownShort = r.items
+                  .map((it) => `${formatIntQty(it.quantity)} ${it.unit || 'ชิ้น'}`)
+                  .join(', ')
 
                 return (
                   <tr key={r.id} className="hover:bg-steel-50/80 dark:hover:bg-slate-800/60 transition text-xs">
@@ -745,9 +752,33 @@ export default function IssueList() {
                       </div>
                     </td>
 
-                    {/* 6. จำนวนรวม */}
-                    <td className="py-3 px-3 text-right font-mono font-bold whitespace-nowrap text-steel-800 dark:text-slate-200">
-                      {formatIntQty(totalItemsQty)} {r.items[0]?.unit || 'ชิ้น'}
+                    {/* 6. จำนวนรวม (จัดการหน่วยนับอย่างถูกต้อง ป้องกันการรวมตัวเลขข้ามหน่วย) */}
+                    <td className="py-3 px-3 text-right whitespace-nowrap">
+                      {r.items.length <= 1 ? (
+                        <span className="font-mono font-bold text-steel-800 dark:text-slate-200">
+                          {r.items[0] ? `${formatIntQty(r.items[0].quantity)} ${r.items[0].unit || 'ชิ้น'}` : '-'}
+                        </span>
+                      ) : uniqueUnits.length === 1 ? (
+                        /* กรณีมีหลายรายการแต่เป็นหน่วยเดียวกันทั้งหมด */
+                        <div className="flex flex-col items-end leading-tight cursor-default" title={breakdownFull}>
+                          <span className="font-mono font-bold text-steel-800 dark:text-slate-200">
+                            {formatIntQty(totalItemsQty)} {uniqueUnits[0]}
+                          </span>
+                          <span className="text-[10px] text-steel-400 dark:text-slate-500 font-normal">
+                            ({r.items.length} รายการ)
+                          </span>
+                        </div>
+                      ) : (
+                        /* กรณีมีหลายรายการและหน่วยต่างกัน (เช่น ตู้ + เมตร) แสดงจำนวนรายการและแจกแจงหน่วย */
+                        <div className="flex flex-col items-end leading-tight cursor-default" title={breakdownFull}>
+                          <span className="font-mono font-bold text-steel-900 dark:text-slate-100">
+                            {r.items.length} รายการ
+                          </span>
+                          <span className="text-[10px] text-steel-500 dark:text-slate-400 font-mono font-normal max-w-[150px] truncate" title={breakdownFull}>
+                            {breakdownShort}
+                          </span>
+                        </div>
+                      )}
                     </td>
 
                     {/* 7. มูลค่ารวม */}
