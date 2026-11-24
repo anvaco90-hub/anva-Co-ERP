@@ -1092,9 +1092,9 @@ export default function Dashboard() {
                 <span>มูลค่า / สัดส่วน</span>
               </div>
               {salesByProduct.slice(0, 3).map((p, idx) => (
-                <div key={p.name} className="flex items-center justify-between text-xs">
-                  <span className="truncate max-w-[240px] text-steel-800 font-semibold" title={p.name}>
-                    {idx === 0 ? '' : idx === 1 ? '' : ''} {p.name}
+                <div key={p.name} className="flex items-start justify-between text-xs gap-2 py-1">
+                  <span className="text-steel-800 font-semibold break-words leading-snug flex-1" title={p.name}>
+                    {idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉'} {p.name}
                   </span>
                   <div className="flex items-center gap-2 shrink-0">
                     <span className="font-mono font-bold text-steel-900">{baht(p.totalAmount)} บ.</span>
@@ -1574,7 +1574,7 @@ export default function Dashboard() {
                           {p.rank === 1 ? '' : p.rank === 2 ? '' : p.rank === 3 ? '' : p.rank}
                         </span>
                       </td>
-                      <td className="py-3 px-3.5 font-bold text-steel-900 max-w-sm truncate" title={p.name}>
+                      <td className="py-3 px-3.5 font-bold text-steel-900 break-words leading-snug max-w-md" title={p.name}>
                         {p.name}
                       </td>
                       <td className="py-3 px-3 text-right font-mono font-medium text-steel-700">
@@ -1629,7 +1629,7 @@ export default function Dashboard() {
                           {p.rank === 1 ? '' : p.rank}
                         </span>
                       </td>
-                      <td className="py-3 px-3.5 font-bold text-steel-900 max-w-sm truncate" title={p.name}>
+                      <td className="py-3 px-3.5 font-bold text-steel-900 break-words leading-snug max-w-md" title={p.name}>
                         {p.name}
                       </td>
                       <td className="py-3 px-3 text-center font-mono text-steel-500 font-medium">
@@ -1666,289 +1666,305 @@ export default function Dashboard() {
       </div>
 
       {/* ------------------------------------------------------------------------ */}
-      {/* 6. Section 2: รายได้และค่าใช้จ่ายตามเอกสาร (Revenue & Expenses by Doc)    */}
+      {/* 6. Section 2: รายได้และค่าใช้จ่ายตามเอกสาร (Revenue & Expenses by Doc) - อยู่เดี่ยวเต็มความกว้าง */}
       {/* ------------------------------------------------------------------------ */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Left Column: Summary Card & Monthly Trend (2 Cols) */}
-        <div className="lg:col-span-2 rounded-2xl border border-steel-200/90 bg-white p-6 shadow-sm space-y-6">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-steel-100 pb-4">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-700">
-                <BarChart3 className="h-5 w-5" />
-              </div>
-              <div className="min-w-0">
-                <h2 className="text-base sm:text-lg font-bold text-steel-900 truncate">
-                  6. รายได้และค่าใช้จ่ายตามเอกสาร (Revenue vs Expenses)
-                </h2>
-                <p className="text-xs text-steel-500">
-                  เปรียบเทียบผลประกอบการกระแสเงินสดและสัดส่วนต้นทุนจากเอกสารจริง
-                </p>
-              </div>
+      <div id="monthly-trend" className="rounded-2xl border border-steel-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm space-y-6 scroll-mt-6">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-steel-100 dark:border-slate-800 pb-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-400">
+              <BarChart3 className="h-5 w-5" />
             </div>
-
-            <div className="text-xs font-bold text-steel-600 shrink-0">
-              ประจำปี พ.ศ. {monthlyTrend.targetYear + 543} ({monthlyTrend.targetYear})
+            <div className="min-w-0">
+              <h2 className="text-base sm:text-lg font-bold text-steel-900 dark:text-slate-100">
+                6. รายได้และค่าใช้จ่ายตามเอกสาร (Revenue vs Expenses Trend)
+              </h2>
+              <p className="text-xs text-steel-500 dark:text-slate-400">
+                เปรียบเทียบผลประกอบการกระแสเงินสดและสัดส่วนต้นทุนจากเอกสารจริงตลอด 12 เดือน
+              </p>
             </div>
           </div>
 
-          {/* Key Summary Mini Cards: 4 Cards รวมยอดค้างรับ (Uncollected AR) */}
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="rounded-xl border border-emerald-100 bg-emerald-50/50 p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-800">
-                  <ArrowDownRight className="h-4 w-4" />
-                  <span>รายได้ตามเอกสาร (Revenue)</span>
-                </div>
-                <span className="rounded-full bg-emerald-100 px-1.5 py-0.2 text-[10px] font-bold text-emerald-800">
-                  {filteredInvoices.length} INV
-                </span>
-              </div>
-              <div className="mt-2 text-xl font-black text-emerald-800 truncate">
-                {baht(totalRevenueDoc)} <span className="text-xs font-normal text-emerald-600">บ.</span>
-              </div>
-              <div className="mt-1 flex items-center justify-between text-[11px] text-emerald-700">
-                <span>เก็บเงินแล้ว: {baht(totalCollected)} บ.</span>
-                <span className="font-bold">({collectionRate}%)</span>
-              </div>
-            </div>
+          <div className="text-xs font-bold text-steel-600 dark:text-slate-300 shrink-0 bg-slate-50 dark:bg-slate-800 border border-steel-200 dark:border-slate-700 px-3 py-1.5 rounded-lg">
+            ประจำปี พ.ศ. {monthlyTrend.targetYear + 543} ({monthlyTrend.targetYear})
+          </div>
+        </div>
 
-            {/* การ์ดยอดค้างรับ (Uncollected AR) - ฟีเจอร์ใหม่ */}
-            <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-4 relative overflow-hidden">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-amber-900">
-                  <Clock className="h-4 w-4 text-amber-700" />
-                  <span>ยอดค้างรับ (Uncollected AR)</span>
-                </div>
-                <span className="rounded-full bg-amber-100 px-1.5 py-0.2 text-[10px] font-bold text-amber-800">
-                  {arInvoicesCount} บิลรอเก็บ
-                </span>
+        {/* Key Summary Mini Cards: 4 Cards เต็มความกว้าง 4 คอลัมน์ ข้อความอ่านได้ครบถ้วน ไม่บีบอัด */}
+        <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="rounded-xl border border-emerald-100 dark:border-emerald-900/60 bg-emerald-50/50 dark:bg-emerald-950/20 p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-800 dark:text-emerald-300">
+                <ArrowDownRight className="h-4 w-4 shrink-0" />
+                <span>รายได้ตามเอกสาร (Revenue)</span>
               </div>
-              <div className="mt-2 text-xl font-black text-amber-900 truncate">
-                {baht(totalArRemaining)} <span className="text-xs font-normal text-amber-700">บ.</span>
-              </div>
-              <div className="mt-1 flex items-center justify-between text-[11px]">
-                <span className="text-amber-700">
-                  {totalRevenueDoc > 0 ? ((totalArRemaining / totalRevenueDoc) * 100).toFixed(1) : 0}% ของรายได้รวม
-                </span>
-                <Link
-                  to="/accounting/ar-aging"
-                  className="font-bold text-amber-800 hover:text-amber-900 hover:underline flex items-center gap-0.5 text-[11px]"
-                >
-                  วิเคราะห์อายุ
-                </Link>
-              </div>
+              <span className="rounded-full bg-emerald-100 dark:bg-emerald-900/60 px-2 py-0.5 text-[10px] font-bold text-emerald-800 dark:text-emerald-300 shrink-0">
+                {filteredInvoices.length} INV
+              </span>
             </div>
-
-            <div className="rounded-xl border border-rose-100 bg-rose-50/50 p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-rose-800">
-                  <ArrowUpRight className="h-4 w-4" />
-                  <span>ค่าใช้จ่ายตามเอกสาร (Expenses)</span>
-                </div>
-                <span className="rounded-full bg-rose-100 px-1.5 py-0.2 text-[10px] font-bold text-rose-800">
-                  {filteredExpenses.length} EXP
-                </span>
-              </div>
-              <div className="mt-2 text-xl font-black text-rose-800 truncate">
-                {baht(totalExpenseDoc)} <span className="text-xs font-normal text-rose-600">บ.</span>
-              </div>
-              <div className="mt-1 text-[11px] text-rose-600">
-                จ่ายจริงแล้ว {baht(expensesPaidAmount)} บ.
-              </div>
+            <div className="mt-2 text-xl font-black text-emerald-800 dark:text-emerald-300 font-mono">
+              {baht(totalRevenueDoc)} <span className="text-xs font-normal text-emerald-600 dark:text-emerald-400">บ.</span>
             </div>
-
-            <div className="rounded-xl border border-indigo-100 bg-indigo-50/50 p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-indigo-800">
-                  <TrendingUp className="h-4 w-4" />
-                  <span>ผลต่างสุทธิ (Net Margin)</span>
-                </div>
-                <span className="rounded-full bg-indigo-100 px-1.5 py-0.2 text-[10px] font-bold text-indigo-800">
-                  {netMarginPct}%
-                </span>
-              </div>
-              <div className={`mt-2 text-xl font-black truncate ${netCashMargin >= 0 ? 'text-indigo-900' : 'text-rose-700'}`}>
-                {baht(netCashMargin)} <span className="text-xs font-normal text-indigo-600">บ.</span>
-              </div>
-              <div className="mt-1 text-[11px] text-indigo-700">
-                เงินสดสุทธิรับจริง: {baht(totalCollected - totalExpenseDoc)} บ.
-              </div>
+            <div className="mt-1 flex items-center justify-between text-[11px] text-emerald-700 dark:text-emerald-400">
+              <span>เก็บเงินแล้ว: {baht(totalCollected)} บ.</span>
+              <span className="font-bold">({collectionRate}%)</span>
             </div>
           </div>
 
-          {/* Visual SVG Bar Chart for 12 Months (เปรียบเทียบ รายได้ vs ค้างรับ vs ค่าใช้จ่าย) */}
-          <div>
-            <div className="flex items-center justify-between text-xs font-bold text-steel-700 mb-3 flex-wrap gap-2">
-              <span>กราฟเปรียบเทียบ รายได้ (เขียว) vs ค้างรับ (ส้ม) vs ค่าใช้จ่าย (แดง) รายเดือน</span>
-              <div className="flex items-center gap-3 text-[11px] flex-wrap">
-                <span className="flex items-center gap-1.5 text-emerald-700 font-bold">
-                  <span className="h-2.5 w-2.5 rounded-sm bg-emerald-500" /> รายได้ (Revenue)
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setShowReceivablesInChart(!showReceivablesInChart)}
-                  className={`flex items-center gap-1.5 font-bold transition px-1.5 py-0.5 rounded cursor-pointer ${showReceivablesInChart
-                    ? 'bg-amber-100 text-amber-900 border border-amber-300'
-                    : 'text-steel-400 hover:text-steel-600 line-through'
-                    }`}
-                  title="คลิกเพื่อเปิด/ปิดแท่งค้างรับ"
-                >
-                  <span className={`h-2.5 w-2.5 rounded-sm ${showReceivablesInChart ? 'bg-amber-400' : 'bg-steel-300'}`} />
-                  <span>ค้างรับ (Uncollected)</span>
-                </button>
-                <span className="flex items-center gap-1.5 text-rose-700 font-bold">
-                  <span className="h-2.5 w-2.5 rounded-sm bg-rose-400" /> ค่าใช้จ่าย (Expenses)
-                </span>
+          {/* การ์ดยอดค้างรับ (Uncollected AR) */}
+          <div className="rounded-xl border border-amber-200 dark:border-amber-900/60 bg-amber-50/70 dark:bg-amber-950/20 p-4 relative overflow-hidden">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-amber-900 dark:text-amber-300">
+                <Clock className="h-4 w-4 text-amber-700 dark:text-amber-400 shrink-0" />
+                <span>ยอดค้างรับ (Uncollected AR)</span>
               </div>
+              <span className="rounded-full bg-amber-100 dark:bg-amber-900/60 px-2 py-0.5 text-[10px] font-bold text-amber-800 dark:text-amber-300 shrink-0">
+                {arInvoicesCount} บิลรอเก็บ
+              </span>
             </div>
+            <div className="mt-2 text-xl font-black text-amber-900 dark:text-amber-300 font-mono">
+              {baht(totalArRemaining)} <span className="text-xs font-normal text-amber-700 dark:text-amber-400">บ.</span>
+            </div>
+            <div className="mt-1 flex items-center justify-between text-[11px]">
+              <span className="text-amber-700 dark:text-amber-400">
+                {totalRevenueDoc > 0 ? ((totalArRemaining / totalRevenueDoc) * 100).toFixed(1) : 0}% ของรายได้รวม
+              </span>
+              <Link
+                to="/accounting/ar-aging"
+                className="font-bold text-amber-800 dark:text-amber-300 hover:text-amber-900 hover:underline flex items-center gap-0.5 text-[11px]"
+              >
+                วิเคราะห์อายุ
+              </Link>
+            </div>
+          </div>
 
-            <div className="h-48 w-full flex items-end justify-between gap-1 sm:gap-2 border-b border-steel-200 pb-2 pt-4 px-2">
-              {monthlyTrend.months.map((m) => {
-                const revHeight = (m.revenue / monthlyTrend.maxVal) * 100
-                const recHeight = (m.receivable / monthlyTrend.maxVal) * 100
-                const expHeight = (m.expense / monthlyTrend.maxVal) * 100
+          <div className="rounded-xl border border-rose-100 dark:border-rose-900/60 bg-rose-50/50 dark:bg-rose-950/20 p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-rose-800 dark:text-rose-300">
+                <ArrowUpRight className="h-4 w-4 shrink-0" />
+                <span>ค่าใช้จ่ายตามเอกสาร (Expenses)</span>
+              </div>
+              <span className="rounded-full bg-rose-100 dark:bg-rose-900/60 px-2 py-0.5 text-[10px] font-bold text-rose-800 dark:text-rose-300 shrink-0">
+                {filteredExpenses.length} EXP
+              </span>
+            </div>
+            <div className="mt-2 text-xl font-black text-rose-800 dark:text-rose-300 font-mono">
+              {baht(totalExpenseDoc)} <span className="text-xs font-normal text-rose-600 dark:text-rose-400">บ.</span>
+            </div>
+            <div className="mt-1 text-[11px] text-rose-600 dark:text-rose-400">
+              จ่ายจริงแล้ว {baht(expensesPaidAmount)} บ.
+            </div>
+          </div>
 
-                return (
-                  <div key={m.monthIndex} className="flex-1 flex flex-col items-center h-full justify-end group relative">
-                    {/* Tooltip on hover */}
-                    <div className="absolute -top-16 z-20 hidden group-hover:flex flex-col items-start bg-steel-900 text-white text-[10px] rounded px-2.5 py-1.5 shadow-lg pointer-events-none whitespace-nowrap">
-                      <span className="font-bold border-b border-steel-700 pb-0.5 mb-0.5 w-full">{m.monthName}</span>
-                      <span className="text-emerald-300">รายได้: {baht(m.revenue)} บ.</span>
-                      <span className="text-amber-300">ค้างรับ: {baht(m.receivable)} บ.</span>
-                      <span className="text-rose-300">จ่าย: {baht(m.expense)} บ.</span>
-                    </div>
-
-                    <div className="w-full flex items-end justify-center gap-0.5 sm:gap-1 h-36">
-                      {/* Revenue Bar */}
-                      <div
-                        className="flex-1 max-w-[12px] bg-emerald-500 rounded-t transition-all duration-300 hover:brightness-110"
-                        style={{ height: `${Math.max(revHeight, 2)}%` }}
-                        title={`รายได้: ${baht(m.revenue)} บ.`}
-                      />
-                      {/* Receivable Bar */}
-                      {showReceivablesInChart && (
-                        <div
-                          className="flex-1 max-w-[12px] bg-amber-400 rounded-t transition-all duration-300 hover:brightness-110"
-                          style={{ height: `${Math.max(recHeight, 2)}%` }}
-                          title={`ยอดค้างรับ: ${baht(m.receivable)} บ.`}
-                        />
-                      )}
-                      {/* Expense Bar */}
-                      <div
-                        className="flex-1 max-w-[12px] bg-rose-400 rounded-t transition-all duration-300 hover:brightness-110"
-                        style={{ height: `${Math.max(expHeight, 2)}%` }}
-                        title={`ค่าใช้จ่าย: ${baht(m.expense)} บ.`}
-                      />
-                    </div>
-                    <span className="text-[10px] text-steel-500 mt-2 font-bold">
-                      {m.shortName}
-                    </span>
-                  </div>
-                )
-              })}
+          <div className="rounded-xl border border-indigo-100 dark:border-indigo-900/60 bg-indigo-50/50 dark:bg-indigo-950/20 p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-indigo-800 dark:text-indigo-300">
+                <TrendingUp className="h-4 w-4 shrink-0" />
+                <span>ผลต่างสุทธิ (Net Margin)</span>
+              </div>
+              <span className="rounded-full bg-indigo-100 dark:bg-indigo-900/60 px-2 py-0.5 text-[10px] font-bold text-indigo-800 dark:text-indigo-300 shrink-0">
+                {netMarginPct}%
+              </span>
+            </div>
+            <div className={`mt-2 text-xl font-black font-mono ${netCashMargin >= 0 ? 'text-indigo-900 dark:text-indigo-300' : 'text-rose-700 dark:text-rose-400'}`}>
+              {baht(netCashMargin)} <span className="text-xs font-normal text-indigo-600 dark:text-indigo-400">บ.</span>
+            </div>
+            <div className="mt-1 text-[11px] text-indigo-700 dark:text-indigo-400">
+              เงินสดสุทธิรับจริง: {baht(totalCollected - totalExpenseDoc)} บ.
             </div>
           </div>
         </div>
 
-        {/* Right Column: Recent Documents Feed (1 Col) */}
-        <div className="rounded-2xl border border-steel-200/90 bg-white p-6 shadow-sm flex flex-col min-w-0">
-          <div className="flex items-center justify-between border-b border-steel-100 pb-3">
-            <div className="flex items-center gap-2">
-              <FileText className="h-5 w-5 text-steel-700" />
-              <h3 className="font-bold text-steel-900 text-sm">เอกสารล่าสุดในระบบ</h3>
-            </div>
-            <span className="text-xs font-semibold text-steel-500">{recentDocuments.length} รายการ</span>
-          </div>
-
-          {/* Subtabs for Documents Feed (เพิ่มแท็บค้างรับ AR) */}
-          <div className="flex items-center gap-1 mt-3 border-b border-steel-100 pb-2 text-[11px] font-bold flex-wrap">
-            <button
-              onClick={() => setRecentDocTab('all')}
-              className={`px-2 py-1 rounded-md transition ${recentDocTab === 'all' ? 'bg-steel-900 text-white' : 'text-steel-600 hover:bg-steel-100'}`}
-            >
-              ทั้งหมด
-            </button>
-            <button
-              onClick={() => setRecentDocTab('revenue')}
-              className={`px-2 py-1 rounded-md transition ${recentDocTab === 'revenue' ? 'bg-emerald-700 text-white' : 'text-emerald-700 hover:bg-emerald-50'}`}
-            >
-              รายได้ (INV)
-            </button>
-            <button
-              onClick={() => setRecentDocTab('receivables')}
-              className={`px-2 py-1 rounded-md transition flex items-center gap-1 ${recentDocTab === 'receivables'
-                ? 'bg-amber-600 text-white shadow-xs'
-                : 'text-amber-800 hover:bg-amber-50'
-                }`}
-            >
-              <span>ค้างรับ (AR)</span>
-              {arInvoicesCount > 0 && (
-                <span className={`px-1 py-0.2 rounded-full text-[9px] font-black ${recentDocTab === 'receivables' ? 'bg-white text-amber-800' : 'bg-amber-200 text-amber-900'
-                  }`}>
-                  {arInvoicesCount}
-                </span>
-              )}
-            </button>
-            <button
-              onClick={() => setRecentDocTab('expenses')}
-              className={`px-2 py-1 rounded-md transition ${recentDocTab === 'expenses' ? 'bg-rose-700 text-white' : 'text-rose-700 hover:bg-rose-50'}`}
-            >
-              รายจ่าย (EXP)
-            </button>
-            <button
-              onClick={() => setRecentDocTab('purchasing')}
-              className={`px-2 py-1 rounded-md transition ${recentDocTab === 'purchasing' ? 'bg-amber-700 text-white' : 'text-amber-700 hover:bg-amber-50'}`}
-            >
-              จัดซื้อ (PO)
-            </button>
-          </div>
-
-          {/* Feed List */}
-          <div className="mt-3 flex-1 overflow-y-auto space-y-2.5 max-h-[440px] pr-1">
-            {recentDocuments.slice(0, 10).map((doc, idx) => (
-              <div
-                key={`${doc.type}-${doc.id}-${idx}`}
-                className="rounded-xl border border-steel-100 p-3 hover:bg-slate-50 transition"
+        {/* Visual SVG Bar Chart for 12 Months (เปรียบเทียบ รายได้ vs ค้างรับ vs ค่าใช้จ่าย) - กราฟเต็มจอ สบายตา */}
+        <div className="rounded-xl border border-steel-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 p-4">
+          <div className="flex items-center justify-between text-xs font-bold text-steel-700 dark:text-slate-300 mb-3 flex-wrap gap-2">
+            <span>กราฟเปรียบเทียบ รายได้ (เขียว) vs ค้างรับ (ส้ม) vs ค่าใช้จ่าย (แดง) รายเดือน</span>
+            <div className="flex items-center gap-3 text-[11px] flex-wrap">
+              <span className="flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400 font-bold">
+                <span className="h-2.5 w-2.5 rounded-sm bg-emerald-500" /> รายได้ (Revenue)
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowReceivablesInChart(!showReceivablesInChart)}
+                className={`flex items-center gap-1.5 font-bold transition px-2 py-0.5 rounded cursor-pointer ${showReceivablesInChart
+                  ? 'bg-amber-100 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700'
+                  : 'text-steel-400 hover:text-steel-600 line-through'
+                  }`}
+                title="คลิกเพื่อเปิด/ปิดแท่งค้างรับ"
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <span className={`rounded px-1.5 py-0.5 text-[10px] font-black shrink-0 ${doc.type === 'INV' ? 'bg-emerald-100 text-emerald-800' :
-                      doc.type === 'EXP' ? 'bg-blue-100 text-blue-800' :
-                        doc.type === 'PO' ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800'
+                <span className={`h-2.5 w-2.5 rounded-sm ${showReceivablesInChart ? 'bg-amber-400' : 'bg-steel-300'}`} />
+                <span>ค้างรับ (Uncollected)</span>
+              </button>
+              <span className="flex items-center gap-1.5 text-rose-700 dark:text-rose-400 font-bold">
+                <span className="h-2.5 w-2.5 rounded-sm bg-rose-400" /> ค่าใช้จ่าย (Expenses)
+              </span>
+            </div>
+          </div>
+
+          <div className="h-56 w-full flex items-end justify-between gap-1 sm:gap-3 border-b border-steel-200 dark:border-slate-700 pb-2 pt-4 px-2">
+            {monthlyTrend.months.map((m) => {
+              const revHeight = (m.revenue / monthlyTrend.maxVal) * 100
+              const recHeight = (m.receivable / monthlyTrend.maxVal) * 100
+              const expHeight = (m.expense / monthlyTrend.maxVal) * 100
+
+              return (
+                <div key={m.monthIndex} className="flex-1 flex flex-col items-center h-full justify-end group relative">
+                  {/* Tooltip on hover */}
+                  <div className="absolute -top-16 z-20 hidden group-hover:flex flex-col items-start bg-steel-900 text-white text-[10px] rounded-lg px-2.5 py-1.5 shadow-xl pointer-events-none whitespace-nowrap">
+                    <span className="font-bold border-b border-steel-700 pb-0.5 mb-0.5 w-full">{m.monthName}</span>
+                    <span className="text-emerald-300">รายได้: {baht(m.revenue)} บ.</span>
+                    <span className="text-amber-300">ค้างรับ: {baht(m.receivable)} บ.</span>
+                    <span className="text-rose-300">จ่าย: {baht(m.expense)} บ.</span>
+                  </div>
+
+                  <div className="w-full flex items-end justify-center gap-1 sm:gap-1.5 h-44">
+                    {/* Revenue Bar */}
+                    <div
+                      className="flex-1 max-w-[16px] bg-emerald-500 rounded-t transition-all duration-300 hover:brightness-110"
+                      style={{ height: `${Math.max(revHeight, 2)}%` }}
+                      title={`รายได้: ${baht(m.revenue)} บ.`}
+                    />
+                    {/* Receivable Bar */}
+                    {showReceivablesInChart && (
+                      <div
+                        className="flex-1 max-w-[16px] bg-amber-400 rounded-t transition-all duration-300 hover:brightness-110"
+                        style={{ height: `${Math.max(recHeight, 2)}%` }}
+                        title={`ยอดค้างรับ: ${baht(m.receivable)} บ.`}
+                      />
+                    )}
+                    {/* Expense Bar */}
+                    <div
+                      className="flex-1 max-w-[16px] bg-rose-400 rounded-t transition-all duration-300 hover:brightness-110"
+                      style={{ height: `${Math.max(expHeight, 2)}%` }}
+                      title={`ค่าใช้จ่าย: ${baht(m.expense)} บ.`}
+                    />
+                  </div>
+                  <span className="text-[11px] text-steel-600 dark:text-slate-400 mt-2 font-bold">
+                    {m.shortName}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* ------------------------------------------------------------------------ */}
+      {/* 7. เอกสารล่าสุดในระบบ (Cross-Department Recent Documents Trace - อยู่เดี่ยวเต็มความกว้าง) */}
+      {/* ------------------------------------------------------------------------ */}
+      <div id="recent-documents" className="rounded-2xl border border-steel-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm space-y-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-steel-100 dark:border-slate-800 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-steel-700 dark:text-slate-300">
+              <FileText className="h-5 w-5" />
+            </div>
+            <div>
+              <h3 className="font-bold text-steel-900 dark:text-slate-100 text-base">
+                7. เอกสารล่าสุดในระบบ (Cross-Department Recent Documents)
+              </h3>
+              <p className="text-xs text-steel-500 dark:text-slate-400">
+                ติดตามการเคลื่อนไหวของเอกสารข้ามฝ่าย (ใบแจ้งหนี้, ใบสำคัญจ่าย, ใบสั่งซื้อ, เจ้าหนี้การค้า)
+              </p>
+            </div>
+          </div>
+          <span className="text-xs font-semibold px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-steel-700 dark:text-slate-300 border border-steel-200 dark:border-slate-700 self-start sm:self-center">
+            {recentDocuments.length} รายการ
+          </span>
+        </div>
+
+        {/* Subtabs for Documents Feed (ตัวกรองประเภทเอกสาร) */}
+        <div className="flex items-center gap-1.5 border-b border-steel-100 dark:border-slate-800 pb-3 text-xs font-bold flex-wrap">
+          <button
+            onClick={() => setRecentDocTab('all')}
+            className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${recentDocTab === 'all' ? 'bg-steel-900 text-white shadow-xs' : 'bg-steel-50 dark:bg-slate-800 text-steel-600 dark:text-slate-300 hover:bg-steel-100 dark:hover:bg-slate-700'}`}
+          >
+            ทั้งหมด ({recentDocuments.length})
+          </button>
+          <button
+            onClick={() => setRecentDocTab('revenue')}
+            className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${recentDocTab === 'revenue' ? 'bg-emerald-700 text-white shadow-xs' : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100'}`}
+          >
+            รายได้ (INV)
+          </button>
+          <button
+            onClick={() => setRecentDocTab('receivables')}
+            className={`px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5 ${recentDocTab === 'receivables'
+              ? 'bg-amber-600 text-white shadow-xs'
+              : 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 hover:bg-amber-100'
+              }`}
+          >
+            <span>ค้างรับ (AR)</span>
+            {arInvoicesCount > 0 && (
+              <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${recentDocTab === 'receivables' ? 'bg-white text-amber-800' : 'bg-amber-200 text-amber-900'
+                }`}>
+                {arInvoicesCount}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => setRecentDocTab('expenses')}
+            className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${recentDocTab === 'expenses' ? 'bg-rose-700 text-white shadow-xs' : 'bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300 hover:bg-rose-100'}`}
+          >
+            รายจ่าย (EXP)
+          </button>
+          <button
+            onClick={() => setRecentDocTab('purchasing')}
+            className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${recentDocTab === 'purchasing' ? 'bg-amber-700 text-white shadow-xs' : 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 hover:bg-amber-100'}`}
+          >
+            จัดซื้อ (PO)
+          </button>
+        </div>
+
+        {/* Spacious 2-Column Responsive Feed Cards - ข้อความอ่านได้ต่อเนื่อง ไม่ถูกตัด ไม่เบียด */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+          {recentDocuments.slice(0, 12).map((doc, idx) => (
+            <div
+              key={`${doc.type}-${doc.id}-${idx}`}
+              className="rounded-xl border border-steel-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 hover:border-sky-300 dark:hover:border-sky-600 hover:shadow-xs transition flex flex-col justify-between"
+            >
+              <div>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className={`rounded-lg px-2 py-0.5 text-xs font-black shrink-0 ${doc.type === 'INV' ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800' :
+                      doc.type === 'EXP' ? 'bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800' :
+                        doc.type === 'PO' ? 'bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800' : 'bg-rose-100 dark:bg-rose-950 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
                       }`}>
                       {doc.type}
                     </span>
-                    <span className="font-mono text-xs font-bold text-steel-900 truncate">{doc.docNo}</span>
+                    <span className="font-mono text-xs font-bold text-steel-900 dark:text-slate-100">{doc.docNo}</span>
                   </div>
-                  <span className="text-[10px] text-steel-400 font-mono shrink-0">{doc.date}</span>
+                  <span className="text-xs text-steel-400 dark:text-slate-500 font-mono shrink-0">{doc.date}</span>
                 </div>
 
-                <div className="mt-1.5 text-xs font-bold text-steel-800 truncate" title={doc.party}>
+                {/* Party Name - ข้อความอ่านได้ต่อเนื่อง ไม่ truncate */}
+                <div className="mt-2 text-sm font-bold text-steel-900 dark:text-slate-100 break-words leading-snug" title={doc.party}>
                   {doc.party}
                 </div>
 
-                <div className="text-[11px] text-steel-500 truncate" title={doc.project}>
+                {/* Project / Description - ข้อความอ่านได้ต่อเนื่อง */}
+                <div className="text-xs text-steel-600 dark:text-slate-400 mt-1 break-words leading-relaxed" title={doc.project}>
                   {doc.project}
                 </div>
+              </div>
 
-                <div className="mt-2 flex items-center justify-between border-t border-steel-50 pt-1.5">
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${doc.statusColor}`}>
-                      {doc.statusText}
-                    </span>
-                    {doc.type === 'INV' && doc.remainingAmount > 0 && (
-                      <span className="rounded-md bg-amber-50 border border-amber-200 text-amber-800 font-mono text-[10px] font-bold px-1.5 py-0.5">
-                        ค้างรับ {baht(doc.remainingAmount)} บ.
-                      </span>
-                    )}
-                  </div>
-                  <span className="font-mono font-bold text-xs text-steel-900">
-                    {baht(doc.amount)} บ.
+              <div className="mt-3 flex items-center justify-between border-t border-steel-100 dark:border-slate-800 pt-2.5">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold ${doc.statusColor}`}>
+                    {doc.statusText}
                   </span>
+                  {doc.type === 'INV' && doc.remainingAmount > 0 && (
+                    <span className="rounded-md bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-300 font-mono text-[11px] font-bold px-2 py-0.5">
+                      ค้างรับ {baht(doc.remainingAmount)} บ.
+                    </span>
+                  )}
+                </div>
+                <div className="text-right">
+                  <div className="font-mono font-bold text-sm text-steel-900 dark:text-slate-100">
+                    {baht(doc.amount)} <span className="text-xs font-normal text-steel-500 dark:text-slate-400">บ.</span>
+                  </div>
                 </div>
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -2023,15 +2039,15 @@ export default function Dashboard() {
             {filteredApList.slice(0, 5).map((ap) => (
               <div key={ap.id} className="flex items-center justify-between rounded-xl border border-steel-100 p-3 hover:bg-slate-50 transition">
                 <div className="min-w-0 pr-3">
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-xs text-steel-900 truncate">{ap.vendor_name}</span>
-                    <span className={`rounded-full px-2 py-0.2 text-[9px] font-bold ${ap.alert_level === 'urgent' ? 'bg-rose-100 text-rose-800' :
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-bold text-xs text-steel-900 break-words leading-snug">{ap.vendor_name}</span>
+                    <span className={`rounded-full px-2 py-0.2 text-[9px] font-bold shrink-0 ${ap.alert_level === 'urgent' ? 'bg-rose-100 text-rose-800' :
                       ap.alert_level === 'warning' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'
                       }`}>
                       {ap.alert_level === 'urgent' ? 'เกินกำหนด' : ap.alert_level === 'warning' ? 'เตือน' : 'ปกติ'}
                     </span>
                   </div>
-                  <div className="mt-0.5 text-[11px] text-steel-400 truncate">
+                  <div className="mt-0.5 text-[11px] text-steel-500 break-words leading-relaxed">
                     เลขที่บิล: {ap.invoice_no || ap.ap_no} • ครบกำหนด: {ap.due_date}
                   </div>
                 </div>

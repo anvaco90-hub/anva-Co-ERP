@@ -1,4 +1,4 @@
-import { useEffect, useState, Fragment } from 'react'
+import { useEffect, useState, useMemo, Fragment } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { baht } from '../../lib/projects'
@@ -15,6 +15,11 @@ import {
   Layers,
   CheckCircle2,
   ExternalLink,
+  Search,
+  ChevronDown,
+  ChevronUp,
+  X,
+  Filter,
 } from 'lucide-react'
 
 const STATUS_MAP = {
@@ -33,6 +38,11 @@ export default function BOQDetail() {
   const [loading, setLoading] = useState(true)
   const [converting, setConverting] = useState(false)
   const [showPrintModal, setShowPrintModal] = useState(false)
+
+  // ตัวกรองและค้นหา (Search & Category Filters)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState('all')
+  const [collapsedCategories, setCollapsedCategories] = useState({})
 
   const fetchDetail = async () => {
     setLoading(true)
@@ -188,13 +198,68 @@ export default function BOQDetail() {
     color: 'bg-steel-100 text-steel-700 border-steel-200',
   }
 
-  // จัดกลุ่มรายการตามหมวดหมู่
-  const grouped = items.reduce((acc, it) => {
-    const cat = it.category || 'งานทั่วไป'
-    if (!acc[cat]) acc[cat] = []
-    acc[cat].push(it)
-    return acc
-  }, {})
+  // รายการหมวดหมู่ทั้งหมดในเอกสารนี้
+  const allCategories = useMemo(() => {
+    const list = []
+    items.forEach((it) => {
+      const c = it.category || 'งานทั่วไป'
+      if (!list.includes(c)) list.push(c)
+    })
+    return list
+  }, [items])
+
+  // กรองรายการตามคำค้นหาและหมวดหมู่ที่เลือก
+  const filteredItems = useMemo(() => {
+    let res = items
+    if (selectedCategory !== 'all') {
+      res = res.filter((it) => (it.category || 'งานทั่วไป') === selectedCategory)
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim()
+      res = res.filter(
+        (it) =>
+          it.item_name?.toLowerCase().includes(q) ||
+          it.description?.toLowerCase().includes(q) ||
+          it.category?.toLowerCase().includes(q)
+      )
+    }
+    return res
+  }, [items, selectedCategory, searchQuery])
+
+  // จัดกลุ่มรายการที่ผ่านการกรองตามหมวดหมู่
+  const grouped = useMemo(() => {
+    return filteredItems.reduce((acc, it) => {
+      const cat = it.category || 'งานทั่วไป'
+      if (!acc[cat]) acc[cat] = []
+      acc[cat].push(it)
+      return acc
+    }, {})
+  }, [filteredItems])
+
+  // ฟังก์ชันย่อ/ขยายเฉพาะหมวดหมู่
+  const toggleCategoryCollapse = (cat) => {
+    setCollapsedCategories((prev) => ({
+      ...prev,
+      [cat]: !prev[cat],
+    }))
+  }
+
+  // ฟังก์ชันย่อทั้งหมด / ขยายทั้งหมด
+  const isAllCollapsed =
+    Object.keys(grouped).length > 0 &&
+    Object.keys(grouped).every((cat) => collapsedCategories[cat])
+
+  const toggleCollapseAll = () => {
+    if (isAllCollapsed) {
+      setCollapsedCategories({})
+    } else {
+      const all = {}
+      Object.keys(grouped).forEach((cat) => {
+        all[cat] = true
+      })
+      setCollapsedCategories(all)
+    }
+  }
 
   return (
     <div className="space-y-6 font-sans text-slate-800 max-w-5xl">
