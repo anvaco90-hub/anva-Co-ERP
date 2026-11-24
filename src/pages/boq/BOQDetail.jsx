@@ -20,6 +20,9 @@ import {
   ChevronUp,
   X,
   Filter,
+  Calendar,
+  Building2,
+  FolderGit2,
 } from 'lucide-react'
 
 const STATUS_MAP = {
