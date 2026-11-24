@@ -373,6 +373,153 @@ export default function IssueDetailModal({ record, onClose }) {
           </button>
         </div>
       </div>
+
+      {/* 5. ส่วนเอกสารพิมพ์มาตรฐาน A4 (Printable A4 Report) - ดึงพิมพ์ผ่าน printElement ทันที ไม่เป็นหน้าขาว */}
+      <div className="hidden">
+        <div
+          id="printable-report"
+          className="mx-auto max-w-[210mm] bg-white p-8 text-black font-sans leading-relaxed text-xs"
+        >
+          {/* หัวบริษัทและชื่อเอกสาร */}
+          <div className="flex justify-between items-start border-b-2 border-black pb-4">
+            <div>
+              <h1 className="text-base font-bold">บริษัท แอนวา คอนสตรัคชั่น แอนด์ เอ็นจิเนียริ่ง จำกัด</h1>
+              <p className="text-xs text-neutral-600">ANVA CONSTRUCTION & ENGINEERING CO., LTD.</p>
+              <p className="text-[11px] text-neutral-500 mt-1">บริการออกแบบ ติดตั้ง และบำรุงรักษาระบบโซล่าเซลล์และงานวิศวกรรมครบวงจร</p>
+              <p className="text-[11px] text-neutral-500">เลขประจำตัวผู้เสียภาษีอากร: 0105562000000 · สำนักงานใหญ่</p>
+            </div>
+            <div className="text-right">
+              <div className="rounded border-2 border-black bg-neutral-100 px-4 py-2 inline-block text-center">
+                <h2 className="text-sm font-black uppercase tracking-wider">
+                  {isIssue ? 'ใบเบิกพัสดุ' : isReturn ? 'ใบรับคืนพัสดุเข้าสโตร์' : 'ใบปรับยอดสต็อก'}
+                </h2>
+                <p className="text-[10px] font-bold">
+                  {isIssue ? 'MATERIAL REQUISITION SLIP' : isReturn ? 'MATERIAL RETURN SLIP' : 'STOCK ADJUSTMENT SLIP'}
+                </p>
+              </div>
+              <div className="mt-2 text-xs space-y-0.5">
+                <div>เลขที่เอกสาร: <b className="font-mono text-sm">{record.code}</b></div>
+                <div>วันที่ทำรายการ: <b>{record.dateTimeStr}</b></div>
+                <div>คลังสินค้า: <b>สโตร์หลัก (Main Store)</b></div>
+              </div>
+            </div>
+          </div>
+
+          {/* ข้อมูลโครงการ ปลายทาง และผู้ทำรายการ */}
+          <div className="my-4 grid grid-cols-2 gap-4 rounded border border-neutral-300 p-3.5 text-xs">
+            <div className="space-y-1.5">
+              <span className="font-bold text-neutral-700 underline">ข้อมูลโครงการ / ปลายทางใช้งาน:</span>
+              <div>
+                โครงการ: <b>{record.projectName ? `[${record.projectCode}] ${record.projectName}` : 'ทั่วไป / ไม่ระบุโครงการ'}</b>
+              </div>
+              <div>
+                ปลายทาง: <b>{record.targetType === 'office' ? 'ออฟฟิศส่วนกลาง' : record.targetType === 'site' ? 'หน้างานโครงการ' : 'งานโครงการวิศวกรรม'}</b>
+              </div>
+              {record.targetLocation && (
+                <div>สถานที่ส่งมอบ / แผนก: <b>{record.targetLocation}</b></div>
+              )}
+            </div>
+
+            <div className="space-y-1.5 border-l border-neutral-200 pl-4">
+              <span className="font-bold text-neutral-700 underline">ข้อมูลการออกเอกสาร &amp; หมายเหตุ:</span>
+              <div>เจ้าหน้าที่ผู้ทำรายการ: <b>{record.userName}</b></div>
+              <div>ประเภทรายการ: <b>{isIssue ? 'เบิกของไปใช้งาน' : isReturn ? 'รับคืนของเข้าคลัง' : 'ปรับยอดสต็อก'}</b></div>
+              <div className="mt-1">
+                <span className="text-neutral-500">หมายเหตุ / วัตถุประสงค์:</span>
+                <div className="font-medium text-neutral-800 bg-neutral-50 p-1.5 rounded border border-neutral-200 mt-0.5 leading-relaxed">
+                  {record.notes || record.reason || '-'}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ตารางรายการพัสดุ A4 */}
+          <table className="w-full border-collapse text-xs my-4 border border-black">
+            <thead>
+              <tr className="bg-neutral-100 border-b border-black text-center font-bold">
+                <th className="border-r border-black p-2 w-10">ลำดับ</th>
+                <th className="border-r border-black p-2 w-28">รหัสพัสดุ</th>
+                <th className="border-r border-black p-2 text-left">รายการพัสดุ / รายละเอียด</th>
+                <th className="border-r border-black p-2 w-20 text-right">จำนวน</th>
+                <th className="border-r border-black p-2 w-16">หน่วย</th>
+                <th className="border-r border-black p-2 w-24 text-right">ต้นทุน/หน่วย</th>
+                <th className="p-2 w-28 text-right">มูลค่ารวม (บาท)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {record.items.map((it, idx) => (
+                <tr key={it.id || idx} className="border-b border-neutral-300">
+                  <td className="border-r border-black p-2 text-center font-mono">{idx + 1}</td>
+                  <td className="border-r border-black p-2 font-mono font-bold">{it.code || '-'}</td>
+                  <td className="border-r border-black p-2 font-medium">{it.name}</td>
+                  <td className="border-r border-black p-2 text-right font-mono font-bold">{formatIntQty(it.quantity)}</td>
+                  <td className="border-r border-black p-2 text-center">{it.unit || 'ชิ้น'}</td>
+                  <td className="border-r border-black p-2 text-right font-mono">{baht(it.unitCost)}</td>
+                  <td className="p-2 text-right font-mono font-bold">{baht(it.totalCost)}</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="border-t-2 border-black font-bold bg-neutral-50">
+                <td colSpan={5} className="border-r border-black p-2 text-right">
+                  มูลค่ารวมทั้งสิ้น (Grand Total):
+                </td>
+                <td colSpan={2} className="p-2 text-right font-mono text-sm font-black">
+                  {baht(record.totalAmount)} บาท
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+
+          {/* สมการสต็อกถ้าเป็นคืนของ */}
+          {(isReturn || isAdjust) && record.qtyBefore !== undefined && (
+            <div className="rounded border border-neutral-300 p-2.5 my-3 bg-neutral-50 text-[11px] flex justify-between items-center font-mono">
+              <span><b>สมการสต็อกคงเหลือ:</b> ยอดก่อนทำรายการ: {formatIntQty(record.qtyBefore)} {record.items[0]?.unit}</span>
+              <span>{isReturn ? `+ รับคืน: ${formatIntQty(record.diffQty)}` : `- ปรับลด: ${formatIntQty(record.diffQty)}`} {record.items[0]?.unit}</span>
+              <span>= <b>ยอดคงเหลือสุทธิ: {formatIntQty(record.qtyAfter)} {record.items[0]?.unit}</b></span>
+            </div>
+          )}
+
+          {/* ช่องลงนาม 4 ฝ่าย มาตรฐานเอกสารองค์กร */}
+          <div className="grid grid-cols-4 gap-3 mt-12 pt-4 border-t border-neutral-300 text-center text-[11px]">
+            <div className="space-y-10">
+              <div>ลงชื่อ.......................................................</div>
+              <div>
+                <div>( {record.userName || '...................................................'} )</div>
+                <div className="text-neutral-500 font-bold mt-0.5">{isIssue ? 'ผู้ขอเบิกพัสดุ' : 'ผู้ส่งคืนพัสดุ'}</div>
+                <div className="text-[10px] text-neutral-400">วันที่ ...../...../.........</div>
+              </div>
+            </div>
+
+            <div className="space-y-10">
+              <div>ลงชื่อ.......................................................</div>
+              <div>
+                <div>( ................................................... )</div>
+                <div className="text-neutral-500 font-bold mt-0.5">ผู้จ่ายพัสดุ / เจ้าหน้าที่สโตร์</div>
+                <div className="text-[10px] text-neutral-400">วันที่ ...../...../.........</div>
+              </div>
+            </div>
+
+            <div className="space-y-10">
+              <div>ลงชื่อ.......................................................</div>
+              <div>
+                <div>( ................................................... )</div>
+                <div className="text-neutral-500 font-bold mt-0.5">ผู้รับพัสดุ / ผู้ตรวจรับ</div>
+                <div className="text-[10px] text-neutral-400">วันที่ ...../...../.........</div>
+              </div>
+            </div>
+
+            <div className="space-y-10">
+              <div>ลงชื่อ.......................................................</div>
+              <div>
+                <div>( ................................................... )</div>
+                <div className="text-neutral-500 font-bold mt-0.5">ผู้จัดการโครงการ / ผู้อนุมัติ</div>
+                <div className="text-[10px] text-neutral-400">วันที่ ...../...../.........</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
