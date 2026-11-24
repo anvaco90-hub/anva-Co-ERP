@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, Fragment } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { baht } from '../../lib/projects'
@@ -6,6 +6,7 @@ import { fmtDateTime, formatDateTimeParts } from '../../lib/purchasing'
 import { formatIntQty, toIntQty } from '../../lib/store'
 import Pagination from '../../components/Pagination'
 import TableSortFilter from '../../components/TableSortFilter'
+import IssueDetailModal from './IssueDetailModal'
 import {
   History,
   ArrowUpFromLine,
@@ -29,6 +30,10 @@ import {
   List,
   Grid,
   Clock,
+  Eye,
+  ChevronDown,
+  ChevronRight,
+  Package,
 } from 'lucide-react'
 
 const ISSUE_SORT_OPTIONS = [
@@ -58,6 +63,17 @@ export default function IssueList() {
   const [searchQuery, setSearchQuery] = useState('')
   const [sortBy, setSortBy] = useState('date_desc')
   const [viewMode, setViewMode] = useState('table') // 'table' | 'cards'
+  const [selectedRecord, setSelectedRecord] = useState(null)
+  const [expandedRowIds, setExpandedRowIds] = useState(new Set())
+
+  const toggleExpandRow = (id) => {
+    setExpandedRowIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1)
