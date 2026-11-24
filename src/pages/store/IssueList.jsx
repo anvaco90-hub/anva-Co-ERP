@@ -679,13 +679,15 @@ export default function IssueList() {
           <table className="w-full text-xs min-w-[950px] divide-y divide-steel-200 dark:divide-slate-800">
             <thead className="bg-steel-50/90 dark:bg-slate-800 text-steel-700 dark:text-slate-200 font-bold uppercase tracking-wider text-[11px]">
               <tr>
-                <th className="py-3.5 pl-4 pr-3 whitespace-nowrap">วันที่ / เวลา</th>
+                <th className="py-3.5 pl-3 pr-1 w-9 text-center"></th>
+                <th className="py-3.5 px-3 whitespace-nowrap">วันที่ / เวลา</th>
                 <th className="py-3.5 px-3 whitespace-nowrap">ประเภท</th>
                 <th className="py-3.5 px-3 whitespace-nowrap">เลขที่เอกสาร</th>
                 <th className="py-3.5 px-3 whitespace-nowrap">โครงการ / ปลายทาง</th>
                 <th className="py-3.5 px-3 whitespace-nowrap">รายการพัสดุ</th>
                 <th className="py-3.5 px-3 text-right whitespace-nowrap">จำนวนรวม</th>
-                <th className="py-3.5 pl-3 pr-4 text-right whitespace-nowrap">มูลค่ารวม (บาท)</th>
+                <th className="py-3.5 px-3 text-right whitespace-nowrap">มูลค่ารวม (บาท)</th>
+                <th className="py-3.5 pl-2 pr-4 text-center w-28 whitespace-nowrap">รายละเอียด</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-steel-100 dark:divide-slate-800">
@@ -693,6 +695,7 @@ export default function IssueList() {
                 const { date, time } = formatDateTimeParts(r.createdAt)
                 const isIssue = r.kind === 'issue'
                 const isReturn = r.kind === 'return'
+                const isExpanded = expandedRowIds.has(r.id)
                 const uniqueUnits = [...new Set(r.items.map((it) => it.unit).filter(Boolean))]
                 const totalItemsQty = r.items.reduce((s, it) => s + Number(it.quantity || 0), 0)
                 const breakdownFull = r.items
@@ -703,107 +706,208 @@ export default function IssueList() {
                   .join(', ')
 
                 return (
-                  <tr key={r.id} className="hover:bg-steel-50/80 dark:hover:bg-slate-800/60 transition text-xs">
-                    {/* 1. วันที่และเวลา (2 บรรทัดมาตรฐาน ERP สากล) */}
-                    <td className="py-3 pl-4 pr-3 whitespace-nowrap">
-                      <div className="flex flex-col text-xs leading-tight">
-                        <span className="font-semibold text-steel-800 dark:text-slate-200">{date}</span>
-                        <span className="flex items-center gap-1 text-[11px] text-steel-500 dark:text-slate-400 font-mono mt-0.5">
-                          <Clock className="h-3 w-3 text-steel-400 dark:text-slate-500 shrink-0" />
-                          {time ? `${time} น.` : ''}
-                        </span>
-                      </div>
-                    </td>
+                  <Fragment key={r.id}>
+                    <tr className={`hover:bg-steel-50/80 dark:hover:bg-slate-800/60 transition text-xs ${isExpanded ? 'bg-steel-50/50 dark:bg-slate-800/40' : ''}`}>
+                      {/* 0. ปุ่ม Expand Dropdown Detail */}
+                      <td className="py-3 pl-3 pr-1 text-center">
+                        <button
+                          type="button"
+                          onClick={() => toggleExpandRow(r.id)}
+                          className={`rounded-lg p-1 transition cursor-pointer ${
+                            isExpanded
+                              ? 'bg-amber-100 text-amber-900 dark:bg-amber-950/80 dark:text-amber-300'
+                              : 'text-steel-400 hover:bg-steel-100 dark:hover:bg-slate-800 hover:text-steel-700 dark:hover:text-slate-200'
+                          }`}
+                          title={isExpanded ? 'ย่อรายละเอียด' : 'ดูรายละเอียดพัสดุในแถวนี้ (Dropdown Detail)'}
+                        >
+                          {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                        </button>
+                      </td>
 
-                    {/* 2. ประเภท */}
-                    <td className="py-3 px-3 whitespace-nowrap">
-                      {isIssue ? (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 dark:bg-amber-950/80 text-amber-900 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
-                          <ArrowUpFromLine className="h-3 w-3" />
-                          <span>เบิกของ</span>
-                        </span>
-                      ) : isReturn ? (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 dark:bg-emerald-950/80 text-emerald-900 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                          <RotateCcw className="h-3 w-3" />
-                          <span>คืนของเข้าสโตร์</span>
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-100 dark:bg-rose-950/80 text-rose-900 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
-                          <TrendingDown className="h-3 w-3" />
-                          <span>ตัดชำรุด/ปรับยอด</span>
-                        </span>
-                      )}
-                    </td>
+                      {/* 1. วันที่และเวลา (2 บรรทัดมาตรฐาน ERP สากล) */}
+                      <td className="py-3 px-3 whitespace-nowrap">
+                        <div className="flex flex-col text-xs leading-tight">
+                          <span className="font-semibold text-steel-800 dark:text-slate-200">{date}</span>
+                          <span className="flex items-center gap-1 text-[11px] text-steel-500 dark:text-slate-400 font-mono mt-0.5">
+                            <Clock className="h-3 w-3 text-steel-400 dark:text-slate-500 shrink-0" />
+                            {time ? `${time} น.` : ''}
+                          </span>
+                        </div>
+                      </td>
 
-                    {/* 3. เลขที่เอกสาร */}
-                    <td className="py-3 px-3 font-mono font-bold text-steel-900 dark:text-amber-400 whitespace-nowrap">
-                      {r.code}
-                    </td>
-
-                    {/* 4. โครงการ / ปลายทาง */}
-                    <td className="py-3 px-3 whitespace-nowrap">
-                      {r.projectName ? (
-                        <span className="inline-flex items-center gap-1 rounded-lg bg-steel-100 dark:bg-slate-800 px-2 py-0.5 font-semibold text-steel-800 dark:text-slate-200 border border-steel-200 dark:border-slate-700 text-xs">
-                          <Briefcase className="h-3 w-3 text-steel-500" />
-                          <span className="font-bold">{r.projectCode}</span> {r.projectName}
-                        </span>
-                      ) : r.targetType === 'office' ? (
-                        <span className="inline-flex items-center gap-1 rounded-lg bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 text-xs font-bold text-blue-900 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
-                          ออฟฟิศส่วนกลาง
-                        </span>
-                      ) : (
-                        <span className="text-steel-400 dark:text-slate-500 text-xs">ของกลางบริษัท</span>
-                      )}
-                    </td>
-
-                    {/* 5. รายการพัสดุ */}
-                    <td className="py-3 px-3 max-w-[260px]">
-                      <div className="font-semibold text-steel-900 dark:text-slate-100 truncate" title={r.items.map((i) => i.name).join(', ')}>
-                        {r.items[0]?.name || '-'}
-                        {r.items.length > 1 && (
-                          <span className="ml-1 text-[11px] text-steel-500 dark:text-slate-400 font-normal">
-                            (+อีก {r.items.length - 1} รายการ)
+                      {/* 2. ประเภท */}
+                      <td className="py-3 px-3 whitespace-nowrap">
+                        {isIssue ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 dark:bg-amber-950/80 text-amber-900 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                            <ArrowUpFromLine className="h-3 w-3" />
+                            <span>เบิกของ</span>
+                          </span>
+                        ) : isReturn ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 dark:bg-emerald-950/80 text-emerald-900 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                            <RotateCcw className="h-3 w-3" />
+                            <span>คืนของเข้าสโตร์</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-100 dark:bg-rose-950/80 text-rose-900 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
+                            <TrendingDown className="h-3 w-3" />
+                            <span>ตัดชำรุด/ปรับยอด</span>
                           </span>
                         )}
-                      </div>
-                    </td>
+                      </td>
 
-                    {/* 6. จำนวนรวม (จัดการหน่วยนับอย่างถูกต้อง ป้องกันการรวมตัวเลขข้ามหน่วย) */}
-                    <td className="py-3 px-3 text-right whitespace-nowrap">
-                      {r.items.length <= 1 ? (
-                        <span className="font-mono font-bold text-steel-800 dark:text-slate-200">
-                          {r.items[0] ? `${formatIntQty(r.items[0].quantity)} ${r.items[0].unit || 'ชิ้น'}` : '-'}
-                        </span>
-                      ) : uniqueUnits.length === 1 ? (
-                        /* กรณีมีหลายรายการแต่เป็นหน่วยเดียวกันทั้งหมด */
-                        <div className="flex flex-col items-end leading-tight cursor-default" title={breakdownFull}>
+                      {/* 3. เลขที่เอกสาร (คลิกเปิด Modal ป๊อปอัป) */}
+                      <td className="py-3 px-3 whitespace-nowrap">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedRecord(r)}
+                          className="font-mono font-bold text-steel-900 dark:text-amber-400 hover:underline hover:text-sky-600 dark:hover:text-amber-300 flex items-center gap-1 cursor-pointer"
+                          title="คลิกเพื่อเปิดป๊อปอัปดูรายละเอียดเต็มรูปแบบ"
+                        >
+                          <span>{r.code}</span>
+                        </button>
+                      </td>
+
+                      {/* 4. โครงการ / ปลายทาง */}
+                      <td className="py-3 px-3 whitespace-nowrap">
+                        {r.projectName ? (
+                          <span className="inline-flex items-center gap-1 rounded-lg bg-steel-100 dark:bg-slate-800 px-2 py-0.5 font-semibold text-steel-800 dark:text-slate-200 border border-steel-200 dark:border-slate-700 text-xs">
+                            <Briefcase className="h-3 w-3 text-steel-500" />
+                            <span className="font-bold">{r.projectCode}</span> {r.projectName}
+                          </span>
+                        ) : r.targetType === 'office' ? (
+                          <span className="inline-flex items-center gap-1 rounded-lg bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 text-xs font-bold text-blue-900 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                            ออฟฟิศส่วนกลาง
+                          </span>
+                        ) : (
+                          <span className="text-steel-400 dark:text-slate-500 text-xs">ของกลางบริษัท</span>
+                        )}
+                      </td>
+
+                      {/* 5. รายการพัสดุ */}
+                      <td className="py-3 px-3 max-w-[240px]">
+                        <div className="font-semibold text-steel-900 dark:text-slate-100 truncate" title={r.items.map((i) => i.name).join(', ')}>
+                          {r.items[0]?.name || '-'}
+                          {r.items.length > 1 && (
+                            <span className="ml-1 text-[11px] text-steel-500 dark:text-slate-400 font-normal">
+                              (+อีก {r.items.length - 1} รายการ)
+                            </span>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* 6. จำนวนรวม (จัดการหน่วยนับอย่างถูกต้อง ป้องกันการรวมตัวเลขข้ามหน่วย) */}
+                      <td className="py-3 px-3 text-right whitespace-nowrap">
+                        {r.items.length <= 1 ? (
                           <span className="font-mono font-bold text-steel-800 dark:text-slate-200">
-                            {formatIntQty(totalItemsQty)} {uniqueUnits[0]}
+                            {r.items[0] ? `${formatIntQty(r.items[0].quantity)} ${r.items[0].unit || 'ชิ้น'}` : '-'}
                           </span>
-                          <span className="text-[10px] text-steel-400 dark:text-slate-500 font-normal">
-                            ({r.items.length} รายการ)
-                          </span>
-                        </div>
-                      ) : (
-                        /* กรณีมีหลายรายการและหน่วยต่างกัน (เช่น ตู้ + เมตร) แสดงจำนวนรายการและแจกแจงหน่วย */
-                        <div className="flex flex-col items-end leading-tight cursor-default" title={breakdownFull}>
-                          <span className="font-mono font-bold text-steel-900 dark:text-slate-100">
-                            {r.items.length} รายการ
-                          </span>
-                          <span className="text-[10px] text-steel-500 dark:text-slate-400 font-mono font-normal max-w-[150px] truncate" title={breakdownFull}>
-                            {breakdownShort}
-                          </span>
-                        </div>
-                      )}
-                    </td>
+                        ) : uniqueUnits.length === 1 ? (
+                          /* กรณีมีหลายรายการแต่เป็นหน่วยเดียวกันทั้งหมด */
+                          <div className="flex flex-col items-end leading-tight cursor-default" title={breakdownFull}>
+                            <span className="font-mono font-bold text-steel-800 dark:text-slate-200">
+                              {formatIntQty(totalItemsQty)} {uniqueUnits[0]}
+                            </span>
+                            <span className="text-[10px] text-steel-400 dark:text-slate-500 font-normal">
+                              ({r.items.length} รายการ)
+                            </span>
+                          </div>
+                        ) : (
+                          /* กรณีมีหลายรายการและหน่วยต่างกัน (เช่น ตู้ + เมตร) แสดงจำนวนรายการและแจกแจงหน่วย */
+                          <div className="flex flex-col items-end leading-tight cursor-default" title={breakdownFull}>
+                            <span className="font-mono font-bold text-steel-900 dark:text-slate-100">
+                              {r.items.length} รายการ
+                            </span>
+                            <span className="text-[10px] text-steel-500 dark:text-slate-400 font-mono font-normal max-w-[150px] truncate" title={breakdownFull}>
+                              {breakdownShort}
+                            </span>
+                          </div>
+                        )}
+                      </td>
 
-                    {/* 7. มูลค่ารวม */}
-                    <td className="py-3 pl-3 pr-4 text-right font-mono font-bold whitespace-nowrap">
-                      <span className={isReturn ? 'text-emerald-700 dark:text-emerald-400' : isIssue ? 'text-amber-800 dark:text-amber-400' : 'text-rose-700 dark:text-rose-400'}>
-                        {baht(r.totalAmount)} บ.
-                      </span>
-                    </td>
-                  </tr>
+                      {/* 7. มูลค่ารวม */}
+                      <td className="py-3 px-3 text-right font-mono font-bold whitespace-nowrap">
+                        <span className={isReturn ? 'text-emerald-700 dark:text-emerald-400' : isIssue ? 'text-amber-800 dark:text-amber-400' : 'text-rose-700 dark:text-rose-400'}>
+                          {baht(r.totalAmount)} บ.
+                        </span>
+                      </td>
+
+                      {/* 8. คอลัมน์ปุ่มเปิด Modal ป๊อปอัป */}
+                      <td className="py-3 pl-2 pr-4 text-center whitespace-nowrap">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedRecord(r)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl border border-steel-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-sky-50 dark:hover:bg-slate-700 hover:border-sky-300 text-steel-700 dark:text-slate-200 hover:text-sky-600 dark:hover:text-sky-300 font-bold text-xs transition cursor-pointer shadow-2xs"
+                          title="เปิดป๊อปอัปดูรายละเอียดเต็มรูปแบบ"
+                        >
+                          <Eye className="h-3.5 w-3.5 text-sky-500" />
+                          <span>ดูข้อมูล</span>
+                        </button>
+                      </td>
+                    </tr>
+
+                    {/* Dropdown Detail Row: แถบขยายดูรายละเอียดพัสดุในตาราง */}
+                    {isExpanded && (
+                      <tr className="bg-steel-50/70 dark:bg-slate-800/40 border-b border-steel-200 dark:border-slate-800 animate-in fade-in">
+                        <td colSpan={9} className="p-3 sm:px-6">
+                          <div className="rounded-xl border border-steel-200 dark:border-slate-700 bg-white dark:bg-slate-800/90 p-3.5 space-y-2.5 shadow-2xs">
+                            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-steel-100 dark:border-slate-700 pb-2">
+                              <div className="flex items-center gap-2">
+                                <Package className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+                                <span className="font-bold text-xs text-steel-900 dark:text-white">
+                                  รายละเอียดพัสดุในเอกสาร <span className="font-mono text-sky-600 dark:text-sky-400">{r.code}</span> ({r.items.length} รายการ)
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-3 text-xs">
+                                {r.notes && (
+                                  <span className="text-steel-500 dark:text-slate-400 max-w-md truncate">
+                                    หมายเหตุ: <strong className="text-steel-800 dark:text-slate-200 font-normal">{r.notes}</strong>
+                                  </span>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedRecord(r)}
+                                  className="inline-flex items-center gap-1 text-sky-600 dark:text-sky-400 hover:underline font-bold cursor-pointer"
+                                >
+                                  <Eye className="h-3.5 w-3.5" />
+                                  <span>เปิดดูแบบป๊อปอัป</span>
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* ตารางพัสดุย่อยใน dropdown detail */}
+                            <div className="overflow-x-auto">
+                              <table className="w-full text-xs text-left">
+                                <thead className="bg-steel-50 dark:bg-slate-700/60 text-[10px] uppercase font-bold text-steel-600 dark:text-slate-300">
+                                  <tr>
+                                    <th className="py-2 px-3 w-10 text-center">#</th>
+                                    <th className="py-2 px-3 w-28 font-mono">รหัสพัสดุ</th>
+                                    <th className="py-2 px-3">ชื่อรายการพัสดุ</th>
+                                    <th className="py-2 px-3 text-right w-24">จำนวน</th>
+                                    <th className="py-2 px-3 text-center w-20">หน่วย</th>
+                                    <th className="py-2 px-3 text-right w-28">ราคา/หน่วย</th>
+                                    <th className="py-2 px-3 text-right w-32">มูลค่ารวม</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-steel-100 dark:divide-slate-700/60">
+                                  {r.items.map((it, idx) => (
+                                    <tr key={it.id || idx} className="hover:bg-steel-50/50 dark:hover:bg-slate-700/40">
+                                      <td className="py-1.5 px-3 text-center font-mono text-steel-400 text-[11px]">{idx + 1}</td>
+                                      <td className="py-1.5 px-3 font-mono font-bold text-steel-700 dark:text-amber-400">{it.code || '-'}</td>
+                                      <td className="py-1.5 px-3 font-semibold text-steel-900 dark:text-slate-100">{it.name}</td>
+                                      <td className="py-1.5 px-3 text-right font-mono font-bold text-steel-900 dark:text-white">{formatIntQty(it.quantity)}</td>
+                                      <td className="py-1.5 px-3 text-center text-steel-500 dark:text-slate-400">{it.unit || 'ชิ้น'}</td>
+                                      <td className="py-1.5 px-3 text-right font-mono text-steel-600 dark:text-slate-400">{baht(it.unitCost)}</td>
+                                      <td className="py-1.5 px-3 text-right font-mono font-bold text-steel-900 dark:text-white">{baht(it.totalCost)} บ.</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
                 )
               })}
             </tbody>
