@@ -8,7 +8,29 @@ import R2Image from '../../components/R2Image'
 import { FieldError, fieldErrorClass } from '../../components/FieldError'
 import SearchableSelect from '../../components/SearchableSelect'
 import SearchableProjectSelect from '../../components/SearchableProjectSelect'
-import { Trash2, Plus, Info } from 'lucide-react'
+import {
+  FileText,
+  Building2,
+  User,
+  Calendar,
+  DollarSign,
+  Percent,
+  Plus,
+  Trash2,
+  ArrowLeft,
+  Check,
+  AlertCircle,
+  Info,
+  Paperclip,
+  Package,
+  Clock,
+  Warehouse,
+  Briefcase,
+  FileCheck2,
+  ReceiptText,
+  X,
+  FileSpreadsheet,
+} from 'lucide-react'
 
 const EMPTY_ITEM = {
   item_name: '',
