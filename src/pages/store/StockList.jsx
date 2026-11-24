@@ -408,15 +408,6 @@ export default function StockList() {
             </span>
           )}
         </div>
-                    isSelected ? 'bg-steel-800 dark:bg-amber-600 text-hivis dark:text-slate-950' : 'bg-steel-200 dark:bg-slate-700 text-steel-800 dark:text-slate-200'
-                  }`}
-                >
-                  {count}
-                </span>
-              </button>
-            )
-          })}
-        </div>
       </div>
 
       {/* ---------------------------------------------------------------------- */}

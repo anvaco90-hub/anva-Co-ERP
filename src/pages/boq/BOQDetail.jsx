@@ -42,13 +42,15 @@ export default function BOQDetail() {
   // ตัวกรองและค้นหา (Search & Category Filters)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
+  const [categoryMode, setCategoryMode] = useState('work') // 'work' (หมวดหมู่งาน) | 'material' (หมวดหมู่วัสดุและอุปกรณ์)
+  const [catSearchQuery, setCatSearchQuery] = useState('')
   const [collapsedCategories, setCollapsedCategories] = useState({})
 
   const fetchDetail = async () => {
     setLoading(true)
     try {
-      // ดึงข้อมูล boq และ boq_items ควบคู่กัน (แก้ปัญหา PostgREST Foreign Key Relationship Error: PGRST200)
-      const [bRes, itemsRes] = await Promise.all([
+      // ดึงข้อมูล boq, boq_items และ inventory_items ควบคู่กัน
+      const [bRes, itemsRes, invRes] = await Promise.all([
         supabase
           .from('boqs')
           .select('*')
@@ -59,6 +61,9 @@ export default function BOQDetail() {
           .select('*')
           .eq('boq_id', id)
           .order('sort_order', { ascending: true }),
+        supabase
+          .from('inventory_items')
+          .select('item_code, item_name, item_categories(name)'),
       ])
 
       if (bRes.error) throw bRes.error
@@ -73,8 +78,33 @@ export default function BOQDetail() {
         if (proj) boqData = { ...boqData, projects: proj }
       }
 
+      // แมปข้อมูลหมวดหมู่วัสดุอุปกรณ์จากคลังสินค้า
+      const invMap = {}
+      ;(invRes.data || []).forEach((inv) => {
+        const catName = inv.item_categories?.name
+        if (catName) {
+          if (inv.item_code) invMap[inv.item_code] = catName
+          if (inv.item_name) invMap[inv.item_name.trim().toLowerCase()] = catName
+        }
+      })
+
+      const enrichedItems = (itemsRes.data || []).map((it) => {
+        let matCat = invMap[it.item_code] || invMap[it.item_name?.trim().toLowerCase()]
+        if (!matCat) {
+          if (Number(it.labor_unit_cost) > 0 && Number(it.material_unit_cost) === 0) {
+            matCat = 'งานบริการและค่าแรงติดตั้ง'
+          } else {
+            matCat = it.category || 'วัสดุและอุปกรณ์ทั่วไป'
+          }
+        }
+        return {
+          ...it,
+          material_category: matCat,
+        }
+      })
+
       setBoq(boqData)
-      setItems(itemsRes.data || [])
+      setItems(enrichedItems)
     } catch (err) {
       console.error('Failed to load BOQ detail:', err)
     } finally {
@@ -174,21 +204,36 @@ export default function BOQDetail() {
     }
   }
 
-  // รายการหมวดหมู่ทั้งหมดในเอกสารนี้ (ต้องประกาศก่อน conditional return ตามกฎของ React Hooks)
+  // ฟังก์ชันหาหมวดหมู่ของรายการตามโหมดที่เลือก (งาน หรือ วัสดุและอุปกรณ์)
+  const getItemCategory = (it) => {
+    if (categoryMode === 'material') {
+      return it.material_category || 'วัสดุและอุปกรณ์ทั่วไป'
+    }
+    return it.category || 'งานทั่วไป'
+  }
+
+  // รายการหมวดหมู่ทั้งหมดในเอกสารนี้ (ตามโหมดที่เลือก)
   const allCategories = useMemo(() => {
     const list = []
     items.forEach((it) => {
-      const c = it.category || 'งานทั่วไป'
+      const c = getItemCategory(it)
       if (!list.includes(c)) list.push(c)
     })
     return list
-  }, [items])
+  }, [items, categoryMode])
+
+  // กรองหมวดหมู่ตามคำค้นหาหมวดหมู่ (Search Categories)
+  const filteredCategories = useMemo(() => {
+    if (!catSearchQuery.trim()) return allCategories
+    const q = catSearchQuery.toLowerCase().trim()
+    return allCategories.filter((c) => c.toLowerCase().includes(q))
+  }, [allCategories, catSearchQuery])
 
   // กรองรายการตามคำค้นหาและหมวดหมู่ที่เลือก
   const filteredItems = useMemo(() => {
     let res = items
     if (selectedCategory !== 'all') {
-      res = res.filter((it) => (it.category || 'งานทั่วไป') === selectedCategory)
+      res = res.filter((it) => getItemCategory(it) === selectedCategory)
     }
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim()
@@ -196,21 +241,22 @@ export default function BOQDetail() {
         (it) =>
           it.item_name?.toLowerCase().includes(q) ||
           it.description?.toLowerCase().includes(q) ||
-          it.category?.toLowerCase().includes(q)
+          it.category?.toLowerCase().includes(q) ||
+          it.material_category?.toLowerCase().includes(q)
       )
     }
     return res
-  }, [items, selectedCategory, searchQuery])
+  }, [items, selectedCategory, searchQuery, categoryMode])
 
   // จัดกลุ่มรายการที่ผ่านการกรองตามหมวดหมู่
   const grouped = useMemo(() => {
     return filteredItems.reduce((acc, it) => {
-      const cat = it.category || 'งานทั่วไป'
+      const cat = getItemCategory(it)
       if (!acc[cat]) acc[cat] = []
       acc[cat].push(it)
       return acc
     }, {})
-  }, [filteredItems])
+  }, [filteredItems, categoryMode])
 
   // ฟังก์ชันย่อ/ขยายเฉพาะหมวดหมู่
   const toggleCategoryCollapse = (cat) => {
@@ -387,28 +433,88 @@ export default function BOQDetail() {
 
       {/* 4. รายการพัสดุและค่าแรง: แผงเลือกหมวดหมู่และค้นหามาตรฐานเดียวกับระบบคลังสินค้า */}
       <div className="space-y-4">
-        {/* 4.1 Category Filter Card (สไตล์มาตรฐานเดียวกับหน้าคลังสินค้า ItemsMaster / StockList) */}
+        {/* 4.1 Category Filter Card (สลับเลือกดูตามหมวดหมู่งาน หรือ หมวดหมู่วัสดุและอุปกรณ์ พร้อมช่องค้นหาหมวดหมู่) */}
         <div className="rounded-2xl border border-steel-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-xs space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-3 text-xs font-bold text-steel-700 dark:text-slate-300">
-            <span className="flex items-center gap-1.5 text-steel-900 dark:text-slate-100">
-              <Layers className="h-4 w-4 text-steel-700 dark:text-amber-400" />
-              <span>เลือกดูตามหมวดหมู่งาน</span>
-            </span>
+            {/* โหมดการเลือกดู: หมวดหมู่งาน vs หมวดหมู่วัสดุและอุปกรณ์ */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="flex items-center gap-1.5 text-steel-900 dark:text-slate-100">
+                <Layers className="h-4 w-4 text-steel-700 dark:text-amber-400" />
+                <span>เลือกดูตาม:</span>
+              </span>
+              <div className="inline-flex rounded-xl bg-steel-100 dark:bg-slate-800 p-1 text-xs">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCategoryMode('work')
+                    setSelectedCategory('all')
+                    setCatSearchQuery('')
+                  }}
+                  className={`rounded-lg px-3 py-1.5 font-bold transition cursor-pointer ${
+                    categoryMode === 'work'
+                      ? 'bg-white dark:bg-slate-900 text-steel-900 dark:text-slate-100 shadow-xs'
+                      : 'text-steel-600 dark:text-slate-400 hover:text-steel-900'
+                  }`}
+                >
+                  หมวดหมู่งาน
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCategoryMode('material')
+                    setSelectedCategory('all')
+                    setCatSearchQuery('')
+                  }}
+                  className={`rounded-lg px-3 py-1.5 font-bold transition cursor-pointer ${
+                    categoryMode === 'material'
+                      ? 'bg-white dark:bg-slate-900 text-steel-900 dark:text-slate-100 shadow-xs'
+                      : 'text-steel-600 dark:text-slate-400 hover:text-steel-900'
+                  }`}
+                >
+                  หมวดหมู่วัสดุและอุปกรณ์
+                </button>
+              </div>
+            </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* ช่องค้นหาหมวดหมู่ (Search Categories) */}
+              <div className="relative min-w-[160px] sm:w-52">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-steel-400 pointer-events-none" />
+                <input
+                  type="text"
+                  value={catSearchQuery}
+                  onChange={(e) => setCatSearchQuery(e.target.value)}
+                  placeholder={categoryMode === 'work' ? 'ค้นหาหมวดหมู่งาน...' : 'ค้นหาหมวดหมู่วัสดุ...'}
+                  className="h-8 w-full rounded-lg border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 pl-8 pr-7 text-xs font-normal text-steel-800 dark:text-slate-200 placeholder:text-steel-400 focus:outline-none focus:border-amber-500 shadow-2xs"
+                />
+                {catSearchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setCatSearchQuery('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-steel-400 hover:text-steel-600"
+                    title="ล้างคำค้นหาหมวดหมู่"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
+
               <span className="text-steel-400 dark:text-slate-400 font-normal hidden sm:inline">
                 แสดง {filteredItems.length} จาก {items.length} รายการ
               </span>
+
               {/* Dropdown เลือกหมวดหมู่ */}
               <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
                 className="h-8 rounded-lg border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 text-xs font-bold text-steel-800 dark:text-slate-200 focus:outline-none focus:border-amber-500 cursor-pointer shadow-2xs"
               >
-                <option value="all">หมวดหมู่ทั้งหมด ({items.length} รายการ)</option>
-                {allCategories.map((cat) => (
+                <option value="all">
+                  {categoryMode === 'work' ? 'หมวดหมู่งานทั้งหมด' : 'หมวดหมู่วัสดุและอุปกรณ์ทั้งหมด'} ({items.length} รายการ)
+                </option>
+                {filteredCategories.map((cat) => (
                   <option key={cat} value={cat}>
-                    {cat} ({items.filter((it) => (it.category || 'งานทั่วไป') === cat).length} รายการ)
+                    {cat} ({items.filter((it) => getItemCategory(it) === cat).length} รายการ)
                   </option>
                 ))}
               </select>
@@ -438,8 +544,8 @@ export default function BOQDetail() {
               </span>
             </button>
 
-            {allCategories.map((cat) => {
-              const count = items.filter((it) => (it.category || 'งานทั่วไป') === cat).length
+            {filteredCategories.map((cat) => {
+              const count = items.filter((it) => getItemCategory(it) === cat).length
               const isSelected = selectedCategory === cat
 
               return (
@@ -466,6 +572,12 @@ export default function BOQDetail() {
                 </button>
               )
             })}
+
+            {filteredCategories.length === 0 && catSearchQuery && (
+              <span className="text-xs text-steel-400 py-1">
+                ไม่พบหมวดหมู่ที่ตรงกับ "{catSearchQuery}"
+              </span>
+            )}
           </div>
         </div>
 
