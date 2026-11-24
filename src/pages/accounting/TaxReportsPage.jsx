@@ -31,17 +31,69 @@ export default function TaxReportsPage() {
   const loadData = async () => {
     setLoading(true)
     try {
-      const { data, error } = await supabase
+      // 1. ลองดึงข้อมูลพร้อม foreign table join หากฐานข้อมูลมี relationship
+      const joinQuery = await supabase
         .from('tax_records')
-        .select('*, contacts(company_name, tax_id, branch_code, address), projects(project_code, project_name)')
+        .select('*, contacts(company_name, business_name, tax_id, branch_code, address), projects(project_code, project_name)')
         .eq('tax_year', selectedYear)
         .eq('tax_month', selectedMonth)
         .order('document_date', { ascending: true })
 
-      if (error) throw error
-      setTaxRecords(data || [])
+      if (!joinQuery.error && joinQuery.data) {
+        const normalized = joinQuery.data.map((r) => ({
+          ...r,
+          contacts: r.contacts ? {
+            ...r.contacts,
+            company_name: r.contacts.company_name || r.contacts.business_name,
+          } : null,
+        }))
+        setTaxRecords(normalized)
+        return
+      }
+
+      // 2. Fallback ปลอดภัย: หากไม่มี Foreign Key ใน schema cache ให้ดึง tax_records และ join ใน JavaScript
+      console.warn('Direct FK join failed, running safe relationship mapping:', joinQuery.error)
+      const { data: taxList, error: taxErr } = await supabase
+        .from('tax_records')
+        .select('*')
+        .eq('tax_year', selectedYear)
+        .eq('tax_month', selectedMonth)
+        .order('document_date', { ascending: true })
+
+      if (taxErr) {
+        console.warn('Cannot load tax_records directly, using empty list:', taxErr)
+        setTaxRecords([])
+        return
+      }
+
+      const contactIds = [...new Set((taxList || []).map((r) => r.contact_id).filter(Boolean))]
+      const projectIds = [...new Set((taxList || []).map((r) => r.project_id).filter(Boolean))]
+
+      const [contactsRes, projectsRes] = await Promise.all([
+        contactIds.length > 0
+          ? supabase.from('contacts').select('id, company_name, business_name, tax_id, branch_code, address').in('id', contactIds)
+          : { data: [] },
+        projectIds.length > 0
+          ? supabase.from('projects').select('id, project_code, project_name').in('id', projectIds)
+          : { data: [] },
+      ])
+
+      const contactMap = Object.fromEntries((contactsRes.data || []).map((c) => [c.id, c]))
+      const projectMap = Object.fromEntries((projectsRes.data || []).map((p) => [p.id, p]))
+
+      const mapped = (taxList || []).map((r) => ({
+        ...r,
+        contacts: contactMap[r.contact_id] ? {
+          ...contactMap[r.contact_id],
+          company_name: contactMap[r.contact_id].company_name || contactMap[r.contact_id].business_name,
+        } : null,
+        projects: projectMap[r.project_id] || null,
+      }))
+
+      setTaxRecords(mapped)
     } catch (err) {
       console.error('Error loading tax records:', err)
+      setTaxRecords([])
     } finally {
       setLoading(false)
     }
