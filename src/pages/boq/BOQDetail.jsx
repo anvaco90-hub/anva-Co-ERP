@@ -350,91 +350,140 @@ export default function BOQDetail() {
 
   return (
     <div className="space-y-6 font-sans text-slate-800 w-full">
-      {/* 1. Top Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <Link
-            to="/boq"
-            className="rounded-xl border border-steel-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-bold text-steel-700 dark:text-slate-200 hover:bg-steel-50 transition shadow-2xs"
-          >
-            ← กลับ
-          </Link>
-          <div>
+      {/* 1. แบนเนอร์หัวหน้าเอกสารระดับบริหาร (Executive Corporate ERP Banner - ขนาดและไอคอนสมดุลตามมาตรฐาน Image 3) */}
+      <div className="rounded-2xl border border-slate-800 bg-[#0f172a] p-5 text-white shadow-sm">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
+          {/* ข้อมูลหัวเรื่องและ Metadata */}
+          <div className="space-y-2.5 min-w-0">
+            {/* ป้ายกำกับประเภทและสถานะ (Badges) */}
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white font-mono">
-                {boq.boq_no}
-              </h1>
-              <span className={`inline-block px-2.5 py-0.5 text-xs font-bold rounded-full border ${st.color}`}>
+              <span className="text-[10px] font-mono uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-sky-500/15 text-sky-300 border border-sky-400/25 font-bold">
+                BOQ DOCUMENT
+              </span>
+              <span className={`inline-flex items-center px-2.5 py-0.5 text-xs font-bold rounded-full border shadow-2xs ${st.color}`}>
                 {st.label}
               </span>
               {existingQuotation && (
                 <Link
                   to={`/quotations/${existingQuotation.id}`}
-                  className="inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-bold rounded-full bg-sky-100 dark:bg-sky-950 text-sky-800 dark:text-sky-300 border border-sky-300 dark:border-sky-800 hover:underline"
+                  className="inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-bold rounded-full bg-sky-500/15 text-sky-300 border border-sky-400/30 hover:underline"
                 >
                   <FileCheck2 className="h-3 w-3" />
                   <span>ใบเสนอราคา: {existingQuotation.quotation_no}</span>
                 </Link>
               )}
             </div>
-            <p className="text-xs text-steel-500 dark:text-slate-400 mt-0.5">
-              สร้างเมื่อ: {new Date(boq.created_at).toLocaleString('th-TH')}
-            </p>
-          </div>
-        </div>
 
-        {/* Action Buttons */}
-        <div className="flex flex-wrap items-center gap-2">
-          {/* ปุ่มแปลงเป็นใบเสนอราคา (ป้องกันกดซ้ำ: ถ้าเคยแปลงแล้ว จะเปลี่ยนเป็นปุ่มดูใบเสนอราคาเดิม) */}
-          {existingQuotation ? (
-            <Link
-              to={`/quotations/${existingQuotation.id}`}
-              className="rounded-xl bg-sky-700 hover:bg-sky-800 text-white px-4 py-2 text-xs font-bold shadow-xs transition flex items-center gap-1.5"
-              title="เอกสารนี้แปลงเป็นใบเสนอราคาแล้ว คลิกเพื่อเปิดดูใบเสนอราคา"
-            >
-              <FileCheck2 className="h-4 w-4" />
-              <span>ดูใบเสนอราคา ({existingQuotation.quotation_no})</span>
-            </Link>
-          ) : (
+            {/* รหัสเอกสาร ไอคอน และคำอธิบาย */}
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-500/15 border border-sky-400/20 text-sky-400 shrink-0">
+                <FileSpreadsheet className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <h1 className="text-2xl font-black tracking-tight text-white font-mono whitespace-nowrap">
+                  {boq.boq_no}
+                </h1>
+                <p className="text-xs text-slate-400 mt-0.5 truncate">
+                  {boq.title || 'เอกสารถอดแบบและประมาณราคาค่าวัสดุและค่าแรง (Bill of Quantities)'}
+                </p>
+              </div>
+            </div>
+
+            {/* แถวข้อมูลย่อย (Metadata Lines จัดเป็นระเบียบชัดเจน) */}
+            <div className="space-y-1 text-xs text-slate-300 pt-1">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                <span className="flex items-center gap-1.5">
+                  <Calendar className="h-3.5 w-3.5 text-sky-400 shrink-0" />
+                  <span>สร้างเมื่อ: <strong className="text-white font-mono">{new Date(boq.created_at).toLocaleString('th-TH')}</strong></span>
+                </span>
+                {boq.system_size_kwp && (
+                  <span className="flex items-center gap-1.5">
+                    <Sun className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+                    <span>ขนาดติดตั้ง: <strong className="text-white">{boq.system_size_kwp} kWp</strong></span>
+                  </span>
+                )}
+              </div>
+
+              {(boq.customer_name || boq.projects?.client_name) && (
+                <div className="flex items-center gap-1.5">
+                  <Building2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                  <span>ลูกค้า: <strong className="text-white">{boq.customer_name || boq.projects?.client_name}</strong></span>
+                </div>
+              )}
+
+              {boq.projects && (
+                <div className="flex items-center gap-1.5">
+                  <FolderGit2 className="h-3.5 w-3.5 text-purple-400 shrink-0" />
+                  <span>โครงการ: <strong className="text-sky-300">[{boq.projects.project_code}] {boq.projects.project_name}</strong></span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* แถบปุ่ม Action ด้านขวา (จัดเรียงเป็นแถวสมดุล สัดส่วนคงที่) */}
+          <div className="flex items-center gap-2 flex-wrap shrink-0 lg:self-center">
+            {/* ปุ่มแปลงเป็นใบเสนอราคา (ถ้าแปลงแล้วจะเปิดดูใบเดิม ป้องกันกดซ้ำ) */}
+            {existingQuotation ? (
+              <Link
+                to={`/quotations/${existingQuotation.id}`}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white h-9 px-3.5 text-xs font-bold shadow-xs transition"
+                title="เอกสารนี้แปลงเป็นใบเสนอราคาแล้ว คลิกเพื่อเปิดดูใบเสนอราคา"
+              >
+                <FileCheck2 className="h-3.5 w-3.5" />
+                <span>ดูใบเสนอราคา ({existingQuotation.quotation_no})</span>
+              </Link>
+            ) : (
+              <button
+                type="button"
+                disabled={converting}
+                onClick={handleConvertToQuotation}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 h-9 px-3.5 text-xs font-black shadow-xs transition cursor-pointer disabled:opacity-50"
+                title="แปลงรายการใน BOQ นี้เป็นใบเสนอราคาสำหรับลูกค้า (ทำได้ครั้งเดียว)"
+              >
+                <FileCheck2 className="h-3.5 w-3.5" />
+                <span>{converting ? 'กำลังแปลง...' : 'แปลงเป็นใบเสนอราคา'}</span>
+              </button>
+            )}
+
+            {/* ปุ่มพิมพ์ BOQ */}
             <button
               type="button"
-              disabled={converting}
-              onClick={handleConvertToQuotation}
-              className="rounded-xl bg-hivis hover:bg-amber-400 text-slate-950 px-4 py-2 text-xs font-black shadow-xs transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-              title="แปลงรายการใน BOQ นี้เป็นใบเสนอราคาสำหรับลูกค้า (ทำได้ครั้งเดียว)"
+              onClick={() => setShowPrintModal(true)}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-sky-400/30 bg-sky-500/15 hover:bg-sky-500/25 text-sky-200 h-9 px-3.5 text-xs font-bold shadow-xs transition cursor-pointer"
+              title="พิมพ์เอกสารถอดแบบและประมาณราคา (BOQ)"
             >
-              <FileCheck2 className="h-4 w-4" />
-              <span>{converting ? 'กำลังแปลง...' : 'แปลงเป็นใบเสนอราคา'}</span>
+              <Printer className="h-3.5 w-3.5" />
+              <span>พิมพ์ BOQ</span>
             </button>
-          )}
 
-          {/* พิมพ์เอกสาร */}
-          <button
-            type="button"
-            onClick={() => setShowPrintModal(true)}
-            className="rounded-xl bg-sky-700 hover:bg-sky-800 text-white px-3.5 py-2 text-xs font-bold shadow-xs transition flex items-center gap-1.5 cursor-pointer"
-          >
-            <Printer className="h-4 w-4" />
-            <span>พิมพ์ BOQ</span>
-          </button>
+            {/* ปุ่มแก้ไข */}
+            <Link
+              to={`/boq/${boq.id}/edit`}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800/90 hover:bg-slate-700 h-9 px-3 text-xs font-bold text-slate-200 hover:text-white transition shadow-xs"
+            >
+              <Edit className="h-3.5 w-3.5" />
+              <span>แก้ไข</span>
+            </Link>
 
-          {/* แก้ไข */}
-          <Link
-            to={`/boq/${boq.id}/edit`}
-            className="rounded-xl border border-steel-300 bg-white hover:bg-steel-50 px-3.5 py-2 text-xs font-bold text-steel-700 transition shadow-2xs flex items-center gap-1.5"
-          >
-            <Edit className="h-3.5 w-3.5" />
-            <span>แก้ไข</span>
-          </Link>
+            {/* ปุ่มลบ (ถังขยะ) */}
+            <button
+              type="button"
+              onClick={handleDelete}
+              className="inline-flex items-center justify-center rounded-xl border border-rose-500/30 bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 h-9 w-9 text-xs transition cursor-pointer shadow-xs"
+              title="ลบเอกสาร BOQ"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
 
-          {/* ลบ */}
-          <button
-            type="button"
-            onClick={handleDelete}
-            className="rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 px-3 py-2 text-xs font-bold text-rose-700 transition cursor-pointer"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </button>
+            {/* ปุ่มย้อนกลับ */}
+            <Link
+              to="/boq"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800/90 hover:bg-slate-700 h-9 px-3 text-xs font-bold text-slate-200 hover:text-white transition shadow-xs"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+              <span>กลับ</span>
+            </Link>
+          </div>
         </div>
       </div>
 
