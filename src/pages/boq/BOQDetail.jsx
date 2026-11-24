@@ -38,6 +38,7 @@ export default function BOQDetail() {
   const [loading, setLoading] = useState(true)
   const [converting, setConverting] = useState(false)
   const [showPrintModal, setShowPrintModal] = useState(false)
+  const [existingQuotation, setExistingQuotation] = useState(null)
 
   // ตัวกรองและค้นหา (Search & Category Filters)
   const [searchQuery, setSearchQuery] = useState('')
@@ -105,6 +106,18 @@ export default function BOQDetail() {
 
       setBoq(boqData)
       setItems(enrichedItems)
+
+      // ตรวจสอบว่า BOQ นี้เคยถูกแปลงเป็นใบเสนอราคาแล้วหรือไม่ โดยดูจาก ref_no
+      if (boqData?.boq_no) {
+        const { data: qLinked } = await supabase
+          .from('quotations')
+          .select('id, quotation_no')
+          .eq('ref_no', boqData.boq_no)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+        setExistingQuotation(qLinked || null)
+      }
     } catch (err) {
       console.error('Failed to load BOQ detail:', err)
     } finally {
@@ -116,16 +129,40 @@ export default function BOQDetail() {
     fetchDetail()
   }, [id])
 
-  // แปลง BOQ เป็นใบเสนอราคา (Convert to Quotation)
+  // แปลง BOQ เป็นใบเสนอราคา (Convert to Quotation - ทำได้ครั้งเดียวเพื่อป้องกันเลขที่ซ้ำซ้อน)
   const handleConvertToQuotation = async () => {
     if (!boq || items.length === 0) return
+
+    // 1. ตรวจสอบว่าเคยแปลงไปแล้วหรือไม่
+    if (existingQuotation) {
+      alert(`เอกสาร BOQ นี้ได้เคยถูกแปลงเป็นใบเสนอราคาเลขที่ "${existingQuotation.quotation_no}" แล้ว\nระบบจะนำท่านไปยังใบเสนอราคาดังกล่าว`)
+      navigate(`/quotations/${existingQuotation.id}`)
+      return
+    }
+
     if (!window.confirm(`ยืนยันการแปลง BOQ "${boq.boq_no}" เป็นใบเสนอราคาหรือไม่?`)) {
       return
     }
 
     setConverting(true)
     try {
-      // 1. สร้างรหัสใบเสนอราคาใหม่
+      // 2. ตรวจสอบซ้ำจากฐานข้อมูลแบบเรียลไทม์ ป้องกันการคลิกซ้ำหรือมีคนอื่นสร้างไปแล้ว
+      const { data: alreadyQ } = await supabase
+        .from('quotations')
+        .select('id, quotation_no')
+        .eq('ref_no', boq.boq_no)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      if (alreadyQ) {
+        alert(`เอกสาร BOQ นี้มีใบเสนอราคาเลขที่ "${alreadyQ.quotation_no}" ในระบบอยู่แล้ว\nระบบจะนำท่านไปยังใบเสนอราคาเดิม`)
+        setExistingQuotation(alreadyQ)
+        navigate(`/quotations/${alreadyQ.id}`)
+        return
+      }
+
+      // 3. สร้างรหัสใบเสนอราคาใหม่
       const d = new Date()
       const year = d.getFullYear()
       const month = String(d.getMonth() + 1).padStart(2, '0')
@@ -152,12 +189,12 @@ export default function BOQDetail() {
       const { data: qData, error: qErr } = await supabase
         .from('quotations')
         .insert([quotationPayload])
-        .select('id')
+        .select('id, quotation_no')
         .single()
 
       if (qErr) throw qErr
 
-      // 2. ใส่รายการสินค้าในใบเสนอราคา
+      // 4. ใส่รายการสินค้าในใบเสนอราคา
       const markupRatio = 1 + Number(boq.markup_percent || 0) / 100
       const qItemRows = items.map((it) => {
         const costPerUnit = Number(it.material_unit_cost || 0) + Number(it.labor_unit_cost || 0)
@@ -179,9 +216,10 @@ export default function BOQDetail() {
       const { error: itemsErr } = await supabase.from('quotation_items').insert(qItemRows)
       if (itemsErr) throw itemsErr
 
-      // 3. อัปเดตสถานะ BOQ
+      // 5. อัปเดตสถานะ BOQ
       await supabase.from('boqs').update({ status: 'converted_to_quotation' }).eq('id', boq.id)
 
+      setExistingQuotation({ id: qData.id, quotation_no: qNo })
       alert(`แปลงเป็นใบเสนอราคาเลขที่ ${qNo} สำเร็จ!`)
       navigate(`/quotations/${qData.id}`)
     } catch (err) {
@@ -308,26 +346,35 @@ export default function BOQDetail() {
   }
 
   return (
-    <div className="space-y-6 font-sans text-slate-800 max-w-5xl">
+    <div className="space-y-6 font-sans text-slate-800 w-full">
       {/* 1. Top Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-3">
           <Link
             to="/boq"
-            className="rounded-xl border border-steel-200 bg-white px-3 py-1.5 text-xs font-bold text-steel-700 hover:bg-steel-50 transition shadow-2xs"
+            className="rounded-xl border border-steel-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-bold text-steel-700 dark:text-slate-200 hover:bg-steel-50 transition shadow-2xs"
           >
             ← กลับ
           </Link>
           <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl sm:text-2xl font-black text-slate-900 font-mono">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white font-mono">
                 {boq.boq_no}
               </h1>
               <span className={`inline-block px-2.5 py-0.5 text-xs font-bold rounded-full border ${st.color}`}>
                 {st.label}
               </span>
+              {existingQuotation && (
+                <Link
+                  to={`/quotations/${existingQuotation.id}`}
+                  className="inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-bold rounded-full bg-sky-100 dark:bg-sky-950 text-sky-800 dark:text-sky-300 border border-sky-300 dark:border-sky-800 hover:underline"
+                >
+                  <FileCheck2 className="h-3 w-3" />
+                  <span>ใบเสนอราคา: {existingQuotation.quotation_no}</span>
+                </Link>
+              )}
             </div>
-            <p className="text-xs text-steel-500 mt-0.5">
+            <p className="text-xs text-steel-500 dark:text-slate-400 mt-0.5">
               สร้างเมื่อ: {new Date(boq.created_at).toLocaleString('th-TH')}
             </p>
           </div>
@@ -335,16 +382,28 @@ export default function BOQDetail() {
 
         {/* Action Buttons */}
         <div className="flex flex-wrap items-center gap-2">
-          {/* ปุ่มแปลงเป็นใบเสนอราคา */}
-          <button
-            type="button"
-            disabled={converting}
-            onClick={handleConvertToQuotation}
-            className="rounded-xl bg-hivis hover:bg-amber-400 text-slate-950 px-4 py-2 text-xs font-black shadow-xs transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-          >
-            <FileCheck2 className="h-4 w-4" />
-            <span>{converting ? 'กำลังแปลง...' : 'แปลงเป็นใบเสนอราคา'}</span>
-          </button>
+          {/* ปุ่มแปลงเป็นใบเสนอราคา (ป้องกันกดซ้ำ: ถ้าเคยแปลงแล้ว จะเปลี่ยนเป็นปุ่มดูใบเสนอราคาเดิม) */}
+          {existingQuotation ? (
+            <Link
+              to={`/quotations/${existingQuotation.id}`}
+              className="rounded-xl bg-sky-700 hover:bg-sky-800 text-white px-4 py-2 text-xs font-bold shadow-xs transition flex items-center gap-1.5"
+              title="เอกสารนี้แปลงเป็นใบเสนอราคาแล้ว คลิกเพื่อเปิดดูใบเสนอราคา"
+            >
+              <FileCheck2 className="h-4 w-4" />
+              <span>ดูใบเสนอราคา ({existingQuotation.quotation_no})</span>
+            </Link>
+          ) : (
+            <button
+              type="button"
+              disabled={converting}
+              onClick={handleConvertToQuotation}
+              className="rounded-xl bg-hivis hover:bg-amber-400 text-slate-950 px-4 py-2 text-xs font-black shadow-xs transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              title="แปลงรายการใน BOQ นี้เป็นใบเสนอราคาสำหรับลูกค้า (ทำได้ครั้งเดียว)"
+            >
+              <FileCheck2 className="h-4 w-4" />
+              <span>{converting ? 'กำลังแปลง...' : 'แปลงเป็นใบเสนอราคา'}</span>
+            </button>
+          )}
 
           {/* พิมพ์เอกสาร */}
           <button
