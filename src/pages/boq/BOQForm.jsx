@@ -154,14 +154,14 @@ export default function BOQForm() {
   // รายชื่อลูกค้าและคู่ค้าในระบบทั้งหมด (ข้อ 6: คีย์มีบันทึกรายชื่อในระบบให้เลือกด้วย)
   const customerSuggestions = useMemo(() => {
     const set = new Set()
-    ;(contacts || []).forEach((c) => {
-      const name = (c.company_name || c.business_name || '').trim()
-      if (name) set.add(name)
-    })
-    ;(projects || []).forEach((p) => {
-      const name = (p.client_name || '').trim()
-      if (name) set.add(name)
-    })
+      ; (contacts || []).forEach((c) => {
+        const name = (c.company_name || c.business_name || '').trim()
+        if (name) set.add(name)
+      })
+      ; (projects || []).forEach((p) => {
+        const name = (p.client_name || '').trim()
+        if (name) set.add(name)
+      })
     return Array.from(set)
   }, [contacts, projects])
 
@@ -358,7 +358,7 @@ export default function BOQForm() {
 
       {/* 2. Main Form Card (ข้อ 1 & 7: มองเห็นคมชัดทั้งกลางวันและกลางคืน จัดเลย์เอาต์เข้าใจง่าย) */}
       <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm space-y-6">
-        
+
         {/* ส่วนที่ 1: ข้อมูลหัวเอกสารและโครงการ */}
         <div className="space-y-4">
           <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2.5">
@@ -536,11 +536,10 @@ export default function BOQForm() {
                 return (
                   <div
                     key={idx}
-                    className={`rounded-2xl border p-3.5 space-y-3 transition shadow-xs ${
-                      nameEmpty || qtyEmpty
-                        ? 'border-rose-300 dark:border-rose-800 bg-rose-50/20 dark:bg-rose-950/20'
-                        : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 hover:border-slate-300 dark:hover:border-slate-700'
-                    }`}
+                    className={`rounded-2xl border p-3.5 space-y-3 transition shadow-xs ${nameEmpty || qtyEmpty
+                      ? 'border-rose-300 dark:border-rose-800 bg-rose-50/20 dark:bg-rose-950/20'
+                      : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 hover:border-slate-300 dark:hover:border-slate-700'
+                      }`}
                   >
                     {/* แถวข้อมูลหลัก: Grid คงที่ตามหัวตาราง */}
                     <div className="grid grid-cols-[2.5rem_12.5rem_1fr_4.5rem_4.5rem_6.5rem_6.5rem_7.5rem_3rem] gap-2 items-center">
