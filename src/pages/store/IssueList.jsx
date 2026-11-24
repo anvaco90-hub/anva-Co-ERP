@@ -685,7 +685,7 @@ export default function IssueList() {
                 <th className="py-3.5 px-3 whitespace-nowrap">เลขที่เอกสาร</th>
                 <th className="py-3.5 px-3">โครงการ / ปลายทาง</th>
                 <th className="py-3.5 px-3">รายการพัสดุ</th>
-                <th className="py-3.5 px-3 text-right whitespace-nowrap">จำนวนรวม</th>
+                <th className="py-3.5 px-3 text-right whitespace-nowrap">จำนวน / ปริมาณ</th>
                 <th className="py-3.5 px-3 text-right whitespace-nowrap">มูลค่ารวม (บาท)</th>
                 <th className="py-3.5 pl-2 pr-3 text-center w-12 whitespace-nowrap">ดูข้อมูล</th>
               </tr>
@@ -796,27 +796,33 @@ export default function IssueList() {
                         </div>
                       </td>
 
-                      {/* 6. จำนวนรวม */}
+                      {/* 6. จำนวน / ปริมาณ (จัด Format สมดุล สื่อความหมายถูกต้องตามหน่วยนับ) */}
                       <td className="py-3 px-3 text-right whitespace-nowrap">
                         {r.items.length <= 1 ? (
-                          <span className="font-mono font-bold text-steel-800 dark:text-slate-200">
-                            {r.items[0] ? `${formatIntQty(r.items[0].quantity)} ${r.items[0].unit || 'ชิ้น'}` : '-'}
+                          <span className="font-mono font-bold text-steel-800 dark:text-slate-200 text-xs">
+                            {r.items[0] ? (
+                              <>
+                                <span>{formatIntQty(r.items[0].quantity)}</span>{' '}
+                                <span className="text-steel-500 dark:text-slate-400 font-normal">{r.items[0].unit || 'ชิ้น'}</span>
+                              </>
+                            ) : '-'}
                           </span>
                         ) : uniqueUnits.length === 1 ? (
                           <div className="flex flex-col items-end leading-tight cursor-default" title={breakdownFull}>
-                            <span className="font-mono font-bold text-steel-800 dark:text-slate-200">
-                              {formatIntQty(totalItemsQty)} {uniqueUnits[0]}
+                            <span className="font-mono font-bold text-steel-800 dark:text-slate-200 text-xs">
+                              {formatIntQty(totalItemsQty)}{' '}
+                              <span className="text-steel-500 dark:text-slate-400 font-normal">{uniqueUnits[0]}</span>
                             </span>
-                            <span className="text-[10px] text-steel-400 dark:text-slate-500 font-normal">
+                            <span className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold mt-0.5">
                               ({r.items.length} รายการ)
                             </span>
                           </div>
                         ) : (
                           <div className="flex flex-col items-end leading-tight cursor-default" title={breakdownFull}>
-                            <span className="font-mono font-bold text-steel-900 dark:text-slate-100">
-                              {r.items.length} รายการ
+                            <span className="inline-flex items-center gap-1 rounded-md bg-amber-500/10 dark:bg-amber-400/10 px-1.5 py-0.5 text-[11px] font-bold text-amber-800 dark:text-amber-300 border border-amber-300/40 dark:border-amber-700/40 font-mono">
+                              <span>{r.items.length} รายการ</span>
                             </span>
-                            <span className="text-[10px] text-steel-500 dark:text-slate-400 font-mono font-normal max-w-[140px] truncate" title={breakdownFull}>
+                            <span className="text-[10px] text-steel-500 dark:text-slate-400 font-mono font-normal max-w-[150px] truncate mt-0.5" title={breakdownFull}>
                               {breakdownShort}
                             </span>
                           </div>
