@@ -680,14 +680,14 @@ export default function IssueList() {
             <thead className="bg-steel-50/90 dark:bg-slate-800 text-steel-700 dark:text-slate-200 font-bold uppercase tracking-wider text-[11px]">
               <tr>
                 <th className="py-3.5 pl-3 pr-1 w-9 text-center"></th>
-                <th className="py-3.5 px-3 whitespace-nowrap">วันที่ / เวลา</th>
-                <th className="py-3.5 px-3 whitespace-nowrap">ประเภท</th>
-                <th className="py-3.5 px-3 whitespace-nowrap">เลขที่เอกสาร</th>
-                <th className="py-3.5 px-3">โครงการ / ปลายทาง</th>
-                <th className="py-3.5 px-3">รายการพัสดุ</th>
-                <th className="py-3.5 px-3 text-right whitespace-nowrap">จำนวน / ปริมาณ</th>
-                <th className="py-3.5 px-3 text-right whitespace-nowrap">มูลค่ารวม (บาท)</th>
-                <th className="py-3.5 pl-2 pr-3 text-center w-12 whitespace-nowrap">ดูข้อมูล</th>
+                <th className="py-3.5 px-3 text-center whitespace-nowrap">วันที่ / เวลา</th>
+                <th className="py-3.5 px-3 text-center whitespace-nowrap">ประเภท</th>
+                <th className="py-3.5 px-3 text-center whitespace-nowrap">เลขที่เอกสาร</th>
+                <th className="py-3.5 px-4 text-left">โครงการ / ปลายทาง</th>
+                <th className="py-3.5 px-4 text-left">รายการพัสดุ</th>
+                <th className="py-3.5 px-3 text-center whitespace-nowrap">จำนวน / ปริมาณ</th>
+                <th className="py-3.5 px-4 text-center whitespace-nowrap">มูลค่ารวม (บาท)</th>
+                <th className="py-3.5 px-3 text-center w-14 whitespace-nowrap">ดูข้อมูล</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-steel-100 dark:divide-slate-800">
@@ -707,7 +707,7 @@ export default function IssueList() {
 
                 return (
                   <Fragment key={r.id}>
-                    <tr className={`hover:bg-steel-50/80 dark:hover:bg-slate-800/60 transition text-xs [&>td]:align-top ${isExpanded ? 'bg-steel-50/50 dark:bg-slate-800/40' : ''}`}>
+                    <tr className={`hover:bg-steel-50/80 dark:hover:bg-slate-800/60 transition text-xs [&>td]:align-middle ${isExpanded ? 'bg-steel-50/50 dark:bg-slate-800/40' : ''}`}>
                       {/* 0. ปุ่ม Expand Dropdown Detail */}
                       <td className="py-3.5 pl-3 pr-1 text-center">
                         <button
@@ -724,9 +724,9 @@ export default function IssueList() {
                         </button>
                       </td>
 
-                      {/* 1. วันที่และเวลา */}
-                      <td className="py-3.5 px-3 whitespace-nowrap">
-                        <div className="flex flex-col text-xs leading-tight">
+                      {/* 1. วันที่และเวลา (กึ่งกลาง ไม่ชิดขอบ) */}
+                      <td className="py-3.5 px-3 text-center whitespace-nowrap">
+                        <div className="flex flex-col items-center justify-center text-xs leading-tight">
                           <span className="font-semibold text-steel-800 dark:text-slate-200">{date}</span>
                           <span className="flex items-center gap-1 text-[11px] text-steel-400 dark:text-slate-500 font-mono mt-0.5">
                             <Clock className="h-3 w-3 text-steel-400 dark:text-slate-500 shrink-0" />
@@ -735,8 +735,8 @@ export default function IssueList() {
                         </div>
                       </td>
 
-                      {/* 2. ประเภท */}
-                      <td className="py-3.5 px-3 whitespace-nowrap">
+                      {/* 2. ประเภท (กึ่งกลาง) */}
+                      <td className="py-3.5 px-3 text-center whitespace-nowrap">
                         {isIssue ? (
                           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 dark:bg-amber-950/80 text-amber-900 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
                             <ArrowUpFromLine className="h-3 w-3" />
@@ -755,20 +755,20 @@ export default function IssueList() {
                         )}
                       </td>
 
-                      {/* 3. เลขที่เอกสาร (คลิกเปิด Modal ป๊อปอัป) */}
-                      <td className="py-3.5 px-3 whitespace-nowrap">
+                      {/* 3. เลขที่เอกสาร (กึ่งกลาง) */}
+                      <td className="py-3.5 px-3 text-center whitespace-nowrap">
                         <button
                           type="button"
                           onClick={() => setSelectedRecord(r)}
-                          className="font-mono font-bold text-steel-900 dark:text-amber-400 hover:underline hover:text-sky-600 dark:hover:text-amber-300 flex items-center gap-1 cursor-pointer"
+                          className="font-mono font-bold text-steel-900 dark:text-amber-400 hover:underline hover:text-sky-600 dark:hover:text-amber-300 inline-flex items-center justify-center cursor-pointer"
                           title="คลิกเพื่อเปิดป๊อปอัปดูรายละเอียดเต็มรูปแบบ"
                         >
                           <span>{r.code}</span>
                         </button>
                       </td>
 
-                      {/* 4. โครงการ / ปลายทาง (จัด 2 บรรทัดสะอาดตา ไม่ทับซ้อน) */}
-                      <td className="py-3.5 px-3 min-w-[180px]">
+                      {/* 4. โครงการ / ปลายทาง */}
+                      <td className="py-3.5 px-4 min-w-[200px]">
                         {r.projectName ? (
                           <div className="flex flex-col text-xs leading-snug">
                             <span className="font-mono font-bold text-sky-700 dark:text-sky-400 text-[11px]">
@@ -788,16 +788,16 @@ export default function IssueList() {
                         )}
                       </td>
 
-                      {/* 5. รายการพัสดุ (ถ้ามีมากกว่า 1 รายการ ให้ลงบรรทัดใหม่ตามที่ผู้ใช้ต้องการ อ่านง่าย ไม่ทับซ้อน) */}
-                      <td className="py-3.5 px-3 min-w-[180px]">
+                      {/* 5. รายการพัสดุ (ความสูงแต่ละบรรทัดตรงกับจำนวนพัสดุเป๊ะๆ min-h-[26px]) */}
+                      <td className="py-3.5 px-4 min-w-[200px]">
                         {r.items.length <= 1 ? (
-                          <div className="font-semibold text-steel-900 dark:text-slate-100">
+                          <div className="font-semibold text-steel-900 dark:text-slate-100 min-h-[26px] flex items-center">
                             {r.items[0]?.name || '-'}
                           </div>
                         ) : (
                           <div className="space-y-1.5">
                             {r.items.map((it, idx) => (
-                              <div key={idx} className="font-semibold text-steel-900 dark:text-slate-100 flex items-center gap-1.5 leading-snug">
+                              <div key={idx} className="font-semibold text-steel-900 dark:text-slate-100 min-h-[26px] flex items-center gap-1.5 leading-snug">
                                 <span className="h-1.5 w-1.5 rounded-full bg-amber-500/70 shrink-0" />
                                 <span>{it.name}</span>
                               </div>
@@ -806,38 +806,38 @@ export default function IssueList() {
                         )}
                       </td>
 
-                      {/* 6. จำนวน / ปริมาณ (จับคู่บรรทัดตรงกับชื่อพัสดุ 1-to-1) */}
-                      <td className="py-3.5 px-3 text-right whitespace-nowrap">
+                      {/* 6. จำนวน / ปริมาณ (กึ่งกลางช่อง และบรรทัดตรงกับชื่อพัสดุแบบ 1-to-1) */}
+                      <td className="py-3.5 px-3 text-center whitespace-nowrap">
                         {r.items.length <= 1 ? (
-                          <span className="font-mono font-bold text-steel-800 dark:text-slate-200 text-xs">
+                          <div className="min-h-[26px] flex items-center justify-center font-mono font-bold text-steel-800 dark:text-slate-200 text-xs">
                             {r.items[0] ? (
-                              <>
-                                <span>{formatIntQty(r.items[0].quantity)}</span>{' '}
+                              <span>
+                                {formatIntQty(r.items[0].quantity)}{' '}
                                 <span className="text-steel-500 dark:text-slate-400 font-normal">{r.items[0].unit || 'ชิ้น'}</span>
-                              </>
+                              </span>
                             ) : '-'}
-                          </span>
+                          </div>
                         ) : (
                           <div className="space-y-1.5 font-mono text-xs">
                             {r.items.map((it, idx) => (
-                              <div key={idx} className="font-bold text-steel-800 dark:text-slate-200 leading-snug">
+                              <div key={idx} className="min-h-[26px] flex items-center justify-center font-bold text-steel-800 dark:text-slate-200 leading-snug">
                                 <span>{formatIntQty(it.quantity)}</span>{' '}
-                                <span className="text-steel-500 dark:text-slate-400 font-normal">{it.unit || 'ชิ้น'}</span>
+                                <span className="text-steel-500 dark:text-slate-400 font-normal ml-1">{it.unit || 'ชิ้น'}</span>
                               </div>
                             ))}
                           </div>
                         )}
                       </td>
 
-                      {/* 7. มูลค่ารวม */}
-                      <td className="py-3.5 px-3 text-right font-mono font-bold whitespace-nowrap">
-                        <span className={isReturn ? 'text-emerald-700 dark:text-emerald-400' : isIssue ? 'text-amber-800 dark:text-amber-400' : 'text-rose-700 dark:text-rose-400'}>
+                      {/* 7. มูลค่ารวม (กึ่งกลาง) */}
+                      <td className="py-3.5 px-4 text-center font-mono font-bold whitespace-nowrap">
+                        <span className={`text-xs ${isReturn ? 'text-emerald-700 dark:text-emerald-400' : isIssue ? 'text-amber-800 dark:text-amber-400' : 'text-rose-700 dark:text-rose-400'}`}>
                           {baht(r.totalAmount)} บ.
                         </span>
                       </td>
 
-                      {/* 8. คอลัมน์ปุ่มเปิด Modal ป๊อปอัป (กะทัดรัด ไม่ดันตารางล้น) */}
-                      <td className="py-3.5 pl-2 pr-3 text-center whitespace-nowrap">
+                      {/* 8. คอลัมน์ปุ่มเปิด Modal ป๊อปอัป (กึ่งกลาง) */}
+                      <td className="py-3.5 px-3 text-center whitespace-nowrap">
                         <button
                           type="button"
                           onClick={() => setSelectedRecord(r)}
