@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import {
   X,
   Printer,
@@ -31,9 +31,12 @@ export default function IssueDetailModal({ record, onClose }) {
   const isReturn = record.kind === 'return'
   const isAdjust = record.kind === 'adjust'
 
+  const printReportRef = useRef(null)
+
   const handlePrint = () => {
     const docTitle = `${isIssue ? 'ใบเบิกพัสดุ' : isReturn ? 'ใบรับคืนพัสดุ' : 'ใบปรับยอดพัสดุ'}-${record.code}`
-    printElement('printable-report', docTitle)
+    const target = printReportRef.current || document.getElementById('printable-report')
+    printElement(target, docTitle)
   }
 
   return (
@@ -403,6 +406,7 @@ export default function IssueDetailModal({ record, onClose }) {
       {/* 5. ส่วนเอกสารพิมพ์มาตรฐาน A4 (Printable A4 Report) - ดึงพิมพ์ผ่าน printElement ทันที ไม่เป็นหน้าขาว */}
       <div className="hidden">
         <div
+          ref={printReportRef}
           id="printable-report"
           className="mx-auto max-w-[210mm] bg-white p-8 text-black font-sans leading-relaxed text-xs"
         >
