@@ -225,6 +225,42 @@ export default function PODetail() {
 
   useEffect(() => { load() }, [load])
 
+  // คำนวณยอดเงินและซิงค์ภาษีในฐานข้อมูลอัตโนมัติ (วางไว้ก่อน conditional return ตามกฎของ React Hooks)
+  const computedItemsTotal = items.reduce((sum, it) => sum + (Number(it.quantity || 1) * Number(it.unit_price || 0)), 0)
+  const totalAmountVal = Number(po?.total_amount) || computedItemsTotal || 0
+  const vatVal = Number(po?.vat_amount) || 0
+  const whtVal = Number(po?.wht_amount) || 0
+
+  useEffect(() => {
+    if (po && vatVal > 0 && Number(po.grand_total) <= totalAmountVal && Number(po.grand_total) > 0) {
+      const correctedGrandTotal = Math.round((totalAmountVal + vatVal - whtVal) * 100) / 100
+      const correctedRemaining = po.payment_status === 'ชำระครบแล้ว'
+        ? 0
+        : Math.max(0, correctedGrandTotal - Number(po.deposit_paid_amount || 0))
+
+      supabase
+        .from('purchase_orders')
+        .update({
+          grand_total: correctedGrandTotal,
+          net_amount: correctedGrandTotal,
+          remaining_amount: correctedRemaining,
+          tax_type: 'vat_excluded',
+        })
+        .eq('id', po.id)
+        .then(({ error: syncErr }) => {
+          if (!syncErr) {
+            setPo((prev) => prev ? ({
+              ...prev,
+              grand_total: correctedGrandTotal,
+              net_amount: correctedGrandTotal,
+              remaining_amount: correctedRemaining,
+              tax_type: 'vat_excluded',
+            }) : prev)
+          }
+        })
+    }
+  }, [po?.id, vatVal, totalAmountVal, whtVal])
+
   async function receive() {
     if (isFullyReceived) {
       alert('ใบสั่งซื้อนี้ตรวจรับสินค้าครบถ้วน 100% แล้ว ไม่สามารถรับเพิ่มได้')
@@ -500,11 +536,6 @@ export default function PODetail() {
   const canReceive = canReceiveGoods(profile.role) && ['open', 'partial'].includes(po.status) && !isFullyReceived
   const anyQty = items.some((i) => Number(qty[i.id]) > 0)
 
-  const computedItemsTotal = items.reduce((sum, it) => sum + (Number(it.quantity || 1) * Number(it.unit_price || 0)), 0)
-  const totalAmountVal = Number(po.total_amount) || computedItemsTotal || 0
-  const vatVal = Number(po.vat_amount) || 0
-  const whtVal = Number(po.wht_amount) || 0
-
   // ตรวจสอบว่าระบบเคยบันทึกแบบราคารวม VAT หรือไม่
   const isVatIncluded = po.tax_type === 'vat_included' && Number(po.grand_total) === totalAmountVal && Number(po.grand_total) > 0
   const subtotalBeforeVat = isVatIncluded
@@ -519,37 +550,6 @@ export default function PODetail() {
   } else if (!grandTotalVal) {
     grandTotalVal = Math.round((totalAmountVal + (po.tax_type === 'vat_exempt' ? 0 : vatVal) - whtVal) * 100) / 100
   }
-
-  // ซิงค์ยอดสุทธิและยอดคงเหลือในฐานข้อมูลอัตโนมัติหากพบว่ายอดเดิมยังไม่ได้บวกภาษี
-  useEffect(() => {
-    if (po && vatVal > 0 && Number(po.grand_total) <= totalAmountVal && Number(po.grand_total) > 0) {
-      const correctedGrandTotal = Math.round((totalAmountVal + vatVal - whtVal) * 100) / 100
-      const correctedRemaining = po.payment_status === 'ชำระครบแล้ว'
-        ? 0
-        : Math.max(0, correctedGrandTotal - Number(po.deposit_paid_amount || 0))
-
-      supabase
-        .from('purchase_orders')
-        .update({
-          grand_total: correctedGrandTotal,
-          net_amount: correctedGrandTotal,
-          remaining_amount: correctedRemaining,
-          tax_type: 'vat_excluded',
-        })
-        .eq('id', po.id)
-        .then(({ error: syncErr }) => {
-          if (!syncErr) {
-            setPo((prev) => prev ? ({
-              ...prev,
-              grand_total: correctedGrandTotal,
-              net_amount: correctedGrandTotal,
-              remaining_amount: correctedRemaining,
-              tax_type: 'vat_excluded',
-            }) : prev)
-          }
-        })
-    }
-  }, [po?.id, vatVal, totalAmountVal, whtVal])
 
   const dueStatus = getPoDueStatus(po)
 
