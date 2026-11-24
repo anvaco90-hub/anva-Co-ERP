@@ -1408,9 +1408,9 @@ export default function PurchasingHub() {
                                 : 'bg-slate-50/70 dark:bg-slate-800/40'
                             } hover:!bg-amber-50/70 dark:hover:!bg-slate-750`}
                           >
-                            {/* 1. เลขที่ PO + วันที่สั่งซื้อ (จัดกึ่งกลาง) */}
+                            {/* 1. เลขที่ PO + วันที่สั่งซื้อ (จัดกึ่งกลาง บน-ล่าง ซ้าย-ขวา) */}
                             {isPoColVisible('po_no') && (
-                              <td className="py-3 px-3.5 text-center align-top whitespace-nowrap sticky left-0 z-10 bg-inherit shadow-[2px_0_4px_-1px_rgba(0,0,0,0.06)] border-r border-slate-200/60 dark:border-slate-800/60">
+                              <td className="py-3 px-3.5 text-center align-middle whitespace-nowrap sticky left-0 z-10 bg-inherit shadow-[2px_0_4px_-1px_rgba(0,0,0,0.06)] border-r border-slate-200/60 dark:border-slate-800/60">
                                 <Link
                                   to={`/purchasing/po/${r.id}`}
                                   className="font-bold text-emerald-700 dark:text-emerald-400 hover:underline font-mono inline-flex items-center justify-center gap-1"
@@ -1428,9 +1428,9 @@ export default function PurchasingHub() {
                               </td>
                             )}
 
-                            {/* 2. ผู้ขาย / ร้านค้า (ย่อข้อความ ไม่ยาวเกิน มี title ให้อ่านได้) */}
+                            {/* 2. ผู้ขาย / ร้านค้า (กึ่งกลางบน-ล่าง ย่อข้อความ ไม่ยาวเกิน มี title ให้อ่านได้) */}
                             {isPoColVisible('vendor') && (
-                              <td className="py-3 px-3.5 align-top border-r border-slate-200/60 dark:border-slate-800/60">
+                              <td className="py-3 px-3.5 align-middle border-r border-slate-200/60 dark:border-slate-800/60">
                                 <div className="font-bold text-steel-900 dark:text-slate-100 truncate max-w-[190px]" title={r.custom_vendor_name || r.vendors?.vendor_name}>
                                   {r.custom_vendor_name || r.vendors?.vendor_name || '-'}
                                 </div>
@@ -1442,9 +1442,9 @@ export default function PurchasingHub() {
                               </td>
                             )}
 
-                            {/* 3. โครงการ & ลูกค้า (ย่อข้อความ มี title ให้อ่านได้) */}
+                            {/* 3. โครงการ & ลูกค้า (กึ่งกลางบน-ล่าง ย่อข้อความ มี title ให้อ่านได้) */}
                             {isPoColVisible('project') && (
-                              <td className="py-3 px-3.5 align-top border-r border-slate-200/60 dark:border-slate-800/60">
+                              <td className="py-3 px-3.5 align-middle border-r border-slate-200/60 dark:border-slate-800/60">
                                 <div className="flex flex-col gap-0.5 min-w-0">
                                   <div className="font-bold text-steel-900 dark:text-slate-100 truncate max-w-[190px]" title={r.custom_project_name || (r.projects ? `${r.projects.project_code} ${r.projects.project_name}` : 'ของกลางบริษัท')}>
                                     {r.custom_project_name || (r.projects ? r.projects.project_code : 'ของกลางบริษัท')}
@@ -1461,9 +1461,9 @@ export default function PurchasingHub() {
                               </td>
                             )}
 
-                            {/* 4. วันครบกำหนดส่งมอบ + Badge วิเคราะห์กำหนด (จัดกึ่งกลาง) */}
+                            {/* 4. วันครบกำหนดส่งมอบ + Badge วิเคราะห์กำหนด (จัดกึ่งกลาง บน-ล่าง ซ้าย-ขวา) */}
                             {isPoColVisible('due_date') && (
-                              <td className="py-3 px-3.5 text-center align-top border-r border-slate-200/60 dark:border-slate-800/60 whitespace-nowrap">
+                              <td className="py-3 px-3.5 text-center align-middle border-r border-slate-200/60 dark:border-slate-800/60 whitespace-nowrap">
                                 {r.expected_delivery_date ? (
                                   <div className="font-mono text-xs font-bold text-steel-800 dark:text-slate-200">
                                     {formatThaiDate(r.expected_delivery_date)}
@@ -1480,9 +1480,9 @@ export default function PurchasingHub() {
                               </td>
                             )}
 
-                            {/* 5. ยอดรวมสุทธิ (ชิดขวาตามแบบการเงิน) */}
+                            {/* 5. ยอดรวมสุทธิ (กึ่งกลางบน-ล่าง ชิดขวาตามแบบการเงิน) */}
                             {isPoColVisible('amount') && (
-                              <td className="py-3 px-3.5 align-top text-right whitespace-nowrap border-r border-slate-200/60 dark:border-slate-800/60">
+                              <td className="py-3 px-3.5 align-middle text-right whitespace-nowrap border-r border-slate-200/60 dark:border-slate-800/60">
                                 <div className="font-mono font-black text-sm text-steel-900 dark:text-slate-100 tabular-nums">
                                   ฿{baht(r.total_amount)}
                                 </div>
@@ -1671,9 +1671,9 @@ export default function PurchasingHub() {
                                 : 'bg-slate-50/70 dark:bg-slate-800/40'
                             } hover:!bg-amber-50/70 dark:hover:!bg-slate-750`}
                           >
-                            {/* 1. เลขที่ PR + วันที่ขอซื้อ (จัดกึ่งกลาง) */}
+                            {/* 1. เลขที่ PR + วันที่ขอซื้อ (จัดกึ่งกลาง บน-ล่าง ซ้าย-ขวา) */}
                             {isPrColVisible('pr_no') && (
-                              <td className="py-3 px-3.5 text-center align-top whitespace-nowrap border-r border-slate-200/60 dark:border-slate-800/60">
+                              <td className="py-3 px-3.5 text-center align-middle whitespace-nowrap border-r border-slate-200/60 dark:border-slate-800/60">
                                 <Link
                                   to={`/purchasing/pr/${r.id}`}
                                   className="font-bold text-sky-700 dark:text-sky-400 hover:underline font-mono inline-flex items-center justify-center gap-1"
@@ -1686,9 +1686,9 @@ export default function PurchasingHub() {
                               </td>
                             )}
 
-                            {/* 2. โครงการ / ลูกค้า / ผู้ขายแนะนำ (ย่อข้อความ มี title ให้อ่านได้) */}
+                            {/* 2. โครงการ / ลูกค้า / ผู้ขายแนะนำ (กึ่งกลางบน-ล่าง ย่อข้อความ มี title ให้อ่านได้) */}
                             {isPrColVisible('project') && (
-                              <td className="py-3 px-3.5 align-top border-r border-slate-200/60 dark:border-slate-800/60">
+                              <td className="py-3 px-3.5 align-middle border-r border-slate-200/60 dark:border-slate-800/60">
                                 <div className="flex flex-col gap-0.5 min-w-0">
                                   <div className="font-bold text-steel-900 dark:text-slate-100 truncate max-w-[200px]" title={r.custom_project_name || (r.projects ? `${r.projects.project_code} ${r.projects.project_name}` : 'ของกลางบริษัท')}>
                                     {r.custom_project_name || (r.projects ? r.projects.project_code : 'ของกลางบริษัท')}
@@ -1710,9 +1710,9 @@ export default function PurchasingHub() {
                               </td>
                             )}
 
-                            {/* 3. จำนวนรายการ (จัดกึ่งกลาง) */}
+                            {/* 3. จำนวนรายการ (จัดกึ่งกลาง บน-ล่าง ซ้าย-ขวา) */}
                             {isPrColVisible('items') && (
-                              <td className="py-3 px-3 align-top text-center whitespace-nowrap border-r border-slate-200/60 dark:border-slate-800/60">
+                              <td className="py-3 px-3 align-middle text-center whitespace-nowrap border-r border-slate-200/60 dark:border-slate-800/60">
                                 <div className="inline-flex items-center gap-1 bg-slate-100 dark:bg-slate-800/80 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700/60">
                                   <Package className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
                                   <span className="font-mono font-bold text-steel-900 dark:text-slate-100 tabular-nums">
@@ -1723,16 +1723,16 @@ export default function PurchasingHub() {
                               </td>
                             )}
 
-                            {/* 4. สถานะ PR (จัดกึ่งกลาง) */}
+                            {/* 4. สถานะ PR (จัดกึ่งกลาง บน-ล่าง ซ้าย-ขวา) */}
                             {isPrColVisible('status') && (
-                              <td className="py-3 px-3 align-top text-center whitespace-nowrap border-r border-slate-200/60 dark:border-slate-800/60">
+                              <td className="py-3 px-3 align-middle text-center whitespace-nowrap border-r border-slate-200/60 dark:border-slate-800/60">
                                 <StatusBadge status={r.status} />
                               </td>
                             )}
 
-                            {/* 5. ใบสั่งซื้อที่เกี่ยวข้อง (PO Link) (จัดกึ่งกลาง) */}
+                            {/* 5. ใบสั่งซื้อที่เกี่ยวข้อง (PO Link) (จัดกึ่งกลาง บน-ล่าง ซ้าย-ขวา) */}
                             {isPrColVisible('linked_po') && (
-                              <td className="py-3 px-3 align-top text-center border-r border-slate-200/60 dark:border-slate-800/60">
+                              <td className="py-3 px-3 align-middle text-center border-r border-slate-200/60 dark:border-slate-800/60">
                                 {linkedPos.length > 0 ? (
                                   <div className="flex flex-wrap items-center justify-center gap-1.5">
                                     {linkedPos.map((p) => (
@@ -1990,10 +1990,10 @@ export default function PurchasingHub() {
                                     : 'bg-slate-50/70 dark:bg-slate-800/40'
                                 } hover:!bg-amber-50/70 dark:hover:!bg-slate-750`}
                               >
-                                <td className="py-3 px-3.5 text-center font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap align-top border-r border-slate-200/60 dark:border-slate-800/60">
+                                <td className="py-3 px-3.5 text-center font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap align-middle border-r border-slate-200/60 dark:border-slate-800/60">
                                   {formatThaiDate(m.received_date)}
                                 </td>
-                                <td className="py-3 px-3.5 text-center font-mono font-bold text-sky-800 dark:text-sky-400 align-top border-r border-slate-200/60 dark:border-slate-800/60">
+                                <td className="py-3 px-3.5 text-center font-mono font-bold text-sky-800 dark:text-sky-400 align-middle border-r border-slate-200/60 dark:border-slate-800/60">
                                   {grnItems && grnItems.length > 1 ? (
                                     <div className="flex flex-col gap-1 items-center justify-center">
                                       {grnItems.map((grn, idx) => (
@@ -2014,7 +2014,7 @@ export default function PurchasingHub() {
                                     </span>
                                   )}
                                 </td>
-                                <td className="py-3 px-3.5 text-center font-mono font-bold text-emerald-700 dark:text-emerald-400 whitespace-nowrap align-top border-r border-slate-200/60 dark:border-slate-800/60">
+                                <td className="py-3 px-3.5 text-center font-mono font-bold text-emerald-700 dark:text-emerald-400 whitespace-nowrap align-middle border-r border-slate-200/60 dark:border-slate-800/60">
                                   <Link
                                     to={`/purchasing/po/${m.po_id}`}
                                     className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition shadow-2xs"
@@ -2022,7 +2022,7 @@ export default function PurchasingHub() {
                                     <span>{m.po_no}</span>
                                   </Link>
                                 </td>
-                                <td className="py-3 px-4 font-semibold text-slate-900 dark:text-slate-100 align-top border-r border-slate-200/60 dark:border-slate-800/60">
+                                <td className="py-3 px-4 font-semibold text-slate-900 dark:text-slate-100 align-middle border-r border-slate-200/60 dark:border-slate-800/60">
                                   <div className="font-bold text-slate-900 dark:text-white leading-snug truncate max-w-[220px]" title={m.item_name}>{m.item_name}</div>
                                   <button
                                     type="button"
@@ -2032,26 +2032,26 @@ export default function PurchasingHub() {
                                     <span>ดูประวัติโครงการที่เคยใช้</span>
                                   </button>
                                 </td>
-                                <td className="py-3 px-3 text-center align-top border-r border-slate-200/60 dark:border-slate-800/60">
+                                <td className="py-3 px-3 text-center align-middle border-r border-slate-200/60 dark:border-slate-800/60">
                                   <span className="font-mono font-black text-slate-900 dark:text-slate-100 bg-slate-100/90 dark:bg-slate-800 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700">
                                     {Math.round(Number(m.quantity) || 0)}
                                   </span>
                                 </td>
-                                <td className="py-3 px-3 text-center text-slate-600 dark:text-slate-400 font-medium align-top border-r border-slate-200/60 dark:border-slate-800/60">
+                                <td className="py-3 px-3 text-center text-slate-600 dark:text-slate-400 font-medium align-middle border-r border-slate-200/60 dark:border-slate-800/60">
                                   {m.unit}
                                 </td>
-                                <td className="py-3 px-3.5 text-right font-mono text-slate-700 dark:text-slate-300 align-top border-r border-slate-200/60 dark:border-slate-800/60 tabular-nums">
+                                <td className="py-3 px-3.5 text-right font-mono text-slate-700 dark:text-slate-300 align-middle border-r border-slate-200/60 dark:border-slate-800/60 tabular-nums">
                                   {baht(m.unit_cost)}
                                 </td>
-                                <td className="py-3 px-3.5 text-right font-mono font-black text-emerald-600 dark:text-emerald-400 align-top border-r border-slate-200/60 dark:border-slate-800/60 tabular-nums">
+                                <td className="py-3 px-3.5 text-right font-mono font-black text-emerald-600 dark:text-emerald-400 align-middle border-r border-slate-200/60 dark:border-slate-800/60 tabular-nums">
                                   {baht(m.total_value)}
                                 </td>
-                                <td className="py-3 px-3.5 text-slate-800 dark:text-slate-200 align-top border-r border-slate-200/60 dark:border-slate-800/60">
+                                <td className="py-3 px-3.5 text-slate-800 dark:text-slate-200 align-middle border-r border-slate-200/60 dark:border-slate-800/60">
                                   <div className="truncate max-w-[180px] font-medium" title={m.vendor_name}>
                                     {m.vendor_name}
                                   </div>
                                 </td>
-                                <td className="py-3 px-3.5 text-slate-700 dark:text-slate-300 align-top border-r border-slate-200/60 dark:border-slate-800/60">
+                                <td className="py-3 px-3.5 text-slate-700 dark:text-slate-300 align-middle border-r border-slate-200/60 dark:border-slate-800/60">
                                   <div className="truncate max-w-[180px] font-medium text-slate-900 dark:text-slate-100" title={m.project_name}>
                                     {m.project_name}
                                   </div>
@@ -2061,7 +2061,7 @@ export default function PurchasingHub() {
                                     </div>
                                   )}
                                 </td>
-                                <td className="py-3 px-3 text-center whitespace-nowrap align-top">
+                                <td className="py-3 px-3 text-center whitespace-nowrap align-middle">
                                   <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-bold bg-emerald-100/80 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 shadow-2xs">
                                     <CheckCircle2 className="h-3 w-3" />
                                     <span>เข้าคลังแล้ว</span>
@@ -2140,18 +2140,18 @@ export default function PurchasingHub() {
                                     : 'bg-slate-50/70 dark:bg-slate-800/40'
                                 } hover:!bg-amber-50/70 dark:hover:!bg-slate-750`}
                               >
-                                <td className="py-3 px-3.5 text-center font-bold text-emerald-700 dark:text-emerald-400 whitespace-nowrap align-top border-r border-slate-200/60 dark:border-slate-800/60">
+                                <td className="py-3 px-3.5 text-center font-bold text-emerald-700 dark:text-emerald-400 whitespace-nowrap align-middle border-r border-slate-200/60 dark:border-slate-800/60">
                                   <Link to={`/purchasing/po/${r.id}`} className="hover:underline font-mono inline-flex items-center justify-center gap-1">
                                     <span>{r.po_no}</span>
                                   </Link>
                                   {r.pr?.pr_no && <div className="text-[11px] text-steel-500 dark:text-slate-400 font-mono mt-0.5">จาก {r.pr.pr_no}</div>}
                                 </td>
-                                <td className="py-3 px-3.5 align-top border-r border-slate-200/60 dark:border-slate-800/60">
+                                <td className="py-3 px-3.5 align-middle border-r border-slate-200/60 dark:border-slate-800/60">
                                   <div className="font-bold text-slate-900 dark:text-slate-100 truncate max-w-[190px]" title={r.custom_vendor_name || r.vendors?.vendor_name}>
                                     {r.custom_vendor_name || r.vendors?.vendor_name || '-'}
                                   </div>
                                 </td>
-                                <td className="py-3 px-3.5 align-top border-r border-slate-200/60 dark:border-slate-800/60">
+                                <td className="py-3 px-3.5 align-middle border-r border-slate-200/60 dark:border-slate-800/60">
                                   <div className="truncate max-w-[190px]" title={r.custom_project_name || `${r.projects?.project_code || ''} ${r.projects?.project_name || ''}`}>
                                     <span className="font-bold text-steel-900 dark:text-slate-100">{r.custom_project_name || r.projects?.project_code || 'ของกลาง'}</span>{' '}
                                     <span className="text-steel-600 dark:text-slate-400">{r.projects?.project_name}</span>
@@ -2162,10 +2162,10 @@ export default function PurchasingHub() {
                                     </div>
                                   )}
                                 </td>
-                                <td className="py-3 px-3 text-center text-steel-600 dark:text-slate-300 whitespace-nowrap align-top border-r border-slate-200/60 dark:border-slate-800/60 font-mono text-xs">
+                                <td className="py-3 px-3 text-center text-steel-600 dark:text-slate-300 whitespace-nowrap align-middle border-r border-slate-200/60 dark:border-slate-800/60 font-mono text-xs">
                                   {formatThaiDate(r.order_date)}
                                 </td>
-                                <td className="py-3 px-3.5 text-center align-top border-r border-slate-200/60 dark:border-slate-800/60 whitespace-nowrap">
+                                <td className="py-3 px-3.5 text-center align-middle border-r border-slate-200/60 dark:border-slate-800/60 whitespace-nowrap">
                                   <div className="font-mono text-xs font-bold text-steel-800 dark:text-slate-200">
                                     {r.expected_delivery_date ? formatThaiDate(r.expected_delivery_date) : '-'}
                                   </div>
@@ -2487,7 +2487,7 @@ export default function PurchasingHub() {
                                     : 'bg-slate-50/70 dark:bg-slate-800/40'
                                 } hover:!bg-amber-50/70 dark:hover:!bg-slate-750`}
                               >
-                                <td className="py-3 px-3.5 text-center align-top whitespace-nowrap border-r border-slate-200/60 dark:border-slate-800/60">
+                                <td className="py-3 px-3.5 text-center align-middle whitespace-nowrap border-r border-slate-200/60 dark:border-slate-800/60">
                                   <Link to={`/purchasing/pr/${r.id}`} className="font-bold text-sky-700 dark:text-sky-400 hover:underline font-mono inline-flex items-center justify-center gap-1">
                                     <span>{r.pr_no}</span>
                                   </Link>
@@ -2495,7 +2495,7 @@ export default function PurchasingHub() {
                                     วันที่ขอ: {formatThaiDate(r.request_date)}
                                   </div>
                                 </td>
-                                <td className="py-3 px-3.5 align-top border-r border-slate-200/60 dark:border-slate-800/60">
+                                <td className="py-3 px-3.5 align-middle border-r border-slate-200/60 dark:border-slate-800/60">
                                   <div className="font-bold text-steel-900 dark:text-slate-100 truncate max-w-[200px]" title={r.projects?.project_code || 'ของกลาง'}>
                                     {r.projects?.project_code || 'ของกลาง'}
                                   </div>
@@ -2506,7 +2506,7 @@ export default function PurchasingHub() {
                                 <td className="py-3 px-3.5 align-middle text-center whitespace-nowrap border-r border-slate-200/60 dark:border-slate-800/60">
                                   <StatusBadge status={r.status} />
                                 </td>
-                                <td className="py-3 px-3.5 align-top text-center border-r border-slate-200/60 dark:border-slate-800/60">
+                                <td className="py-3 px-3.5 align-middle text-center border-r border-slate-200/60 dark:border-slate-800/60">
                                   {linkedPos.length > 0 ? (
                                     <div className="flex flex-wrap items-center justify-center gap-1.5">
                                       {linkedPos.map((p) => (

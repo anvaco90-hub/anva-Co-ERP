@@ -597,7 +597,7 @@ export default function QuotationList() {
                           : 'bg-slate-50/70 dark:bg-slate-800/40'
                       } hover:!bg-amber-50/70 dark:hover:!bg-slate-750`}
                     >
-                      <td className="py-3 px-3.5 text-center whitespace-nowrap align-top border-r border-slate-200/60 dark:border-slate-800/60">
+                      <td className="py-3 px-3.5 text-center whitespace-nowrap align-middle border-r border-slate-200/60 dark:border-slate-800/60">
                         <Link to={`/quotations/${q.id}`} className="font-bold text-sky-800 dark:text-sky-400 hover:underline font-mono text-xs block">
                           {q.quotation_no}
                         </Link>
@@ -605,7 +605,7 @@ export default function QuotationList() {
                           วันที่: {q.quotation_date || q.issue_date}
                         </div>
                       </td>
-                      <td className="py-3 px-4 align-top border-r border-slate-200/60 dark:border-slate-800/60">
+                      <td className="py-3 px-4 align-middle border-r border-slate-200/60 dark:border-slate-800/60">
                         <div className="font-bold text-slate-900 dark:text-slate-100 truncate max-w-[240px]" title={q.customer_name}>
                           {q.customer_name || '-'}
                         </div>
@@ -692,8 +692,8 @@ export default function QuotationList() {
                           : 'bg-slate-50/70 dark:bg-slate-800/40'
                       } ${isMenuOpen ? 'relative z-30' : ''} hover:!bg-amber-50/70 dark:hover:!bg-slate-750`}
                     >
-                      {/* 1. เลขที่ QT + วันที่ (จัดกึ่งกลาง) */}
-                      <td className="py-3 px-3.5 text-center align-top whitespace-nowrap border-r border-slate-200/60 dark:border-slate-800/60">
+                      {/* 1. เลขที่ QT + วันที่ (จัดกึ่งกลาง บน-ล่าง ซ้าย-ขวา) */}
+                      <td className="py-3 px-3.5 text-center align-middle whitespace-nowrap border-r border-slate-200/60 dark:border-slate-800/60">
                         <Link
                           to={`/quotations/${q.id}`}
                           className="font-bold text-sky-800 dark:text-sky-400 hover:underline font-mono text-xs block"
@@ -712,8 +712,8 @@ export default function QuotationList() {
                         )}
                       </td>
 
-                      {/* 2. ลูกค้า / โครงการ (ลำดับชั้นข้อความชัดเจน ย่อข้อความแต่ hover อ่านได้) */}
-                      <td className="py-3 px-4 align-top border-r border-slate-200/60 dark:border-slate-800/60">
+                      {/* 2. ลูกค้า / โครงการ (กึ่งกลางบน-ล่าง ชิดซ้าย ย่อข้อความแต่ hover อ่านได้) */}
+                      <td className="py-3 px-4 align-middle border-r border-slate-200/60 dark:border-slate-800/60">
                         <div className="font-bold text-slate-900 dark:text-slate-100 truncate max-w-[240px]" title={q.customer_name}>
                           {q.customer_name || '-'}
                         </div>
@@ -722,8 +722,8 @@ export default function QuotationList() {
                         </div>
                       </td>
 
-                      {/* 3. วันสิ้นสุดยืนราคา (จัดกึ่งกลาง) */}
-                      <td className="py-3 px-3 text-center align-top whitespace-nowrap border-r border-slate-200/60 dark:border-slate-800/60">
+                      {/* 3. วันสิ้นสุดยืนราคา (จัดกึ่งกลาง บน-ล่าง ซ้าย-ขวา) */}
+                      <td className="py-3 px-3 text-center align-middle whitespace-nowrap border-r border-slate-200/60 dark:border-slate-800/60">
                         <div className="text-slate-700 dark:text-slate-300 font-mono text-xs font-semibold">
                           {q.valid_until || q.expiry_date || '-'}
                         </div>
@@ -735,8 +735,8 @@ export default function QuotationList() {
                         )}
                       </td>
 
-                      {/* 4. ยอดสุทธิ (จัดชิดขวาตามแบบการเงิน) */}
-                      <td className="py-3 px-3.5 align-top text-right whitespace-nowrap font-mono border-r border-slate-200/60 dark:border-slate-800/60 tabular-nums">
+                      {/* 4. ยอดสุทธิ (กึ่งกลางบน-ล่าง ชิดขวาตามแบบการเงิน) */}
+                      <td className="py-3 px-3.5 align-middle text-right whitespace-nowrap font-mono border-r border-slate-200/60 dark:border-slate-800/60 tabular-nums">
                         <div className="font-black text-slate-900 dark:text-slate-100 text-xs">
                           ฿{baht(q.grand_total || q.total_amount || q.net_amount)}
                         </div>
@@ -744,14 +744,14 @@ export default function QuotationList() {
                       </td>
 
                       {/* 5. สถานะ (Single Status Badge สะอาดตา จัดกึ่งกลาง) */}
-                      <td className="py-3 px-3 align-top text-center whitespace-nowrap border-r border-slate-200/60 dark:border-slate-800/60">
+                      <td className="py-3 px-3 align-middle text-center whitespace-nowrap border-r border-slate-200/60 dark:border-slate-800/60">
                         <span className={`inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${status.cls}`}>
                           {status.label}
                         </span>
                       </td>
 
                       {/* 6. การจัดการ (Action Menu กะทัดรัด จัดกึ่งกลาง) */}
-                      <td className="py-3 px-3.5 align-top text-center whitespace-nowrap">
+                      <td className="py-3 px-3.5 align-middle text-center whitespace-nowrap">
                         <div className="flex items-center justify-center gap-1">
 
                           {/* Quick Link to Details */}
