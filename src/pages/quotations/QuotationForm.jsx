@@ -579,600 +579,695 @@ export default function QuotationForm() {
   }
 
   return (
-    <div className="max-w-5xl space-y-5 pb-12">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="text-xl font-bold text-ink">
-            {id ? `แก้ไขใบเสนอราคา ${quotationNo}` : 'สร้างใบเสนอราคาใหม่ (New Quotation)'}
-          </h2>
-          <p className="text-xs text-steel-500">
-            ออกเอกสารเสนอราคาสำหรับลูกค้า พร้อมคำนวณส่วนลด ภาษี และผูกกับโครงการ
-          </p>
+    <div className="w-full space-y-6 pb-16">
+      {/* 0. แบนเนอร์หัวหน้าเอกสาร (Executive Corporate ERP Banner) */}
+      <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-gradient-to-r from-slate-900 via-slate-800 to-steel-900 p-6 text-white shadow-md relative overflow-hidden">
+        <div className="relative z-10 flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-500/20 border border-sky-400/30 text-sky-400 backdrop-blur-xs">
+              <ReceiptText className="h-6 w-6" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-full bg-sky-400/20 text-sky-300 border border-sky-400/30 font-bold">
+                  Quotation Management
+                </span>
+                <span className="text-[10px] text-slate-400 font-mono">
+                  {id ? `ID: ${id}` : 'Draft Mode'}
+                </span>
+              </div>
+              <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white mt-1">
+                {id ? `แก้ไขใบเสนอราคา ${quotationNo}` : 'สร้างใบเสนอราคาใหม่ (New Quotation)'}
+              </h1>
+              <p className="text-xs text-slate-300 mt-0.5">
+                จัดทำเอกสารเสนอราคาอย่างเป็นระบบ คำนวณภาษี ส่วนลด และผูกกับโปรเจกต์งานวิศวกรรม
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <Link
+              to="/quotations"
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-800/80 px-3.5 py-2 text-xs font-semibold text-slate-200 hover:bg-slate-700/80 hover:text-white transition shadow-2xs"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+              <span>กลับหน้ารายการ</span>
+            </Link>
+          </div>
         </div>
-        <Link to="/quotations" className="text-xs text-steel-500 hover:underline">
-          ← กลับไปหน้ารายการ
-        </Link>
       </div>
 
+      {/* แจ้งเตือนเมื่อคัดลอกมาจากเอกสารเดิม */}
       {duplicatedFromNo && (
-        <div className="rounded-xl border border-sky-300 bg-sky-50 p-3.5 text-xs text-sky-900 flex items-center justify-between shadow-xs">
-          <span className="flex items-center gap-2">
-            <span className="text-base"></span>
-            <span>กำลังสร้างใบเสนอราคาใหม่โดยคัดลอกข้อมูลจาก: <strong>{duplicatedFromNo}</strong></span>
-          </span>
-          <span className="text-[11px] text-sky-800 font-bold bg-sky-200/70 px-2.5 py-0.5 rounded-full">
+        <div className="rounded-2xl border border-sky-200 dark:border-sky-900/60 bg-sky-50/90 dark:bg-sky-950/40 p-4 text-xs text-sky-900 dark:text-sky-300 flex items-center justify-between shadow-xs">
+          <div className="flex items-center gap-2.5">
+            <Info className="h-4 w-4 text-sky-600 dark:text-sky-400 shrink-0" />
+            <span>กำลังสร้างใบเสนอราคาใหม่โดยคัดลอกข้อมูลจาก: <strong className="font-mono text-sky-800 dark:text-sky-200">{duplicatedFromNo}</strong></span>
+          </div>
+          <span className="text-[11px] text-sky-800 dark:text-sky-300 font-bold bg-sky-200/70 dark:bg-sky-900/60 px-3 py-1 rounded-full border border-sky-300 dark:border-sky-700">
             สำเนาฉบับร่างใหม่
           </span>
         </div>
       )}
 
-      {error && <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</div>}
+      {/* กล่องแสดง Error */}
+      {error && (
+        <div className="rounded-2xl border border-rose-200 dark:border-rose-900/60 bg-rose-50 dark:bg-rose-950/50 p-4 text-xs text-rose-800 dark:text-rose-300 flex items-center gap-2.5 shadow-xs">
+          <AlertCircle className="h-4 w-4 text-rose-600 dark:text-rose-400 shrink-0" />
+          <span>{error}</span>
+        </div>
+      )}
 
-      <div className="rounded-xl border border-steel-200 bg-white p-6 shadow-sm space-y-6">
-        {/* 1. ส่วนหัวเอกสารและข้อมูลอ้างอิง */}
-        <div className="border-b border-steel-200 pb-5">
-          <h3 className="font-bold text-sm text-ink mb-3 flex items-center gap-2">
-            <span>1. ส่วนหัวเอกสารและข้อมูลอ้างอิง</span>
-          </h3>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
-            <div>
-              <label className="block text-xs font-semibold text-steel-700 mb-1">เลขที่เอกสาร (Auto) *</label>
+      {/* การ์ดที่ 1: ส่วนหัวเอกสารและข้อมูลโครงการ */}
+      <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm space-y-5">
+        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+          <h2 className="text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+            <FileText className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+            <span>1. ข้อมูลหัวเอกสารและโครงการ (Header & Project Details)</span>
+          </h2>
+          <span className="text-xs text-slate-400 font-mono">Quotation Header</span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+              เลขที่เอกสาร (Auto) *
+            </label>
+            <input
+              className={fieldErrorClass(
+                errors.quotationNo,
+                'input text-xs font-mono font-bold bg-slate-50 dark:bg-slate-800/80 text-sky-700 dark:text-sky-400 border-slate-200 dark:border-slate-700'
+              )}
+              value={quotationNo}
+              onChange={(e) => {
+                setQuotationNo(e.target.value)
+                if (errors.quotationNo) setErrors((prev) => ({ ...prev, quotationNo: '' }))
+              }}
+              placeholder="เช่น QT2026110012"
+            />
+            <FieldError error={errors.quotationNo} />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+              วันที่ออกเอกสาร *
+            </label>
+            <input
+              type="date"
+              className={fieldErrorClass(errors.issueDate, 'input text-xs')}
+              value={issueDate}
+              onChange={(e) => {
+                setIssueDate(e.target.value)
+                if (errors.issueDate) setErrors((prev) => ({ ...prev, issueDate: '' }))
+              }}
+            />
+            <FieldError error={errors.issueDate} />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+              กำหนดยืนราคา (วัน) *
+            </label>
+            <div className="flex items-center gap-2">
               <input
-                className={fieldErrorClass(errors.quotationNo, "input text-xs font-mono font-bold bg-steel-50 text-sky-800")}
-                value={quotationNo}
-                onChange={(e) => {
-                  setQuotationNo(e.target.value)
-                  if (errors.quotationNo) setErrors((prev) => ({ ...prev, quotationNo: '' }))
-                }}
-                placeholder="เช่น QT2026110012"
+                type="number"
+                min="1"
+                className="input text-xs w-24 text-center font-bold font-mono"
+                value={validityDays}
+                onChange={(e) => setValidityDays(e.target.value)}
               />
-              <FieldError error={errors.quotationNo} />
+              <span className="text-xs text-slate-500 dark:text-slate-400">
+                วัน (หมดอายุ: <b className="text-slate-700 dark:text-slate-300">{expiryDate || '-'}</b>)
+              </span>
             </div>
+          </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-steel-700 mb-1">วันที่ออกเอกสาร *</label>
-              <input
-                type="date"
-                className={fieldErrorClass(errors.issueDate, "input text-xs")}
-                value={issueDate}
-                onChange={(e) => {
-                  setIssueDate(e.target.value)
-                  if (errors.issueDate) setErrors((prev) => ({ ...prev, issueDate: '' }))
-                }}
-              />
-              <FieldError error={errors.issueDate} />
-            </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+              พนักงานขาย / ผู้เสนอ *
+            </label>
+            <input
+              className="input text-xs"
+              value={salesPerson}
+              onChange={(e) => setSalesPerson(e.target.value)}
+              placeholder="ชื่อผู้รับผิดชอบ"
+            />
+          </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-steel-700 mb-1">กำหนดยืนราคา (วัน) *</label>
-              <div className="flex gap-1.5">
-                <input
-                  type="number"
-                  min="1"
-                  className="input text-xs w-20 text-center font-bold"
-                  value={validityDays}
-                  onChange={(e) => setValidityDays(e.target.value)}
-                />
-                <span className="text-xs text-steel-500 self-center">วัน (ถึง {expiryDate || '-'})</span>
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+              สกุลเงิน (Currency)
+            </label>
+            <select
+              className="input text-xs"
+              value={currency}
+              onChange={(e) => setCurrency(e.target.value)}
+            >
+              {CURRENCIES.map((c) => (
+                <option key={c.code} value={c.code}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="sm:col-span-2">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+              เชื่อมโยงโปรเจกต์ (โครงการ)
+            </label>
+            <SearchableProjectSelect
+              projects={projects}
+              value={projectId}
+              onChange={(val) => handleSelectProject(val)}
+              placeholder="พิมพ์รหัส หรือชื่อโครงการเพื่อค้นหา..."
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+              เลขที่อ้างอิง (Ref No.)
+            </label>
+            <input
+              className="input text-xs"
+              placeholder="เช่น REF-6901 / เลขที่สั่งจ้าง"
+              value={refNo}
+              onChange={(e) => setRefNo(e.target.value)}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* การ์ดที่ 2: ข้อมูลลูกค้าและสถานที่ส่งมอบ */}
+      <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm space-y-5">
+        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+          <h2 className="text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+            <Building2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+            <span>2. ข้อมูลลูกค้าและสถานที่ส่งมอบ (Customer & Delivery Info)</span>
+          </h2>
+          <span className="text-xs text-slate-400 font-mono">Client Profile</span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="sm:col-span-2">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+              ชื่อลูกค้า / บริษัทลูกค้า *
+            </label>
+            <SearchableSelect
+              options={customerOptions}
+              value={customerName}
+              onChange={(val) => {
+                handleSelectCustomer(val)
+                if (errors.customerName) setErrors((prev) => ({ ...prev, customerName: '' }))
+              }}
+              onCustomChange={(val) => {
+                setCustomerName(val)
+                if (errors.customerName) setErrors((prev) => ({ ...prev, customerName: '' }))
+              }}
+              allowCustom={true}
+              placeholder="พิมพ์ค้นหาชื่อลูกค้า, เลขภาษี หรือพิมพ์ชื่อลูกค้าใหม่..."
+              customPlaceholder="กด Enter เพื่อใช้ชื่อลูกค้ารายใหม่นี้"
+              error={errors.customerName}
+            />
+            <FieldError error={errors.customerName} />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+              เลขประจำตัวผู้เสียภาษี
+            </label>
+            <input
+              className="input text-xs font-mono"
+              placeholder="เลข 13 หลัก"
+              maxLength={13}
+              value={customerTaxId}
+              onChange={(e) => setCustomerTaxId(e.target.value)}
+            />
+          </div>
+
+          <div className="sm:col-span-2">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+              ที่อยู่สำหรับออกเอกสาร
+            </label>
+            <input
+              className="input text-xs"
+              placeholder="เลขที่ อาคาร ถนน ตำบล/แขวง อำเภอ/เขต จังหวัด"
+              value={customerAddress}
+              onChange={(e) => setCustomerAddress(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+              รหัสไปรษณีย์
+            </label>
+            <input
+              className="input text-xs w-full font-mono"
+              placeholder="เช่น 10330"
+              maxLength={5}
+              value={customerPostalCode}
+              onChange={(e) => setCustomerPostalCode(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+              สำนักงาน / สาขา
+            </label>
+            <input
+              className="input text-xs"
+              placeholder="สำนักงานใหญ่ หรือ สาขาที่ 00001"
+              value={customerBranch}
+              onChange={(e) => setCustomerBranch(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+              เลือกคลังสินค้าส่งมอบ (Warehouse)
+            </label>
+            <select
+              className="input text-xs"
+              value={warehouseName}
+              onChange={(e) => setWarehouseName(e.target.value)}
+            >
+              {WAREHOUSES.map((w) => (
+                <option key={w} value={w}>
+                  {w}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* การ์ดที่ 3: ตารางรายการสินค้าและบริการ (Itemized Table) */}
+      <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm space-y-5">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
+          <div>
+            <h2 className="text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+              <Package className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+              <span>3. รายการสินค้าและบริการ (Itemized Table)</span>
+            </h2>
+            <p className="text-xs text-slate-400 mt-0.5">
+              ระบุรายการวัสดุ งานบริการ สเปกวิศวกรรม พร้อมคำนวณราคาและส่วนลด
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-slate-500 dark:text-slate-400">
+              คลังสินค้า: <b className="text-slate-800 dark:text-slate-200">{warehouseName}</b>
+            </span>
+            <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+              {items.length} รายการ
+            </span>
+          </div>
+        </div>
+
+        <datalist id="catalog-quotation-items">
+          {catalog.map((c) => (
+            <option key={c.id} value={c.item_name}>
+              [{c.item_code}] {c.unit ? `(${c.unit})` : ''}
+            </option>
+          ))}
+        </datalist>
+
+        <div className="space-y-4">
+          {/* หัวคอลัมน์มาตรฐานสำหรับหน้าจอคอมพิวเตอร์ */}
+          <div className="hidden lg:grid lg:grid-cols-[auto_1fr_6rem_5rem_7.5rem_5.5rem_8rem_auto] gap-2.5 text-xs font-bold text-slate-600 dark:text-slate-400 px-3 pb-1.5 border-b border-slate-100 dark:border-slate-800">
+            <span className="w-8 text-center">#</span>
+            <span>ชื่อสินค้า / รายการงานวิศวกรรม *</span>
+            <span className="text-right">จำนวน</span>
+            <span className="text-center">หน่วย</span>
+            <span className="text-right">ราคา/หน่วย</span>
+            <span className="text-right">ส่วนลด %</span>
+            <span className="text-right">ราคารวม ({currency})</span>
+            <span className="w-12 text-center font-bold text-rose-600 dark:text-rose-400">ลบ</span>
+          </div>
+
+          {items.map((it, idx) => {
+            const calc = lineTotals[idx]
+            const nameEmpty = showItemErrors && !it.item_name?.trim()
+            const qtyEmpty = showItemErrors && (!it.quantity || Number(it.quantity) <= 0)
+            const priceEmpty = showItemErrors && (it.unit_price === '' || isNaN(Number(it.unit_price)))
+
+            return (
+              <div
+                key={idx}
+                className={`rounded-2xl border p-4 space-y-3 transition shadow-xs ${
+                  nameEmpty || qtyEmpty || priceEmpty
+                    ? 'border-rose-300 dark:border-rose-800 bg-rose-50/25 dark:bg-rose-950/20'
+                    : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-700'
+                }`}
+              >
+                {/* แถวที่ 1: ข้อมูลสินค้าและตัวเลขราคา */}
+                <div className="grid grid-cols-2 lg:grid-cols-[auto_1fr_6rem_5rem_7.5rem_5.5rem_8rem_auto] gap-2.5 items-center">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 font-mono font-bold text-xs text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 shrink-0">
+                    #{idx + 1}
+                  </span>
+
+                  <div className="col-span-2 lg:col-span-1">
+                    <input
+                      list="catalog-quotation-items"
+                      className={fieldErrorClass(
+                        nameEmpty,
+                        'input text-xs w-full font-bold text-slate-900 dark:text-slate-100 placeholder:font-normal'
+                      )}
+                      placeholder="ระบุชื่อสินค้า / บริการ หรือเลือกจากคลังสินค้า..."
+                      value={it.item_name}
+                      onChange={(e) => updItem(idx, 'item_name', e.target.value)}
+                    />
+                    {nameEmpty && <FieldError error="กรุณาระบุชื่อสินค้า/บริการ" />}
+                  </div>
+
+                  <div>
+                    <input
+                      type="number"
+                      min="1"
+                      step="1"
+                      className={fieldErrorClass(
+                        qtyEmpty,
+                        'input text-xs text-right w-full font-mono font-bold'
+                      )}
+                      placeholder="จำนวน"
+                      value={it.quantity}
+                      onChange={(e) => updItem(idx, 'quantity', e.target.value)}
+                    />
+                  </div>
+
+                  <div>
+                    <input
+                      className="input text-xs text-center w-full"
+                      placeholder="หน่วย"
+                      value={it.unit}
+                      onChange={(e) => updItem(idx, 'unit', e.target.value)}
+                    />
+                  </div>
+
+                  <div>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      className={fieldErrorClass(
+                        priceEmpty,
+                        'input text-xs text-right w-full font-mono'
+                      )}
+                      placeholder="ราคา/หน่วย"
+                      value={it.unit_price}
+                      onChange={(e) => updItem(idx, 'unit_price', e.target.value)}
+                    />
+                  </div>
+
+                  <div>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.1"
+                      className="input text-xs text-right w-full font-mono"
+                      placeholder="ลด %"
+                      value={it.discount_percent}
+                      onChange={(e) => updItem(idx, 'discount_percent', e.target.value)}
+                    />
+                  </div>
+
+                  <div className="col-span-2 lg:col-span-1 text-right font-mono font-black text-xs text-sky-900 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/40 py-2 px-3 rounded-xl border border-sky-100 dark:border-sky-800">
+                    {baht(calc.lineTotal)}
+                  </div>
+
+                  <div className="flex justify-end lg:justify-center">
+                    <button
+                      type="button"
+                      onClick={() => setItems(items.filter((_, i) => i !== idx))}
+                      disabled={items.length === 1}
+                      className="h-9 px-3 text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 dark:hover:bg-rose-900/60 rounded-xl transition cursor-pointer border border-rose-200 dark:border-rose-900 shadow-2xs flex items-center justify-center gap-1.5 font-bold text-xs disabled:opacity-25 disabled:cursor-not-allowed shrink-0"
+                      title={items.length <= 1 ? 'รายการต้องมีอย่างน้อย 1 แถว' : 'ลบแถวนี้'}
+                    >
+                      <Trash2 className="h-4 w-4 text-rose-600 dark:text-rose-400 shrink-0" />
+                      <span className="hidden xl:inline text-[11px]">ลบ</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* แถวที่ 2: Richbox / Textarea ขยายลงล่าง สำหรับสเปกและรายละเอียด */}
+                <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80">
+                  <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mb-1">
+                    <span className="flex items-center gap-1.5 font-semibold text-slate-700 dark:text-slate-300">
+                      <Info className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
+                      <span>รายละเอียดเฉพาะ / สเปกวิศวกรรม (กด Enter ขึ้นบรรทัดใหม่ได้อิสระ)</span>
+                    </span>
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500">
+                      รองรับข้อความหลายบรรทัดและหัวข้อย่อย
+                    </span>
+                  </div>
+                  <textarea
+                    rows={2}
+                    className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/60 p-2.5 text-xs text-slate-800 dark:text-slate-200 placeholder:text-slate-400 focus:bg-white dark:focus:bg-slate-800 focus:border-slate-900 dark:focus:border-amber-500 focus:outline-none transition leading-relaxed font-sans"
+                    placeholder="เช่น • แผงโซล่าเซลล์ชนิด Monocrystalline Half-cell 550W Tier-1&#10;• รับประกันตัวผลิตภัณฑ์ 12 ปี และรับประกันประสิทธิภาพการผลิตไฟ 25 ปี&#10;• ได้รับมาตรฐานสากล TUV Rheinland / IEC 61215"
+                    value={it.description || ''}
+                    onChange={(e) => updItem(idx, 'description', e.target.value)}
+                  />
+                </div>
               </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-steel-700 mb-1">พนักงานขาย / ผู้เสนอ *</label>
-              <input
-                className="input text-xs"
-                value={salesPerson}
-                onChange={(e) => setSalesPerson(e.target.value)}
-                placeholder="ชื่อผู้รับผิดชอบ"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-steel-700 mb-1">สกุลเงิน (Currency)</label>
-              <select className="input text-xs" value={currency} onChange={(e) => setCurrency(e.target.value)}>
-                {CURRENCIES.map((c) => (
-                  <option key={c.code} value={c.code}>{c.name}</option>
-                ))}
-              </select>
-            </div>
-          </div>
+            )
+          })}
         </div>
 
-        {/* 2. ข้อมูลลูกค้า (Customer Details) */}
-        <div className="border-b border-steel-200 pb-5">
-          <h3 className="font-bold text-sm text-ink mb-3 flex items-center gap-2">
-            <span>2. ข้อมูลลูกค้า (Customer Details)</span>
-          </h3>
+        <div className="pt-2 flex justify-between items-center">
+          <button
+            type="button"
+            onClick={() => setItems([...items, { ...EMPTY_ITEM }])}
+            className="inline-flex items-center gap-2 rounded-xl border border-sky-200 dark:border-sky-800 bg-sky-50 dark:bg-sky-950/40 px-4 py-2 text-xs font-bold text-sky-700 dark:text-sky-300 hover:bg-sky-100 dark:hover:bg-sky-900/60 transition cursor-pointer shadow-2xs"
+          >
+            <Plus className="h-4 w-4" />
+            <span>เพิ่มรายการสินค้า/บริการ</span>
+          </button>
+          <span className="text-xs text-slate-500 dark:text-slate-400">
+            รวมรายการทั้งหมด <b>{items.length}</b> แถว
+          </span>
+        </div>
+      </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
-            <div className="sm:col-span-2">
-              <label className="block text-xs font-semibold text-steel-700 mb-1">
-                ชื่อลูกค้า / บริษัทลูกค้า *
-              </label>
-              <SearchableSelect
-                options={customerOptions}
-                value={customerName}
-                onChange={(val) => {
-                  handleSelectCustomer(val)
-                  if (errors.customerName) setErrors((prev) => ({ ...prev, customerName: '' }))
-                }}
-                onCustomChange={(val) => {
-                  setCustomerName(val)
-                  if (errors.customerName) setErrors((prev) => ({ ...prev, customerName: '' }))
-                }}
-                allowCustom={true}
-                placeholder="พิมพ์ค้นหาชื่อลูกค้า, เลขภาษี หรือพิมพ์ชื่อลูกค้าใหม่..."
-                customPlaceholder="กด Enter เพื่อใช้ชื่อลูกค้ารายใหม่นี้"
-                error={errors.customerName}
-              />
-              <FieldError error={errors.customerName} />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-steel-700 mb-1">
-                เลขประจำตัวผู้เสียภาษี
-              </label>
-              <input
-                className="input text-xs font-mono"
-                placeholder="เลข 13 หลัก"
-                maxLength={13}
-                value={customerTaxId}
-                onChange={(e) => setCustomerTaxId(e.target.value)}
-              />
-            </div>
-
-            <div className="sm:col-span-2">
-              <label className="block text-xs font-semibold text-steel-700 mb-1">
-                ที่อยู่ลูกค้า
-              </label>
-              <input
-                className="input text-xs"
-                placeholder="เลขที่ อาคาร ถนน ตำบล/แขวง อำเภอ/เขต จังหวัด"
-                value={customerAddress}
-                onChange={(e) => setCustomerAddress(e.target.value)}
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-steel-700 mb-1">
-                รหัสไปรษณีย์
-              </label>
-              <input
-                className="input text-xs w-32 font-mono"
-                placeholder="เช่น 10330"
-                maxLength={5}
-                value={customerPostalCode}
-                onChange={(e) => setCustomerPostalCode(e.target.value)}
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-steel-700 mb-1">
-                สำนักงาน / สาขา
-              </label>
-              <input
-                className="input text-xs"
-                placeholder="สำนักงานใหญ่ หรือ สาขาที่ 00001"
-                value={customerBranch}
-                onChange={(e) => setCustomerBranch(e.target.value)}
-              />
-            </div>
-          </div>
+      {/* การ์ดที่ 4: การคำนวณเงินและภาษี (Financial Calculations) */}
+      <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm space-y-5">
+        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+          <h2 className="text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+            <DollarSign className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+            <span>4. การคำนวณเงินและภาษี (Financial Summary & Tax Settings)</span>
+          </h2>
+          <span className="text-xs text-slate-400 font-mono">Tax & Totals</span>
         </div>
 
-        {/* 3. การเชื่อมโยงโครงการ (Project Link) & คลังสินค้า */}
-        <div className="border-b border-steel-200 pb-5">
-          <h3 className="font-bold text-sm text-ink mb-3 flex items-center gap-2">
-            <span>3. การเชื่อมโยงโครงการ และคลังสินค้า</span>
-          </h3>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <div className="sm:col-span-2">
-              <label className="block text-xs font-semibold text-steel-700 mb-1">
-                เลือกโปรเจกต์ (โครงการ)
-              </label>
-              <SearchableProjectSelect
-                projects={projects}
-                value={projectId}
-                onChange={(val) => handleSelectProject(val)}
-                placeholder="พิมพ์รหัส หรือชื่อโครงการเพื่อค้นหา..."
-              />
-            </div>
-
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+          <div className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-steel-700 mb-1">
-                เลขที่อ้างอิง (Ref No.)
-              </label>
-              <input
-                className="input text-xs"
-                placeholder="เช่น REF-6901 / เลขที่สั่งจ้าง"
-                value={refNo}
-                onChange={(e) => setRefNo(e.target.value)}
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-steel-700 mb-1">
-                เลือกคลังสินค้า (Warehouse)
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                การคิดภาษีมูลค่าเพิ่ม (VAT) *
               </label>
               <select
                 className="input text-xs"
-                value={warehouseName}
-                onChange={(e) => setWarehouseName(e.target.value)}
+                value={taxType}
+                onChange={(e) => setTaxType(e.target.value)}
               >
-                {WAREHOUSES.map((w) => (
-                  <option key={w} value={w}>{w}</option>
-                ))}
+                <option value="vat_excluded">ราคาแยกภาษีมูลค่าเพิ่ม +7% (VAT Excluded)</option>
+                <option value="vat_included">ราคารวมภาษีมูลค่าเพิ่ม 7% แล้ว (VAT Included)</option>
+                <option value="vat_exempt">ไม่มีภาษี / ได้รับการยกเว้น (VAT Exempt 0%)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                หักภาษี ณ ที่จ่าย (Withholding Tax - WHT)
+              </label>
+              <select
+                className="input text-xs"
+                value={whtRate}
+                onChange={(e) => setWhtRate(e.target.value)}
+              >
+                <option value="0">ไม่หักภาษี ณ ที่จ่าย (0%)</option>
+                <option value="1">หัก 1% (ค่าขนส่ง)</option>
+                <option value="3">หัก 3% (ค่าบริการ / ค่าจ้างทำของ / ค่าเช่า)</option>
               </select>
             </div>
           </div>
-        </div>
 
-        {/* 4. ตารางรายการสินค้าและบริการ (Itemized Table) */}
-        <div className="border-b border-steel-200 pb-5">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-bold text-sm text-ink flex items-center gap-2">
-              <span>4. รายการสินค้าและบริการ (Itemized Table)</span>
-            </h3>
-            <span className="text-xs text-steel-500">เลือกจากคลัง: <b>{warehouseName}</b></span>
-          </div>
-
-          <datalist id="catalog-quotation-items">
-            {catalog.map((c) => (
-              <option key={c.id} value={c.item_name}>[{c.item_code}] {c.unit ? `(${c.unit})` : ''}</option>
-            ))}
-          </datalist>
-
-          <div className="space-y-3">
-            <div className="hidden sm:grid sm:grid-cols-[auto_1fr_6rem_5rem_7rem_5rem_7rem_auto] gap-2.5 text-xs font-bold text-steel-600 dark:text-slate-400 px-3 pb-1 border-b border-steel-100 dark:border-slate-800">
-              <span className="w-7 text-center">#</span>
-              <span>ชื่อสินค้า / รายการงานวิศวกรรม *</span>
-              <span className="text-right">จำนวน</span>
-              <span className="text-center">หน่วย</span>
-              <span className="text-right">ราคา/หน่วย</span>
-              <span className="text-right">ส่วนลด %</span>
-              <span className="text-right">ราคารวม ({currency})</span>
-              <span className="w-10 text-center font-bold text-rose-600 dark:text-rose-400">ลบ</span>
-            </div>
-
-            {items.map((it, idx) => {
-              const calc = lineTotals[idx]
-              const nameEmpty = showItemErrors && !it.item_name?.trim()
-              const qtyEmpty = showItemErrors && (!it.quantity || Number(it.quantity) <= 0)
-              const priceEmpty = showItemErrors && (it.unit_price === '' || isNaN(Number(it.unit_price)))
-
-              return (
-                <div
-                  key={idx}
-                  className={`rounded-2xl border p-3.5 space-y-2.5 transition shadow-xs ${nameEmpty || qtyEmpty || priceEmpty
-                    ? 'border-rose-300 dark:border-rose-800 bg-rose-50/20 dark:bg-rose-950/20'
-                    : 'border-steel-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-steel-300 dark:hover:border-slate-700'
-                    }`}
-                >
-                  {/* แถวที่ 1: ข้อมูลสินค้าและตัวเลขราคา */}
-                  <div className="grid grid-cols-2 sm:grid-cols-[auto_1fr_6rem_5rem_7rem_5rem_7rem_auto] gap-2.5 items-center">
-                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-steel-100 dark:bg-slate-800 font-mono font-bold text-xs text-steel-700 dark:text-slate-300">
-                      #{idx + 1}
-                    </span>
-
-                    <div className="col-span-2 sm:col-span-1">
-                      <input
-                        list="catalog-quotation-items"
-                        className={fieldErrorClass(nameEmpty, "input text-xs w-full font-bold text-steel-900 dark:text-slate-100")}
-                        placeholder="ระบุชื่อสินค้า / บริการ / อุปกรณ์..."
-                        value={it.item_name}
-                        onChange={(e) => updItem(idx, 'item_name', e.target.value)}
-                      />
-                      {nameEmpty && <FieldError error="กรุณาระบุชื่อสินค้า/บริการ" />}
-                    </div>
-
-                    <div>
-                      <input
-                        type="number"
-                        min="1"
-                        step="1"
-                        className={fieldErrorClass(qtyEmpty, "input text-xs text-right w-full font-mono font-bold")}
-                        placeholder="จำนวน"
-                        value={it.quantity}
-                        onChange={(e) => updItem(idx, 'quantity', e.target.value)}
-                      />
-                    </div>
-
-                    <div>
-                      <input
-                        className="input text-xs text-center w-full"
-                        placeholder="หน่วย"
-                        value={it.unit}
-                        onChange={(e) => updItem(idx, 'unit', e.target.value)}
-                      />
-                    </div>
-
-                    <div>
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        className={fieldErrorClass(priceEmpty, "input text-xs text-right w-full font-mono")}
-                        placeholder="ราคา/หน่วย"
-                        value={it.unit_price}
-                        onChange={(e) => updItem(idx, 'unit_price', e.target.value)}
-                      />
-                    </div>
-
-                    <div>
-                      <input
-                        type="number"
-                        min="0"
-                        max="100"
-                        step="0.1"
-                        className="input text-xs text-right w-full font-mono"
-                        placeholder="ลด %"
-                        value={it.discount_percent}
-                        onChange={(e) => updItem(idx, 'discount_percent', e.target.value)}
-                      />
-                    </div>
-
-                    <div className="col-span-2 sm:col-span-1 text-right font-mono font-black text-xs text-sky-900 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/40 py-2 px-3 rounded-xl border border-sky-100 dark:border-sky-800">
-                      {baht(calc.lineTotal)}
-                    </div>
-
-                    <div className="flex justify-end sm:justify-center">
-                      <button
-                        type="button"
-                        onClick={() => setItems(items.filter((_, i) => i !== idx))}
-                        disabled={items.length === 1}
-                        className="h-9 px-3 text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 dark:hover:bg-rose-900/60 rounded-xl transition cursor-pointer border border-rose-200 dark:border-rose-900 shadow-2xs flex items-center justify-center gap-1.5 font-bold text-xs disabled:opacity-25 disabled:cursor-not-allowed shrink-0"
-                        title={items.length <= 1 ? 'รายการต้องมีอย่างน้อย 1 แถว' : 'ลบแถวนี้'}
-                      >
-                        <Trash2 className="h-4 w-4 text-rose-600 dark:text-rose-400 shrink-0" />
-                        <span className="hidden xl:inline text-[11px]">ลบ</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* แถวที่ 2: Richbox / Textarea ขยายลงล่าง สำหรับสเปกและรายละเอียด */}
-                  <div className="pt-1 border-t border-steel-100 dark:border-slate-800">
-                    <div className="flex items-center justify-between text-[11px] text-steel-500 dark:text-slate-400 mb-1">
-                      <span className="flex items-center gap-1.5 font-semibold text-steel-700 dark:text-slate-300">
-                        <Info className="h-3.5 w-3.5 text-steel-400 dark:text-slate-500" />
-                        <span>รายละเอียดเฉพาะ / สเปกวิศวกรรม</span>
-                      </span>
-                      <span className="text-[10px] text-steel-400 dark:text-slate-500">รองรับข้อความหลายบรรทัดและหัวข้อย่อย</span>
-                    </div>
-                    <textarea
-                      rows={2}
-                      className="w-full rounded-xl border border-steel-200 dark:border-slate-700 bg-steel-50/60 dark:bg-slate-800/60 p-2.5 text-xs text-steel-800 dark:text-slate-200 placeholder:text-steel-400 focus:bg-white dark:focus:bg-slate-800 focus:border-steel-900 dark:focus:border-amber-500 focus:outline-none transition leading-relaxed font-sans"
-                      placeholder="เช่น • แผงโซล่าเซลล์ชนิด Monocrystalline Half-cell 550W Tier-1&#10;• รับประกันตัวผลิตภัณฑ์ 12 ปี และรับประกันประสิทธิภาพการผลิตไฟ 25 ปี&#10;• ได้รับมาตรฐานสากล TUV Rheinland / IEC 61215"
-                      value={it.description || ''}
-                      onChange={(e) => updItem(idx, 'description', e.target.value)}
-                    />
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-
-          <div className="mt-3 flex justify-between items-center">
-            <button
-              type="button"
-              onClick={() => setItems([...items, { ...EMPTY_ITEM }])}
-              className="btn-ghost !py-1.5 text-xs font-bold flex items-center gap-1.5 cursor-pointer text-sky-700 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-950/40 rounded-xl"
-            >
-              <Plus className="h-4 w-4" />
-              <span>เพิ่มรายการสินค้า/บริการ</span>
-            </button>
-            <span className="text-xs text-steel-500">{items.length} รายการ</span>
-          </div>
-        </div>
-
-        {/* 5. การคำนวณเงินและภาษี (Financial Calculations) */}
-        <div className="border-b border-steel-200 pb-5">
-          <h3 className="font-bold text-sm text-ink mb-3 flex items-center gap-2">
-            <span>5. การคำนวณเงินและภาษี (Financial Calculations)</span>
-          </h3>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-            <div className="space-y-3">
-              <div>
-                <label className="block text-xs font-semibold text-steel-700 mb-1">
-                  การคิดภาษีมูลค่าเพิ่ม (VAT) *
-                </label>
-                <select
-                  className="input text-xs"
-                  value={taxType}
-                  onChange={(e) => setTaxType(e.target.value)}
-                >
-                  <option value="vat_excluded">ราคาแยกภาษีมูลค่าเพิ่ม +7% (VAT Excluded)</option>
-                  <option value="vat_included">ราคารวมภาษีมูลค่าเพิ่ม 7% แล้ว (VAT Included)</option>
-                  <option value="vat_exempt">ไม่มีภาษี / ได้รับการยกเว้น (VAT Exempt 0%)</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-steel-700 mb-1">
-                  หักภาษี ณ ที่จ่าย (Withholding Tax - WHT)
-                </label>
-                <select
-                  className="input text-xs"
-                  value={whtRate}
-                  onChange={(e) => setWhtRate(e.target.value)}
-                >
-                  <option value="0">ไม่หักภาษี ณ ที่จ่าย (0%)</option>
-                  <option value="1">หัก 1% (ค่าขนส่ง)</option>
-                  <option value="3">หัก 3% (ค่าบริการ / ค่าจ้างทำของ / ค่าเช่า)</option>
-                </select>
-              </div>
-            </div>
-
-            {/* ตารางสรุปการเงิน */}
-            <div className="rounded-xl border border-steel-200 bg-steel-50 p-4 text-xs space-y-2">
-              <div className="flex justify-between text-steel-600">
-                <span>รวมเป็นเงิน (Subtotal):</span>
-                <span className="font-semibold">{baht(subtotal)} {currency}</span>
-              </div>
-              <div className="flex justify-between text-red-600">
-                <span>ส่วนลดรวม (Total Discount):</span>
-                <span>- {baht(totalDiscount)} {currency}</span>
-              </div>
-              <div className="flex justify-between font-bold text-ink border-t border-steel-200 pt-1.5">
-                <span>ราคาหลังหักส่วนลด:</span>
-                <span>{baht(afterDiscount)} {currency}</span>
-              </div>
-              <div className="flex justify-between text-steel-600">
-                <span>ภาษีมูลค่าเพิ่ม (VAT {taxType === 'vat_exempt' ? '0' : '7'}%):</span>
-                <span>+ {baht(vatAmount)} {currency}</span>
-              </div>
-              {Number(whtRate) > 0 && (
-                <div className="flex justify-between text-amber-700 font-semibold">
-                  <span>หักภาษี ณ ที่จ่าย ({whtRate}%):</span>
-                  <span>- {baht(whtAmount)} {currency}</span>
-                </div>
-              )}
-              <div className="flex justify-between font-extrabold text-base text-sky-900 border-t-2 border-sky-400 pt-2">
-                <span>ยอดเงินรวมทั้งสิ้น (Grand Total):</span>
-                <span>{baht(grandTotal)} {currency}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* 6. เงื่อนไขและหมายเหตุ (Terms & Notes) & ลายเซ็น/ไฟล์แนบ */}
-        <div>
-          <h3 className="font-bold text-sm text-ink mb-3 flex items-center gap-2">
-            <span>6. เงื่อนไข หมายเหตุ และลายเซ็น/ตราประทับ</span>
-          </h3>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-steel-700 mb-1">
-                หมายเหตุ (แสดงให้ลูกค้าเห็นในใบเสนอราคา)
-              </label>
-              <textarea
-                rows={4}
-                className="input text-xs"
-                placeholder="ระบุเงื่อนไขการส่งมอบ ชำระเงิน หรือการยืนราคา..."
-                value={customerNotes}
-                onChange={(e) => setCustomerNotes(e.target.value)}
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-amber-800 mb-1">
-                โน้ตภายในบริษัท (บันทึกเฉพาะทีมงาน ไม่แสดงให้ลูกค้าเห็น)
-              </label>
-              <textarea
-                rows={4}
-                className="input text-xs bg-amber-50/50 border-amber-200"
-                placeholder="บันทึกต้นทุนแฝง, ข้อตกลงพิเศษกับลูกค้า, หรือข้อสังเกตของทีมขาย..."
-                value={internalNotes}
-                onChange={(e) => setInternalNotes(e.target.value)}
-              />
-            </div>
-          </div>
-
-          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 pt-3 border-t border-steel-100">
-            {/* ลายเซ็นอิเล็กทรอนิกส์และตราประทับ */}
-            <div className="rounded-lg border border-steel-200 p-3 bg-steel-50/40">
-              <span className="block text-xs font-semibold text-steel-700 mb-2">
-                ️ ลายเซ็นอิเล็กทรอนิกส์และตราประทับบริษัท
+          {/* สรุปการเงินระดับบริหาร (Executive Financial Card) */}
+          <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 p-5 text-xs space-y-2.5 shadow-2xs">
+            <div className="flex justify-between text-slate-600 dark:text-slate-300">
+              <span>รวมเป็นเงิน (Subtotal):</span>
+              <span className="font-mono font-bold text-slate-800 dark:text-slate-100">
+                {baht(subtotal)} {currency}
               </span>
-              <div className="flex items-center gap-3">
-                {signatureUrl ? (
-                  <div className="relative">
-                    <R2Image fileKey={signatureUrl} alt="ลายเซ็น" className="h-14 w-28 object-contain border rounded bg-white" />
-                    <button
-                      type="button"
-                      onClick={() => setSignatureUrl('')}
-                      className="absolute -top-1 -right-1 rounded-full bg-red-600 text-white w-4 h-4 text-[10px] flex items-center justify-center cursor-pointer"
-                    >
-
-                    </button>
-                  </div>
-                ) : (
-                  <div className="h-14 w-28 border border-dashed border-steel-300 rounded flex items-center justify-center text-[10px] text-steel-400">
-                    ยังไม่มีลายเซ็น
-                  </div>
-                )}
-                <div>
-                  <input
-                    ref={sigInputRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => handleUploadFile(e, 'signature')}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => sigInputRef.current?.click()}
-                    className="btn-ghost !py-1 text-xs"
-                    disabled={busy}
-                  >
-                    {signatureUrl ? 'เปลี่ยนลายเซ็น' : 'อัปโหลดลายเซ็น/ตราประทับ'}
-                  </button>
-                  <p className="text-[10px] text-steel-400 mt-1">รองรับไฟล์ PNG โปร่งใส หรือ JPG</p>
-                </div>
-              </div>
             </div>
-
-            {/* ช่องแนบไฟล์เอกสารทั่วไป (รูปภาพ, PDF, Excel) */}
-            <div className="rounded-lg border border-steel-200 p-3 bg-steel-50/40">
-              <span className="block text-xs font-semibold text-steel-700 mb-2">
-                แนบไฟล์เอกสารทั่วไป (รูปภาพ, PDF, Excel)
+            <div className="flex justify-between text-rose-600 dark:text-rose-400">
+              <span>ส่วนลดรวม (Total Discount):</span>
+              <span className="font-mono font-bold">- {baht(totalDiscount)} {currency}</span>
+            </div>
+            <div className="flex justify-between font-bold text-slate-800 dark:text-slate-100 border-t border-slate-200 dark:border-slate-700 pt-2">
+              <span>ราคาหลังหักส่วนลด:</span>
+              <span className="font-mono">{baht(afterDiscount)} {currency}</span>
+            </div>
+            <div className="flex justify-between text-slate-600 dark:text-slate-300">
+              <span>ภาษีมูลค่าเพิ่ม (VAT {taxType === 'vat_exempt' ? '0' : '7'}%):</span>
+              <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">
+                + {baht(vatAmount)} {currency}
               </span>
-              <div className="flex items-center gap-3">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*,.pdf,.xlsx,.xls,.doc,.docx"
-                  className="hidden"
-                  onChange={(e) => handleUploadFile(e, 'attachment')}
-                />
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="btn-ghost !py-1 text-xs"
-                  disabled={busy}
-                >
-                  เลือกไฟล์แนบ
-                </button>
-                {attachmentUrl && (
-                  <div className="flex items-center gap-1.5 text-xs text-sky-700">
-                    <span>✓ แนบแล้ว:</span>
-                    <button
-                      type="button"
-                      onClick={() => openFile(attachmentUrl)}
-                      className="underline font-semibold max-w-xs truncate text-sky-700 hover:text-sky-900 cursor-pointer text-left"
-                    >
-                      {attachmentName || 'ดูไฟล์แนบ'}
-                    </button>
-                  </div>
-                )}
+            </div>
+            {Number(whtRate) > 0 && (
+              <div className="flex justify-between text-amber-700 dark:text-amber-400 font-semibold">
+                <span>หักภาษี ณ ที่จ่าย ({whtRate}%):</span>
+                <span className="font-mono font-bold">- {baht(whtAmount)} {currency}</span>
               </div>
-              <p className="text-[10px] text-steel-400 mt-1.5">เช่น สเปคสินค้า, BOQ ลูกค้า, หรือแบบร่างหน้างาน</p>
+            )}
+            <div className="flex justify-between font-extrabold text-base text-sky-900 dark:text-sky-300 border-t-2 border-sky-400 dark:border-sky-600 pt-3">
+              <span>ยอดเงินรวมทั้งสิ้น (Grand Total):</span>
+              <span className="font-mono text-lg">{baht(grandTotal)} {currency}</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* แสดงข้อความเตือนเมื่อมี Error */}
-      {error && (
-        <div className="mt-3 rounded-xl bg-rose-50 border border-rose-200 p-3 text-xs sm:text-sm font-semibold text-rose-800 flex items-center gap-2">
-          <span></span>
-          <span>{error}</span>
+      {/* การ์ดที่ 5: เงื่อนไข หมายเหตุ และลายเซ็น/ตราประทับ */}
+      <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm space-y-5">
+        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+          <h2 className="text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+            <FileCheck2 className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+            <span>5. เงื่อนไข หมายเหตุ และลายเซ็น/เอกสารแนบ (Terms & Attachments)</span>
+          </h2>
+          <span className="text-xs text-slate-400 font-mono">Signatures & Files</span>
         </div>
-      )}
 
-      {/* ปุ่มบันทึก */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+              หมายเหตุ (แสดงให้ลูกค้าเห็นในใบเสนอราคา)
+            </label>
+            <textarea
+              rows={4}
+              className="input text-xs"
+              placeholder="ระบุเงื่อนไขการส่งมอบ ชำระเงิน หรือการยืนราคา..."
+              value={customerNotes}
+              onChange={(e) => setCustomerNotes(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-amber-800 dark:text-amber-400 mb-1.5">
+              โน้ตภายในบริษัท (บันทึกเฉพาะทีมงาน ไม่แสดงให้ลูกค้าเห็น)
+            </label>
+            <textarea
+              rows={4}
+              className="input text-xs bg-amber-50/50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/60"
+              placeholder="บันทึกต้นทุนแฝง, ข้อตกลงพิเศษกับลูกค้า, หรือข้อสังเกตของทีมขาย..."
+              value={internalNotes}
+              onChange={(e) => setInternalNotes(e.target.value)}
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+          {/* ลายเซ็นอิเล็กทรอนิกส์และตราประทับ */}
+          <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-4 bg-slate-50/60 dark:bg-slate-800/40 space-y-3">
+            <span className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+              ลายเซ็นอิเล็กทรอนิกส์และตราประทับบริษัท
+            </span>
+            <div className="flex items-center gap-3">
+              {signatureUrl ? (
+                <div className="relative">
+                  <R2Image
+                    fileKey={signatureUrl}
+                    alt="ลายเซ็น"
+                    className="h-14 w-28 object-contain border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setSignatureUrl('')}
+                    className="absolute -top-1.5 -right-1.5 rounded-full bg-rose-600 text-white w-5 h-5 text-[10px] flex items-center justify-center cursor-pointer shadow-xs hover:bg-rose-700"
+                    title="ลบลายเซ็น"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ) : (
+                <div className="h-14 w-28 border border-dashed border-slate-300 dark:border-slate-700 rounded-xl flex items-center justify-center text-[10px] text-slate-400">
+                  ยังไม่มีลายเซ็น
+                </div>
+              )}
+              <div>
+                <input
+                  ref={sigInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => handleUploadFile(e, 'signature')}
+                />
+                <button
+                  type="button"
+                  onClick={() => sigInputRef.current?.click()}
+                  className="btn-ghost !py-1 text-xs"
+                  disabled={busy}
+                >
+                  {signatureUrl ? 'เปลี่ยนลายเซ็น' : 'อัปโหลดลายเซ็น/ตราประทับ'}
+                </button>
+                <p className="text-[10px] text-slate-400 mt-1">รองรับไฟล์ PNG โปร่งใส หรือ JPG</p>
+              </div>
+            </div>
+          </div>
+
+          {/* ช่องแนบไฟล์เอกสารทั่วไป (รูปภาพ, PDF, Excel) */}
+          <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-4 bg-slate-50/60 dark:bg-slate-800/40 space-y-3">
+            <span className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+              แนบไฟล์เอกสารประกอบ (PDF, รูปภาพ, Excel)
+            </span>
+            <div className="flex items-center gap-3">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*,.pdf,.xlsx,.xls,.doc,.docx"
+                className="hidden"
+                onChange={(e) => handleUploadFile(e, 'attachment')}
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="btn-ghost !py-1 text-xs"
+                disabled={busy}
+              >
+                เลือกไฟล์แนบ
+              </button>
+              {attachmentUrl && (
+                <div className="flex items-center gap-1.5 text-xs text-sky-700 dark:text-sky-400">
+                  <span>แนบแล้ว:</span>
+                  <button
+                    type="button"
+                    onClick={() => openFile(attachmentUrl)}
+                    className="underline font-semibold max-w-xs truncate hover:text-sky-900 dark:hover:text-sky-200 cursor-pointer text-left"
+                  >
+                    {attachmentName || 'ดูไฟล์แนบ'}
+                  </button>
+                </div>
+              )}
+            </div>
+            <p className="text-[10px] text-slate-400 mt-1">เช่น สเปคสินค้า, BOQ ลูกค้า, หรือแบบร่างหน้างาน</p>
+          </div>
+        </div>
+      </div>
+
+      {/* แถบปุ่มบันทึกด้านล่าง (Bottom Action Bar) */}
       <div className="flex items-center justify-end gap-3 pt-3">
-        <Link to="/quotations" className="btn-ghost">
+        <Link
+          to="/quotations"
+          className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition"
+        >
           ยกเลิก
         </Link>
         <button
           type="button"
           onClick={save}
           disabled={busy}
-          className="btn-primary !py-2 px-6 shadow-md"
+          className="inline-flex items-center gap-2 rounded-xl bg-sky-700 hover:bg-sky-800 text-white px-6 py-2.5 text-xs font-bold shadow-md hover:shadow-lg transition cursor-pointer disabled:opacity-50"
         >
-          {busy ? 'กำลังบันทึก...' : ' บันทึกใบเสนอราคา'}
+          <Check className="h-4 w-4" />
+          <span>{busy ? 'กำลังบันทึก...' : 'บันทึกใบเสนอราคา'}</span>
         </button>
       </div>
     </div>
