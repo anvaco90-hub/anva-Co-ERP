@@ -1,10 +1,18 @@
-import { useCallback, useEffect, useState, useMemo } from 'react'
+import { Fragment, useCallback, useEffect, useState, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
 import { canManageStore, formatIntQty, toIntQty } from '../../lib/store'
 import { baht } from '../../lib/projects'
-import { ArrowLeft } from 'lucide-react'
+import { getPoDueStatus, formatThaiDate } from '../../lib/poDueStatus'
+import {
+  ArrowLeft,
+  ChevronDown,
+  ChevronUp,
+  PackageCheck,
+  ExternalLink,
+  Package,
+} from 'lucide-react'
 import SearchableItemSelect from '../../components/SearchableItemSelect'
 import SearchableProjectSelect from '../../components/SearchableProjectSelect'
 import Pagination from '../../components/Pagination'
@@ -37,6 +45,17 @@ export default function ReceiptsList() {
   const [receiveQuantities, setReceiveQuantities] = useState({})
   const [receivingSubmitting, setReceivingSubmitting] = useState(false)
   const [receiveModalError, setReceiveModalError] = useState('')
+
+  // State สำหรับการขยาย/ย่อแถวรายละเอียดของใบสั่งซื้อรอตรวจรับ (Expandable Accordion Rows)
+  const [expandedPendingPoIds, setExpandedPendingPoIds] = useState(new Set())
+  const toggleExpandPendingPo = (id) => {
+    setExpandedPendingPoIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
 
   const RECEIPTS_SORT_OPTIONS = [
     { value: 'date_desc', label: ' วันที่และเวลาล่าสุด (ใหม่  เก่า)' },

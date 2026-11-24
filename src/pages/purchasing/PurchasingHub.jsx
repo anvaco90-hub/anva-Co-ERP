@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, useMemo } from 'react'
+import { Fragment, useCallback, useEffect, useState, useMemo } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
@@ -50,6 +50,8 @@ import {
   Workflow,
   PackageCheck,
   Coins,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react'
 
 export default function PurchasingHub() {
@@ -58,6 +60,17 @@ export default function PurchasingHub() {
   const [searchParams, setSearchParams] = useSearchParams()
   const initialTab = searchParams.get('tab') || 'pipeline' // 'pipeline' | 'pr' | 'po' | 'receipts'
   const [activeTab, setActiveTab] = useState(initialTab)
+
+  // จัดการการขยาย/ย่อแถวรายละเอียดของใบสั่งซื้อรอตรวจรับ (Expandable Accordion Rows)
+  const [expandedPendingPoIds, setExpandedPendingPoIds] = useState(new Set())
+  const toggleExpandPendingPo = (id) => {
+    setExpandedPendingPoIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
 
   // โมดัลต่าง ๆ
   const [paymentTargetPo, setPaymentTargetPo] = useState(null)
@@ -2108,95 +2121,182 @@ export default function PurchasingHub() {
                   </div>
 
                   <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs">
-                    <table className="table-auto w-full text-left text-xs min-w-[950px] divide-y divide-slate-200 dark:divide-slate-800 border-collapse">
+                    <table className="table-auto w-full text-left text-xs divide-y divide-slate-200 dark:divide-slate-800 border-collapse">
                       <thead className="bg-slate-100/90 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 font-bold uppercase tracking-wider text-[11px] border-b-2 border-slate-300 dark:border-slate-700">
                         <tr>
-                          <th className="py-3.5 px-3.5 text-center w-36 border-r border-slate-200/70 dark:border-slate-700/60 whitespace-nowrap">เลขที่ PO</th>
-                          <th className="py-3.5 px-3.5 min-w-[170px] border-r border-slate-200/70 dark:border-slate-700/60">ร้านค้า / ผู้ขาย</th>
-                          <th className="py-3.5 px-3.5 min-w-[170px] border-r border-slate-200/70 dark:border-slate-700/60">โครงการ / ลูกค้า</th>
-                          <th className="py-3.5 px-3 text-center w-28 border-r border-slate-200/70 dark:border-slate-700/60 whitespace-nowrap">วันที่สั่งซื้อ</th>
-                          <th className="py-3.5 px-3.5 text-center min-w-[150px] border-r border-slate-200/70 dark:border-slate-700/60 whitespace-nowrap">กำหนดส่งมอบ</th>
-                          <th className="py-3.5 px-3 text-center w-28 border-r border-slate-200/70 dark:border-slate-700/60 whitespace-nowrap">สถานะรับของ</th>
-                          <th className="py-3.5 px-3.5 text-right w-32 border-r border-slate-200/70 dark:border-slate-700/60 whitespace-nowrap">ยอดสั่งซื้อ (บาท)</th>
-                          <th className="py-3.5 px-3.5 text-center w-36 whitespace-nowrap">การรับของ</th>
+                          <th className="py-3 px-3 text-center w-36 border-r border-slate-200/70 dark:border-slate-700/60 whitespace-nowrap">เลขที่ PO</th>
+                          <th className="py-3 px-4 min-w-[200px] border-r border-slate-200/70 dark:border-slate-700/60">ร้านค้า / ผู้ขาย</th>
+                          <th className="py-3 px-4 text-center w-48 border-r border-slate-200/70 dark:border-slate-700/60 whitespace-nowrap">กำหนดส่งมอบ</th>
+                          <th className="py-3 px-4 text-center w-48 whitespace-nowrap">การดำเนินการ</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-200 dark:divide-slate-800 bg-white dark:bg-slate-900">
                         {pendingReceipts.length === 0 ? (
                           <tr>
-                            <td colSpan={8} className="py-10 text-center text-steel-400 dark:text-slate-500">
+                            <td colSpan={4} className="py-10 text-center text-steel-400 dark:text-slate-500">
                               ไม่มีใบสั่งซื้อค้างส่งมอบ หรือไม่พบข้อมูลตามช่วงวันที่ที่เลือก
                             </td>
                           </tr>
                         ) : (
                           paginatedReceipts.map((r, rowIdx) => {
+                            const isExpanded = expandedPendingPoIds.has(r.id)
                             const dueStatus = getPoDueStatus(r)
+                            const isPartial = r.status === 'partial'
                             return (
-                              <tr
-                                key={r.id}
-                                className={`transition-colors border-b border-slate-200 dark:border-slate-800 ${
-                                  rowIdx % 2 === 0
-                                    ? 'bg-white dark:bg-slate-900'
-                                    : 'bg-slate-50/70 dark:bg-slate-800/40'
-                                } hover:!bg-amber-50/70 dark:hover:!bg-slate-750`}
-                              >
-                                <td className="py-3 px-3.5 text-center font-bold text-emerald-700 dark:text-emerald-400 whitespace-nowrap align-middle border-r border-slate-200/60 dark:border-slate-800/60">
-                                  <Link to={`/purchasing/po/${r.id}`} className="hover:underline font-mono inline-flex items-center justify-center gap-1">
-                                    <span>{r.po_no}</span>
-                                  </Link>
-                                  {r.pr?.pr_no && <div className="text-[11px] text-steel-500 dark:text-slate-400 font-mono mt-0.5">จาก {r.pr.pr_no}</div>}
-                                </td>
-                                <td className="py-3 px-3.5 align-middle border-r border-slate-200/60 dark:border-slate-800/60">
-                                  <div className="font-bold text-slate-900 dark:text-slate-100 truncate max-w-[190px]" title={r.custom_vendor_name || r.vendors?.vendor_name}>
-                                    {r.custom_vendor_name || r.vendors?.vendor_name || '-'}
-                                  </div>
-                                </td>
-                                <td className="py-3 px-3.5 align-middle border-r border-slate-200/60 dark:border-slate-800/60">
-                                  <div className="truncate max-w-[190px]" title={r.custom_project_name || `${r.projects?.project_code || ''} ${r.projects?.project_name || ''}`}>
-                                    <span className="font-bold text-steel-900 dark:text-slate-100">{r.custom_project_name || r.projects?.project_code || 'ของกลาง'}</span>{' '}
-                                    <span className="text-steel-600 dark:text-slate-400">{r.projects?.project_name}</span>
-                                  </div>
-                                  {r.customer_name && (
-                                    <div className="text-[11px] leading-relaxed text-blue-700 dark:text-sky-300 truncate max-w-[190px] mt-0.5" title={r.customer_name}>
-                                      {r.customer_name}
-                                    </div>
-                                  )}
-                                </td>
-                                <td className="py-3 px-3 text-center text-steel-600 dark:text-slate-300 whitespace-nowrap align-middle border-r border-slate-200/60 dark:border-slate-800/60 font-mono text-xs">
-                                  {formatThaiDate(r.order_date)}
-                                </td>
-                                <td className="py-3 px-3.5 text-center align-middle border-r border-slate-200/60 dark:border-slate-800/60 whitespace-nowrap">
-                                  <div className="font-mono text-xs font-bold text-steel-800 dark:text-slate-200">
-                                    {r.expected_delivery_date ? formatThaiDate(r.expected_delivery_date) : '-'}
-                                  </div>
-                                  {dueStatus && (
-                                    <div className="mt-1 flex justify-center">
-                                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${dueStatus.badgeCls}`}>
-                                        <span>{dueStatus.icon}</span>
-                                        <span>{dueStatus.label}</span>
-                                      </span>
-                                    </div>
-                                  )}
-                                </td>
-                                <td className="py-3 px-3 text-center whitespace-nowrap align-middle border-r border-slate-200/60 dark:border-slate-800/60">
-                                  <StatusBadge status={r.status} />
-                                </td>
-                                <td className="py-3 px-3.5 text-right font-black text-steel-900 dark:text-slate-100 whitespace-nowrap align-middle border-r border-slate-200/60 dark:border-slate-800/60 font-mono tabular-nums">
-                                  ฿{baht(r.total_amount)}
-                                </td>
-                                <td className="py-3 px-3.5 text-center whitespace-nowrap align-middle">
-                                  {canReceive ? (
+                              <Fragment key={r.id}>
+                                {/* แถวหลัก (Collapsed Row) แสดงข้อมูลจำเป็น 4 คอลัมน์ สะอาดตา ไม่ต้องเลื่อนจอ */}
+                                <tr
+                                  className={`transition-colors border-b border-slate-200 dark:border-slate-800 ${
+                                    isExpanded
+                                      ? 'bg-sky-50/70 dark:bg-sky-950/40'
+                                      : rowIdx % 2 === 0
+                                      ? 'bg-white dark:bg-slate-900'
+                                      : 'bg-slate-50/70 dark:bg-slate-800/40'
+                                  } hover:!bg-amber-50/70 dark:hover:!bg-slate-750`}
+                                >
+                                  {/* 1. เลขที่ PO + ป้ายสถานะ */}
+                                  <td className="py-3 px-3 text-center font-bold text-emerald-700 dark:text-emerald-400 whitespace-nowrap align-middle border-r border-slate-200/60 dark:border-slate-800/60">
                                     <Link
                                       to={`/purchasing/po/${r.id}`}
-                                      className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 transition cursor-pointer"
+                                      className="hover:underline font-mono inline-flex items-center justify-center gap-1 text-xs"
                                     >
-                                      <span>ตรวจรับสินค้า</span>
+                                      <span>{r.po_no}</span>
                                     </Link>
-                                  ) : (
-                                    <span className="text-xs text-steel-400 dark:text-slate-500">รอสโตร์ตรวจรับ</span>
-                                  )}
-                                </td>
-                              </tr>
+                                    <div className="mt-0.5">
+                                      {isPartial ? (
+                                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-700">
+                                          รับแล้วบางส่วน
+                                        </span>
+                                      ) : (
+                                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-700">
+                                          รอรับเข้าสโตร์
+                                        </span>
+                                      )}
+                                    </div>
+                                  </td>
+
+                                  {/* 2. ร้านค้า / ผู้ขาย + ยอดเงินย่อ */}
+                                  <td className="py-3 px-4 align-middle border-r border-slate-200/60 dark:border-slate-800/60">
+                                    <div className="font-bold text-slate-900 dark:text-slate-100 text-sm">
+                                      {r.custom_vendor_name || r.vendors?.vendor_name || '-'}
+                                    </div>
+                                    <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 flex flex-wrap items-center gap-2">
+                                      <span>สั่งเมื่อ {formatThaiDate(r.order_date)}</span>
+                                      <span className="text-slate-300 dark:text-slate-600">•</span>
+                                      <span className="font-semibold text-slate-700 dark:text-slate-300">ยอดรวม ฿{baht(r.total_amount)}</span>
+                                    </div>
+                                  </td>
+
+                                  {/* 3. กำหนดส่งมอบ */}
+                                  <td className="py-3 px-4 text-center align-middle border-r border-slate-200/60 dark:border-slate-800/60 whitespace-nowrap">
+                                    <div className="font-mono text-xs font-bold text-steel-800 dark:text-slate-200">
+                                      {r.expected_delivery_date ? formatThaiDate(r.expected_delivery_date) : '-'}
+                                    </div>
+                                    {dueStatus && (
+                                      <div className="mt-1 flex justify-center">
+                                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${dueStatus.badgeCls}`}>
+                                          <span>{dueStatus.icon}</span>
+                                          <span>{dueStatus.label}</span>
+                                        </span>
+                                      </div>
+                                    )}
+                                  </td>
+
+                                  {/* 4. ปุ่มตรวจรับสินค้า + ปุ่มขยายดูรายละเอียดเพิ่มเติม */}
+                                  <td className="py-3 px-4 text-center whitespace-nowrap align-middle">
+                                    <div className="flex items-center justify-center gap-2">
+                                      {canReceive ? (
+                                        <Link
+                                          to={`/purchasing/po/${r.id}`}
+                                          className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:shadow transition-all transform active:scale-95 cursor-pointer"
+                                        >
+                                          <PackageCheck className="w-3.5 h-3.5" />
+                                          <span>ตรวจรับสินค้า</span>
+                                        </Link>
+                                      ) : (
+                                        <span className="text-[11px] text-steel-400 dark:text-slate-500">รอสโตร์ตรวจรับ</span>
+                                      )}
+
+                                      <button
+                                        type="button"
+                                        onClick={() => toggleExpandPendingPo(r.id)}
+                                        className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border text-[11px] font-bold transition-all cursor-pointer ${
+                                          isExpanded
+                                            ? 'bg-sky-100 dark:bg-sky-900/80 text-sky-800 dark:text-sky-200 border-sky-300 dark:border-sky-700'
+                                            : 'bg-slate-100/80 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200/80 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700'
+                                        }`}
+                                        title={isExpanded ? 'ย่อรายละเอียด' : 'เลื่อนลงดูรายละเอียดเพิ่มเติม'}
+                                      >
+                                        <span>{isExpanded ? 'ย่อ' : 'รายละเอียด'}</span>
+                                        {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+
+                                {/* แถวขยายข้อมูล (Accordion Detail Panel - เลื่อนลงมาให้เห็นชัดเจน) */}
+                                {isExpanded && (
+                                  <tr className="bg-sky-50/50 dark:bg-sky-950/25 border-b-2 border-sky-200 dark:border-sky-800 animate-in fade-in duration-150">
+                                    <td colSpan={4} className="py-3 px-4 sm:px-6">
+                                      <div className="bg-white dark:bg-slate-900 rounded-xl p-3.5 border border-sky-200 dark:border-sky-800 shadow-xs space-y-3">
+                                        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-2">
+                                          <div className="flex items-center gap-2">
+                                            <span className="text-xs font-bold text-sky-800 dark:text-sky-300">
+                                              ข้อมูลโครงการและใบขอซื้อที่เกี่ยวข้อง ({r.po_no})
+                                            </span>
+                                            {r.pr?.pr_no && (
+                                              <span className="text-[10px] font-mono bg-sky-50 dark:bg-sky-900/40 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-700 px-2 py-0.5 rounded-full">
+                                                อ้างอิง PR: {r.pr.pr_no}
+                                              </span>
+                                            )}
+                                          </div>
+                                          <Link
+                                            to={`/purchasing/po/${r.id}`}
+                                            className="text-xs font-bold text-sky-600 dark:text-sky-400 hover:underline inline-flex items-center gap-1"
+                                          >
+                                            <span>เปิดดูใบสั่งซื้อเต็มรูปแบบ</span>
+                                            <ExternalLink className="w-3 h-3" />
+                                          </Link>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                                          {/* 1. โครงการเป้าหมาย */}
+                                          <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
+                                            <div className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold">โครงการเป้าหมาย</div>
+                                            <div className="font-bold text-slate-800 dark:text-slate-200 mt-0.5 truncate" title={r.custom_project_name || `${r.projects?.project_code || ''} ${r.projects?.project_name || ''}`}>
+                                              {r.custom_project_name || r.projects?.project_code || 'ของกลาง'} {r.projects?.project_name || ''}
+                                            </div>
+                                          </div>
+
+                                          {/* 2. ลูกค้า / ผู้ว่าจ้าง */}
+                                          <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
+                                            <div className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold">ลูกค้า / ผู้ว่าจ้าง</div>
+                                            <div className="font-bold text-blue-700 dark:text-sky-300 mt-0.5 truncate" title={r.customer_name}>
+                                              {r.customer_name || '-'}
+                                            </div>
+                                          </div>
+
+                                          {/* 3. ยอดเงินสั่งซื้อ */}
+                                          <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
+                                            <div className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold">มูลค่าสั่งซื้อรวม</div>
+                                            <div className="font-mono font-bold text-emerald-700 dark:text-emerald-400 mt-0.5 text-sm">
+                                              ฿{baht(r.total_amount)}
+                                            </div>
+                                          </div>
+
+                                          {/* 4. สถานะรับของ */}
+                                          <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
+                                            <div className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold">สถานะการส่งมอบ</div>
+                                            <div className="mt-0.5 font-bold text-slate-700 dark:text-slate-300">
+                                              {isPartial ? 'ทยอยรับของแล้วบางส่วน' : 'รอส่งมอบทั้งหมด 100%'}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                )}
+                              </Fragment>
                             )
                           })
                         )}

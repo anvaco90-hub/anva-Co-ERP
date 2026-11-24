@@ -32,6 +32,7 @@ import {
   ArrowLeft,
   Coins,
   ExternalLink,
+  MoreVertical,
 } from 'lucide-react'
 
 const NEW_ITEM = {
@@ -101,6 +102,14 @@ export default function ItemsMaster() {
   const [editForm, setEditForm] = useState({})
   const [editImageFile, setEditImageFile] = useState(null)
   const [editImagePreview, setEditImagePreview] = useState(null)
+
+  // Action Menu State (เมนูป๊อปอัป 3 จุด กะทัดรัด ไม่เบียดพื้นที่ตาราง)
+  const [actionMenuId, setActionMenuId] = useState(null)
+  useEffect(() => {
+    const handleOutsideClick = () => setActionMenuId(null)
+    window.addEventListener('click', handleOutsideClick)
+    return () => window.removeEventListener('click', handleOutsideClick)
+  }, [])
 
   const fileInputRef = useRef(null)
   const editFileInputRef = useRef(null)
@@ -1156,7 +1165,7 @@ export default function ItemsMaster() {
                 <th className="py-3.5 px-3 text-right whitespace-nowrap">จุดเตือน</th>
                 <th className="py-3.5 px-3 text-right whitespace-nowrap">ราคาเฉลี่ย</th>
                 <th className="py-3.5 px-4 whitespace-nowrap">อัปเดตล่าสุด</th>
-                <th className="py-3.5 pl-3 pr-4 text-center whitespace-nowrap">การจัดการ</th>
+                <th className="py-3.5 px-3 text-center whitespace-nowrap w-16">การจัดการ</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-steel-100 dark:divide-slate-800">
@@ -1273,31 +1282,69 @@ export default function ItemsMaster() {
                         )}
                       </td>
 
-                      {/* 10. การจัดการ (ปุ่มแก้ไข และปุ่มลบ สัดส่วนสมดุล) */}
-                      <td className="py-3.5 pl-3 pr-4 text-center whitespace-nowrap">
+                      {/* 10. การจัดการ (3 จุดกะทัดรัด พร้อม Popover เมนู ไม่เบียดพื้นที่ตาราง) */}
+                      <td className="py-2.5 px-3 text-center whitespace-nowrap align-middle">
                         {canEdit ? (
-                          <div className="flex items-center justify-center gap-1.5">
-                            {/* ปุ่มแก้ไข */}
+                          <div className="relative inline-block text-left" onClick={(e) => e.stopPropagation()}>
                             <button
                               type="button"
-                              onClick={() => openEditModal(it)}
-                              className="rounded-lg bg-steel-100 dark:bg-slate-800 hover:bg-steel-200 dark:hover:bg-slate-700 text-steel-800 dark:text-slate-200 border border-steel-200 dark:border-slate-700 px-2.5 py-1 text-xs font-bold transition flex items-center gap-1"
-                              title="แก้ไขข้อมูลพัสดุ"
+                              onClick={() => setActionMenuId(actionMenuId === it.id ? null : it.id)}
+                              className={`p-1.5 rounded-xl transition-all cursor-pointer border ${
+                                actionMenuId === it.id
+                                  ? 'bg-sky-50 dark:bg-sky-950/80 text-sky-700 dark:text-sky-300 border-sky-300 dark:border-sky-700 ring-2 ring-sky-400/20'
+                                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 border-transparent'
+                              }`}
+                              title="เมนูการจัดการ"
                             >
-                              <Edit2 className="h-3 w-3 text-steel-600 dark:text-slate-300" />
-                              <span>แก้ไข</span>
+                              <MoreVertical className="h-4 w-4" />
                             </button>
 
-                            {/* ปุ่มลบ */}
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteItem(it)}
-                              className="rounded-lg bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900/40 px-2.5 py-1 text-xs font-bold transition flex items-center gap-1"
-                              title="ลบรายการนี้"
-                            >
-                              <Trash2 className="h-3 w-3 text-rose-600 dark:text-rose-400" />
-                              <span>ลบ</span>
-                            </button>
+                            {/* Action Popover Menu */}
+                            {actionMenuId === it.id && (
+                              <div
+                                className="absolute right-0 top-full mt-1.5 z-50 min-w-[170px] rounded-2xl border border-steel-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-1.5 shadow-2xl text-xs space-y-1 text-left ring-1 ring-black/5 animate-in fade-in zoom-in-95 duration-100"
+                              >
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setActionMenuId(null)
+                                    openEditModal(it)
+                                  }}
+                                  className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-steel-700 dark:text-slate-200 hover:bg-steel-50 dark:hover:bg-slate-700 font-semibold transition cursor-pointer"
+                                >
+                                  <Edit2 className="h-3.5 w-3.5 text-sky-600 dark:text-sky-400" />
+                                  <span>แก้ไขข้อมูลพัสดุ</span>
+                                </button>
+
+                                {it.image_url && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setActionMenuId(null)
+                                      setPreviewModalImg(it.image_url)
+                                    }}
+                                    className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-steel-700 dark:text-slate-200 hover:bg-steel-50 dark:hover:bg-slate-700 font-semibold transition cursor-pointer"
+                                  >
+                                    <Package className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                                    <span>ดูรูปภาพใหญ่</span>
+                                  </button>
+                                )}
+
+                                <div className="border-t border-steel-100 dark:border-slate-700/60 my-1" />
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setActionMenuId(null)
+                                    handleDeleteItem(it)
+                                  }}
+                                  className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 font-semibold transition cursor-pointer"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5 text-rose-500" />
+                                  <span>ลบรายการนี้</span>
+                                </button>
+                              </div>
+                            )}
                           </div>
                         ) : (
                           <span className="text-steel-300 dark:text-slate-600 text-xs">-</span>
