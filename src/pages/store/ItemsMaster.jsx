@@ -94,6 +94,7 @@ export default function ItemsMaster() {
   // View Mode: 'table' (ตารางมาตรฐาน - ค่าเริ่มต้น) | 'grid' (การ์ดวิศวกรรม)
   const [viewMode, setViewMode] = useState('table')
   const [selectedCatFilter, setSelectedCatFilter] = useState('all')
+  const [catSearchQuery, setCatSearchQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(20) // 10 | 20 | 50 | 100
 
