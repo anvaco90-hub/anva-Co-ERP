@@ -350,78 +350,44 @@ export default function BOQDetail() {
 
   return (
     <div className="space-y-6 font-sans text-slate-800 w-full">
-      {/* 1. แบนเนอร์หัวหน้าเอกสารระดับบริหาร (Executive Corporate ERP Banner - ขนาดและไอคอนสมดุลตามมาตรฐาน Image 3) */}
-      <div className="rounded-2xl border border-slate-800 bg-[#0f172a] p-5 text-white shadow-sm">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
-          {/* ข้อมูลหัวเรื่องและ Metadata */}
-          <div className="space-y-2.5 min-w-0">
-            {/* ป้ายกำกับประเภทและสถานะ (Badges - ล็อกเป็นแนวนอนเสมอ ไม่ตกแถว) */}
-            <div className="flex items-center gap-2 flex-nowrap overflow-hidden">
-              <span className="text-[10px] font-mono uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-sky-500/15 text-sky-300 border border-sky-400/25 font-bold whitespace-nowrap shrink-0">
-                BOQ DOCUMENT
-              </span>
-              <span className={`inline-flex items-center px-2.5 py-0.5 text-xs font-bold rounded-full border shadow-2xs whitespace-nowrap shrink-0 ${st.color}`}>
-                {st.label}
-              </span>
-              {existingQuotation && (
-                <Link
-                  to={`/quotations/${existingQuotation.id}`}
-                  className="inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-bold rounded-full bg-sky-500/15 text-sky-300 border border-sky-400/30 hover:underline whitespace-nowrap shrink-0"
-                >
-                  <FileCheck2 className="h-3 w-3" />
-                  <span>ใบเสนอราคา: {existingQuotation.quotation_no}</span>
-                </Link>
-              )}
+      {/* 1. แบนเนอร์หัวหน้าเอกสารระดับบริหาร (Executive Corporate ERP Banner - เลย์เอาต์ 2 ชั้น สมดุลเต็มความกว้าง) */}
+      <div className="rounded-2xl border border-slate-800 bg-[#0f172a] p-5 text-white shadow-sm space-y-3.5">
+        {/* ชั้นที่ 1: รหัสเอกสาร + ป้ายสถานะ (ซ้าย) และ ปุ่ม Action คำสั่ง (ขวา) */}
+        <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
+          {/* ข้อมูลหัวเรื่อง รหัส และป้ายสถานะ */}
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-sky-500/15 border border-sky-400/20 text-sky-400 shrink-0">
+              <FileSpreadsheet className="h-5 w-5" />
             </div>
-
-            {/* รหัสเอกสาร ไอคอน และคำอธิบาย */}
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-500/15 border border-sky-400/20 text-sky-400 shrink-0">
-                <FileSpreadsheet className="h-5 w-5" />
-              </div>
-              <div className="min-w-0">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-2xl font-black tracking-tight text-white font-mono whitespace-nowrap">
                   {boq.boq_no}
                 </h1>
-                <p className="text-xs text-slate-400 mt-0.5 truncate">
-                  {boq.title || 'เอกสารถอดแบบและประมาณราคาค่าวัสดุและค่าแรง (Bill of Quantities)'}
-                </p>
-              </div>
-            </div>
-
-            {/* แถวข้อมูลย่อย (Metadata Lines จัดเป็นระเบียบชัดเจน) */}
-            <div className="space-y-1 text-xs text-slate-300 pt-1">
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-                <span className="flex items-center gap-1.5">
-                  <Calendar className="h-3.5 w-3.5 text-sky-400 shrink-0" />
-                  <span>สร้างเมื่อ: <strong className="text-white font-mono">{new Date(boq.created_at).toLocaleString('th-TH')}</strong></span>
+                <span className="text-[10px] font-mono uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-sky-500/15 text-sky-300 border border-sky-400/25 font-bold whitespace-nowrap">
+                  BOQ DOCUMENT
                 </span>
-                {boq.system_size_kwp && (
-                  <span className="flex items-center gap-1.5">
-                    <Sun className="h-3.5 w-3.5 text-amber-400 shrink-0" />
-                    <span>ขนาดติดตั้ง: <strong className="text-white">{boq.system_size_kwp} kWp</strong></span>
-                  </span>
+                <span className={`inline-flex items-center px-2.5 py-0.5 text-xs font-bold rounded-full border shadow-2xs whitespace-nowrap ${st.color}`}>
+                  {st.label}
+                </span>
+                {existingQuotation && (
+                  <Link
+                    to={`/quotations/${existingQuotation.id}`}
+                    className="inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-bold rounded-full bg-sky-500/15 text-sky-300 border border-sky-400/30 hover:underline whitespace-nowrap"
+                  >
+                    <FileCheck2 className="h-3 w-3" />
+                    <span>ใบเสนอราคา: {existingQuotation.quotation_no}</span>
+                  </Link>
                 )}
               </div>
-
-              {(boq.customer_name || boq.projects?.client_name) && (
-                <div className="flex items-center gap-1.5">
-                  <Building2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
-                  <span>ลูกค้า: <strong className="text-white">{boq.customer_name || boq.projects?.client_name}</strong></span>
-                </div>
-              )}
-
-              {boq.projects && (
-                <div className="flex items-center gap-1.5">
-                  <FolderGit2 className="h-3.5 w-3.5 text-purple-400 shrink-0" />
-                  <span>โครงการ: <strong className="text-sky-300">[{boq.projects.project_code}] {boq.projects.project_name}</strong></span>
-                </div>
-              )}
+              <p className="text-xs text-slate-400 mt-0.5 truncate">
+                {boq.title || 'เอกสารถอดแบบและประมาณราคาค่าวัสดุและค่าแรง (Bill of Quantities)'}
+              </p>
             </div>
           </div>
 
-          {/* แถบปุ่ม Action ด้านขวา (จัดเรียงเป็นแถวสมดุล สัดส่วนคงที่) */}
-          <div className="flex items-center gap-2 flex-wrap shrink-0 lg:self-center">
+          {/* แถบปุ่ม Action ด้านขวา (จัดเรียงเป็นแถวสมดุล สัดส่วนคงที่ h-9) */}
+          <div className="flex items-center gap-2 flex-wrap shrink-0">
             {/* ปุ่มแปลงเป็นใบเสนอราคา (ถ้าแปลงแล้วจะเปิดดูใบเดิม ป้องกันกดซ้ำ) */}
             {existingQuotation ? (
               <Link
@@ -478,6 +444,43 @@ export default function BOQDetail() {
             {/* ปุ่มย้อนกลับ */}
             <Link
               to="/boq"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800/90 hover:bg-slate-700 h-9 px-3 text-xs font-bold text-slate-200 hover:text-white transition shadow-xs"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+              <span>กลับ</span>
+            </Link>
+          </div>
+        </div>
+
+        {/* ชั้นที่ 2: แถบข้อมูลสรุปอ้างอิงเต็มความกว้าง (โครงการและข้อมูลทั้งหมดอยู่บรรทัดเดียวกันแบบเต็มจอ ไม่โดนปุ่มบีบ) */}
+        <div className="pt-3 border-t border-slate-800/80 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-slate-300">
+          <span className="flex items-center gap-1.5 shrink-0">
+            <Calendar className="h-3.5 w-3.5 text-sky-400 shrink-0" />
+            <span>สร้างเมื่อ: <strong className="text-white font-mono">{new Date(boq.created_at).toLocaleString('th-TH')}</strong></span>
+          </span>
+
+          {boq.system_size_kwp && (
+            <span className="flex items-center gap-1.5 shrink-0">
+              <Sun className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+              <span>ขนาดติดตั้ง: <strong className="text-white">{boq.system_size_kwp} kWp</strong></span>
+            </span>
+          )}
+
+          {(boq.customer_name || boq.projects?.client_name) && (
+            <span className="flex items-center gap-1.5 shrink-0">
+              <Building2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+              <span>ลูกค้า: <strong className="text-white">{boq.customer_name || boq.projects?.client_name}</strong></span>
+            </span>
+          )}
+
+          {boq.projects && (
+            <span className="flex items-center gap-1.5 shrink-0">
+              <FolderGit2 className="h-3.5 w-3.5 text-purple-400 shrink-0" />
+              <span>โครงการ: <strong className="text-sky-300">[{boq.projects.project_code}] {boq.projects.project_name}</strong></span>
+            </span>
+          )}
+        </div>
+      </div>
               className="inline-flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800/90 hover:bg-slate-700 h-9 px-3 text-xs font-bold text-slate-200 hover:text-white transition shadow-xs"
             >
               <ArrowLeft className="h-3.5 w-3.5" />

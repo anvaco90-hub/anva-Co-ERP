@@ -187,71 +187,41 @@ export default function QuotationDetail() {
 
   return (
     <div className="w-full space-y-6 pb-16">
-      {/* 1. แบนเนอร์หัวหน้าเอกสารระดับบริหาร (Executive Corporate ERP Banner - ขนาดและไอคอนสมดุลตามมาตรฐาน) */}
-      <div className="rounded-2xl border border-slate-800 bg-[#0f172a] p-5 text-white shadow-sm">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
-          {/* ข้อมูลหัวเรื่องและ Metadata */}
-          <div className="space-y-2.5 min-w-0">
-            {/* ป้ายกำกับประเภทและสถานะ (Badges - ล็อกเป็นแนวนอนเสมอ ไม่ตกเป็น 3 แถว) */}
-            <div className="flex items-center gap-2 flex-nowrap overflow-hidden">
-              <span className="text-[10px] font-mono uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-sky-500/15 text-sky-300 border border-sky-400/25 font-bold whitespace-nowrap shrink-0">
-                QUOTATION DOCUMENT
-              </span>
-              <span className={`inline-flex items-center px-2.5 py-0.5 text-xs font-bold rounded-full border shadow-2xs whitespace-nowrap shrink-0 ${statusInfo.color}`}>
-                {statusInfo.label}
-              </span>
-              {quotation.customer_po_no && (
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-bold rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-400/30 whitespace-nowrap shrink-0">
-                  <FileCheck className="h-3 w-3" />
-                  <span>PO: {quotation.customer_po_no}</span>
-                </span>
-              )}
+      {/* 1. แบนเนอร์หัวหน้าเอกสารระดับบริหาร (Executive Corporate ERP Banner - เลย์เอาต์ 2 ชั้น สมดุลเต็มความกว้าง) */}
+      <div className="rounded-2xl border border-slate-800 bg-[#0f172a] p-5 text-white shadow-sm space-y-3.5">
+        {/* ชั้นที่ 1: รหัสเอกสาร + ป้ายสถานะ (ซ้าย) และ ปุ่ม Action คำสั่ง (ขวา) */}
+        <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
+          {/* ข้อมูลหัวเรื่อง รหัส และป้ายสถานะ */}
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-sky-500/15 border border-sky-400/20 text-sky-400 shrink-0">
+              <ReceiptText className="h-5 w-5" />
             </div>
-
-            {/* รหัสเอกสาร ไอคอน และคำอธิบาย */}
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-500/15 border border-sky-400/20 text-sky-400 shrink-0">
-                <ReceiptText className="h-5 w-5" />
-              </div>
-              <div className="min-w-0">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-2xl font-black tracking-tight text-white font-mono whitespace-nowrap">
                   {quotation.quotation_no}
                 </h1>
-                <p className="text-xs text-slate-400 mt-0.5 truncate">
-                  เอกสารเสนอราคาโครงการวิศวกรรมและติดตั้งระบบโซลาร์เซลล์
-                </p>
-              </div>
-            </div>
-
-            {/* แถวข้อมูลย่อย (Metadata Lines จัดเป็นระเบียบชัดเจน) */}
-            <div className="space-y-1 text-xs text-slate-300 pt-1">
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-                <span className="flex items-center gap-1.5">
-                  <Calendar className="h-3.5 w-3.5 text-sky-400 shrink-0" />
-                  <span>วันที่ออก: <strong className="text-white font-mono">{quotation.issue_date ? new Date(quotation.issue_date).toLocaleDateString('th-TH') : '-'}</strong></span>
+                <span className="text-[10px] font-mono uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-sky-500/15 text-sky-300 border border-sky-400/25 font-bold whitespace-nowrap">
+                  QUOTATION DOCUMENT
                 </span>
-                <span className="flex items-center gap-1.5">
-                  <Clock className="h-3.5 w-3.5 text-amber-400 shrink-0" />
-                  <span>ยืนราคา: <strong className="text-white">{quotation.validity_days || '30'} วัน</strong> (ถึง {quotation.expiry_date || '-'})</span>
+                <span className={`inline-flex items-center px-2.5 py-0.5 text-xs font-bold rounded-full border shadow-2xs whitespace-nowrap ${statusInfo.color}`}>
+                  {statusInfo.label}
                 </span>
+                {quotation.customer_po_no && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-bold rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-400/30 whitespace-nowrap">
+                    <FileCheck className="h-3 w-3" />
+                    <span>PO: {quotation.customer_po_no}</span>
+                  </span>
+                )}
               </div>
-
-              <div className="flex items-center gap-1.5">
-                <Building2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
-                <span>ลูกค้า: <strong className="text-white">{quotation.customer_name}</strong></span>
-              </div>
-
-              {quotation.projects && (
-                <div className="flex items-center gap-1.5">
-                  <FolderGit2 className="h-3.5 w-3.5 text-purple-400 shrink-0" />
-                  <span>โครงการ: <strong className="text-sky-300">[{quotation.projects.project_code}] {quotation.projects.project_name}</strong></span>
-                </div>
-              )}
+              <p className="text-xs text-slate-400 mt-0.5 truncate">
+                เอกสารเสนอราคาโครงการวิศวกรรมและติดตั้งระบบโซลาร์เซลล์
+              </p>
             </div>
           </div>
 
-          {/* แถบปุ่ม Action ด้านขวา (จัดเรียงเป็นแถวสมดุล สัดส่วนคงที่) */}
-          <div className="flex items-center gap-2 flex-wrap shrink-0 lg:self-center">
+          {/* แถบปุ่ม Action ด้านขวา (จัดเรียงเป็นแถวสมดุล สัดส่วนคงที่ h-9) */}
+          <div className="flex items-center gap-2 flex-wrap shrink-0">
             {/* ปุ่มตามลำดับขั้นตอนหลัก */}
             {quotation.customer_po_no ? (
               <>
@@ -327,6 +297,31 @@ export default function QuotationDetail() {
               <Trash2 className="h-3.5 w-3.5" />
             </button>
           </div>
+        </div>
+
+        {/* ชั้นที่ 2: แถบข้อมูลสรุปอ้างอิงเต็มความกว้าง (โครงการและข้อมูลทั้งหมดอยู่บรรทัดเดียวกันแบบเต็มจอ ไม่โดนปุ่มบีบ) */}
+        <div className="pt-3 border-t border-slate-800/80 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-slate-300">
+          <span className="flex items-center gap-1.5 shrink-0">
+            <Calendar className="h-3.5 w-3.5 text-sky-400 shrink-0" />
+            <span>วันที่ออก: <strong className="text-white font-mono">{quotation.issue_date ? new Date(quotation.issue_date).toLocaleDateString('th-TH') : '-'}</strong></span>
+          </span>
+
+          <span className="flex items-center gap-1.5 shrink-0">
+            <Clock className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+            <span>ยืนราคา: <strong className="text-white">{quotation.validity_days || '30'} วัน</strong> (ถึง {quotation.expiry_date || '-'})</span>
+          </span>
+
+          <span className="flex items-center gap-1.5 shrink-0">
+            <Building2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+            <span>ลูกค้า: <strong className="text-white">{quotation.customer_name}</strong></span>
+          </span>
+
+          {quotation.projects && (
+            <span className="flex items-center gap-1.5 shrink-0">
+              <FolderGit2 className="h-3.5 w-3.5 text-purple-400 shrink-0" />
+              <span>โครงการ: <strong className="text-sky-300">[{quotation.projects.project_code}] {quotation.projects.project_name}</strong></span>
+            </span>
+          )}
         </div>
       </div>
 
