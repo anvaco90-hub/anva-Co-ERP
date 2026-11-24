@@ -323,7 +323,7 @@ export default function BOQForm() {
   }
 
   return (
-    <div className="max-w-6xl space-y-6 font-sans text-slate-800 dark:text-slate-100 transition-colors">
+    <div className="w-full space-y-6 font-sans text-slate-800 dark:text-slate-100 transition-colors">
       {/* 1. Header Banner */}
       <div className="rounded-2xl bg-gradient-to-r from-slate-900 via-steel-900 to-slate-800 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 p-6 text-white shadow-md border border-steel-700 dark:border-slate-800">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -495,7 +495,13 @@ export default function BOQForm() {
             </button>
           </div>
 
-          {/* Datalists สำหรับเลือกชื่อวัสดุในคลัง และ หน่วยนับ */}
+          {/* Datalists สำหรับหมวดหมู่งาน, รายการวัสดุในคลัง, และหน่วยนับ */}
+          <datalist id="boq-categories-list">
+            {SOLAR_BOQ_CATEGORIES.map((cat) => (
+              <option key={cat} value={cat} />
+            ))}
+          </datalist>
+
           <datalist id="boq-catalog-items">
             {catalog.map((c) => (
               <option key={c.id} value={c.item_name}>
@@ -510,7 +516,7 @@ export default function BOQForm() {
             ))}
           </datalist>
 
-          {/* เลย์เอาต์ 2 บรรทัด พอดีหน้าจอ 100% ไม่ต้องเลื่อนจอเพื่อลบ จัดกึ่งกลางสมดุล และแยกค่าแรงออกต่างหาก */}
+          {/* เลย์เอาต์รายการถอดแบบ: จัดชิดซ้าย สวยงาม ได้สัดส่วนกว้างเต็มหน้าจอ และแยกค่าแรงออกต่างหาก */}
           <div className="space-y-4">
             {items.map((it, idx) => {
               const c = lineCalcs[idx]
@@ -526,7 +532,7 @@ export default function BOQForm() {
                       : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 hover:border-slate-300 dark:hover:border-slate-700'
                   }`}
                 >
-                  {/* บรรทัดที่ 1: ลำดับ, หมวดหมู่งาน, ชื่อรายการพัสดุ/บริการ, และปุ่มลบอยู่ขวาสุด (มองเห็นทันที 100% ไม่ต้องเลื่อนจอ) */}
+                  {/* บรรทัดที่ 1: ลำดับ, หมวดหมู่งาน (พิมพ์ได้อิสระ), ชื่อรายการพัสดุ/บริการ, และปุ่มลบ (มองเห็นทันที 100%) */}
                   <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
                     {/* ลำดับ (#) */}
                     <div className="flex items-center justify-between sm:justify-start gap-2 shrink-0">
@@ -538,20 +544,16 @@ export default function BOQForm() {
                       </span>
                     </div>
 
-                    {/* หมวดหมู่งาน */}
-                    <div className="sm:w-64 shrink-0">
-                      <select
-                        className="input text-xs w-full text-center font-bold text-sky-900 dark:text-sky-300 bg-sky-50/60 dark:bg-sky-950/40 border-sky-200 dark:border-sky-800"
+                    {/* หมวดหมู่งาน (พิมพ์ได้อิสระ หรือเลือกจากรายการ) */}
+                    <div className="w-full sm:w-72 lg:w-80 shrink-0">
+                      <input
+                        list="boq-categories-list"
+                        type="text"
+                        className="input text-xs w-full text-left font-bold text-sky-900 dark:text-sky-300 bg-sky-50/60 dark:bg-sky-950/40 border-sky-200 dark:border-sky-800 placeholder:text-sky-600/70"
+                        placeholder="เลือกหรือพิมพ์หมวดหมู่งาน..."
                         value={it.category}
                         onChange={(e) => updItem(idx, 'category', e.target.value)}
-                      >
-                        <option value="">-- เลือกหมวดหมู่งาน --</option>
-                        {SOLAR_BOQ_CATEGORIES.map((cat) => (
-                          <option key={cat} value={cat}>
-                            {cat}
-                          </option>
-                        ))}
-                      </select>
+                      />
                     </div>
 
                     {/* ชื่อรายการพัสดุ / บริการ */}
@@ -561,7 +563,7 @@ export default function BOQForm() {
                         type="text"
                         className={fieldErrorClass(
                           nameEmpty,
-                          'input text-xs w-full font-bold text-slate-900 dark:text-slate-100 placeholder:font-normal'
+                          'input text-xs w-full text-left font-bold text-slate-900 dark:text-slate-100 placeholder:font-normal'
                         )}
                         placeholder="พิมพ์ชื่อพัสดุ / บริการ หรือเลือกจากคลังสินค้า..."
                         value={it.item_name}
@@ -569,7 +571,7 @@ export default function BOQForm() {
                       />
                     </div>
 
-                    {/* ปุ่มลบ (ถังขยะสีแดง มองเห็นทันที ไม่ต้องเลื่อนจอไปไหน) */}
+                    {/* ปุ่มลบ (ถังขยะสีแดง มองเห็นทันที ไม่ต้องเลื่อนจอ) */}
                     <div className="shrink-0 flex justify-end">
                       <button
                         type="button"
@@ -583,45 +585,45 @@ export default function BOQForm() {
                     </div>
                   </div>
 
-                  {/* บรรทัดที่ 2: ช่องตัวเลขคำนวณ จัดกึ่งกลางสมดุล พอดีหน้าจอ 100% พร้อมแยกค่าแรงออกต่างหาก */}
+                  {/* บรรทัดที่ 2: ช่องคำนวณ จัดชิดซ้าย สวยงาม ได้สัดส่วน พร้อมแยกค่าแรงออกต่างหาก */}
                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 pt-2.5 border-t border-slate-100 dark:border-slate-800/80">
-                    {/* ช่องที่ 1: จำนวน (Int) และ หน่วยนับ จัดกึ่งกลาง */}
-                    <div className="rounded-xl p-2.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700">
-                      <span className="block text-center text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                        จำนวน (Int) & หน่วยนับ
+                    {/* ช่องที่ 1: จำนวน และ หน่วยนับ (จัดชิดซ้าย ชัดเจน) */}
+                    <div className="rounded-xl p-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700">
+                      <span className="block text-left text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                        จำนวน & หน่วย
                       </span>
-                      <div className="grid grid-cols-2 gap-1.5">
+                      <div className="grid grid-cols-2 gap-2">
                         <input
                           type="number"
                           step="1"
                           min="1"
                           className={fieldErrorClass(
                             qtyEmpty,
-                            'input text-xs text-center w-full font-mono font-bold bg-white dark:bg-slate-900'
+                            'input text-xs text-left w-full font-mono font-bold bg-white dark:bg-slate-900'
                           )}
                           placeholder="จำนวน"
-                          title="ระบุจำนวน (จำนวนเต็ม)"
+                          title="ระบุจำนวน"
                           value={it.quantity}
                           onChange={(e) => updItem(idx, 'quantity', e.target.value)}
                         />
                         <input
                           list="boq-unit-list"
                           type="text"
-                          className="input text-xs text-center w-full bg-white dark:bg-slate-900"
+                          className="input text-xs text-left w-full bg-white dark:bg-slate-900"
                           placeholder="หน่วย"
                           title="ระบุหน่วยนับ"
                           value={it.unit}
                           onChange={(e) => updItem(idx, 'unit', e.target.value)}
                         />
                       </div>
-                      <div className="text-[10px] text-center text-slate-400 mt-1 font-mono">
-                        ปริมาณ: <span className="font-bold text-slate-700 dark:text-slate-300">{it.quantity || '0'}</span> {it.unit || '-'}
+                      <div className="text-[10px] text-left text-slate-400 mt-1 font-mono">
+                        ปริมาณรวม: <span className="font-bold text-slate-700 dark:text-slate-300">{it.quantity || '0'}</span> {it.unit || '-'}
                       </div>
                     </div>
 
-                    {/* ช่องที่ 2: ค่าวัสดุ/หน่วย (ธีมสีฟ้า จัดกึ่งกลาง) */}
-                    <div className="rounded-xl p-2.5 bg-sky-50/40 dark:bg-sky-950/20 border border-sky-200/80 dark:border-sky-800">
-                      <span className="block text-center text-[11px] font-bold text-sky-800 dark:text-sky-300 mb-1.5 flex items-center justify-center gap-1">
+                    {/* ช่องที่ 2: ค่าวัสดุ/หน่วย (จัดชิดซ้าย ชัดเจน) */}
+                    <div className="rounded-xl p-3 bg-sky-50/40 dark:bg-sky-950/20 border border-sky-200/80 dark:border-sky-800">
+                      <span className="block text-left text-[11px] font-bold text-sky-800 dark:text-sky-300 mb-1.5 flex items-center justify-start gap-1">
                         <Package className="h-3.5 w-3.5 text-sky-600 dark:text-sky-400" />
                         <span>ค่าวัสดุ/หน่วย (บ.)</span>
                       </span>
@@ -629,58 +631,58 @@ export default function BOQForm() {
                         type="number"
                         min="0"
                         step="0.01"
-                        className="input text-xs text-center w-full font-mono text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-900"
-                        placeholder="ค่าวัสดุ"
+                        className="input text-xs text-left w-full font-mono text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-900"
+                        placeholder="0.00"
                         title="ต้นทุนค่าวัสดุต่อหน่วย"
                         value={it.material_unit_cost}
                         onChange={(e) => updItem(idx, 'material_unit_cost', e.target.value)}
                       />
-                      <div className="text-[10px] text-center font-mono text-sky-700 dark:text-sky-300 mt-1 font-semibold">
+                      <div className="text-[10px] text-left font-mono text-sky-700 dark:text-sky-300 mt-1 font-semibold">
                         รวมวัสดุ: {baht(c.totalMat)} บ.
                       </div>
                     </div>
 
-                    {/* ช่องที่ 3: ค่าแรง/หน่วย (ธีมสีส้มอำพัน แยกค่าแรงออกต่างหาก จัดกึ่งกลาง) */}
-                    <div className="rounded-xl p-2.5 bg-amber-50/60 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-800">
-                      <span className="block text-center text-[11px] font-bold text-amber-800 dark:text-amber-300 mb-1.5 flex items-center justify-center gap-1">
+                    {/* ช่องที่ 3: ค่าแรง/หน่วย (แยกต่างหาก พิมพ์ได้อิสระ จัดชิดซ้าย) */}
+                    <div className="rounded-xl p-3 bg-amber-50/60 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-800">
+                      <span className="block text-left text-[11px] font-bold text-amber-800 dark:text-amber-300 mb-1.5 flex items-center justify-start gap-1">
                         <Wrench className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
-                        <span>ค่าแรง/หน่วย (แยกต่างหาก)</span>
+                        <span>ค่าแรง/หน่วย (บ.) - แยกต่างหาก</span>
                       </span>
                       <input
                         type="number"
                         min="0"
                         step="0.01"
-                        className="input text-xs text-center w-full font-mono text-amber-800 dark:text-amber-300 font-bold bg-white dark:bg-slate-900 border-amber-300 dark:border-amber-700 focus:border-amber-500"
-                        placeholder="ค่าแรง"
-                        title="ต้นทุนค่าแรงต่อหน่วย (แยกต่างหาก)"
+                        className="input text-xs text-left w-full font-mono text-amber-800 dark:text-amber-300 font-bold bg-white dark:bg-slate-900 border-amber-300 dark:border-amber-700 focus:border-amber-500"
+                        placeholder="0.00"
+                        title="ต้นทุนค่าแรงต่อหน่วย (พิมพ์ได้อิสระ)"
                         value={it.labor_unit_cost}
                         onChange={(e) => updItem(idx, 'labor_unit_cost', e.target.value)}
                       />
-                      <div className="text-[10px] text-center font-mono font-bold text-amber-800 dark:text-amber-300 mt-1">
+                      <div className="text-[10px] text-left font-mono font-bold text-amber-800 dark:text-amber-300 mt-1">
                         รวมแรง: {baht(c.totalLab)} บ.
                       </div>
                     </div>
 
-                    {/* ช่องที่ 4: รวมเงินสุทธิของรายการ (ธีมสีเขียวมรกต จัดกึ่งกลาง) */}
-                    <div className="rounded-xl p-2.5 bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 flex flex-col justify-between">
-                      <span className="block text-center text-[11px] font-bold text-emerald-800 dark:text-emerald-300 mb-1.5">
+                    {/* ช่องที่ 4: รวมเงินสุทธิของรายการ (จัดชิดซ้าย ชัดเจน) */}
+                    <div className="rounded-xl p-3 bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 flex flex-col justify-between">
+                      <span className="block text-left text-[11px] font-bold text-emerald-800 dark:text-emerald-300 mb-1.5">
                         รวมเงินสุทธิ (บ.)
                       </span>
-                      <div className="h-9 flex items-center justify-center font-mono font-black text-sm text-slate-900 dark:text-emerald-400 bg-white dark:bg-slate-900 rounded-xl border border-emerald-200 dark:border-emerald-800 shadow-2xs">
+                      <div className="h-9 px-3 flex items-center justify-start font-mono font-black text-sm text-slate-900 dark:text-emerald-400 bg-white dark:bg-slate-900 rounded-xl border border-emerald-200 dark:border-emerald-800 shadow-2xs">
                         {baht(c.totalLine)}
                       </div>
-                      <div className="text-[10px] text-center text-slate-400 mt-1 font-mono">
+                      <div className="text-[10px] text-left text-slate-400 mt-1 font-mono">
                         (วัสดุ {baht(c.totalMat)} + แรง {baht(c.totalLab)})
                       </div>
                     </div>
                   </div>
 
-                  {/* บรรทัดที่ 3: สเปกวิศวกรรมและเงื่อนไขเทคนิค (กด Enter ขึ้นบรรทัดใหม่ได้อิสระ) */}
+                  {/* บรรทัดที่ 3: สเปกวิศวกรรมและเงื่อนไขเทคนิค */}
                   <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80">
                     <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mb-1">
                       <span className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5 text-[11px]">
                         <Info className="h-3.5 w-3.5 text-slate-400" />
-                        <span>สเปกวิศวกรรมและเงื่อนไขเทคนิคสำหรับรายการ #{idx + 1} (กด Enter ได้อิสระ)</span>
+                        <span>สเปกวิศวกรรมและเงื่อนไขเทคนิค</span>
                       </span>
                     </div>
                     <textarea

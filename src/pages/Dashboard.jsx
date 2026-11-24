@@ -1639,15 +1639,15 @@ export default function Dashboard() {
         {/* แผงควบคุม ค้นหา และ เลือกจำนวนบรรทัดที่ต้องการให้แสดง (Search & Row Limit Bar) */}
         {!salesCollapsed && (
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-1 pb-1">
-            {/* Search Input Box with proper pl-9 to prevent icon overlapping */}
+            {/* Search Input Box with proper pl-10 to prevent icon overlapping */}
             <div className="relative flex-1 min-w-[240px]">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
               <input
                 type="text"
                 value={salesSearch}
                 onChange={(e) => setSalesSearch(e.target.value)}
                 placeholder={productViewTab === 'products' ? 'ค้นหาชื่อสินค้า, วัสดุ, บริการ...' : 'ค้นหาชื่อโครงการ, รหัสโครงการ...'}
-                className="w-full rounded-xl border border-steel-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 pl-9 pr-8 py-1.5 text-xs text-steel-900 dark:text-slate-100 placeholder:text-steel-400 focus:border-amber-500 focus:bg-white dark:focus:bg-slate-800 focus:outline-none transition shadow-2xs"
+                className="w-full rounded-xl border border-steel-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 pl-10 pr-8 py-1.5 text-xs text-steel-900 dark:text-slate-100 placeholder:text-steel-400 focus:border-amber-500 focus:bg-white dark:focus:bg-slate-800 focus:outline-none transition shadow-2xs"
               />
               {salesSearch && (
                 <button
@@ -2105,15 +2105,15 @@ export default function Dashboard() {
             </div>
 
             <div className="flex items-center gap-3 flex-wrap">
-              {/* Search Box in Recent Documents with proper pl-9 (Fix icon overlap) */}
+              {/* Search Box in Recent Documents with proper pl-10 (Fix icon overlap) */}
               <div className="relative flex-1 sm:w-64 min-w-[200px]">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
                 <input
                   type="text"
                   value={recentDocSearch}
                   onChange={(e) => setRecentDocSearch(e.target.value)}
                   placeholder="ค้นหาเลขที่บิล, คู่ค้า, โครงการ..."
-                  className="w-full rounded-xl border border-steel-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 pl-9 pr-8 py-1.5 text-xs text-steel-900 dark:text-slate-100 placeholder:text-steel-400 focus:border-sky-500 focus:bg-white dark:focus:bg-slate-800 focus:outline-none transition shadow-2xs"
+                  className="w-full rounded-xl border border-steel-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 pl-10 pr-8 py-1.5 text-xs text-steel-900 dark:text-slate-100 placeholder:text-steel-400 focus:border-sky-500 focus:bg-white dark:focus:bg-slate-800 focus:outline-none transition shadow-2xs"
                 />
                 {recentDocSearch && (
                   <button
