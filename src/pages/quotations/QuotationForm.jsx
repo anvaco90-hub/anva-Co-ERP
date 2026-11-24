@@ -8,6 +8,7 @@ import R2Image from '../../components/R2Image'
 import { FieldError, fieldErrorClass } from '../../components/FieldError'
 import SearchableSelect from '../../components/SearchableSelect'
 import SearchableProjectSelect from '../../components/SearchableProjectSelect'
+import { Trash2, Plus, Info } from 'lucide-react'
 
 const EMPTY_ITEM = {
   item_name: '',
@@ -800,7 +801,7 @@ export default function QuotationForm() {
           </datalist>
 
           <div className="space-y-3">
-            <div className="hidden sm:grid sm:grid-cols-[auto_1fr_6rem_5rem_7rem_5rem_7rem_auto] gap-2.5 text-xs font-bold text-steel-600 px-3 pb-1 border-b border-steel-100">
+            <div className="hidden sm:grid sm:grid-cols-[auto_1fr_6rem_5rem_7rem_5rem_7rem_auto] gap-2.5 text-xs font-bold text-steel-600 dark:text-slate-400 px-3 pb-1 border-b border-steel-100 dark:border-slate-800">
               <span className="w-7 text-center">#</span>
               <span>ชื่อสินค้า / รายการงานวิศวกรรม *</span>
               <span className="text-right">จำนวน</span>
@@ -808,7 +809,7 @@ export default function QuotationForm() {
               <span className="text-right">ราคา/หน่วย</span>
               <span className="text-right">ส่วนลด %</span>
               <span className="text-right">ราคารวม ({currency})</span>
-              <span className="w-7" />
+              <span className="w-10 text-center font-bold text-rose-600 dark:text-rose-400">ลบ</span>
             </div>
 
             {items.map((it, idx) => {
@@ -821,20 +822,20 @@ export default function QuotationForm() {
                 <div
                   key={idx}
                   className={`rounded-2xl border p-3.5 space-y-2.5 transition shadow-xs ${nameEmpty || qtyEmpty || priceEmpty
-                    ? 'border-rose-300 bg-rose-50/20'
-                    : 'border-steel-200 bg-white hover:border-steel-300'
+                    ? 'border-rose-300 dark:border-rose-800 bg-rose-50/20 dark:bg-rose-950/20'
+                    : 'border-steel-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-steel-300 dark:hover:border-slate-700'
                     }`}
                 >
                   {/* แถวที่ 1: ข้อมูลสินค้าและตัวเลขราคา */}
                   <div className="grid grid-cols-2 sm:grid-cols-[auto_1fr_6rem_5rem_7rem_5rem_7rem_auto] gap-2.5 items-center">
-                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-steel-100 font-mono font-bold text-xs text-steel-700">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-steel-100 dark:bg-slate-800 font-mono font-bold text-xs text-steel-700 dark:text-slate-300">
                       #{idx + 1}
                     </span>
 
                     <div className="col-span-2 sm:col-span-1">
                       <input
                         list="catalog-quotation-items"
-                        className={fieldErrorClass(nameEmpty, "input text-xs w-full font-bold text-steel-900")}
+                        className={fieldErrorClass(nameEmpty, "input text-xs w-full font-bold text-steel-900 dark:text-slate-100")}
                         placeholder="ระบุชื่อสินค้า / บริการ / อุปกรณ์..."
                         value={it.item_name}
                         onChange={(e) => updItem(idx, 'item_name', e.target.value)}
@@ -848,7 +849,7 @@ export default function QuotationForm() {
                         min="1"
                         step="1"
                         className={fieldErrorClass(qtyEmpty, "input text-xs text-right w-full font-mono font-bold")}
-                        placeholder="จำนวน (int)"
+                        placeholder="จำนวน"
                         value={it.quantity}
                         onChange={(e) => updItem(idx, 'quantity', e.target.value)}
                       />
@@ -888,7 +889,7 @@ export default function QuotationForm() {
                       />
                     </div>
 
-                    <div className="col-span-2 sm:col-span-1 text-right font-mono font-black text-xs text-sky-900 bg-sky-50 py-2 px-3 rounded-xl border border-sky-100">
+                    <div className="col-span-2 sm:col-span-1 text-right font-mono font-black text-xs text-sky-900 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/40 py-2 px-3 rounded-xl border border-sky-100 dark:border-sky-800">
                       {baht(calc.lineTotal)}
                     </div>
 
@@ -897,26 +898,27 @@ export default function QuotationForm() {
                         type="button"
                         onClick={() => setItems(items.filter((_, i) => i !== idx))}
                         disabled={items.length === 1}
-                        className="p-1.5 text-steel-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition disabled:opacity-20 cursor-pointer"
-                        title="ลบแถวนี้"
+                        className="h-9 px-3 text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 dark:hover:bg-rose-900/60 rounded-xl transition cursor-pointer border border-rose-200 dark:border-rose-900 shadow-2xs flex items-center justify-center gap-1.5 font-bold text-xs disabled:opacity-25 disabled:cursor-not-allowed shrink-0"
+                        title={items.length <= 1 ? 'รายการต้องมีอย่างน้อย 1 แถว' : 'ลบแถวนี้'}
                       >
-
+                        <Trash2 className="h-4 w-4 text-rose-600 dark:text-rose-400 shrink-0" />
+                        <span className="hidden xl:inline text-[11px]">ลบ</span>
                       </button>
                     </div>
                   </div>
 
-                  {/* แถวที่ 2: Richbox / Textarea ขยายลงล่าง สำหรับสเปกและรายละเอียด (กด Enter ได้อิสระ) */}
-                  <div className="pt-1 border-t border-steel-100">
-                    <div className="flex items-center justify-between text-[11px] text-steel-500 mb-1">
-                      <span className="flex items-center gap-1.5 font-semibold text-steel-700">
-                        <span></span>
-                        <span>รายละเอียดเฉพาะ / สเปกวิศวกรรม (กด Enter ขึ้นบรรทัดใหม่ได้อิสระ)</span>
+                  {/* แถวที่ 2: Richbox / Textarea ขยายลงล่าง สำหรับสเปกและรายละเอียด */}
+                  <div className="pt-1 border-t border-steel-100 dark:border-slate-800">
+                    <div className="flex items-center justify-between text-[11px] text-steel-500 dark:text-slate-400 mb-1">
+                      <span className="flex items-center gap-1.5 font-semibold text-steel-700 dark:text-slate-300">
+                        <Info className="h-3.5 w-3.5 text-steel-400 dark:text-slate-500" />
+                        <span>รายละเอียดเฉพาะ / สเปกวิศวกรรม</span>
                       </span>
-                      <span className="text-[10px] text-steel-400">รองรับข้อความหลายบรรทัดและหัวข้อย่อย</span>
+                      <span className="text-[10px] text-steel-400 dark:text-slate-500">รองรับข้อความหลายบรรทัดและหัวข้อย่อย</span>
                     </div>
                     <textarea
                       rows={2}
-                      className="w-full rounded-xl border border-steel-200 bg-steel-50/60 p-2.5 text-xs text-steel-800 placeholder:text-steel-400 focus:bg-white focus:border-steel-900 focus:outline-none transition leading-relaxed font-sans"
+                      className="w-full rounded-xl border border-steel-200 dark:border-slate-700 bg-steel-50/60 dark:bg-slate-800/60 p-2.5 text-xs text-steel-800 dark:text-slate-200 placeholder:text-steel-400 focus:bg-white dark:focus:bg-slate-800 focus:border-steel-900 dark:focus:border-amber-500 focus:outline-none transition leading-relaxed font-sans"
                       placeholder="เช่น • แผงโซล่าเซลล์ชนิด Monocrystalline Half-cell 550W Tier-1&#10;• รับประกันตัวผลิตภัณฑ์ 12 ปี และรับประกันประสิทธิภาพการผลิตไฟ 25 ปี&#10;• ได้รับมาตรฐานสากล TUV Rheinland / IEC 61215"
                       value={it.description || ''}
                       onChange={(e) => updItem(idx, 'description', e.target.value)}
@@ -931,9 +933,10 @@ export default function QuotationForm() {
             <button
               type="button"
               onClick={() => setItems([...items, { ...EMPTY_ITEM }])}
-              className="btn-ghost !py-1 text-xs"
+              className="btn-ghost !py-1.5 text-xs font-bold flex items-center gap-1.5 cursor-pointer text-sky-700 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-950/40 rounded-xl"
             >
-              + เพิ่มรายการสินค้า/บริการ
+              <Plus className="h-4 w-4" />
+              <span>เพิ่มรายการสินค้า/บริการ</span>
             </button>
             <span className="text-xs text-steel-500">{items.length} รายการ</span>
           </div>

@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabase'
 import { EMPTY_ITEM, itemsTotal } from '../../lib/purchasing'
 import { baht } from '../../lib/projects'
 import { FieldError, fieldErrorClass } from '../../components/FieldError'
+import { Trash2 } from 'lucide-react'
 
 // ตารางแก้รายการวัสดุ ใช้ร่วมกันทั้งใบขอซื้อและใบสั่งซื้อ
 // มีระบบ Auto-suggest ดึงวัสดุเก่าจากระบบ + เติมหน่วยเลขอัตโนมัติ
@@ -144,11 +145,13 @@ export default function ItemsEditor({ items, onChange, priceLabel, showErrors = 
                 ) : (
                   <button
                     type="button"
-                    className="text-sm text-red-600 hover:text-red-800 underline px-1"
+                    className="h-8 px-2.5 text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 dark:hover:bg-rose-900/60 rounded-xl transition cursor-pointer border border-rose-200 dark:border-rose-900 shadow-2xs flex items-center justify-center gap-1 font-bold text-xs disabled:opacity-25"
                     onClick={() => onChange(items.filter((_, idx) => idx !== i))}
                     disabled={items.length === 1}
+                    title="ลบแถวนี้"
                   >
-                    ลบ
+                    <Trash2 className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400 shrink-0" />
+                    <span>ลบ</span>
                   </button>
                 )}
               </div>
