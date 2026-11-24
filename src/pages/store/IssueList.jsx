@@ -669,8 +669,7 @@ export default function IssueList() {
                 <th className="py-3.5 px-3 whitespace-nowrap">โครงการ / ปลายทาง</th>
                 <th className="py-3.5 px-3 whitespace-nowrap">รายการพัสดุ</th>
                 <th className="py-3.5 px-3 text-right whitespace-nowrap">จำนวนรวม</th>
-                <th className="py-3.5 px-3 text-right whitespace-nowrap">มูลค่ารวม (บาท)</th>
-                <th className="py-3.5 pl-3 pr-4 whitespace-nowrap">รายละเอียด / หมายเหตุ</th>
+                <th className="py-3.5 pl-3 pr-4 text-right whitespace-nowrap">มูลค่ารวม (บาท)</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-steel-100 dark:divide-slate-800">
@@ -752,15 +751,10 @@ export default function IssueList() {
                     </td>
 
                     {/* 7. มูลค่ารวม */}
-                    <td className="py-3 px-3 text-right font-mono font-bold whitespace-nowrap">
+                    <td className="py-3 pl-3 pr-4 text-right font-mono font-bold whitespace-nowrap">
                       <span className={isReturn ? 'text-emerald-700 dark:text-emerald-400' : isIssue ? 'text-amber-800 dark:text-amber-400' : 'text-rose-700 dark:text-rose-400'}>
                         {baht(r.totalAmount)} บ.
                       </span>
-                    </td>
-
-                    {/* 8. หมายเหตุ / รายละเอียด */}
-                    <td className="py-3 pl-3 pr-4 text-steel-500 dark:text-slate-400 text-xs max-w-[200px] truncate" title={r.notes || r.reason || '-'}>
-                      {r.notes || r.reason || '-'}
                     </td>
                   </tr>
                 )
@@ -939,15 +933,8 @@ export default function IssueList() {
                   </div>
                 )}
 
-                {/* Footer details & Creator */}
-                <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-steel-500 dark:text-slate-400 pt-1">
-                  <div className="truncate max-w-xl">
-                    {r.notes && (
-                      <span>
-                        <b className="text-steel-700 dark:text-slate-300">รายละเอียด:</b> {r.notes}
-                      </span>
-                    )}
-                  </div>
+                {/* Footer Creator */}
+                <div className="flex flex-wrap items-center justify-end gap-2 text-[11px] text-steel-500 dark:text-slate-400 pt-1">
                   <div className="flex items-center gap-1 text-steel-400 dark:text-slate-400 shrink-0">
                     <User className="h-3 w-3" />
                     <span>ผู้บันทึก: {r.userName}</span>
