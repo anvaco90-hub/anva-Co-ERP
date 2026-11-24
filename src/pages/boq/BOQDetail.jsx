@@ -174,31 +174,7 @@ export default function BOQDetail() {
     }
   }
 
-  if (loading) {
-    return (
-      <div className="py-16 text-center text-xs text-steel-400">
-        กำลังโหลดข้อมูล BOQ...
-      </div>
-    )
-  }
-
-  if (!boq) {
-    return (
-      <div className="rounded-2xl border border-steel-200 bg-white p-12 text-center space-y-3">
-        <p className="font-bold text-steel-900">ไม่พบเอกสาร BOQ นี้</p>
-        <Link to="/boq" className="text-xs text-sky-700 font-bold hover:underline">
-          ← กลับหน้ารายการ BOQ
-        </Link>
-      </div>
-    )
-  }
-
-  const st = STATUS_MAP[boq.status] || {
-    label: boq.status,
-    color: 'bg-steel-100 text-steel-700 border-steel-200',
-  }
-
-  // รายการหมวดหมู่ทั้งหมดในเอกสารนี้
+  // รายการหมวดหมู่ทั้งหมดในเอกสารนี้ (ต้องประกาศก่อน conditional return ตามกฎของ React Hooks)
   const allCategories = useMemo(() => {
     const list = []
     items.forEach((it) => {
@@ -259,6 +235,30 @@ export default function BOQDetail() {
       })
       setCollapsedCategories(all)
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="py-16 text-center text-xs text-steel-400">
+        กำลังโหลดข้อมูล BOQ...
+      </div>
+    )
+  }
+
+  if (!boq) {
+    return (
+      <div className="rounded-2xl border border-steel-200 bg-white p-12 text-center space-y-3">
+        <p className="font-bold text-steel-900">ไม่พบเอกสาร BOQ นี้</p>
+        <Link to="/boq" className="text-xs text-sky-700 font-bold hover:underline">
+          ← กลับหน้ารายการ BOQ
+        </Link>
+      </div>
+    )
+  }
+
+  const st = STATUS_MAP[boq.status] || {
+    label: boq.status,
+    color: 'bg-steel-100 text-steel-700 border-steel-200',
   }
 
   return (
