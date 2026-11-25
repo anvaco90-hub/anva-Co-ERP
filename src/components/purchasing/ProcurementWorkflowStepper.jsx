@@ -17,6 +17,7 @@ import {
 import { baht } from '../../lib/projects'
 import { formatThaiDate } from '../../lib/poDueStatus'
 import { computePoPaymentSummary } from '../../lib/purchasing'
+import { extractPrSourceQuotation } from '../../lib/salesFlowUtils'
 import { PAYMENT_TYPES } from '../../pages/purchasing/POForm'
 
 /**
@@ -322,6 +323,11 @@ export default function ProcurementWorkflowStepper({
   const paidAmt = poPaySummary.paidAmount
   const remainingAmt = poPaySummary.remainingAmount
   const primaryLinkedPo = flow.activePos?.[0] || linkedPos?.[0]
+  const sourceQt = extractPrSourceQuotation({
+    quotation_id: po?.quotation_id || pr?.quotation_id || po?.pr?.quotation_id,
+    sales_quotation_no: po?.sales_quotation_no || pr?.sales_quotation_no || po?.pr?.sales_quotation_no,
+    notes: pr?.notes || po?.notes || po?.pr?.notes,
+  })
 
   return (
     <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm space-y-4">
@@ -392,17 +398,22 @@ export default function ProcurementWorkflowStepper({
                 ? flow.prNo
                 : 'Direct PO (ไม่ผ่าน PR)'}
             </div>
-            <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-              {mode === 'pr'
-                ? `ขอซื้อ ${items?.length || 0} รายการ`
-                : flow.hasPr
-                ? 'เชื่อมโยงจากใบขอซื้อโครงการ'
-                : po?.sales_quotation_no || po?.quotation_no
-                ? `อ้างอิง QT: ${po.sales_quotation_no || po.quotation_no}`
-                : 'เปิดคำสั่งซื้อตรงกับผู้ขาย'}
+            <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 space-y-0.5">
+              <div>
+                {mode === 'pr'
+                  ? `ขอซื้อ ${items?.length || 0} รายการ`
+                  : flow.hasPr
+                  ? 'เชื่อมโยงจากใบขอซื้อโครงการ'
+                  : 'เปิดคำสั่งซื้อตรงกับผู้ขาย'}
+              </div>
+              {sourceQt.quotationNo && (
+                <div className="font-mono font-semibold text-amber-700 dark:text-amber-300">
+                  อ้างอิง QT: {sourceQt.quotationNo}
+                </div>
+              )}
             </div>
           </div>
-          <div className="mt-3 pt-2 border-t border-emerald-200/70 dark:border-emerald-800/60 text-[11px]">
+          <div className="mt-3 pt-2 border-t border-emerald-200/70 dark:border-emerald-800/60 text-[11px] flex flex-wrap items-center gap-2">
             {mode === 'pr' && onPrintPdf ? (
               <button
                 type="button"
@@ -418,12 +429,21 @@ export default function ProcurementWorkflowStepper({
                 className="text-emerald-800 dark:text-emerald-300 hover:underline font-bold flex items-center gap-1"
               >
                 <FileText className="h-3 w-3" />
-                <span>เปิดดูใบขอซื้อ {flow.prNo}</span>
+                <span>เปิดดู PR {flow.prNo}</span>
               </Link>
-            ) : (
+            ) : !sourceQt.quotationId ? (
               <span className="font-mono text-emerald-800 dark:text-emerald-300">
                 วันที่: {formatThaiDate(pr?.request_date || po?.order_date)}
               </span>
+            ) : null}
+            {sourceQt.quotationId && (
+              <Link
+                to={`/quotations/${sourceQt.quotationId}`}
+                className="text-amber-700 dark:text-amber-300 hover:underline font-bold flex items-center gap-1"
+              >
+                <ExternalLink className="h-3 w-3" />
+                <span>ดู {sourceQt.quotationNo || 'ใบเสนอราคา'}</span>
+              </Link>
             )}
           </div>
         </div>
@@ -445,7 +465,9 @@ export default function ProcurementWorkflowStepper({
                 {stepStates.s2 === 'cancelled'
                   ? 'ยกเลิกแล้ว'
                   : stepStates.s2 === 'done'
-                  ? 'ออก PO แล้ว'
+                  ? mode === 'pr' && (flow.activePos?.length || 0) > 1
+                    ? `ออกแล้ว ${flow.activePos.length} PO`
+                    : 'ออก PO แล้ว'
                   : 'พร้อมออก PO'}
               </span>
             </div>
@@ -485,14 +507,30 @@ export default function ProcurementWorkflowStepper({
                   สั่งซื้อ: {formatThaiDate(po?.order_date)}
                 </span>
               )
-            ) : flow.hasActivePo && primaryLinkedPo ? (
-              <Link
-                to={`/purchasing/po/${primaryLinkedPo.id}`}
-                className="text-emerald-700 dark:text-emerald-400 hover:underline font-bold flex items-center gap-1"
-              >
-                <ExternalLink className="h-3 w-3" />
-                <span>เปิดดู PO ({primaryLinkedPo.po_no})</span>
-              </Link>
+            ) : flow.hasActivePo && flow.activePos?.length > 0 ? (
+              <div className="flex flex-col gap-1">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  {flow.activePos.map((poItem) => (
+                    <Link
+                      key={poItem.id}
+                      to={`/purchasing/po/${poItem.id}`}
+                      className="text-emerald-700 dark:text-emerald-400 hover:underline font-bold inline-flex items-center gap-0.5 font-mono"
+                    >
+                      <ExternalLink className="h-3 w-3 shrink-0" />
+                      <span>{poItem.po_no}</span>
+                    </Link>
+                  ))}
+                </div>
+                {canCreate && !isCancelled && pr && (
+                  <Link
+                    to={`/purchasing/po/new?pr=${pr.id}`}
+                    className="text-amber-800 dark:text-amber-300 hover:underline font-bold flex items-center gap-1"
+                  >
+                    <Plus className="h-3 w-3" />
+                    <span>+ เพิ่ม PO อีกร้าน</span>
+                  </Link>
+                )}
+              </div>
             ) : canCreate && !isCancelled && pr ? (
               <Link
                 to={`/purchasing/po/new?pr=${pr.id}`}

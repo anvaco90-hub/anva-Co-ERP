@@ -96,3 +96,76 @@ export function buildPurchaseItemsFromQuotation({
     }
   })
 }
+
+/**
+ * Subtract quantities already ordered on non-cancelled POs linked to the same PR,
+ * returning prefill items for only remaining unordered quantities.
+ */
+export function computeRemainingPrItems(prItems = [], existingPoItems = []) {
+  const orderedByPrItemId = new Map()
+  const orderedByName = new Map()
+
+  const normName = (name) => String(name || '').replace(/\s+/g, ' ').trim().toLowerCase()
+
+  for (const poItem of existingPoItems || []) {
+    const qty = Math.max(0, Number(poItem?.quantity || 0))
+    if (!(qty > 0)) continue
+    if (poItem?.pr_item_id) {
+      orderedByPrItemId.set(
+        poItem.pr_item_id,
+        (orderedByPrItemId.get(poItem.pr_item_id) || 0) + qty
+      )
+    } else {
+      const key = normName(poItem?.item_name)
+      if (key) {
+        orderedByName.set(key, (orderedByName.get(key) || 0) + qty)
+      }
+    }
+  }
+
+  const items = []
+  let fullyOrderedCount = 0
+
+  for (const prItem of prItems || []) {
+    const requestedQty = Math.max(0, Number(prItem?.quantity || 0))
+    if (!(requestedQty > 0)) continue
+
+    let orderedQty = 0
+    if (prItem?.id && orderedByPrItemId.has(prItem.id)) {
+      orderedQty += orderedByPrItemId.get(prItem.id)
+    }
+    const nameKey = normName(prItem?.item_name)
+    if (nameKey && orderedByName.has(nameKey)) {
+      const namePool = orderedByName.get(nameKey)
+      const neededAfterId = Math.max(0, requestedQty - orderedQty)
+      const takeFromName = Math.min(namePool, neededAfterId)
+      orderedQty += takeFromName
+      const leftInName = Math.round((namePool - takeFromName) * 1000) / 1000
+      if (leftInName > 0) orderedByName.set(nameKey, leftInName)
+      else orderedByName.delete(nameKey)
+    }
+
+    const remaining = Math.round(Math.max(0, requestedQty - orderedQty) * 1000) / 1000
+    if (remaining <= 0) {
+      fullyOrderedCount += 1
+      continue
+    }
+
+    const rawPrice = prItem?.estimated_price ?? prItem?.unit_price ?? prItem?.price
+    const priceStr = rawPrice != null && Number(rawPrice) > 0 ? String(Number(rawPrice)) : ''
+
+    items.push({
+      item_id: prItem?.item_id || null,
+      pr_item_id: prItem?.id || null,
+      item_name: prItem?.item_name || '',
+      unit: prItem?.unit || 'ชิ้น',
+      quantity: String(remaining),
+      requested_qty: requestedQty,
+      already_ordered_qty: Math.round(orderedQty * 1000) / 1000,
+      price: priceStr,
+      notes: prItem?.notes || '',
+    })
+  }
+
+  return { items, fullyOrderedCount }
+}

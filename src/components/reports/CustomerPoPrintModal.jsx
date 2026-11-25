@@ -1,14 +1,17 @@
 import { baht } from '../../lib/projects'
 import { formatIntQty } from '../../lib/store'
+import { getCustomerApprovalDisplay } from '../../lib/salesFlowUtils'
 import { printElement } from '../../lib/printElement'
 import R2Image, { useFileUrl } from '../R2Image'
-import { Printer, X, Edit3, ExternalLink, FileCheck, FileText, CheckCircle2 } from 'lucide-react'
+import { Printer, X, Edit3, ExternalLink, FileCheck, FileText } from 'lucide-react'
 
 export default function CustomerPoPrintModal({ quotation, items = [], onClose, onEdit }) {
   if (!quotation) return null
 
+  const approval = getCustomerApprovalDisplay(quotation)
+
   const handlePrint = () => {
-    printElement('printable-report', `ใบสั่งซื้อลูกค้า-${quotation.customer_po_no || quotation.quotation_no}`)
+    printElement('printable-report', `${approval.isDirectQt ? 'เอกสารอนุมัติ' : 'ใบสั่งซื้อลูกค้า'}-${approval.refNo || quotation.quotation_no}`)
   }
 
   const { url: fileUrl } = useFileUrl(quotation.customer_po_file_url)
@@ -43,14 +46,14 @@ export default function CustomerPoPrintModal({ quotation, items = [], onClose, o
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-bold text-sm sm:text-base text-white">
-                  ใบสั่งซื้อจากลูกค้า (Customer Purchase Order)
+                  {approval.docTitle}
                 </span>
                 <span className="rounded-full bg-emerald-400/20 text-emerald-300 border border-emerald-400/30 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider">
-                  VERIFIED &amp; APPROVED
+                  {approval.badgeLabel}
                 </span>
               </div>
               <p className="text-xs text-slate-400 font-mono">
-                เลขที่ PO: <strong className="text-emerald-400">{quotation.customer_po_no}</strong> | อ้างอิงใบเสนอราคา: {quotation.quotation_no}
+                {approval.shortLabel} | อ้างอิงใบเสนอราคา: {quotation.quotation_no}
               </p>
             </div>
           </div>
@@ -63,7 +66,7 @@ export default function CustomerPoPrintModal({ quotation, items = [], onClose, o
                 className="inline-flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 px-3 py-1.5 text-xs font-bold text-slate-200 transition shadow-2xs cursor-pointer"
               >
                 <Edit3 className="h-3.5 w-3.5 text-amber-400" />
-                <span>แก้ไขข้อมูล PO</span>
+                <span>แก้ไขข้อมูลการอนุมัติ</span>
               </button>
             )}
 
@@ -114,12 +117,19 @@ export default function CustomerPoPrintModal({ quotation, items = [], onClose, o
               </div>
               <div className="sm:text-right">
                 <div className="rounded border-2 border-black bg-neutral-100 px-4 py-2 inline-block text-center">
-                  <h2 className="text-base font-extrabold uppercase tracking-wider text-black">ใบสั่งซื้อจากลูกค้า</h2>
-                  <p className="text-[10px] font-bold text-neutral-700">CUSTOMER PURCHASE ORDER (PO)</p>
+                  <h2 className="text-base font-extrabold uppercase tracking-wider text-black">
+                    {approval.isDirectQt ? 'เอกสารอนุมัติใบเสนอราคา' : 'ใบสั่งซื้อจากลูกค้า'}
+                  </h2>
+                  <p className="text-[10px] font-bold text-neutral-700">
+                    {approval.isDirectQt ? 'CUSTOMER APPROVED QUOTATION' : 'CUSTOMER PURCHASE ORDER (PO)'}
+                  </p>
                 </div>
                 <div className="mt-2 text-xs space-y-0.5 text-neutral-800">
-                  <div>เลขที่ PO ลูกค้า: <b className="font-mono text-sm text-black">{quotation.customer_po_no}</b></div>
-                  <div>วันที่ออกเอกสาร: <b>{poDateStr}</b></div>
+                  <div>
+                    {approval.isDirectQt ? 'เลขที่อ้างอิงการอนุมัติ:' : 'เลขที่ PO ลูกค้า:'}{' '}
+                    <b className="font-mono text-sm text-black">{approval.refNo}</b>
+                  </div>
+                  <div>วันที่อนุมัติ / ออกเอกสาร: <b>{poDateStr}</b></div>
                   <div>อ้างอิงใบเสนอราคา: <b className="font-mono">{quotation.quotation_no}</b></div>
                   {quotation.projects && (
                     <div>โครงการ: <b>[{quotation.projects.project_code}] {quotation.projects.project_name}</b></div>

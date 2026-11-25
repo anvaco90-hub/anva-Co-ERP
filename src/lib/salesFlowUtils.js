@@ -57,6 +57,11 @@ export function buildSalesInvoicePayload({
 
   const effectiveTotal = round2(breakdown.totalWithVat)
   const poTag = (customerPoNo || quotation?.customer_po_no || '').trim()
+  const approvalNoteTag = poTag
+    ? isQuotationDirectApproval(poTag, quotation?.quotation_no)
+      ? ' (ลูกค้าเซ็นอนุมัติตามใบเสนอราคา)'
+      : ` (PO ลูกค้า: ${poTag})`
+    : ''
 
   return {
     invoice_no: invoiceNo,
@@ -77,7 +82,71 @@ export function buildSalesInvoicePayload({
     remaining_amount: effectiveTotal,
     is_opening_balance: false,
     status: 'รอเก็บเงิน',
-    notes: `ออกใบแจ้งหนี้อ้างอิง ${quotation?.quotation_no || ''}${poTag ? ` (PO ลูกค้า: ${poTag})` : ''}`.trim(),
+    notes: `ออกใบแจ้งหนี้อ้างอิง ${quotation?.quotation_no || ''}${approvalNoteTag}`.trim(),
+  }
+}
+
+export function isQuotationDirectApproval(refNo, quotationNo) {
+  const a = String(refNo || '').trim().toLowerCase()
+  const b = String(quotationNo || '').trim().toLowerCase()
+  return Boolean(a && b && a === b)
+}
+
+export function resolveCustomerApprovalRef({
+  mode = 'signed_qt',
+  quotationNo = '',
+  customPoNo = '',
+} = {}) {
+  const qtNo = String(quotationNo || '').trim()
+  const extNo = String(customPoNo || '').trim()
+  return mode === 'customer_po' ? extNo : qtNo
+}
+
+export function getCustomerApprovalDisplay(quotation = {}) {
+  const qtNo = String(quotation?.quotation_no || '').trim()
+  const refNo = String(quotation?.customer_po_no || '').trim()
+  const isApproved = Boolean(
+    refNo || quotation?.status === 'approved' || quotation?.status === 'partial'
+  )
+
+  if (!isApproved) {
+    return {
+      isApproved: false,
+      mode: 'signed_qt',
+      isDirectQt: false,
+      refNo: '',
+      badgeLabel: 'PENDING APPROVAL',
+      shortLabel: '',
+      docTitle: '',
+      statusShort: 'รอลูกค้าอนุมัติ',
+    }
+  }
+
+  const isDirectQt = !refNo || isQuotationDirectApproval(refNo, qtNo)
+  const effectiveRef = refNo || qtNo
+
+  if (isDirectQt) {
+    return {
+      isApproved: true,
+      mode: 'signed_qt',
+      isDirectQt: true,
+      refNo: effectiveRef,
+      badgeLabel: 'CUSTOMER QT APPROVED',
+      shortLabel: `อ้างอิง QT: ${effectiveRef}`,
+      docTitle: 'เอกสารยืนยันการอนุมัติใบเสนอราคา',
+      statusShort: 'อนุมัติแล้ว',
+    }
+  }
+
+  return {
+    isApproved: true,
+    mode: 'customer_po',
+    isDirectQt: false,
+    refNo: effectiveRef,
+    badgeLabel: 'CUSTOMER PO VERIFIED',
+    shortLabel: `PO ลูกค้า: ${effectiveRef}`,
+    docTitle: 'ใบสั่งซื้อจากลูกค้า (Customer Purchase Order)',
+    statusShort: 'รับ PO แล้ว',
   }
 }
 
@@ -90,14 +159,24 @@ export function computeQuotationWorkflow({
   prs = [],
   pos = [],
   invoices = [],
+  stockSummary = null,
+  issues = [],
 }) {
   const isApproved = Boolean(quotation?.customer_po_no || quotation?.status === 'approved' || quotation?.status === 'partial')
   const activePRs = (prs || []).filter((pr) => pr && !isCancelledStatus(pr.status))
   const activePOs = (pos || []).filter((po) => po && !isCancelledStatus(po.status))
   const activeInvoices = (invoices || []).filter((inv) => inv && !isCancelledStatus(inv.status))
+  const activeIssues = (issues || []).filter((iss) => iss && !isCancelledStatus(iss.status))
 
   const receivedPoCount = activePOs.filter((po) => isPoReceivedStatus(po.status)).length
   const partialPoCount = activePOs.filter((po) => isPoPartialStatus(po.status)).length
+  const poAllReceived = activePOs.length > 0 && receivedPoCount === activePOs.length
+
+  const hasStockSummary = Boolean(stockSummary && typeof stockSummary.totalChecked === 'number')
+  const shortageCount = hasStockSummary ? Number(stockSummary.shortageCount || 0) : 0
+  const issuableCount = hasStockSummary ? Number(stockSummary.issuableCount || 0) : 0
+  const totalChecked = hasStockSummary ? Number(stockSummary.totalChecked || 0) : 0
+  const hasActiveIssue = activeIssues.length > 0
 
   // Step 4: Purchasing & Store
   let step4State = 'pending'
@@ -105,10 +184,20 @@ export function computeQuotationWorkflow({
   let step4Detail = 'เปิด PR หรือออก PO สั่งแผง / อินเวอร์เตอร์ / อุปกรณ์'
 
   if (activePOs.length > 0) {
-    if (receivedPoCount === activePOs.length) {
-      step4State = 'done'
-      step4Badge = `รับของครบ (${receivedPoCount} PO)`
-      step4Detail = `ออก PO ${activePOs.length} ใบ และตรวจรับเข้าคลัง/หน้างานครบแล้ว`
+    if (poAllReceived) {
+      if (hasStockSummary && issuableCount > 0 && !hasActiveIssue) {
+        step4State = 'in_progress'
+        step4Badge = 'รับ PO ครบ (รอเบิกสโตร์)'
+        step4Detail = `รับของจาก PO ${receivedPoCount} ใบครบแล้ว · เหลือเปิดใบเบิกของในสโตร์ ${issuableCount} รายการ`
+      } else {
+        step4State = 'done'
+        step4Badge = hasActiveIssue
+          ? `ครบแล้ว (${receivedPoCount} PO · เบิก ${activeIssues.length})`
+          : `รับของครบ (${receivedPoCount} PO)`
+        step4Detail = hasActiveIssue
+          ? `ออก PO ${activePOs.length} ใบ ตรวจรับครบ + เบิกสโตร์แล้ว ${activeIssues.length} ใบ`
+          : `ออก PO ${activePOs.length} ใบ และตรวจรับเข้าคลัง/หน้างานครบแล้ว`
+      }
     } else if (receivedPoCount > 0 || partialPoCount > 0) {
       step4State = 'in_progress'
       step4Badge = `รับแล้ว ${receivedPoCount}/${activePOs.length} PO`
@@ -122,7 +211,41 @@ export function computeQuotationWorkflow({
     step4State = 'in_progress'
     step4Badge = `มี PR แล้ว (${activePRs.length})`
     step4Detail = `เปิด PR ${activePRs.length} ใบแล้ว รอออกใบสั่งซื้อ (PO)`
-  } else if (isApproved) {
+  } else if (hasActiveIssue) {
+    if (hasStockSummary && shortageCount > 0) {
+      step4State = 'in_progress'
+      step4Badge = `เบิกแล้ว (${activeIssues.length}) · ขาด ${shortageCount}`
+      step4Detail = `เบิกจากสโตร์แล้ว ${activeIssues.length} ใบ · ยังขาดต้องเปิด PR/PO ${shortageCount} รายการ`
+    } else {
+      step4State = 'done'
+      step4Badge = `เบิกสโตร์ครบ (${activeIssues.length} ใบ)`
+      step4Detail = `เบิกจ่ายวัสดุจากคลังแล้ว ${activeIssues.length} ใบ`
+    }
+  } else if (!isApproved) {
+    step4State = 'pending'
+    step4Badge = 'รออนุมัติ QT'
+    step4Detail =
+      hasStockSummary && shortageCount > 0
+        ? `มีรายการขาดสต็อก ${shortageCount} รายการ (รอลูกค้าอนุมัติก่อนเปิด PR)`
+        : 'รอลูกค้าอนุมัติใบเสนอราคาก่อนส่งต่อจัดซื้อ / เบิกสโตร์'
+  } else if (hasStockSummary) {
+    if (totalChecked === 0) {
+      step4State = 'done'
+      step4Badge = 'ไม่มีรายการวัสดุ'
+      step4Detail = 'รายการงานบริการ/ค่าแรงทั้งหมด ไม่ต้องเปิด PR หรือเบิกสโตร์'
+    } else if (shortageCount > 0) {
+      step4State = 'ready'
+      step4Badge = `รอเปิด PR (${shortageCount} รายการขาด)`
+      step4Detail =
+        issuableCount > 0
+          ? `ต้องเปิด PR สั่งซื้อ ${shortageCount} รายการ และเบิกจากสโตร์ ${issuableCount} รายการ`
+          : `มีสินค้าขาดสต็อก ${shortageCount} รายการ กดเปิด PR หรือออก PO ได้ทันที`
+    } else {
+      step4State = 'ready'
+      step4Badge = `รอเบิกสโตร์ (${issuableCount} รายการ)`
+      step4Detail = `สินค้าครบในสโตร์ ${issuableCount} รายการ รอเปิดใบเบิกสต็อก`
+    }
+  } else {
     step4State = 'ready'
     step4Badge = 'พร้อมจัดซื้อ'
     step4Detail = 'ลูกค้าอนุมัติแล้ว กดเปิด PR หรือออก PO สั่งอุปกรณ์ได้ทันที'
@@ -178,9 +301,11 @@ export function computeQuotationWorkflow({
     activePRs,
     activePOs,
     activeInvoices,
+    activeIssues,
     latestPR: activePRs[0] || null,
     latestPO: activePOs[0] || null,
     latestInvoice,
+    latestIssue: activeIssues[0] || null,
     receivedPoCount,
     totalBilled,
     totalPaid,
@@ -192,4 +317,89 @@ export function computeQuotationWorkflow({
     step5Badge,
     step5Detail,
   }
+}
+
+/**
+ * Build schema-safe PostgREST select/filter specs for loading `purchase_orders` linked strictly to a quotation
+ * (by QT ID, sales_quotation_no, `[QT ขาย: ...]` notes, or PRs already matched to this quotation).
+ * Never matches by `project_id` or vendor `quotation_no` so sibling quotations in the same project never leak POs.
+ */
+export function buildQuotationPoQuerySpecs(quotation, matchedPrIds = []) {
+  const qId = quotation?.id || null
+  const qNo = String(quotation?.quotation_no || '').trim()
+  const uniquePrIds = [...new Set((matchedPrIds || []).filter(Boolean))]
+
+  const primaryOrParts = []
+  if (qId) primaryOrParts.push(`quotation_id.eq.${qId}`)
+  if (qNo) {
+    primaryOrParts.push(`sales_quotation_no.eq.${qNo}`)
+    primaryOrParts.push(`notes.ilike.%${qNo}%`)
+  }
+  for (const prId of uniquePrIds) {
+    primaryOrParts.push(`pr_id.eq.${prId}`)
+  }
+
+  const fallbackOrParts = []
+  if (qNo) fallbackOrParts.push(`notes.ilike.%${qNo}%`)
+  for (const prId of uniquePrIds) {
+    fallbackOrParts.push(`pr_id.eq.${prId}`)
+  }
+
+  return {
+    primarySelect:
+      'id, po_no, pr_id, status, order_date, total_amount, grand_total, quotation_no, project_id, quotation_id, sales_quotation_no, notes',
+    primaryOr: primaryOrParts.join(','),
+    fallbackSelect: 'id, po_no, pr_id, status, order_date, total_amount, grand_total, quotation_no, project_id, notes',
+    fallbackOr: fallbackOrParts.join(','),
+  }
+}
+
+/**
+ * Build schema-safe PostgREST select/filter specs for loading `purchase_requisitions` linked strictly to a quotation.
+ */
+export function buildQuotationPrQuerySpecs(quotation) {
+  const qId = quotation?.id || null
+  const qNo = String(quotation?.quotation_no || '').trim()
+
+  const primaryOrParts = []
+  if (qId) primaryOrParts.push(`quotation_id.eq.${qId}`)
+  if (qNo) {
+    primaryOrParts.push(`sales_quotation_no.eq.${qNo}`)
+    primaryOrParts.push(`notes.ilike.%${qNo}%`)
+  }
+
+  const fallbackOrParts = []
+  if (qNo) fallbackOrParts.push(`notes.ilike.%${qNo}%`)
+
+  return {
+    primarySelect: 'id, pr_no, status, request_date, notes, project_id, quotation_id, sales_quotation_no',
+    primaryOr: primaryOrParts.join(','),
+    fallbackSelect: 'id, pr_no, status, request_date, notes, project_id',
+    fallbackOr: fallbackOrParts.join(','),
+  }
+}
+
+/**
+ * Build schema-safe PostgREST select/filter specs for loading `stock_issues` linked to a quotation by `quotation_no` in notes.
+ */
+export function buildQuotationIssueQuerySpecs(quotation) {
+  const qNo = String(quotation?.quotation_no || '').trim()
+  return {
+    select: 'id, issue_no, issue_date, project_id, notes, created_at',
+    orFilter: qNo ? `notes.ilike.%${qNo}%` : '',
+  }
+}
+
+/**
+ * Extract the source Sales Quotation ID and QT number from a Purchase Requisition row (columns or notes).
+ */
+export function extractPrSourceQuotation(pr) {
+  if (!pr) return { quotationId: null, quotationNo: null }
+  const quotationId = pr.quotation_id || null
+  let quotationNo = pr.sales_quotation_no ? String(pr.sales_quotation_no).trim() : null
+  if (!quotationNo && pr.notes) {
+    const match = String(pr.notes).match(/QT-[A-Za-z0-9-]+/i)
+    if (match) quotationNo = match[0]
+  }
+  return { quotationId, quotationNo: quotationNo || null }
 }

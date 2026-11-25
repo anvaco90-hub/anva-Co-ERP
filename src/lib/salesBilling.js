@@ -6,7 +6,12 @@ import {
 } from './contactsSync'
 import { normalizeName, normalizeTaxId } from './contactsUtils'
 import { isCancelledStatus } from './projectFinancials'
-import { buildSalesInvoicePayload } from './salesFlowUtils'
+import {
+  buildQuotationPoQuerySpecs,
+  buildQuotationPrQuerySpecs,
+  buildQuotationIssueQuerySpecs,
+  buildSalesInvoicePayload,
+} from './salesFlowUtils'
 
 function generateInvoiceNo(issueDate) {
   const ym = String(issueDate || new Date().toISOString().split('T')[0])
@@ -137,81 +142,118 @@ export async function ensureSalesInvoiceForQuotation(
 }
 
 /**
- * Fetch linked Purchasing (PR/PO) and AR Billing (`sales_invoices`) records for a quotation.
+ * Fetch linked Purchasing (PR/PO), Store Issues (`stock_issues`), and AR Billing (`sales_invoices`) records for a quotation.
  */
 export async function fetchQuotationLinkedDocs(quotation, client = defaultSupabase) {
   if (!quotation?.id) {
-    return { prs: [], pos: [], invoices: [] }
+    return { prs: [], pos: [], invoices: [], issues: [] }
   }
 
-  const qId = quotation.id
-  const qNo = String(quotation.quotation_no || '').trim()
-  const prjId = quotation.project_id || null
+  const prSpecs = buildQuotationPrQuerySpecs(quotation)
+  const issueSpecs = buildQuotationIssueQuerySpecs(quotation)
 
-  const poOrParts = [`quotation_id.eq.${qId}`]
-  if (qNo) {
-    poOrParts.push(`sales_quotation_no.eq.${qNo}`)
-    poOrParts.push(`quotation_no.eq.${qNo}`)
-  }
-  if (prjId) {
-    poOrParts.push(`project_id.eq.${prjId}`)
-  }
-
-  const prOrParts = [`quotation_id.eq.${qId}`]
-  if (qNo) {
-    prOrParts.push(`sales_quotation_no.eq.${qNo}`)
-    prOrParts.push(`notes.ilike.%${qNo}%`)
-  }
-  if (prjId) {
-    prOrParts.push(`project_id.eq.${prjId}`)
-  }
-
-  const safePoQuery = async () => {
-    const res = await client
-      .from('purchase_orders')
-      .select('id, po_no, status, status_th, order_date, total_amount, grand_total, quotation_no, project_id, quotation_id, sales_quotation_no')
-      .or(poOrParts.join(','))
-      .order('order_date', { ascending: false })
-    if (!res.error) return res.data || []
-
-    // Fallback if quotation_id / sales_quotation_no not yet migrated
-    const fb = await client
-      .from('purchase_orders')
-      .select('id, po_no, status, status_th, order_date, total_amount, grand_total, quotation_no, project_id')
-      .or([qNo ? `quotation_no.eq.${qNo}` : null, prjId ? `project_id.eq.${prjId}` : null].filter(Boolean).join(','))
-      .order('order_date', { ascending: false })
-    return fb.error ? [] : fb.data || []
+  const runFilteredQuery = async ({ table, select, orFilter, orderBy }) => {
+    if (!orFilter) return { error: null, data: [] }
+    return client.from(table).select(select).or(orFilter).order(orderBy, { ascending: false })
   }
 
   const safePrQuery = async () => {
-    const res = await client
-      .from('purchase_requisitions')
-      .select('id, pr_no, status, request_date, notes, project_id, quotation_id, sales_quotation_no')
-      .or(prOrParts.join(','))
-      .order('request_date', { ascending: false })
+    const res = await runFilteredQuery({
+      table: 'purchase_requisitions',
+      select: prSpecs.primarySelect,
+      orFilter: prSpecs.primaryOr,
+      orderBy: 'request_date',
+    })
     if (!res.error) return res.data || []
 
-    const fb = await client
-      .from('purchase_requisitions')
-      .select('id, pr_no, status, request_date, notes, project_id')
-      .or([qNo ? `notes.ilike.%${qNo}%` : null, prjId ? `project_id.eq.${prjId}` : null].filter(Boolean).join(','))
-      .order('request_date', { ascending: false })
+    const fb = await runFilteredQuery({
+      table: 'purchase_requisitions',
+      select: prSpecs.fallbackSelect,
+      orFilter: prSpecs.fallbackOr,
+      orderBy: 'request_date',
+    })
     return fb.error ? [] : fb.data || []
   }
 
-  const [invRes, posList, prsList] = await Promise.all([
+  const safeIssueQuery = async () => {
+    if (!issueSpecs.orFilter) return []
+    try {
+      const res = await runFilteredQuery({
+        table: 'stock_issues',
+        select: issueSpecs.select,
+        orFilter: issueSpecs.orFilter,
+        orderBy: 'created_at',
+      })
+      if (res.error) return []
+      return res.data || []
+    } catch {
+      return []
+    }
+  }
+
+  const [invRes, prsList, issuesList] = await Promise.all([
     client
       .from('sales_invoices')
       .select('*')
       .eq('quotation_id', quotation.id)
       .order('created_at', { ascending: false }),
-    safePoQuery(),
     safePrQuery(),
+    safeIssueQuery(),
   ])
+
+  const matchedPrIds = (prsList || []).map((p) => p?.id).filter(Boolean)
+  const poSpecs = buildQuotationPoQuerySpecs(quotation, matchedPrIds)
+
+  const safePoQuery = async () => {
+    const res = await runFilteredQuery({
+      table: 'purchase_orders',
+      select: poSpecs.primarySelect,
+      orFilter: poSpecs.primaryOr,
+      orderBy: 'order_date',
+    })
+    if (!res.error) return res.data || []
+
+    // Fallback if quotation_id / sales_quotation_no not yet migrated
+    const fb = await runFilteredQuery({
+      table: 'purchase_orders',
+      select: poSpecs.fallbackSelect,
+      orFilter: poSpecs.fallbackOr,
+      orderBy: 'order_date',
+    })
+    return fb.error ? [] : fb.data || []
+  }
+
+  let posList = await safePoQuery()
+  if (posList.length > 0) {
+    try {
+      const poIds = posList.map((po) => po.id).filter(Boolean)
+      if (poIds.length > 0) {
+        const itemsRes = await client
+          .from('purchase_order_items')
+          .select('id, po_id, quantity, qty_received, unit_price')
+          .in('po_id', poIds)
+        if (!itemsRes.error && Array.isArray(itemsRes.data)) {
+          const itemsByPo = new Map()
+          for (const row of itemsRes.data) {
+            const list = itemsByPo.get(row.po_id) || []
+            list.push(row)
+            itemsByPo.set(row.po_id, list)
+          }
+          posList = posList.map((po) => ({
+            ...po,
+            purchase_order_items: itemsByPo.get(po.id) || [],
+          }))
+        }
+      }
+    } catch {
+      // keep posList without item breakdown if query is unavailable
+    }
+  }
 
   return {
     invoices: invRes.error ? [] : invRes.data || [],
     pos: posList,
     prs: prsList,
+    issues: issuesList,
   }
 }

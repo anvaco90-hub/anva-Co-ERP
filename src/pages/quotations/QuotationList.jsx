@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { baht } from '../../lib/projects'
 import { ensureSalesInvoiceForQuotation } from '../../lib/salesBilling'
+import { getCustomerApprovalDisplay } from '../../lib/salesFlowUtils'
 import QuotationPrintModal from '../../components/reports/QuotationPrintModal'
 import EnvelopePrintModal from '../../components/reports/EnvelopePrintModal'
 import QuotationShareModal from '../../components/quotations/QuotationShareModal'
@@ -38,7 +39,7 @@ import {
 const STATUS_CONFIG = {
   draft: { label: 'ฉบับร่าง', cls: 'bg-slate-100 text-slate-700 border-slate-200' },
   sent: { label: 'ส่งลูกค้าแล้ว', cls: 'bg-sky-50 text-sky-700 border-sky-200' },
-  approved: { label: 'ลูกค้าเซ็น PO แล้ว', cls: 'bg-emerald-50 text-emerald-800 border-emerald-300 font-bold' },
+  approved: { label: 'ลูกค้าอนุมัติแล้ว', cls: 'bg-emerald-50 text-emerald-800 border-emerald-300 font-bold' },
   rejected: { label: 'ปฏิเสธ / ยกเลิก', cls: 'bg-rose-50 text-rose-700 border-rose-200' },
   expired: { label: 'หมดอายุยืนราคา', cls: 'bg-amber-50 text-amber-800 border-amber-200' },
   partial: { label: 'รับชำระบางส่วน', cls: 'bg-blue-50 text-blue-800 border-blue-200' },
@@ -608,6 +609,7 @@ export default function QuotationList() {
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-slate-800 bg-white dark:bg-slate-900">
                 {quotations.map((q, rowIdx) => {
+                  const approval = getCustomerApprovalDisplay(q)
                   const hasPo = Boolean(q.customer_po_no)
                   return (
                     <tr
@@ -637,10 +639,10 @@ export default function QuotationList() {
                       <td className="py-3 px-3 text-center align-middle whitespace-nowrap border-r border-slate-200/60 dark:border-slate-800/60">
                         {hasPo ? (
                           <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                            <span>PO: {q.customer_po_no}</span>
+                            <span>{approval.shortLabel}</span>
                           </span>
                         ) : (
-                          <span className="text-slate-400 dark:text-slate-500 text-[11px] font-medium">รอลูกค้าเซ็น PO</span>
+                          <span className="text-slate-400 dark:text-slate-500 text-[11px] font-medium">รอลูกค้าอนุมัติ</span>
                         )}
                       </td>
                       <td className="py-3 px-3.5 text-right font-black text-slate-900 dark:text-slate-100 font-mono align-middle whitespace-nowrap border-r border-slate-200/60 dark:border-slate-800/60 tabular-nums">
@@ -661,7 +663,7 @@ export default function QuotationList() {
                             onClick={() => setCustomerPoTarget(q)}
                             className="text-xs text-sky-700 dark:text-sky-400 hover:underline font-semibold cursor-pointer"
                           >
-                            + บันทึก PO ก่อน
+                            + บันทึกการอนุมัติก่อน
                           </button>
                         )}
                       </td>
@@ -702,6 +704,7 @@ export default function QuotationList() {
                   const status = STATUS_CONFIG[q.status] || STATUS_CONFIG.draft
                   const expInfo = getExpiryInfo(q)
                   const isMenuOpen = actionMenuId === q.id
+                  const approval = getCustomerApprovalDisplay(q)
                   const hasCustomerPo = Boolean(q.customer_po_no)
 
                   return (
@@ -727,7 +730,7 @@ export default function QuotationList() {
                         {hasCustomerPo && (
                           <div className="mt-1 flex justify-center">
                             <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-semibold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                              <span>PO: {q.customer_po_no}</span>
+                              <span>{approval.isDirectQt ? 'เซ็นอนุมัติตาม QT' : approval.shortLabel}</span>
                             </span>
                           </div>
                         )}
@@ -816,8 +819,8 @@ export default function QuotationList() {
                                   }}
                                   className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-emerald-800 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 font-semibold cursor-pointer transition"
                                 >
-                                  <span>️</span>
-                                  <span>{hasCustomerPo ? 'แก้ไขข้อมูล PO ลูกค้า' : 'บันทึก PO ลูกค้า'}</span>
+                                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                                  <span>{hasCustomerPo ? 'แก้ไขข้อมูลการอนุมัติ' : 'บันทึกการอนุมัติใบเสนอราคา'}</span>
                                 </button>
 
                                 {hasCustomerPo && (

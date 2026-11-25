@@ -6,6 +6,7 @@ import { EMPTY_ITEM, itemsValid } from '../../lib/purchasing'
 import { baht } from '../../lib/projects'
 import { inferQuotationTaxType, round2 } from '../../lib/tax'
 import { buildPurchaseItemsFromQuotation } from '../../lib/purchasingPricing'
+import { buildShortfallPrItems } from '../../lib/quotationStockCheck'
 import ItemsEditor from './ItemsEditor'
 import { FieldError } from '../../components/FieldError'
 import SearchableSelect from '../../components/SearchableSelect'
@@ -40,44 +41,35 @@ export default function PRForm() {
   const loadedQuotationRef = useRef(false)
   const PR_VAT_INCLUDED_TAG = '[ราคารวม VAT 7% แล้ว]'
 
+  const buildSyncedItems = (mode, syncData) => {
+    const paramsObj = {
+      quotation: syncData.quotation || {},
+      quotationItems: syncData.rawItems || [],
+      boqItems: syncData.boqItems || [],
+      inventoryItems: syncData.inventoryItems || [],
+      mode,
+    }
+    return syncData.shortfallOnly
+      ? buildShortfallPrItems(paramsObj)
+      : buildPurchaseItemsFromQuotation(paramsObj)
+  }
+
   const applyPriceMode = (mode, syncData = quotationSync) => {
     if (!syncData) return
     setPrPriceMode(mode)
 
     if (mode === 'cost_baseline') {
-      setItems(
-        buildPurchaseItemsFromQuotation({
-          quotation: syncData.quotation || {},
-          quotationItems: syncData.rawItems || [],
-          boqItems: syncData.boqItems || [],
-          inventoryItems: syncData.inventoryItems || [],
-          mode: 'cost_baseline',
-        })
-      )
+      const built = buildSyncedItems('cost_baseline', syncData)
+      setItems(built.length > 0 ? built : [{ ...EMPTY_ITEM }])
     } else {
-      let vatMultiplier = 1
-      if (syncData.hasVat) {
-        if (syncData.qTaxType === 'vat_included') {
-          vatMultiplier = mode === 'net_before_vat' ? 1 / (1 + syncData.vatRate / 100) : 1
-        } else {
-          vatMultiplier = mode === 'with_vat' ? 1 + syncData.vatRate / 100 : 1
-        }
-      }
-
-      const refItems = buildPurchaseItemsFromQuotation({
-        quotation: syncData.quotation || {},
-        quotationItems: syncData.rawItems || [],
-        boqItems: syncData.boqItems || [],
-        inventoryItems: syncData.inventoryItems || [],
-        mode: 'selling_ref',
-      }).map((row) => ({
+      const refItems = buildSyncedItems('selling_ref', syncData).map((row) => ({
         ...row,
         price:
           mode === 'with_vat' && syncData.hasVat
             ? String(round2(Number(row.sellingPriceRef || 0) * (1 + syncData.vatRate / 100)) || '')
             : row.price,
       }))
-      setItems(refItems)
+      setItems(refItems.length > 0 ? refItems : [{ ...EMPTY_ITEM }])
     }
 
     setNotes((prev) => {
@@ -100,12 +92,13 @@ export default function PRForm() {
 
     // โหลดรายการจากใบเสนอราคาขายถ้ามีการส่งต่อมา (Quotation -> PR)
     const qId = params.get('quotation_id')
+    const shortfallOnly = params.get('shortfall_only') === '1'
     if (qId && !id && !loadedQuotationRef.current) {
       loadedQuotationRef.current = true
       Promise.all([
         supabase.from('quotations').select('*').eq('id', qId).single(),
         supabase.from('quotation_items').select('*').eq('quotation_id', qId),
-        supabase.from('inventory_items').select('id, item_code, item_name, unit, avg_unit_cost'),
+        supabase.from('inventory_items').select('id, item_code, item_name, unit, qty_on_hand, avg_unit_cost'),
       ]).then(async ([qRes, itemsRes, invRes]) => {
         const qt = qRes.data
         if (qt?.project_id) {
@@ -155,6 +148,17 @@ export default function PRForm() {
           grandTotal = round2(subtotalNet + vatAmt)
         }
 
+        const invData = invRes.data || []
+        const shortfallPreviewCount = shortfallOnly
+          ? buildShortfallPrItems({
+              quotation: qt || {},
+              quotationItems: qItems,
+              boqItems,
+              inventoryItems: invData,
+              mode: 'cost_baseline',
+            }).length
+          : qItems.length
+
         const syncObj = {
           quotation: qt || {},
           quotation_no: qt?.quotation_no,
@@ -166,12 +170,16 @@ export default function PRForm() {
           grandTotal,
           rawItems: qItems,
           boqItems,
-          inventoryItems: invRes.data || [],
+          inventoryItems: invData,
+          shortfallOnly,
+          shortfallCount: shortfallPreviewCount,
         }
         setQuotationSync(syncObj)
 
         if (qt?.quotation_no) {
-          const qNoTag = `อ้างอิงใบเสนอราคา: ${qt.quotation_no}`
+          const qNoTag = shortfallOnly
+            ? `อ้างอิงใบเสนอราคา: ${qt.quotation_no} (ขอซื้อเฉพาะส่วนที่ขาดจากสต็อก)`
+            : `อ้างอิงใบเสนอราคา: ${qt.quotation_no}`
           setNotes((prev) => {
             if (!prev) return qNoTag
             if (prev.includes(qt.quotation_no)) return prev
@@ -461,9 +469,14 @@ export default function PRForm() {
         {quotationSync && (
           <div className="rounded-xl border border-sky-300 bg-sky-50/70 p-4 space-y-2.5 text-xs shadow-2xs">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-sky-200/80 pb-2.5">
-              <div className="font-bold text-sky-950 flex items-center gap-1.5">
+              <div className="font-bold text-sky-950 flex items-center gap-1.5 flex-wrap">
                 <FileText className="h-4 w-4 text-sky-700" />
                 <span>ซิงค์ข้อมูลจากใบเสนอราคาขาย: <b className="font-mono text-sky-800">{quotationSync.quotation_no}</b></span>
+                {quotationSync.shortfallOnly && (
+                  <span className="rounded-full bg-amber-100 border border-amber-300 px-2.5 py-0.5 text-[10px] font-black text-amber-900">
+                    เปิด PR เฉพาะส่วนที่ขาด ({quotationSync.shortfallCount} รายการ)
+                  </span>
+                )}
               </div>
               <div className="flex flex-wrap items-center gap-1 bg-white p-0.5 rounded-lg border border-sky-200">
                 <button
@@ -515,6 +528,11 @@ export default function PRForm() {
             <p className="text-[11px] text-sky-900/80">
               * ระบบแยกราคาขายลูกค้าออกจากราคาขอซื้อจริงให้อัตโนมัติ (ดึงจาก BOQ/สต็อกก่อน หากไม่มีให้กรอกราคาประเมินซื้อจริง โดยแสดงราคาขาย QT กำกับใต้รายการให้เทียบกำไร)
             </p>
+            {quotationSync.shortfallOnly && quotationSync.shortfallCount === 0 && (
+              <div className="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-[11px] font-bold text-emerald-800">
+                ✓ สต็อกในคลังมีเพียงพอครบทุกรายการแล้ว ไม่มีส่วนที่ขาดสำหรับเปิด PR (สามารถกลับไปกดเบิกจากสต็อกได้ทันที)
+              </div>
+            )}
           </div>
         )}
 

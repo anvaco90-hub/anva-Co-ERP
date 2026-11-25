@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext'
 import { PR_STATUS, PO_STATUS, canCreatePurchasing, canReceiveGoods, formatDateTimeParts, computePoPaymentSummary } from '../../lib/purchasing'
 import { baht } from '../../lib/projects'
 import { computePoTotals } from '../../lib/tax'
+import { extractPrSourceQuotation } from '../../lib/salesFlowUtils'
 import { getPoDueStatus, formatThaiDate } from '../../lib/poDueStatus'
 import PaymentActionModal from '../../components/PaymentActionModal'
 import PODocumentModal from '../../components/reports/PODocumentModal'
@@ -1841,18 +1842,29 @@ export default function PurchasingHub() {
                                     className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 px-2 py-1 text-xs font-bold text-white transition shadow-xs"
                                     title="ออกใบสั่งซื้อ (PO) จากใบขอซื้อนี้"
                                   >
-                                    <span></span>
                                     <span>ออก PO</span>
                                   </Link>
                                 ) : (
-                                  <Link
-                                    to={`/purchasing/pr/${r.id}`}
-                                    className="inline-flex items-center gap-1 rounded-lg border border-steel-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-steel-50 dark:hover:bg-slate-700 px-2 py-1 text-xs font-semibold text-steel-700 dark:text-slate-200 transition shadow-xs"
-                                    title="ดูรายละเอียดใบขอซื้อ"
-                                  >
-                                    <Eye className="h-3.5 w-3.5 text-steel-500 dark:text-slate-400" />
-                                    <span>ดู</span>
-                                  </Link>
+                                  <>
+                                    <Link
+                                      to={`/purchasing/pr/${r.id}`}
+                                      className="inline-flex items-center gap-1 rounded-lg border border-steel-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-steel-50 dark:hover:bg-slate-700 px-2 py-1 text-xs font-semibold text-steel-700 dark:text-slate-200 transition shadow-xs"
+                                      title="ดูรายละเอียดใบขอซื้อ"
+                                    >
+                                      <Eye className="h-3.5 w-3.5 text-steel-500 dark:text-slate-400" />
+                                      <span>ดู</span>
+                                    </Link>
+                                    {r.status !== 'cancelled' && canCreate && (
+                                      <Link
+                                        to={`/purchasing/po/new?pr=${r.id}`}
+                                        className="inline-flex items-center gap-0.5 rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/50 hover:bg-amber-100 px-2 py-1 text-[11px] font-bold text-amber-800 dark:text-amber-300 transition shadow-xs"
+                                        title="ออกใบสั่งซื้อ (PO) เพิ่มสำหรับร้านอื่นจาก PR นี้"
+                                      >
+                                        <Plus className="h-3 w-3" />
+                                        <span>PO</span>
+                                      </Link>
+                                    )}
+                                  </>
                                 )}
 
                                 {/* ปุ่มเมนูดรอปดาวน์กะทัดรัด */}
@@ -2552,8 +2564,8 @@ export default function PurchasingHub() {
                                     </div>
                                   </div>
                                   <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                                    {(primaryPo?.sales_quotation_no || primaryPo?.quotation_no)
-                                      ? `อ้างอิงใบเสนอราคา: ${primaryPo.sales_quotation_no || primaryPo.quotation_no}`
+                                    {primaryPo?.sales_quotation_no
+                                      ? `อ้างอิงใบเสนอราคา: ${primaryPo.sales_quotation_no}`
                                       : 'เปิดคำสั่งซื้อตรงเข้าฝ่ายจัดซื้อ'}
                                   </div>
                                 </div>
@@ -2585,6 +2597,27 @@ export default function PurchasingHub() {
                                       <span className="text-steel-400 dark:text-slate-500">ร้านค้าแนะนำ:</span>
                                       <span className="font-semibold text-steel-800 dark:text-slate-200">{r.suggested_vendor || '-'}</span>
                                     </div>
+                                    {(() => {
+                                      const qtSrc = extractPrSourceQuotation(r)
+                                      if (!qtSrc.quotationNo && !qtSrc.quotationId) return null
+                                      return (
+                                        <div className="flex items-center justify-between text-[11px]">
+                                          <span className="text-steel-400 dark:text-slate-500">ใบเสนอราคาขาย:</span>
+                                          {qtSrc.quotationId ? (
+                                            <Link
+                                              to={`/quotations/${qtSrc.quotationId}`}
+                                              className="font-mono font-bold text-amber-700 dark:text-amber-300 hover:underline"
+                                            >
+                                              {qtSrc.quotationNo || 'เปิดดู QT'}
+                                            </Link>
+                                          ) : (
+                                            <span className="font-mono font-bold text-amber-700 dark:text-amber-300">
+                                              {qtSrc.quotationNo}
+                                            </span>
+                                          )}
+                                        </div>
+                                      )
+                                    })()}
                                     {r.notes && (
                                       <div className="text-[11px] text-steel-500 dark:text-slate-400 line-clamp-1 italic">
                                         "{r.notes}"
@@ -2654,6 +2687,15 @@ export default function PurchasingHub() {
                                         </div>
                                       </div>
                                     ))}
+                                    {canCreate && r && r.status !== 'cancelled' && (
+                                      <Link
+                                        to={`/purchasing/po/new?pr=${r.id}`}
+                                        className="inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-lg border border-dashed border-amber-300 dark:border-amber-700 bg-amber-50/60 dark:bg-amber-950/30 hover:bg-amber-100 text-amber-900 dark:text-amber-300 font-bold text-[11px] transition"
+                                      >
+                                        <Plus className="h-3 w-3" />
+                                        <span>ออก PO อีกร้าน (จาก PR นี้)</span>
+                                      </Link>
+                                    )}
                                   </div>
                                 ) : (
                                   <div className="rounded-xl border border-dashed border-steel-300 dark:border-slate-700 bg-steel-50/50 dark:bg-slate-800/40 p-4 text-center space-y-2">
@@ -3078,14 +3120,14 @@ export default function PurchasingHub() {
                     <span>ดูรายละเอียด</span>
                   </Link>
 
-                  {pr.status === 'pending' && canCreate && (
+                  {pr.status !== 'cancelled' && canCreate && (
                     <Link
                       to={`/purchasing/po/new?pr=${pr.id}`}
                       onClick={() => setActiveDropdown(null)}
                       className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-emerald-800 dark:text-emerald-300 bg-emerald-50/80 dark:bg-emerald-950/40 hover:bg-emerald-100 font-semibold transition"
                     >
                       <Plus className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-                      <span>ออกใบสั่งซื้อ (PO)</span>
+                      <span>{linkedPos.length > 0 || pr.status === 'ordered' ? 'ออก PO อีกร้าน' : 'ออกใบสั่งซื้อ (PO)'}</span>
                     </Link>
                   )}
 

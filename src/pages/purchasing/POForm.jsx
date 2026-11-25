@@ -13,7 +13,8 @@ import { EMPTY_ITEM, itemsValid } from '../../lib/purchasing'
 import { getItemVendorHistory } from '../../lib/purchasingHistory'
 import { baht } from '../../lib/projects'
 import { calculateTaxBreakdown, inferPoTaxType, inferQuotationTaxType } from '../../lib/tax'
-import { buildPurchaseItemsFromQuotation } from '../../lib/purchasingPricing'
+import { buildPurchaseItemsFromQuotation, computeRemainingPrItems } from '../../lib/purchasingPricing'
+import { extractPrSourceQuotation } from '../../lib/salesFlowUtils'
 import { uploadQuotationFile, openFile } from '../../lib/files'
 import ItemsEditor from './ItemsEditor'
 import ItemProjectUsageModal from '../../components/ItemProjectUsageModal'
@@ -94,6 +95,7 @@ export default function POForm() {
   const [deliveryAddress, setDeliveryAddress] = useState('')
   const [notes, setNotes] = useState('')
   const [duplicateBanner, setDuplicateBanner] = useState(false)
+  const [prMultiPoInfo, setPrMultiPoInfo] = useState(null)
   const [projects, setProjects] = useState([])
   const [projectId, setProjectId] = useState('')
 
@@ -254,20 +256,24 @@ export default function POForm() {
 
   // โหลดข้อมูล PR เมื่อเลือก PR
   const loadPrData = async (prIdToLoad) => {
+    setPrMultiPoInfo(null)
     if (!prIdToLoad || prIdToLoad === 'DIRECT_PO') {
       setPr(null)
       return
     }
-    const [a, b] = await Promise.all([
+    const [a, b, existingPosRes] = await Promise.all([
       supabase.from('purchase_requisitions').select('*, projects(id, project_code, project_name)').eq('id', prIdToLoad).single(),
       supabase.from('purchase_requisition_items').select('*').eq('pr_id', prIdToLoad),
+      supabase
+        .from('purchase_orders')
+        .select('id, po_no, status, purchase_order_items(id, pr_item_id, item_name, quantity)')
+        .eq('pr_id', prIdToLoad)
+        .neq('status', 'cancelled'),
     ])
     if (a.error) {
       return setError('ไม่พบข้อมูลใบขอซื้อ')
     }
-    if (a.data.status !== 'pending') {
-      setError(`ℹ️ ใบขอซื้อ ${a.data.pr_no} มีสถานะเป็น "${a.data.status === 'ordered' ? 'สั่งซื้อแล้ว' : a.data.status}" (สามารถใช้ข้อมูลนี้เพื่อออก PO ซ้ำหรือสั่งซื้อเพิ่มเติมได้)`)
-    }
+    setError('')
     setPr(a.data)
     if (a.data.project_id) {
       setProjectId(a.data.project_id)
@@ -279,11 +285,12 @@ export default function POForm() {
     if (a.data.customer_name) {
       setCustomerName(a.data.customer_name)
     }
-    if (a.data.quotation_id) {
-      setSalesQuotationId(a.data.quotation_id)
+    const sourceQt = extractPrSourceQuotation(a.data)
+    if (sourceQt.quotationId) {
+      setSalesQuotationId(sourceQt.quotationId)
     }
-    if (a.data.sales_quotation_no) {
-      setSalesQuotationNo(a.data.sales_quotation_no)
+    if (sourceQt.quotationNo) {
+      setSalesQuotationNo(sourceQt.quotationNo)
     }
     // หาก PR ต้นทางระบุว่ากรอกราคาต่อหน่วยแบบรวม VAT 7% แล้ว ให้ตั้ง PO เป็น vat_included เพื่อไม่บวกซ้ำ
     if (a.data.notes && a.data.notes.includes('[ราคารวม VAT 7% แล้ว]')) {
@@ -300,13 +307,36 @@ export default function POForm() {
         setVendorMode('custom')
       }
     }
-    if (b.data && b.data.length > 0) {
-      setItems(b.data.map((i) => ({
-        item_name: i.item_name,
-        quantity: String(i.quantity),
-        unit: i.unit ?? '',
-        price: String(i.estimated_price || ''),
-      })))
+
+    const prItemsList = b.data || []
+    const existingPos = existingPosRes?.error ? [] : existingPosRes?.data || []
+    const existingPoItems = existingPos.flatMap((poRow) => poRow.purchase_order_items || [])
+
+    if (prItemsList.length > 0) {
+      const remaining = computeRemainingPrItems(prItemsList, existingPoItems)
+      if (existingPos.length > 0) {
+        setPrMultiPoInfo({
+          prNo: a.data.pr_no,
+          poNos: existingPos.map((poRow) => poRow.po_no),
+          totalPrItems: prItemsList.length,
+          remainingCount: remaining.items.length,
+          fullyOrderedCount: remaining.fullyOrderedCount,
+        })
+      }
+
+      const itemsToPrefill =
+        existingPos.length > 0 && remaining.items.length > 0
+          ? remaining.items
+          : prItemsList.map((i) => ({
+              item_id: i.item_id || null,
+              pr_item_id: i.id,
+              item_name: i.item_name,
+              quantity: String(i.quantity),
+              unit: i.unit ?? '',
+              price: String(i.estimated_price || ''),
+            }))
+
+      setItems(itemsToPrefill.map((i) => ({ ...i, received: 0 })))
     }
   }
 
@@ -792,6 +822,28 @@ export default function POForm() {
             type="button"
             onClick={() => setDuplicateBanner(false)}
             className="text-xs text-blue-700 dark:text-blue-300 hover:text-blue-900 underline font-semibold cursor-pointer"
+          >
+            ปิด
+          </button>
+        </div>
+      )}
+
+      {prMultiPoInfo && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-950/40 dark:border-amber-800 p-3.5 text-xs text-amber-950 dark:text-amber-200 flex items-center justify-between gap-3 shadow-xs">
+          <div>
+            <b className="font-bold">
+              ใบขอซื้อ {prMultiPoInfo.prNo} มีใบสั่งซื้อแล้ว {prMultiPoInfo.poNos.length} ใบ ({prMultiPoInfo.poNos.join(', ')})
+            </b>
+            <p className="text-amber-800 dark:text-amber-300 text-[11px] mt-0.5">
+              {prMultiPoInfo.remainingCount > 0
+                ? `ระบบคัดกรองเหลือเฉพาะรายการที่ยังไม่ได้สั่งซื้อ (${prMultiPoInfo.remainingCount} จาก ${prMultiPoInfo.totalPrItems} รายการ) เพื่อออก PO แยกต่างร้านให้แล้ว`
+                : `รายการทั้งหมดใน PR นี้ถูกออก PO ครบแล้ว (${prMultiPoInfo.totalPrItems} รายการ) — ระบบโหลดรายการตั้งต้นให้คุณปรับจำนวนหรือลบรายการได้ตามต้องการ`}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setPrMultiPoInfo(null)}
+            className="text-xs text-amber-800 dark:text-amber-300 hover:underline font-semibold shrink-0 cursor-pointer"
           >
             ปิด
           </button>

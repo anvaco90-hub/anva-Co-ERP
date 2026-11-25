@@ -90,10 +90,10 @@ export default function App() {
           <Route path="po/:id/edit" element={<ProtectedRoute roles={['purchasing', 'store', 'admin']}><POForm /></ProtectedRoute>} />
           <Route path="vendors" element={<Vendors />} />
         </Route>
-        <Route path="store" element={guard('/store', <StoreLayout />)}>
+        <Route path="store" element={<ProtectedRoute roles={['admin', 'store', 'management', 'purchasing']}><StoreLayout /></ProtectedRoute>}>
           <Route index element={<StockList />} />
           <Route path="receipts" element={<ReceiptsList />} />
-          <Route path="issue/new" element={<ProtectedRoute roles={['store', 'admin']}><IssueForm /></ProtectedRoute>} />
+          <Route path="issue/new" element={<ProtectedRoute roles={['store', 'admin', 'purchasing']}><IssueForm /></ProtectedRoute>} />
           <Route path="issues" element={<IssueList />} />
           <Route path="adjust" element={<ProtectedRoute roles={['store', 'admin']}><AdjustStock /></ProtectedRoute>} />
           <Route path="items" element={<ItemsMaster />} />

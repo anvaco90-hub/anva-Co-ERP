@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { baht } from '../../lib/projects'
+import { buildCustomerQuotationSummary } from '../../lib/quotationPrintUtils'
+import { getCustomerApprovalDisplay } from '../../lib/salesFlowUtils'
 import { Check, Copy, Share2, MessageCircle, ExternalLink, X } from 'lucide-react'
 
 export default function QuotationShareModal({ quotation, onClose }) {
@@ -12,15 +14,17 @@ export default function QuotationShareModal({ quotation, onClose }) {
   const customerName = quotation.customer_name || 'ลูกค้า'
   const projectInfo = quotation.projects ? `${quotation.projects.project_code} ${quotation.projects.project_name}` : (quotation.ref_no || 'โครงการทั่วไป')
   const validUntilStr = quotation.valid_until || quotation.expiry_date || 'ตามเงื่อนไขในเอกสาร'
-  const totalAmountStr = baht(quotation.grand_total || quotation.total_amount || 0)
+  const summary = buildCustomerQuotationSummary(quotation)
+  const approval = getCustomerApprovalDisplay(quotation)
+  const totalAmountStr = baht(summary.grandTotal || 0)
 
   const summaryMessage = `*ใบเสนอราคา (Quotation) - ANVA & Co.*
 • เลขที่: ${quotation.quotation_no}
 • ลูกค้า: ${customerName}
 • โครงการ: ${projectInfo}
-• ยอดเสนอราคารวม (VAT): ${totalAmountStr} บาท
+• ยอดเสนอราคารวม (${summary.vatShortTag}): ${totalAmountStr} บาท
 • กำหนดยืนราคาถึง: ${validUntilStr}
-${quotation.customer_po_no ? `• เลขที่ PO ลูกค้า: ${quotation.customer_po_no}\n` : ''}• ลิงก์ตรวจสอบเอกสาร: ${qtUrl}`
+${approval.isApproved && approval.shortLabel ? `• ${approval.shortLabel}\n` : ''}• ลิงก์ตรวจสอบเอกสาร: ${qtUrl}`
 
   const copyToClipboard = async (text, type) => {
     try {

@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
 import { baht } from '../../lib/projects'
 import { formatIntQty, toIntQty } from '../../lib/store'
+import { buildIssuableStockLines } from '../../lib/quotationStockCheck'
 import { ensureStockIssueAccounting } from '../../lib/storeAccounting'
 import { FieldError, fieldErrorClass } from '../../components/FieldError'
 import SearchableProjectSelect from '../../components/SearchableProjectSelect'
@@ -71,7 +72,9 @@ export default function IssueForm() {
   useEffect(() => {
     const queryParams = new URLSearchParams(location.search)
     const initialItemId = queryParams.get('item_id')
+    const initialQtyParam = queryParams.get('qty') || queryParams.get('quantity')
     const initialProjectId = queryParams.get('project') || queryParams.get('project_id')
+    const initialQuotationId = queryParams.get('quotation_id')
 
     Promise.all([
       supabase
@@ -84,7 +87,7 @@ export default function IssueForm() {
         .select('id, item_code, item_name, unit, qty_on_hand, avg_unit_cost, image_url')
         .gt('qty_on_hand', 0)
         .order('item_name'),
-    ]).then(([pRes, iRes]) => {
+    ]).then(async ([pRes, iRes]) => {
       const fetchedProjects = pRes.data ?? []
       setProjects(fetchedProjects)
       const fetchedItems = iRes.data ?? []
@@ -95,8 +98,33 @@ export default function IssueForm() {
         setProjectId(initialProjectId)
       }
 
-      if (initialItemId && fetchedItems.some((it) => it.id === initialItemId)) {
-        setLines([{ item_id: initialItemId, quantity: '1' }])
+      if (initialItemId) {
+        const matched = fetchedItems.find((it) => it.id === initialItemId)
+        if (matched) {
+          const requested = toIntQty(initialQtyParam)
+          const maxStock = Math.max(1, Math.floor(Number(matched.qty_on_hand) || 0))
+          const prefillQty = requested > 0 ? Math.min(requested, maxStock) : 1
+          setLines([{ item_id: initialItemId, quantity: String(prefillQty) }])
+        }
+      } else if (initialQuotationId) {
+        const [qtRes, qItemsRes] = await Promise.all([
+          supabase.from('quotations').select('id, quotation_no, project_id').eq('id', initialQuotationId).maybeSingle(),
+          supabase.from('quotation_items').select('*').eq('quotation_id', initialQuotationId).order('id', { ascending: true }),
+        ])
+        const qt = qtRes.data
+        const issuableLines = buildIssuableStockLines(qItemsRes.data || [], fetchedItems).filter((line) =>
+          fetchedItems.some((inv) => inv.id === line.item_id)
+        )
+        if (issuableLines.length > 0) {
+          setLines(issuableLines)
+        }
+        if (!initialProjectId && qt?.project_id && fetchedProjects.some((pr) => pr.id === qt.project_id)) {
+          setTargetType('project')
+          setProjectId(qt.project_id)
+        }
+        if (qt?.quotation_no) {
+          setNotes((prev) => prev || `เบิกวัสดุตามใบเสนอราคา ${qt.quotation_no}`)
+        }
       }
     })
   }, [location.search])

@@ -1,0 +1,109 @@
+import { describe, it } from 'node:test'
+import assert from 'node:assert/strict'
+import {
+  buildCustomerQuotationSummary,
+  buildQuotationTaxUpdatePayload,
+} from '../src/lib/quotationPrintUtils.js'
+
+describe('Customer Quotation Print Summary & VAT Switch Helpers (src/lib/quotationPrintUtils.js)', () => {
+  it('formats vat_excluded quotation clearly as having VAT 7% excluded', () => {
+    const summary = buildCustomerQuotationSummary({
+      subtotal: 42120,
+      discount_amount: 0,
+      after_discount: 42120,
+      tax_type: 'vat_excluded',
+      vat_rate: 7,
+      vat_amount: 2948.4,
+      wht_rate: 0,
+      wht_amount: 0,
+      grand_total: 45068.4,
+    })
+
+    assert.equal(summary.taxType, 'vat_excluded')
+    assert.equal(summary.hasVat, true)
+    assert.equal(summary.vatRate, 7)
+    assert.equal(summary.amountBeforeVat, 42120)
+    assert.equal(summary.vatAmount, 2948.4)
+    assert.equal(summary.grandTotal, 45068.4)
+    assert.match(summary.vatStatusLabel, /มี VAT/i)
+  })
+
+  it('formats vat_included quotation with extracted pre-VAT base and clear VAT label', () => {
+    const summary = buildCustomerQuotationSummary({
+      subtotal: 42120,
+      discount_amount: 0,
+      after_discount: 42120,
+      tax_type: 'vat_included',
+      vat_rate: 7,
+      vat_amount: 2755.51,
+      wht_rate: 0,
+      wht_amount: 0,
+      grand_total: 42120,
+    })
+
+    assert.equal(summary.taxType, 'vat_included')
+    assert.equal(summary.hasVat, true)
+    assert.equal(summary.vatRate, 7)
+    assert.equal(summary.amountBeforeVat, 39364.49)
+    assert.equal(summary.vatAmount, 2755.51)
+    assert.equal(summary.grandTotal, 42120)
+    assert.match(summary.vatStatusLabel, /มี VAT/i)
+    assert.match(summary.vatStatusLabel, /รวม/)
+  })
+
+  it('formats vat_exempt quotation clearly as having NO VAT', () => {
+    const summary = buildCustomerQuotationSummary({
+      subtotal: 42120,
+      discount_amount: 120,
+      after_discount: 42000,
+      tax_type: 'vat_exempt',
+      vat_rate: 0,
+      vat_amount: 0,
+      wht_rate: 0,
+      wht_amount: 0,
+      grand_total: 42000,
+    })
+
+    assert.equal(summary.taxType, 'vat_exempt')
+    assert.equal(summary.hasVat, false)
+    assert.equal(summary.vatRate, 0)
+    assert.equal(summary.discountAmount, 120)
+    assert.equal(summary.vatAmount, 0)
+    assert.equal(summary.grandTotal, 42000)
+    assert.match(summary.vatStatusLabel, /ไม่มี VAT/i)
+  })
+
+  it('computes updated quotation VAT payload cleanly when switching between all 3 VAT modes', () => {
+    const baseQuotation = {
+      subtotal: 100000,
+      discount_amount: 0,
+      after_discount: 100000,
+      wht_rate: 0,
+      tax_type: 'vat_included',
+      vat_rate: 7,
+      vat_amount: 6542.06,
+      grand_total: 100000,
+    }
+
+    const excl = buildQuotationTaxUpdatePayload(baseQuotation, 'vat_excluded')
+    assert.equal(excl.tax_type, 'vat_excluded')
+    assert.equal(excl.vat_rate, 7)
+    assert.equal(excl.vat_amount, 7000)
+    assert.equal(excl.grand_total, 107000)
+    assert.equal(excl.total_amount, 107000)
+
+    const exempt = buildQuotationTaxUpdatePayload(baseQuotation, 'vat_exempt')
+    assert.equal(exempt.tax_type, 'vat_exempt')
+    assert.equal(exempt.vat_rate, 0)
+    assert.equal(exempt.vat_amount, 0)
+    assert.equal(exempt.grand_total, 100000)
+    assert.equal(exempt.total_amount, 100000)
+
+    const incl = buildQuotationTaxUpdatePayload(baseQuotation, 'vat_included')
+    assert.equal(incl.tax_type, 'vat_included')
+    assert.equal(incl.vat_rate, 7)
+    assert.equal(incl.vat_amount, 6542.06)
+    assert.equal(incl.grand_total, 100000)
+    assert.equal(incl.total_amount, 100000)
+  })
+})

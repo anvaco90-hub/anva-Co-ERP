@@ -10,6 +10,7 @@ import StatusBadge from '../../components/common/StatusBadge'
 import AuditPanel from './AuditPanel'
 import PRDocumentModal from '../../components/reports/PRDocumentModal'
 import ProcurementWorkflowStepper from '../../components/purchasing/ProcurementWorkflowStepper'
+import { extractPrSourceQuotation } from '../../lib/salesFlowUtils'
 import {
   ArrowLeft,
   Printer,
@@ -74,7 +75,7 @@ export default function PRDetail() {
       supabase
         .from('purchase_orders')
         .select(
-          'id, po_no, order_date, expected_delivery_date, status, total_amount, grand_total, net_amount, tax_type, vat_rate, vat_amount, wht_rate, wht_amount, payment_status, deposit_paid_amount, remaining_amount, payment_type, custom_vendor_name, vendor_name, purchase_order_items(quantity, unit_price, qty_received)'
+          'id, po_no, order_date, expected_delivery_date, status, total_amount, grand_total, net_amount, tax_type, vat_rate, vat_amount, wht_rate, wht_amount, payment_status, deposit_paid_amount, remaining_amount, payment_type, custom_vendor_name, vendors(vendor_name), purchase_order_items(quantity, unit_price, qty_received)'
         )
         .eq('pr_id', id)
         .then(async (res) => {
@@ -233,25 +234,34 @@ export default function PRDetail() {
               </div>
             </div>
 
-            {/* ขวา: ปุ่มคำสั่ง (Option A - แก้ไขข้างนอก ลบใน ⋮) */}
+            {/* ขวา: ปุ่มคำสั่ง (รองรับ 1 PR ออกหลาย PO) */}
             <div className="flex items-center gap-2 flex-wrap xl:justify-end shrink-0">
-              {activePos.length > 0 ? (
+              {activePos.length > 0 && (
                 <Link
                   to={`/purchasing/po/${activePos[0].id}`}
                   className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-400/40 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 h-9 px-3.5 text-xs font-bold transition shadow-xs"
                 >
                   <ExternalLink className="h-3.5 w-3.5" />
-                  <span>ดูใบสั่งซื้อ ({activePos[0].po_no})</span>
+                  <span>
+                    {activePos.length > 1
+                      ? `ดูใบสั่งซื้อ (${activePos.length} ใบ)`
+                      : `ดูใบสั่งซื้อ (${activePos[0].po_no})`}
+                  </span>
                 </Link>
-              ) : canEdit && pr.status === 'pending' ? (
+              )}
+              {canEdit && pr.status !== 'cancelled' && (
                 <Link
                   to={`/purchasing/po/new?pr=${pr.id}`}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 h-9 px-3.5 text-xs font-black shadow-xs transition"
+                  className={`inline-flex items-center gap-1.5 rounded-xl h-9 px-3.5 text-xs transition shadow-xs ${
+                    activePos.length > 0
+                      ? 'border border-amber-400/40 bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 font-bold'
+                      : 'bg-amber-400 hover:bg-amber-300 text-slate-950 font-black'
+                  }`}
                 >
                   <ShoppingCart className="h-3.5 w-3.5" />
-                  <span>สร้างใบสั่งซื้อ (เปิด PO)</span>
+                  <span>{activePos.length > 0 ? '+ เพิ่มใบสั่งซื้อ (เปิด PO อีกร้าน)' : 'สร้างใบสั่งซื้อ (เปิด PO)'}</span>
                 </Link>
-              ) : null}
+              )}
 
               <button
                 type="button"
@@ -343,6 +353,29 @@ export default function PRDetail() {
               <FolderGit2 className="h-3.5 w-3.5 text-purple-400 shrink-0" />
               <span>โครงการ: <strong className="text-sky-300">{projectName}</strong></span>
             </span>
+
+            {(() => {
+              const sourceQt = extractPrSourceQuotation(pr)
+              if (!sourceQt.quotationId && !sourceQt.quotationNo) return null
+              return (
+                <span className="flex items-center gap-1.5 shrink-0 whitespace-nowrap">
+                  <FileText className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+                  {sourceQt.quotationId ? (
+                    <Link
+                      to={`/quotations/${sourceQt.quotationId}`}
+                      className="text-amber-300 hover:text-amber-200 font-mono font-bold hover:underline inline-flex items-center gap-1"
+                    >
+                      <span>อ้างอิง QT: {sourceQt.quotationNo || 'เปิดดูใบเสนอราคา'}</span>
+                      <ExternalLink className="h-3 w-3" />
+                    </Link>
+                  ) : (
+                    <span>
+                      อ้างอิง QT: <strong className="text-amber-300 font-mono">{sourceQt.quotationNo}</strong>
+                    </span>
+                  )}
+                </span>
+              )
+            })()}
           </div>
         </div>
 
@@ -525,6 +558,20 @@ export default function PRDetail() {
                       </Link>
                     </div>
                   ))}
+                  {canEdit && pr.status !== 'cancelled' && (
+                    <div className="pt-1 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-dashed border-amber-300 dark:border-amber-800 bg-amber-50/40 dark:bg-amber-950/20 px-4 py-2.5">
+                      <span className="text-[11px] font-semibold text-amber-900 dark:text-amber-200">
+                        แยกสั่งสินค้าที่เหลือจากร้านค้าอื่นได้ (1 ใบขอซื้อ PR ออกได้หลาย PO)
+                      </span>
+                      <Link
+                        to={`/purchasing/po/new?pr=${pr.id}`}
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-xs transition"
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                        <span>+ ออกใบสั่งซื้อ (PO อีกร้าน)</span>
+                      </Link>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="rounded-xl border border-dashed border-amber-300 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/20 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">

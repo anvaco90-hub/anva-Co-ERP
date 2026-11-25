@@ -7,6 +7,7 @@ import {
 import { supabase } from '../../lib/supabase'
 import { baht } from '../../lib/projects'
 import { formatThaiDate } from '../../lib/poDueStatus'
+import { getCustomerApprovalDisplay } from '../../lib/salesFlowUtils'
 import EnvelopePrintModal from '../../components/reports/EnvelopePrintModal'
 
 export default function ContactDetailModal({ contact, onClose, onEdit }) {
@@ -37,7 +38,7 @@ export default function ContactDetailModal({ contact, onClose, onEdit }) {
             .order('issue_date', { ascending: false }),
           supabase
             .from('purchase_orders')
-            .select('id, po_no, order_date, expected_delivery_date, total_amount, status, payment_type, custom_vendor_name, customer_name, vendor_name')
+            .select('id, po_no, order_date, expected_delivery_date, total_amount, status, payment_type, custom_vendor_name, customer_name, vendors(vendor_name)')
             .or(`vendor_id.eq.${contact.id},custom_vendor_name.ilike.%${businessName}%,customer_name.ilike.%${businessName}%`)
             .order('order_date', { ascending: false })
             .then(async (res) => {
@@ -353,15 +354,17 @@ export default function ContactDetailModal({ contact, onClose, onEdit }) {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-steel-100 bg-white">
-                        {quotations.map((q) => (
+                        {quotations.map((q) => {
+                          const approval = getCustomerApprovalDisplay(q)
+                          return (
                           <tr key={q.id} className="hover:bg-steel-50/70">
                             <td className="py-2.5 px-3 font-bold text-sky-700 font-mono">
                               <Link to={`/quotations/${q.id}`} className="hover:underline">
                                 {q.quotation_no}
                               </Link>
-                              {q.customer_po_no && (
+                              {approval.isApproved && (
                                 <div className="text-[10px] text-emerald-700 font-semibold">
-                                  PO: {q.customer_po_no}
+                                  {approval.isDirectQt ? 'ลูกค้าเซ็นอนุมัติแล้ว' : approval.shortLabel}
                                 </div>
                               )}
                             </td>
@@ -391,7 +394,8 @@ export default function ContactDetailModal({ contact, onClose, onEdit }) {
                               </Link>
                             </td>
                           </tr>
-                        ))}
+                          )
+                        })}
                       </tbody>
                     </table>
                   </div>

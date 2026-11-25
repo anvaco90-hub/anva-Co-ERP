@@ -210,7 +210,7 @@ export default function Dashboard() {
 
         supabase
           .from('purchase_orders')
-          .select('id, po_no, order_date, total_amount, status, vendor_id, project_id, custom_vendor_name, vendor_name, projects(project_name, project_code)')
+          .select('id, po_no, order_date, total_amount, status, vendor_id, project_id, custom_vendor_name, vendors(vendor_name), projects(project_name, project_code)')
           .order('order_date', { ascending: false })
           .then(async (res) => {
             if (res.error) {
@@ -695,7 +695,7 @@ export default function Dashboard() {
         typeName: 'ใบสั่งซื้อสินค้า/วัสดุ',
         dept: 'ฝ่ายจัดซื้อ',
         category: 'purchasing',
-        party: po.vendor_name || po.vendors?.vendor_name || 'ผู้ขายวัสดุ',
+        party: po.custom_vendor_name || po.vendors?.vendor_name || po.vendor_name || 'ผู้ขายวัสดุ',
         project: po.project_name || po.projects?.project_name || '-',
         amount: Number(po.total_amount || 0),
         statusText: po.status_th || (po.status === 'received' ? 'รับของแล้ว' : 'สั่งซื้อแล้ว'),

@@ -6,6 +6,12 @@ import { FieldError, fieldErrorClass } from '../../components/FieldError'
 import CustomerSelectField from '../../components/CustomerSelectField'
 import { fetchUnifiedCustomers } from '../../lib/contactsSync'
 import {
+  calculateKwLaborCost,
+  calculateLaborLineTotal,
+  syncLaborItemsWithKwp,
+  LABOR_RATE_PER_WATT,
+} from '../../lib/boqLabor'
+import {
   FileSpreadsheet,
   Plus,
   Trash2,
@@ -177,6 +183,7 @@ export default function BOQForm() {
       item_name: 'ค่าแรงติดตั้งและทดสอบระบบ (Installation & Commissioning)',
     },
   ])
+  const [isLaborManualOverride, setIsLaborManualOverride] = useState(false)
 
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -234,17 +241,25 @@ export default function BOQForm() {
           itemsRes.data
         )
         setCategories(parsedCats)
-        setLaborItems(
-          parsedLabors.length > 0
-            ? parsedLabors
-            : [
-                {
-                  ...EMPTY_LABOR_ITEM,
-                  id: 'labor_' + Math.random().toString(36).slice(2, 9),
-                  item_name: 'ค่าแรงติดตั้งและทดสอบระบบ',
-                },
-              ]
-        )
+        if (parsedLabors.length > 0) {
+          setLaborItems(parsedLabors)
+          const expectedWatts =
+            Number(b.system_size_kwp) > 0
+              ? Math.round(Number(b.system_size_kwp) * 1000 * 100) / 100
+              : 0
+          const loadedFirstQty = Number(parsedLabors[0]?.quantity || 0)
+          if (expectedWatts > 0 && Math.abs(loadedFirstQty - expectedWatts) > 0.01) {
+            setIsLaborManualOverride(true)
+          }
+        } else {
+          setLaborItems([
+            {
+              ...EMPTY_LABOR_ITEM,
+              id: 'labor_' + Math.random().toString(36).slice(2, 9),
+              item_name: 'ค่าแรงติดตั้งและทดสอบระบบ',
+            },
+          ])
+        }
       }
     })
   }, [id])
@@ -370,16 +385,24 @@ export default function BOQForm() {
     }
   }
 
+  const handleSystemSizeChange = (val) => {
+    setSystemSizeKwp(val)
+    setLaborItems((prev) => syncLaborItemsWithKwp(prev, val, isLaborManualOverride))
+  }
+
+  const resetLaborFromKwp = () => {
+    setIsLaborManualOverride(false)
+    setLaborItems((prev) => syncLaborItemsWithKwp(prev, systemSizeKwp, false))
+  }
+
   const updateLaborItem = (laborId, field, value) => {
+    if (laborId === laborItems[0]?.id && field === 'quantity') {
+      setIsLaborManualOverride(true)
+    }
     setLaborItems(
       laborItems.map((l) => {
         if (l.id !== laborId) return l
-        let processedVal = value
-        if (field === 'quantity' && value !== '') {
-          const parsed = parseInt(value, 10)
-          processedVal = isNaN(parsed) ? '' : String(Math.max(1, parsed))
-        }
-        return { ...l, [field]: processedVal }
+        return { ...l, [field]: value }
       })
     )
   }
@@ -404,15 +427,15 @@ export default function BOQForm() {
 
   const laborCalculations = useMemo(() => {
     return laborItems.map((l) => {
-      const qty = parseInt(l.quantity, 10) || 0
+      const qty = Number(l.quantity) || 0
       const labUnit = Number(l.labor_unit_cost) || 0
-      const totalLab = qty * labUnit
+      const totalLab = calculateLaborLineTotal(qty, labUnit)
       return { qty, labUnit, totalLab }
     })
   }, [laborItems])
 
   const totalLaborCost = useMemo(() => {
-    return laborCalculations.reduce((s, l) => s + l.totalLab, 0)
+    return Math.round(laborCalculations.reduce((s, l) => s + l.totalLab, 0) * 100) / 100
   }, [laborCalculations])
 
   const totalCost = totalMaterialCost + totalLaborCost
@@ -446,7 +469,7 @@ export default function BOQForm() {
       (l) => l.item_name?.trim() || Number(l.labor_unit_cost) > 0
     )
     const hasInvalidLaborQty = activeLaborItems.some(
-      (l) => !l.quantity || parseInt(l.quantity, 10) <= 0
+      (l) => !l.quantity || Number(l.quantity) <= 0
     )
 
     if (hasEmptyMatName || hasInvalidMatQty || hasInvalidLaborQty) {
@@ -528,9 +551,9 @@ export default function BOQForm() {
 
       // 2. รายการค่าแรงและงานบริการติดตั้ง
       activeLaborItems.forEach((l) => {
-        const qty = parseInt(l.quantity, 10) || 1
+        const qty = Number(l.quantity) || 1
         const labUnit = Number(l.labor_unit_cost) || 0
-        const totalLab = qty * labUnit
+        const totalLab = calculateLaborLineTotal(qty, labUnit)
         itemRows.push({
           boq_id: boqId,
           category: '6. งานค่าแรงติดตั้งและทดสอบระบบ (Installation Labor & Test)',
@@ -703,7 +726,7 @@ export default function BOQForm() {
                 className="input text-xs font-mono font-bold w-full text-amber-800 dark:text-amber-300"
                 placeholder="เช่น 100 หรือ 150.5"
                 value={systemSizeKwp}
-                onChange={(e) => setSystemSizeKwp(e.target.value)}
+                onChange={(e) => handleSystemSizeChange(e.target.value)}
               />
             </div>
           </div>
@@ -1016,26 +1039,43 @@ export default function BOQForm() {
           </button>
         </div>
 
-        {/* ส่วนที่ 3: รายการค่าแรงและบริการติดตั้ง */}
+        {/* ส่วนที่ 3: หมวดหมู่ค่าแรงและบริการติดตั้ง (คำนวณจาก kWp อัตโนมัติ + แก้ไขเองได้) */}
         <div className="space-y-4 pt-6 border-t-2 border-amber-200 dark:border-amber-900/60">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-amber-50/50 dark:bg-amber-950/20 p-4 rounded-2xl border border-amber-200 dark:border-amber-800">
             <div>
-              <h2 className="font-bold text-sm text-amber-900 dark:text-amber-200 flex items-center gap-2">
+              <h2 className="font-bold text-sm text-amber-900 dark:text-amber-200 flex items-center gap-2 flex-wrap">
                 <Wrench className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                <span>3. รายการค่าแรงและบริการติดตั้ง (Labor &amp; Installation Services)</span>
+                <span>3. หมวดหมู่ค่าแรงและบริการติดตั้ง (Labor &amp; Installation Category)</span>
+                <span className="rounded-md bg-amber-200/80 dark:bg-amber-900/70 px-2 py-0.5 text-[10px] font-mono font-bold text-amber-950 dark:text-amber-200">
+                  สูตร: ({Number(systemSizeKwp) || 0} kWp × 1,000) × {Number(laborItems[0]?.labor_unit_cost) || LABOR_RATE_PER_WATT} = {baht(laborCalculations[0]?.totalLab ?? calculateKwLaborCost(systemSizeKwp))} บ.
+                </span>
               </h2>
               <p className="text-[11px] text-amber-700/80 dark:text-amber-300/80 mt-0.5">
-                กำหนดต้นทุนค่าแรงและงานบริการติดตั้ง สามารถระบุเป็นค่าแรงเหมา หรือค่าแรงตามหน่วยงานได้
+                {isLaborManualOverride
+                  ? 'แก้ไขตัวเลขค่าแรงด้วยตนเองอยู่ (กดปุ่มคำนวณจาก kWp เพื่อรีเซ็ตกลับตามสูตร)'
+                  : 'คำนวณค่าแรงอัตโนมัติจากขนาดระบบ (kWp) ด้านบน และสามารถพิมพ์แก้ไขตัวเลขเองได้'}
               </p>
             </div>
-            <button
-              type="button"
-              onClick={addLaborItem}
-              className="rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-100 hover:bg-amber-200 text-amber-900 dark:text-amber-200 dark:bg-amber-900/60 dark:hover:bg-amber-900 px-3.5 py-1.5 text-xs font-bold shadow-2xs flex items-center gap-1.5 cursor-pointer self-start sm:self-auto transition"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              <span>+ เพิ่มรายการค่าแรง</span>
-            </button>
+            <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+              {isLaborManualOverride && (
+                <button
+                  type="button"
+                  onClick={resetLaborFromKwp}
+                  className="rounded-xl border border-sky-300 dark:border-sky-700 bg-sky-50 hover:bg-sky-100 text-sky-800 dark:text-sky-200 dark:bg-sky-950/60 px-3 py-1.5 text-xs font-bold shadow-sm flex items-center gap-1.5 cursor-pointer transition"
+                >
+                  <Calculator className="h-3.5 w-3.5" />
+                  <span>คำนวณจาก kWp ใหม่</span>
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={addLaborItem}
+                className="rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-100 hover:bg-amber-200 text-amber-900 dark:text-amber-200 dark:bg-amber-900/60 dark:hover:bg-amber-900 px-3.5 py-1.5 text-xs font-bold shadow-sm flex items-center gap-1.5 cursor-pointer transition"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                <span>+ เพิ่มรายการค่าแรง</span>
+              </button>
+            </div>
           </div>
 
           {/* รายการค่าแรง */}
@@ -1083,8 +1123,8 @@ export default function BOQForm() {
                       <div className="grid grid-cols-2 gap-1.5">
                         <input
                           type="number"
-                          step="1"
-                          min="1"
+                          step="any"
+                          min="0"
                           className="input text-xs w-full font-mono font-bold bg-white dark:bg-slate-900"
                           placeholder="จำนวน"
                           value={l.quantity}

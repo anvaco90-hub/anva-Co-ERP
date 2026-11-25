@@ -1,9 +1,9 @@
 import { supabase } from "./supabase";
 import { uploadFile } from "./files";
 
-// สิทธิ์จัดการสโตร์ (สโตร์ และ แอดมิน)
+// สิทธิ์จัดการสโตร์ (สโตร์ และ แอดมิน) และสิทธิ์เบิกของ (เพิ่มฝ่ายจัดซื้อสามารถเบิกออกไปใช้เองได้)
 export const canManageStore = (role) => ["store", "admin"].includes(role);
-export const canIssueStock = canManageStore;
+export const canIssueStock = (role) => ["store", "admin", "purchasing"].includes(role);
 
 // แปลงและจัดรูปแบบจำนวนนับในสโตร์ให้เป็นจำนวนเต็ม (Integer)
 export function formatIntQty(val) {
