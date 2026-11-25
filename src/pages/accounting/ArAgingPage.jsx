@@ -198,11 +198,18 @@ export default function ArAgingPage() {
 
         <div className="flex items-center gap-2">
           <button
+            onClick={() => setShowInvoiceModal(true)}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-sky-700 text-white rounded-lg text-xs font-bold hover:bg-sky-800 shadow transition"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            ออกใบแจ้งหนี้ใหม่ (New Invoice)
+          </button>
+          <button
             onClick={() => setShowOpeningModal(true)}
             className="flex items-center gap-1.5 px-3 py-2 bg-white border border-steel-300 text-steel-700 rounded-lg text-xs font-bold hover:bg-steel-50 shadow-sm transition"
           >
-            <Plus className="h-3.5 w-3.5 text-sky-700" />
-            บันทึกค่าเริ่มต้น (Opening Balance)
+            <Plus className="h-3.5 w-3.5 text-purple-700" />
+            ยอดยกมา (Opening Balance)
           </button>
           <button
             onClick={handleExportCSV}
