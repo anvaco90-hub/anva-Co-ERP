@@ -434,6 +434,14 @@ export default function BOQForm() {
       (it) => !it.quantity || parseInt(it.quantity, 10) <= 0
     )
 
+    // ตรวจสอบรายการซ้ำในหมวดงานเดียวกัน
+    const hasDuplicateInCat = categories.some((cat) => {
+      const names = cat.items
+        .map((it) => it.item_name?.trim().toLowerCase())
+        .filter(Boolean)
+      return new Set(names).size !== names.length
+    })
+
     const activeLaborItems = laborItems.filter(
       (l) => l.item_name?.trim() || Number(l.labor_unit_cost) > 0
     )
@@ -444,6 +452,9 @@ export default function BOQForm() {
     if (hasEmptyMatName || hasInvalidMatQty || hasInvalidLaborQty) {
       setShowItemErrors(true)
       newErrors.items = 'กรุณาระบุชื่อรายการและจำนวนที่มากกว่า 0 ให้ครบถ้วน'
+    } else if (hasDuplicateInCat) {
+      setShowItemErrors(true)
+      newErrors.items = 'พบรายการซ้ำในหมวดงานเดียวกัน กรุณาปรับเปลี่ยนจำนวนที่รายการเดิมแทนการเลือกรายการซ้ำ'
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -759,13 +770,25 @@ export default function BOQForm() {
                       </span>
                       <div className="flex-1">
                         <input
-                          list="boq-categories-list"
+                          list={`boq-categories-list-${cat.id}`}
                           type="text"
                           value={cat.name}
                           onChange={(e) => updateCategoryName(cat.id, e.target.value)}
                           className="input text-xs font-bold w-full bg-white dark:bg-slate-900 text-sky-950 dark:text-sky-200 border-sky-300 dark:border-sky-800 focus:ring-1 focus:ring-sky-500"
                           placeholder="เลือกหรือพิมพ์ชื่อหมวดหมู่งาน เช่น 1. งานแผงโซล่าเซลล์..."
                         />
+                        <datalist id={`boq-categories-list-${cat.id}`}>
+                          {SOLAR_BOQ_CATEGORIES.filter((catOption) => {
+                            // ตัดหมวดหมู่งานที่ถูกเลือกไปแล้วในหมวดอื่นออก
+                            return !categories.some(
+                              (otherCat) =>
+                                otherCat.id !== cat.id &&
+                                otherCat.name.trim().toLowerCase() === catOption.trim().toLowerCase()
+                            )
+                          }).map((catOption) => (
+                            <option key={catOption} value={catOption} />
+                          ))}
+                        </datalist>
                       </div>
                     </div>
 
@@ -799,12 +822,20 @@ export default function BOQForm() {
                       const nameEmpty = showItemErrors && !it.item_name?.trim()
                       const qtyEmpty =
                         showItemErrors && (!it.quantity || parseInt(it.quantity, 10) <= 0)
+                      const isDuplicate = cat.items.some(
+                        (other) =>
+                          other.id !== it.id &&
+                          other.item_name?.trim().toLowerCase() === it.item_name?.trim().toLowerCase() &&
+                          it.item_name?.trim()
+                      )
 
                       return (
                         <div
                           key={it.id}
                           className={`rounded-xl border p-3.5 space-y-3 transition shadow-2xs bg-white dark:bg-slate-900 ${
-                            nameEmpty || qtyEmpty
+                            isDuplicate
+                              ? 'border-amber-400 dark:border-amber-600 bg-amber-50/20 dark:bg-amber-950/20 ring-1 ring-amber-400/50'
+                              : nameEmpty || qtyEmpty
                               ? 'border-rose-300 dark:border-rose-800 bg-rose-50/30 dark:bg-rose-950/20'
                               : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
                           }`}
@@ -817,11 +848,13 @@ export default function BOQForm() {
 
                             <div className="flex-1 min-w-[200px]">
                               <input
-                                list="boq-catalog-items"
+                                list={`boq-catalog-items-${cat.id}-${it.id}`}
                                 type="text"
                                 className={fieldErrorClass(
-                                  nameEmpty,
-                                  'input text-xs w-full text-left font-bold text-slate-900 dark:text-slate-100 placeholder:font-normal'
+                                  nameEmpty || isDuplicate,
+                                  `input text-xs w-full text-left font-bold text-slate-900 dark:text-slate-100 placeholder:font-normal ${
+                                    isDuplicate ? 'border-amber-400 dark:border-amber-600 focus:border-amber-500' : ''
+                                  }`
                                 )}
                                 placeholder="พิมพ์ชื่อพัสดุ / อุปกรณ์ หรือเลือกจากคลังสินค้า..."
                                 value={it.item_name}
@@ -829,6 +862,29 @@ export default function BOQForm() {
                                   updateItemInCategory(cat.id, it.id, 'item_name', e.target.value)
                                 }
                               />
+                              {/* Datalist ที่ตัดรายการที่ถูกเลือกในหมวดนี้ออกแล้ว */}
+                              <datalist id={`boq-catalog-items-${cat.id}-${it.id}`}>
+                                {catalog
+                                  .filter((c) => {
+                                    // ตัดรายการเดิมที่ถูกเลือกไปแล้วในหมวดงานนี้ออก เพื่อไม่ให้เลือกซ้ำ
+                                    return !cat.items.some(
+                                      (other) =>
+                                        other.id !== it.id &&
+                                        other.item_name?.trim().toLowerCase() === c.item_name.trim().toLowerCase()
+                                    )
+                                  })
+                                  .map((c) => (
+                                    <option key={c.id} value={c.item_name}>
+                                      [{c.item_code}] ({c.unit}) ราคาเฉลี่ย {baht(c.avg_unit_cost)} บ.
+                                    </option>
+                                  ))}
+                              </datalist>
+
+                              {isDuplicate && (
+                                <span className="block text-[10px] text-amber-700 dark:text-amber-400 font-bold mt-1">
+                                  ⚠️ รายการนี้ถูกเลือกในหมวดนี้แล้ว กรุณาปรับเปลี่ยนจำนวนที่รายการเดิมแทน
+                                </span>
+                              )}
                             </div>
 
                             <button
@@ -960,16 +1016,16 @@ export default function BOQForm() {
           </button>
         </div>
 
-        {/* ส่วนที่ 3: รายการค่าแรงและบริการติดตั้ง (แยกต่างหากชัดเจน) */}
+        {/* ส่วนที่ 3: รายการค่าแรงและบริการติดตั้ง */}
         <div className="space-y-4 pt-6 border-t-2 border-amber-200 dark:border-amber-900/60">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-amber-50/50 dark:bg-amber-950/20 p-4 rounded-2xl border border-amber-200 dark:border-amber-800">
             <div>
               <h2 className="font-bold text-sm text-amber-900 dark:text-amber-200 flex items-center gap-2">
                 <Wrench className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                <span>3. รายการค่าแรงและบริการติดตั้ง (Labor &amp; Installation Services - แยกต่างหาก)</span>
+                <span>3. รายการค่าแรงและบริการติดตั้ง (Labor &amp; Installation Services)</span>
               </h2>
               <p className="text-[11px] text-amber-700/80 dark:text-amber-300/80 mt-0.5">
-                แยกต้นทุนค่าแรงและงานบริการติดตั้งออกจากรายการพัสดุชัดเจน กำหนดเป็นค่าแรงเหมา หรือค่าแรงตามหน่วยงานได้
+                กำหนดต้นทุนค่าแรงและงานบริการติดตั้ง สามารถระบุเป็นค่าแรงเหมา หรือค่าแรงตามหน่วยงานได้
               </p>
             </div>
             <button
@@ -1128,11 +1184,11 @@ export default function BOQForm() {
                 </div>
               </div>
 
-              {/* ค่าแรง (แยกออกต่างหาก) */}
+              {/* ค่าแรง */}
               <div className="rounded-xl bg-amber-50/70 dark:bg-amber-950/40 p-3.5 border border-amber-300 dark:border-amber-900/80 shadow-2xs">
                 <div className="flex items-center gap-1.5 text-amber-900 dark:text-amber-300 font-bold text-[11px] mb-1">
                   <Wrench className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
-                  <span>รวมต้นทุนค่าแรง (แยกต่างหาก)</span>
+                  <span>รวมต้นทุนค่าแรง</span>
                 </div>
                 <div className="font-mono font-bold text-base text-amber-900 dark:text-amber-300">
                   {baht(totalLaborCost)}{' '}
