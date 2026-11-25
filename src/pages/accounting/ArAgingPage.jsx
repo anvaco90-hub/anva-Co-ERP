@@ -25,20 +25,26 @@ export default function ArAgingPage() {
   // Data
   const [invoices, setInvoices] = useState([])
   const [customers, setCustomers] = useState([])
+  const [projects, setProjects] = useState([])
   const [loading, setLoading] = useState(true)
   const [showOpeningModal, setShowOpeningModal] = useState(false)
+  const [showInvoiceModal, setShowInvoiceModal] = useState(false)
   const [toastMsg, setToastMsg] = useState({ text: '', type: '' })
 
   const loadData = async () => {
     setLoading(true)
     try {
-      const [invRes, custRes] = await Promise.all([
+      const [invRes, custRes, prjRes] = await Promise.all([
         supabase
           .from('sales_invoices')
           .select('*, projects(project_code, project_name)')
           .order('issue_date', { ascending: false }),
         fetchUnifiedCustomers().catch(() => []),
-      ]).then(([rawInvRes, unifiedCusts]) => {
+        supabase
+          .from('projects')
+          .select('id, project_code, project_name')
+          .order('project_code'),
+      ]).then(([rawInvRes, unifiedCusts, rawPrjRes]) => {
         const custList = unifiedCusts || []
         const custMap = buildEntityLookupMap(custList)
         const enriched = (rawInvRes?.data || []).map((inv) => {
@@ -57,11 +63,13 @@ export default function ArAgingPage() {
         return [
           { ...rawInvRes, data: enriched },
           { data: custList, error: null },
+          rawPrjRes,
         ]
       })
 
       setInvoices(invRes.data || [])
       setCustomers(custRes.data || [])
+      setProjects(prjRes?.data || [])
     } catch (err) {
       console.error('Error loading AR aging data:', err)
       setToastMsg({ text: 'ไม่สามารถโหลดข้อมูลลูกหนี้ได้', type: 'error' })
