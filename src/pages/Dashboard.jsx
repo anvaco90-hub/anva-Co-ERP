@@ -6,6 +6,11 @@ import { baht, STATUS_LABELS, STATUS_STYLES } from '../lib/projects'
 import { ROLE_LABELS } from '../lib/roles'
 import LowStockAlert from '../components/LowStockAlert'
 import {
+  computeDashboardPaymentMetrics,
+  getDashboardAgingReferenceDate,
+  hasAnyLiveData,
+} from '../lib/dashboardUtils'
+import {
   SIMULATED_PROJECTS,
   SIMULATED_QUOTATION_ITEMS,
   SIMULATED_INVOICES,
@@ -140,10 +145,8 @@ export default function Dashboard() {
 
   const toggleDemoMode = () => {
     if (isDemoMode) {
-      if (liveDbData && liveDbData.invoices && liveDbData.invoices.length > 0) {
+      if (liveDbData) {
         applyLiveDbData()
-      } else {
-        alert('ฐานข้อมูล Supabase ปัจจุบันยังไม่มีข้อมูลใบแจ้งหนี้จริง ระบบจึงยังคงแสดงผลชุดข้อมูลจำลองเพื่อการทดสอบ (คุณสามารถนำเข้าข้อมูลจริงได้ผ่าน SQL Migration 015)')
       }
     } else {
       applyDemoData()
@@ -174,12 +177,12 @@ export default function Dashboard() {
 
         supabase
           .from('quotations')
-          .select('id, quotation_no, quotation_date, customer_name, total_amount, status, project_id')
-          .order('quotation_date', { ascending: false }),
+          .select('id, quotation_no, issue_date, quotation_date, customer_name, total_amount, grand_total, status, project_id')
+          .order('issue_date', { ascending: false }),
 
         supabase
           .from('quotation_items')
-          .select('id, quotation_id, item_id, item_name, description, quantity, unit, unit_price, total_amount, quotations(quotation_date, status, customer_name)'),
+          .select('id, quotation_id, item_id, item_name, description, quantity, unit, unit_price, total_amount, quotations(issue_date, quotation_date, status, customer_name)'),
 
         supabase
           .from('accounts_payable')
@@ -225,11 +228,11 @@ export default function Dashboard() {
       }
       setLiveDbData(realData)
 
-      // If DB has no invoices, automatically activate simulation dataset so evaluators see a lively system!
-      if (!realData.invoices || realData.invoices.length === 0) {
-        applyDemoData()
-      } else {
+      // Show Live DB whenever ANY real ERP data exists; fall back to Demo only on a completely empty database
+      if (hasAnyLiveData(realData)) {
         applyLiveDbData(realData)
+      } else {
+        applyDemoData()
       }
       setLastRefreshed(new Date())
     } catch (err) {
@@ -317,8 +320,16 @@ export default function Dashboard() {
   }, [apList, filterYear, filterMonth, customStartDate, customEndDate])
 
   const filteredQuotationItems = useMemo(() => {
-    return quotationItems.filter((item) => isDateInFilter(item.quotations?.quotation_date))
+    return quotationItems.filter((item) => {
+      const st = String(item.quotations?.status || '').toLowerCase()
+      if (st === 'cancelled' || st === 'ยกเลิก' || st === 'rejected') return false
+      return isDateInFilter(item.quotations?.issue_date || item.quotations?.quotation_date)
+    })
   }, [quotationItems, filterYear, filterMonth, customStartDate, customEndDate])
+
+  const filteredPaymentTx = useMemo(() => {
+    return paymentTx.filter((tx) => isDateInFilter(tx.payment_date || tx.created_at))
+  }, [paymentTx, filterYear, filterMonth, customStartDate, customEndDate])
 
   const filteredPurchaseOrders = useMemo(() => {
     return purchaseOrders.filter((po) => isDateInFilter(po.order_date))
@@ -437,7 +448,7 @@ export default function Dashboard() {
 
   // AR Aging Buckets
   const arAging = useMemo(() => {
-    const today = new Date('2026-11-13') // Reference system date
+    const today = getDashboardAgingReferenceDate(isDemoMode)
     const buckets = { current: 0, days1_30: 0, days31_60: 0, days61_90: 0, over90: 0 }
 
     filteredInvoices.forEach((inv) => {
