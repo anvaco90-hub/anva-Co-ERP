@@ -5,6 +5,8 @@ import { useAuth } from '../../context/AuthContext'
 import { PO_STATUS, canCreatePurchasing, canReceiveGoods, computePoPaymentSummary } from '../../lib/purchasing'
 import { baht } from '../../lib/projects'
 import { computePoTotals } from '../../lib/tax'
+import { buildReceivePayloadItems } from '../../lib/goodsReceiptUtils'
+import { ensureGrnAccountingAndAp } from '../../lib/goodsReceiptAccounting'
 import StatusBadge from '../../components/common/StatusBadge'
 import AuditPanel from './AuditPanel'
 import ItemProjectUsageModal from '../../components/ItemProjectUsageModal'
@@ -266,22 +268,11 @@ export default function PODetail() {
     if (!confirm('ยืนยันรับของเข้าสโตร์หลัก? ระบบจะอัปเดตสต็อกและลงบัญชีอัตโนมัติ')) return
     setBusy(true); setError(''); setDone('')
 
-    const receiveItems = items
-      .filter((i) => Number(qty[i.id]) > 0)
-      .map((i) => {
-        const qtyNum = Number(qty[i.id]) || 0
-        const remain = Math.max(0, Number(i.quantity) - Number(i.qty_received))
-        const actualQty = Math.min(qtyNum, remain > 0 ? remain : qtyNum)
-        let unitCost = Number(i.unit_price) || 0
-        if (unitCost === 0 && Number(po.total_amount) > 0) {
-          unitCost = Math.round((Number(po.total_amount) / (Number(i.quantity) || 1)) * 100) / 100
-        }
-        return {
-          po_item_id: i.id,
-          qty_received: actualQty,
-          unit_cost: unitCost,
-        }
-      })
+    const receiveItems = buildReceivePayloadItems({
+      po,
+      poItems: items,
+      receiveQtyMap: qty,
+    })
 
     if (receiveItems.length === 0) {
       setBusy(false)
@@ -336,9 +327,13 @@ export default function PODetail() {
       }
 
       if (targetItemId) {
+        const itemPatch = { item_id: targetItemId }
+        if (!(Number(currentItem.unit_price) > 0) && it.unit_cost > 0) {
+          itemPatch.unit_price = it.unit_cost
+        }
         await supabase
           .from('purchase_order_items')
-          .update({ item_id: targetItemId, unit_price: it.unit_cost })
+          .update(itemPatch)
           .eq('id', it.po_item_id)
 
         await supabase.from('stock_lots').insert({
@@ -372,21 +367,24 @@ export default function PODetail() {
     }
 
     try {
-      const { error: rpcErr } = await supabase.rpc('confirm_goods_receipt', {
+      const { data: rpcGrnId, error: rpcErr } = await supabase.rpc('confirm_goods_receipt', {
         p_po_id: id,
         p_items: receiveItems,
       })
       if (rpcErr) throw rpcErr
 
       // หมายเหตุ: ไม่ต้องเรียก syncItemToStore ซ้ำที่นี่
-      // เพราะฟังก์ชัน confirm_goods_receipt ในฐานข้อมูลจัดการทั้ง:
-      // 1. goods_receipts และ goods_receipt_items
-      // 2. stock_lots (ล็อตรับเข้า)
-      // 3. inventory_items (ยอดคงเหลือและต้นทุนเฉลี่ย)
-      // 4. purchase_order_items (ยอดรับแล้ว) และ purchase_orders (สถานะ) ครบถ้วนแล้วใน Transaction เดียว
-      // การเรียกซ้ำก่อนหน้านี้ส่งผลให้เกิดข้อมูลซ้ำ 2 รอบในสต็อก
+      // เพราะฟังก์ชัน confirm_goods_receipt ในฐานข้อมูลจัดการทั้ง stock_lots และ inventory_items แล้ว
+      // เรียก ensureGrnAccountingAndAp เพื่อรับประกันว่า GL, ภาษีซื้อ (INPUT_VAT) และเจ้าหนี้ (AP) ครบถ้วนแม้ยังไม่ได้รัน Migration 042
+      await ensureGrnAccountingAndAp({
+        grnId: rpcGrnId || null,
+        po,
+        poItems: items,
+        itemsReceived: receiveItems,
+        userId: profile?.id || null,
+      })
 
-      setDone('บันทึกรับของเข้าสโตร์หลักเรียบร้อย (สต็อกและประวัติการรับเข้าอัปเดตแล้ว)')
+      setDone('บันทึกรับของเข้าสโตร์ ลงบัญชี GL และตั้งเจ้าหนี้ (AP) เรียบร้อยแล้ว')
       load()
     } catch (rpcErr) {
       console.warn('RPC confirm_goods_receipt failed, running full direct synchronization:', rpcErr)
@@ -456,7 +454,16 @@ export default function PODetail() {
           updated_at: new Date().toISOString(),
         }).eq('id', id)
 
-        setDone('บันทึกรับของเข้าสโตร์หลักเรียบร้อย (สต็อกและประวัติการรับเข้าอัปเดตแล้ว)')
+        await ensureGrnAccountingAndAp({
+          grnId,
+          grnNo,
+          po,
+          poItems: items,
+          itemsReceived: receiveItems,
+          userId: profile?.id || null,
+        })
+
+        setDone('บันทึกรับของเข้าสโตร์ ลงบัญชี GL และตั้งเจ้าหนี้ (AP) เรียบร้อยแล้ว')
         load()
       } catch (directErr) {
         console.error('Direct fallback failed:', directErr)

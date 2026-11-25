@@ -5,6 +5,8 @@ import { useAuth } from '../../context/AuthContext'
 import { canManageStore, formatIntQty, toIntQty } from '../../lib/store'
 import { baht } from '../../lib/projects'
 import { getPoDueStatus, formatThaiDate } from '../../lib/poDueStatus'
+import { buildReceivePayloadItems } from '../../lib/goodsReceiptUtils'
+import { ensureGrnAccountingAndAp } from '../../lib/goodsReceiptAccounting'
 import {
   ArrowLeft,
   ChevronDown,
@@ -145,7 +147,7 @@ export default function ReceiptsList() {
       .then(({ data }) => setProjects(data ?? []))
 
     supabase.from('purchase_orders')
-      .select('id, po_no, order_date, status, expected_delivery_date, total_amount, grand_total, vendor_id, project_id, custom_vendor_name, custom_project_name, vendors(id, vendor_code, vendor_name), projects(id, project_code, project_name), purchase_order_items(id, item_name, quantity, unit, unit_price, qty_received)')
+      .select('*, vendors(id, vendor_code, vendor_name), projects(id, project_code, project_name), purchase_order_items(id, item_id, item_name, quantity, unit, unit_price, qty_received)')
       .in('status', ['open', 'partial', 'pending_receipt'])
       .order('order_date', { ascending: false })
       .then(({ data }) => setPendingPos(data ?? []))
@@ -246,22 +248,11 @@ export default function ReceiptsList() {
   const handleConfirmReceive = async () => {
     if (!receivingPo) return
     const poItems = receivingPo.purchase_order_items || []
-    const itemsToReceive = poItems
-      .filter((it) => Number(receiveQuantities[it.id] || 0) > 0)
-      .map((it) => {
-        const qtyNum = Number(receiveQuantities[it.id]) || 0
-        const remain = Math.max(0, Number(it.quantity) - Number(it.qty_received))
-        const actualQty = Math.min(qtyNum, remain > 0 ? remain : qtyNum)
-        let unitCost = Number(it.unit_price) || 0
-        if (unitCost === 0 && Number(receivingPo.total_amount) > 0) {
-          unitCost = Math.round((Number(receivingPo.total_amount) / (Number(it.quantity) || 1)) * 100) / 100
-        }
-        return {
-          po_item_id: it.id,
-          qty_received: actualQty,
-          unit_cost: unitCost,
-        }
-      })
+    const itemsToReceive = buildReceivePayloadItems({
+      po: receivingPo,
+      poItems,
+      receiveQtyMap: receiveQuantities,
+    })
 
     if (itemsToReceive.length === 0) {
       setReceiveModalError('กรุณาระบุจำนวนที่ต้องการรับเข้าสโตร์อย่างน้อย 1 รายการ')
@@ -273,10 +264,12 @@ export default function ReceiptsList() {
 
     try {
       // 1. ลองใช้ RPC confirm_goods_receipt
-      const { error: rpcErr } = await supabase.rpc('confirm_goods_receipt', {
+      const { data: rpcGrnId, error: rpcErr } = await supabase.rpc('confirm_goods_receipt', {
         p_po_id: receivingPo.id,
         p_items: itemsToReceive,
       })
+      let savedGrnId = rpcGrnId || null
+      let savedGrnNo = ''
 
       if (rpcErr) {
         console.warn('RPC confirm_goods_receipt failed, running direct fallback:', rpcErr)
@@ -299,6 +292,8 @@ export default function ReceiptsList() {
 
         if (grnErr) throw grnErr
         const grnId = grnRow.id
+        savedGrnId = grnId
+        savedGrnNo = grnNo
 
         for (const it of itemsToReceive) {
           let griId = null
@@ -377,7 +372,16 @@ export default function ReceiptsList() {
         }).eq('id', receivingPo.id)
       }
 
-      setSuccess(`ตรวจรับของเข้าสโตร์เรียบร้อยสำหรับ ${receivingPo.po_no} (อัปเดตสต็อกและประวัติ RI แล้ว)`)
+      await ensureGrnAccountingAndAp({
+        grnId: savedGrnId,
+        grnNo: savedGrnNo,
+        po: receivingPo,
+        poItems,
+        itemsReceived: itemsToReceive,
+        userId: profile?.id || null,
+      })
+
+      setSuccess(`ตรวจรับของเข้าสโตร์ ลงบัญชี GL และตั้งเจ้าหนี้ (AP) เรียบร้อยสำหรับ ${receivingPo.po_no}`)
       setReceivingPo(null)
       loadData()
       setTimeout(() => setSuccess(''), 4000)
