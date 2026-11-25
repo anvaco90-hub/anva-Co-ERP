@@ -2718,7 +2718,7 @@ export default function PurchasingHub() {
                             const primaryPo = linkedPos[0] || null
                             const projObj = r?.projects || primaryPo?.projects
                             const customProj = r?.custom_project_name || primaryPo?.custom_project_name
-                            const linkedTotal = linkedPos.reduce((s, p) => s + Number(p.total_amount || 0), 0)
+                            const linkedTotal = linkedPos.reduce((s, p) => s + getPoPayable(p), 0)
                             const flow = isDirectPo
                               ? computeProcurementFlow({ mode: 'po', po: primaryPo })
                               : computeProcurementFlow({ mode: 'pr', pr: r, linkedPos })
@@ -2871,7 +2871,7 @@ export default function PurchasingHub() {
           vendorId={paymentTargetPo.vendor_id}
           contactName={paymentTargetPo.vendors?.vendor_name}
           items={paymentTargetPo.purchase_order_items || []}
-          totalAmount={paymentTargetPo.net_amount || paymentTargetPo.total_amount}
+          totalAmount={getPoPayable(paymentTargetPo)}
           alreadyPaid={paymentTargetPo.deposit_paid_amount || 0}
           depositAmount={paymentTargetPo.deposit_amount || 0}
           remainingAmount={paymentTargetPo.remaining_amount || 0}
