@@ -37,9 +37,20 @@ export default function ContactDetailModal({ contact, onClose, onEdit }) {
             .order('issue_date', { ascending: false }),
           supabase
             .from('purchase_orders')
-            .select('id, po_no, order_date, expected_delivery_date, total_amount, status, payment_type, custom_vendor_name, customer_name, vendors(vendor_name)')
+            .select('id, po_no, order_date, expected_delivery_date, total_amount, status, payment_type, custom_vendor_name, customer_name, vendor_name')
             .or(`vendor_id.eq.${contact.id},custom_vendor_name.ilike.%${businessName}%,customer_name.ilike.%${businessName}%`)
-            .order('order_date', { ascending: false }),
+            .order('order_date', { ascending: false })
+            .then(async (res) => {
+              if (res.error) {
+                const fb = await supabase
+                  .from('purchase_orders')
+                  .select('*')
+                  .or(`vendor_id.eq.${contact.id},custom_vendor_name.ilike.%${businessName}%,customer_name.ilike.%${businessName}%`)
+                  .order('order_date', { ascending: false });
+                return fb;
+              }
+              return res;
+            }),
         ])
 
         setQuotations(qRes.data ?? [])

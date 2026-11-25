@@ -74,9 +74,17 @@ export default function PRDetail() {
       supabase
         .from('purchase_orders')
         .select(
-          'id, po_no, order_date, expected_delivery_date, status, total_amount, grand_total, net_amount, tax_type, vat_rate, vat_amount, wht_rate, wht_amount, payment_status, deposit_paid_amount, remaining_amount, payment_type, custom_vendor_name, vendors(vendor_name), purchase_order_items(quantity, unit_price, qty_received)'
+          'id, po_no, order_date, expected_delivery_date, status, total_amount, grand_total, net_amount, tax_type, vat_rate, vat_amount, wht_rate, wht_amount, payment_status, deposit_paid_amount, remaining_amount, payment_type, custom_vendor_name, vendor_name, purchase_order_items(quantity, unit_price, qty_received)'
         )
-        .eq('pr_id', id),
+        .eq('pr_id', id)
+        .then(async (res) => {
+          if (res.error) {
+            console.warn('PRDetail purchase_orders join warning:', res.error);
+            const fb = await supabase.from('purchase_orders').select('*').eq('pr_id', id);
+            return fb;
+          }
+          return res;
+        }),
     ]).then(async ([a, b, c]) => {
       if (a.error) {
         console.warn('PR load warning:', a.error)

@@ -12,9 +12,16 @@ export default function POList() {
 
   useEffect(() => {
     supabase.from('purchase_orders')
-      .select('id, po_no, order_date, total_amount, status, vendors(vendor_name), projects(project_code)')
+      .select('id, po_no, order_date, total_amount, status, custom_vendor_name, vendor_name, projects(project_code)')
       .order('order_date', { ascending: false }).order('po_no', { ascending: false })
-      .then(({ data }) => setRows(data ?? []))
+      .then(async (res) => {
+        if (res.error) {
+          const fb = await supabase.from('purchase_orders').select('*').order('order_date', { ascending: false }).order('po_no', { ascending: false });
+          setRows(fb.data ?? []);
+        } else {
+          setRows(res.data ?? []);
+        }
+      })
   }, [])
 
   return (

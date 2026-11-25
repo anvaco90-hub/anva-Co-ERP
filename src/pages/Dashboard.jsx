@@ -210,8 +210,15 @@ export default function Dashboard() {
 
         supabase
           .from('purchase_orders')
-          .select('id, po_no, order_date, total_amount, status, vendor_id, project_id, vendors(vendor_name), projects(project_name, project_code)')
-          .order('order_date', { ascending: false }),
+          .select('id, po_no, order_date, total_amount, status, vendor_id, project_id, custom_vendor_name, vendor_name, projects(project_name, project_code)')
+          .order('order_date', { ascending: false })
+          .then(async (res) => {
+            if (res.error) {
+              const fb = await supabase.from('purchase_orders').select('*').order('order_date', { ascending: false });
+              return fb;
+            }
+            return res;
+          }),
       ])
 
       const realData = {

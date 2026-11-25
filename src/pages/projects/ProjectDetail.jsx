@@ -144,11 +144,11 @@ export default function ProjectDetail() {
             "purchase_requisitions"
           ),
           safeListQuery(
-            supabase.from("purchase_orders").select("*, vendors(vendor_name)").eq("project_id", id).order("order_date", { ascending: false }),
+            supabase.from("purchase_orders").select("*").eq("project_id", id).order("order_date", { ascending: false }),
             "purchase_orders"
           ),
           safeListQuery(
-            supabase.from("expenses").select("*, vendors(vendor_name)").eq("project_id", id).order("expense_date", { ascending: false }),
+            supabase.from("expenses").select("*").eq("project_id", id).order("expense_date", { ascending: false }),
             "expenses"
           ),
           safeListQuery(
