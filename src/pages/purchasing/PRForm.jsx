@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useNavigate, useParams, useSearchParams, Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
+import { fetchUnifiedCustomers, fetchUnifiedVendors } from '../../lib/contactsSync'
 import { EMPTY_ITEM, itemsValid } from '../../lib/purchasing'
 import { baht } from '../../lib/projects'
 import { inferQuotationTaxType, round2 } from '../../lib/tax'
@@ -84,8 +85,8 @@ export default function PRForm() {
 
   useEffect(() => {
     supabase.from('projects').select('id, project_code, project_name').order('project_code').then(({ data }) => setProjects(data ?? []))
-    supabase.from('customers').select('id, customer_code, customer_name').order('customer_name').then(({ data }) => setCustomers(data ?? []))
-    supabase.from('vendors').select('id, vendor_code, vendor_name').order('vendor_name').then(({ data }) => setVendors(data ?? []))
+    fetchUnifiedCustomers().then((data) => setCustomers(data ?? []))
+    fetchUnifiedVendors().then((data) => setVendors(data ?? []))
 
     // โหลดรายการจากใบเสนอราคาถ้ามีการส่งต่อมา (Quotation -> PR)
     const qId = params.get('quotation_id')

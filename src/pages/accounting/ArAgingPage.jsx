@@ -1,5 +1,11 @@
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../../lib/supabase'
+import {
+  fetchUnifiedCustomers,
+  buildEntityLookupMap,
+  ensureLegacyCustomerId,
+  ensureContactIdForEntity,
+} from '../../lib/contactsSync'
 import { formatBaht, formatThaiDate, calculateAging, exportToCSV } from '../../lib/accounting'
 import {
   Users, Calendar, Filter, Search, Download, Plus, RefreshCw, FileText,
@@ -31,8 +37,28 @@ export default function ArAgingPage() {
           .from('sales_invoices')
           .select('*, projects(project_code, project_name)')
           .order('issue_date', { ascending: false }),
-        supabase.from('customers').select('id, company_name, tax_id').order('company_name'),
-      ])
+        fetchUnifiedCustomers().catch(() => []),
+      ]).then(([rawInvRes, unifiedCusts]) => {
+        const custList = unifiedCusts || []
+        const custMap = buildEntityLookupMap(custList)
+        const enriched = (rawInvRes?.data || []).map((inv) => {
+          const matched =
+            custMap.get(inv.customer_id) ||
+            custMap.get(inv.contact_id) ||
+            null
+          return {
+            ...inv,
+            customer_id: inv.customer_id || matched?.id || null,
+            customers: matched
+              ? { ...matched, company_name: matched.name }
+              : inv.customers || null,
+          }
+        })
+        return [
+          { ...rawInvRes, data: enriched },
+          { data: custList, error: null },
+        ]
+      })
 
       setInvoices(invRes.data || [])
       setCustomers(custRes.data || [])
@@ -448,9 +474,14 @@ function ArOpeningBalanceModal({ isOpen, onClose, onSuccess, customers = [] }) {
 
     setSaving(true)
     try {
+      const selectedCust = customers.find((c) => c.id === customerId)
+      const resolvedCustomerId = await ensureLegacyCustomerId(selectedCust || customerId)
+      const resolvedContactId = await ensureContactIdForEntity(selectedCust || customerId, 'customer')
+
       const { error: insErr } = await supabase.from('sales_invoices').insert({
         invoice_no: docNo,
-        customer_id: customerId,
+        customer_id: resolvedCustomerId || customerId,
+        contact_id: resolvedContactId || null,
         issue_date: issueDate,
         due_date: dueDate,
         subtotal: numAmount,

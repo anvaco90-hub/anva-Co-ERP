@@ -64,20 +64,25 @@ export default function PaymentActionModal({
     }
   }, [items, docId, docType])
 
-  const outstanding = Math.max(0, Number(totalAmount) - Number(alreadyPaid))
+  const outstanding = Math.max(0, Math.round((Number(totalAmount) - Number(alreadyPaid)) * 100) / 100)
+  const unpaidDepositRemaining = hasDeposit
+    ? Math.max(0, Math.round((Number(depositAmount) - Number(alreadyPaid)) * 100) / 100)
+    : 0
+  const hasUnpaidDeposit = hasDeposit && unpaidDepositRemaining > 0.05 && unpaidDepositRemaining < outstanding - 0.05
 
   // ขั้นตอนการจ่ายเงิน (Payment Stage)
-  const defaultStage = hasDeposit
-    ? (Number(alreadyPaid) > 0 ? 'remaining' : 'deposit')
+  const defaultStage = hasUnpaidDeposit
+    ? 'deposit'
+    : Number(alreadyPaid) > 0
+    ? 'remaining'
     : 'full'
 
   const [paymentStage, setPaymentStage] = useState(defaultStage)
   const [paymentMethod, setPaymentMethod] = useState(requestedChannel || 'transfer')
 
-  // ยอดชำระเริ่มต้นตาม Stage
+  // ยอดชำระเริ่มต้นตาม Stage (อ้างอิงยอดค้างจริง outstanding เสมอ)
   const getInitialAmount = (st) => {
-    if (st === 'deposit' && Number(depositAmount) > 0) return String(depositAmount)
-    if (st === 'remaining' && Number(remainingAmount) > 0) return String(remainingAmount)
+    if (st === 'deposit' && hasUnpaidDeposit) return String(unpaidDepositRemaining)
     return String(outstanding)
   }
 
@@ -200,13 +205,7 @@ export default function PaymentActionModal({
   // สลับขั้นตอนการชำระเงิน
   const handleSelectStage = (st) => {
     setPaymentStage(st)
-    if (st === 'deposit') {
-      setPayAmount(String(depositAmount || outstanding))
-    } else if (st === 'remaining') {
-      setPayAmount(String(remainingAmount || outstanding))
-    } else {
-      setPayAmount(String(outstanding))
-    }
+    setPayAmount(getInitialAmount(st))
   }
 
   const numericPay = Number(payAmount) || 0
@@ -215,7 +214,11 @@ export default function PaymentActionModal({
   const isOverpaid = numericPay > Math.round((outstanding + 0.01) * 100) / 100
   const overpaidAmount = isOverpaid ? Math.round((numericPay - outstanding) * 100) / 100 : 0
 
-  const isAlreadyFullyPaid = paymentStatus === 'ชำระครบแล้ว' || (outstanding <= 0.01 && Number(totalAmount) > 0)
+  // หากมียอดจ่ายมาแล้วบางส่วน ให้ตรวจจากยอดคงเหลือจริง (outstanding) เสมอ เพื่อไม่ให้ค้างสถานะปิดรับเงินเมื่อยังค้างจ่าย
+  const isAlreadyFullyPaid =
+    Number(totalAmount) > 0 && Number(alreadyPaid) > 0
+      ? outstanding <= 0.05
+      : paymentStatus === 'ชำระครบแล้ว' || (outstanding <= 0.01 && Number(totalAmount) > 0)
 
   // บันทึกการจ่ายชำระเงิน & ลงสมุดรายวัน
   const handleSubmit = async (e) => {
@@ -268,7 +271,20 @@ export default function PaymentActionModal({
       const feeAccId = coaMap['5250-01']
 
       // 2. สร้าง Journal Entry (สมุดรายวันทั่วไป)
-      const stageLabel = paymentStage === 'deposit' ? 'มัดจำงวดแรก' : paymentStage === 'remaining' ? 'งวดคงเหลือ' : 'เต็มจำนวน'
+      // คำนวณ Stage จริงจากยอดคงเหลือหลังจ่ายเสมอ (ป้องกันจ่ายบางส่วนแล้วระบบบันทึกว่าเป็นปิดยอด)
+      const isClosingPayment = remainingAfter <= 0.05
+      const effectiveStage = isClosingPayment
+        ? (Number(alreadyPaid) > 0 ? 'remaining' : 'full')
+        : (paymentStage === 'deposit' && Number(alreadyPaid) === 0 ? 'deposit' : 'installment')
+
+      const stageLabel =
+        effectiveStage === 'deposit'
+          ? 'มัดจำงวดแรก'
+          : effectiveStage === 'installment'
+          ? 'แบ่งจ่ายบางส่วน (งวด)'
+          : effectiveStage === 'remaining'
+          ? 'งวดคงเหลือปิดยอด'
+          : 'เต็มจำนวน'
       const methodLabel = paymentMethod === 'transfer' ? 'โอนเงิน' : paymentMethod === 'cheque' ? 'เช็ค' : 'เงินสด'
 
       // ใช้สถานะ 'รออนุมัติ' ก่อน เพื่อไม่ให้ติด trigger ตรวจดุลบัญชีก่อนสร้าง journal_entry_lines
@@ -389,7 +405,7 @@ export default function PaymentActionModal({
         vendor_id: vendorId || null,
         contact_id: contactId || null,
         project_id: projectId || null,
-        payment_stage: paymentStage,
+        payment_stage: effectiveStage,
         payment_channel: paymentMethod === 'transfer' ? (companyBank || 'โอนเงิน') : paymentMethod === 'cheque' ? 'เช็ค' : 'เงินสด',
         amount_paid: numericPay,
         payment_date: todayStr,
@@ -429,24 +445,26 @@ export default function PaymentActionModal({
 
       // 5. ตัดยอดหนี้คงค้างในเอกสารเป้าหมาย แบบ Self-Healing
       if (docType === 'PO') {
-        const nextPaymentStatus = remainingAfter <= 0.05 || paymentStage === 'remaining' || paymentStage === 'full'
-          ? 'ชำระครบแล้ว'
-          : 'จ่ายมัดจำแล้ว'
+        const nextPaidTotal = Math.round((Number(alreadyPaid) + numericPay) * 100) / 100
+        const nextPaymentStatus = remainingAfter <= 0.05 ? 'ชำระครบแล้ว' : 'จ่ายมัดจำแล้ว'
 
         let poUpdatePayload = {
-          deposit_paid_amount: Number(alreadyPaid) + numericPay,
+          deposit_paid_amount: nextPaidTotal,
+          remaining_amount: remainingAfter,
           payment_status: nextPaymentStatus,
           updated_at: new Date().toISOString(),
         }
 
-        for (let attempt = 0; attempt < 4; attempt++) {
+        for (let attempt = 0; attempt < 5; attempt++) {
           const { error: poErr } = await supabase
             .from('purchase_orders')
             .update(poUpdatePayload)
             .eq('id', docId)
 
           if (!poErr) break
-          const colMatch = poErr?.message?.match(/column "(.*?)" of relation "purchase_orders" does not exist/)
+          const colMatch =
+            poErr?.message?.match(/column "(.*?)" of relation "purchase_orders" does not exist/i) ||
+            poErr?.message?.match(/Could not find the '(.*?)' column of 'purchase_orders'/i)
           if (colMatch && colMatch[1]) {
             delete poUpdatePayload[colMatch[1]]
             continue
@@ -460,7 +478,7 @@ export default function PaymentActionModal({
           await supabase
             .from('accounts_payable')
             .update({
-              paid_amount: Number(alreadyPaid) + numericPay,
+              paid_amount: nextPaidTotal,
               remaining_amount: remainingAfter,
               status: remainingAfter <= 0.05 ? 'paid' : 'partial',
               updated_at: new Date().toISOString(),
@@ -494,7 +512,7 @@ export default function PaymentActionModal({
           remaining: remainingAfter,
           voucherNo,
           jvNo,
-          stage: paymentStage,
+          stage: effectiveStage,
         })
       }
       onClose()
@@ -635,49 +653,65 @@ export default function PaymentActionModal({
             </div>
           )}
 
-          {/* 1. ตัวเลือกขั้นตอนการจ่ายเงิน (Payment Stage) */}
-          {type === 'disburse' && hasDeposit && (
+          {/* 1. ตัวเลือกขั้นตอนการจ่ายเงิน (Payment Stage - รองรับจ่ายมัดจำ แบ่งจ่ายหลายงวด และปิดยอด) */}
+          {type === 'disburse' && !isAlreadyFullyPaid && outstanding > 0.05 && (
             <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-3 space-y-2">
-              <label className="font-bold text-amber-950 block text-xs">
-                ขั้นตอนการจ่ายเงิน (Payment Stage) *
-              </label>
-              <div className="grid grid-cols-3 gap-2">
-                <button
-                  type="button"
-                  onClick={() => handleSelectStage('deposit')}
-                  className={`p-2 rounded-lg text-center transition border ${
-                    paymentStage === 'deposit'
-                      ? 'bg-amber-600 text-white border-amber-700 shadow-sm font-bold'
-                      : 'bg-white text-steel-700 border-amber-200 hover:bg-amber-100/50'
-                  }`}
-                >
-                  <div className="text-[11px]">จ่ายมัดจำ</div>
-                  <div className="font-mono text-xs mt-0.5">{baht(depositAmount)} บ.</div>
-                </button>
+              <div className="flex items-center justify-between gap-2">
+                <label className="font-bold text-amber-950 block text-xs">
+                  รูปแบบการจ่ายเงิน (Payment Stage) *
+                </label>
+                {remainingAfter > 0.05 && numericPay > 0 && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-200/80 text-amber-950">
+                    แบ่งจ่าย · จะเหลือค้าง {baht(remainingAfter)} บ.
+                  </span>
+                )}
+              </div>
+              <div className={`grid gap-2 ${hasUnpaidDeposit ? 'grid-cols-3' : 'grid-cols-2'}`}>
+                {hasUnpaidDeposit && (
+                  <button
+                    type="button"
+                    onClick={() => handleSelectStage('deposit')}
+                    className={`p-2 rounded-lg text-center transition border cursor-pointer ${
+                      paymentStage === 'deposit' && remainingAfter > 0.05
+                        ? 'bg-amber-600 text-white border-amber-700 shadow-sm font-bold'
+                        : 'bg-white text-steel-700 border-amber-200 hover:bg-amber-100/50'
+                    }`}
+                  >
+                    <div className="text-[11px]">จ่ายมัดจำ</div>
+                    <div className="font-mono text-xs mt-0.5">{baht(unpaidDepositRemaining)} บ.</div>
+                  </button>
+                )}
 
                 <button
                   type="button"
-                  onClick={() => handleSelectStage('remaining')}
-                  className={`p-2 rounded-lg text-center transition border ${
-                    paymentStage === 'remaining'
+                  onClick={() => {
+                    setPaymentStage('installment')
+                    if (!numericPay || numericPay >= outstanding) {
+                      setPayAmount(String(Math.round((outstanding / 2) * 100) / 100))
+                    }
+                  }}
+                  className={`p-2 rounded-lg text-center transition border cursor-pointer ${
+                    (paymentStage === 'installment' || (remainingAfter > 0.05 && paymentStage !== 'deposit'))
                       ? 'bg-sky-700 text-white border-sky-800 shadow-sm font-bold'
                       : 'bg-white text-steel-700 border-amber-200 hover:bg-amber-100/50'
                   }`}
                 >
-                  <div className="text-[11px]">จ่ายยอดคงเหลือ</div>
-                  <div className="font-mono text-xs mt-0.5">{baht(remainingAmount || outstanding)} บ.</div>
+                  <div className="text-[11px]">แบ่งจ่ายบางส่วน (งวด)</div>
+                  <div className="font-mono text-xs mt-0.5">
+                    {remainingAfter > 0.05 && numericPay > 0 ? `${baht(numericPay)} บ.` : 'ระบุยอดงวด'}
+                  </div>
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => handleSelectStage('full')}
-                  className={`p-2 rounded-lg text-center transition border ${
-                    paymentStage === 'full'
+                  onClick={() => handleSelectStage(Number(alreadyPaid) > 0 ? 'remaining' : 'full')}
+                  className={`p-2 rounded-lg text-center transition border cursor-pointer ${
+                    remainingAfter <= 0.05 && numericPay > 0
                       ? 'bg-emerald-700 text-white border-emerald-800 shadow-sm font-bold'
                       : 'bg-white text-steel-700 border-amber-200 hover:bg-amber-100/50'
                   }`}
                 >
-                  <div className="text-[11px]">จ่ายเต็มจำนวน</div>
+                  <div className="text-[11px]">{Number(alreadyPaid) > 0 ? 'จ่ายปิดยอดคงเหลือ' : 'จ่ายเต็มจำนวน'}</div>
                   <div className="font-mono text-xs mt-0.5">{baht(outstanding)} บ.</div>
                 </button>
               </div>

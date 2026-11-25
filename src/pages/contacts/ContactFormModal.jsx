@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { X, Building2, User, CreditCard, MapPin, Mail, Phone, FileText, Check } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
+import { syncContactToLegacyTables } from '../../lib/contactsSync'
 
 export default function ContactFormModal({ contact = null, initialRole = 'both', onClose, onSaved }) {
   const isEdit = Boolean(contact?.id)
@@ -140,18 +141,35 @@ export default function ContactFormModal({ contact = null, initialRole = 'both',
         is_active: form.is_active,
       }
 
+      let savedRecord = { ...payload, id: isEdit ? contact.id : undefined }
+
       if (isEdit) {
-        const { error: updErr } = await supabase.from('contacts').update(payload).eq('id', contact.id)
+        const { data: updRow, error: updErr } = await supabase
+          .from('contacts')
+          .update(payload)
+          .eq('id', contact.id)
+          .select()
+          .maybeSingle()
         if (updErr) throw updErr
+        if (updRow) savedRecord = { ...payload, ...updRow }
       } else {
         // Auto-generate contact code if empty
         if (!payload.contact_code) {
           const prefix = payload.is_customer && !payload.is_vendor ? 'CUST' : !payload.is_customer && payload.is_vendor ? 'VEND' : 'CONT'
           payload.contact_code = `${prefix}-${Date.now().toString().slice(-4)}`
         }
-        const { error: insErr } = await supabase.from('contacts').insert([payload])
+        const { data: insRow, error: insErr } = await supabase
+          .from('contacts')
+          .insert([payload])
+          .select()
+          .maybeSingle()
         if (insErr) throw insErr
+        if (insRow) savedRecord = { ...payload, ...insRow }
       }
+
+      await syncContactToLegacyTables(savedRecord, {
+        previousName: isEdit ? (contact.business_name || contact.company_name || '') : '',
+      })
 
       onSaved()
       onClose()

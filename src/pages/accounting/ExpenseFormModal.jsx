@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
+import { ensureLegacyVendorId } from '../../lib/contactsSync'
 import { baht } from '../../lib/projects'
 import { FieldError, fieldErrorClass } from '../../components/FieldError'
 
@@ -116,10 +117,16 @@ export default function ExpenseFormModal({ isOpen, onClose, onSuccess, projects 
       const accStatus = isAdvance ? 'รอดำเนินการ' : 'อนุมัติแล้ว'
       const payerName = isAdvance ? (advancePayerType === 'manager' ? 'หัวหน้างานโครงการ (Project Manager)' : advancePayerName.trim()) : null
 
+      const resolvedVendorId = selectedVendor
+        ? await ensureLegacyVendorId(selectedVendor)
+        : vendorId
+        ? await ensureLegacyVendorId(vendorId)
+        : null
+
       const payload = {
         expense_no: expenseNo,
         expense_date: expenseDate,
-        vendor_id: vendorId || null,
+        vendor_id: resolvedVendorId || null,
         project_id: projectId || null,
         expense_category: isAsset ? 'สินทรัพย์ถาวร' : 'งานก่อสร้างและดำเนินงาน',
         account_code: accountCode,

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { supabase } from '../../lib/supabase'
+import { fetchUnifiedVendors } from '../../lib/contactsSync'
 import { baht } from '../../lib/projects'
 import ExpenseFormModal from './ExpenseFormModal'
 import Pagination from '../../components/Pagination'
@@ -39,7 +40,7 @@ export default function ExpensesPage() {
           .order('expense_date', { ascending: false })
           .order('created_at', { ascending: false }),
         supabase.from('projects').select('id, project_code, project_name').order('project_code'),
-        supabase.from('vendors').select('id, vendor_code, vendor_name').order('vendor_code'),
+        fetchUnifiedVendors().then((data) => ({ data, error: null })).catch((error) => ({ data: [], error })),
       ])
 
       if (expRes.error) throw expRes.error

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
-import { PO_STATUS, canCreatePurchasing, canReceiveGoods } from '../../lib/purchasing'
+import { PO_STATUS, canCreatePurchasing, canReceiveGoods, computePoPaymentSummary } from '../../lib/purchasing'
 import { baht } from '../../lib/projects'
 import { computePoTotals } from '../../lib/tax'
 import StatusBadge from '../../components/common/StatusBadge'
@@ -527,18 +527,19 @@ export default function PODetail() {
 
   if (!po) return <p className={error ? 'p-6 text-red-600' : 'p-6 text-slate-500'}>{error || 'กำลังโหลดข้อมูล...'}</p>
 
-  const isPaidInFull = po.payment_status === 'ชำระครบแล้ว' || (Number(po.remaining_amount) <= 0.05 && Number(po.deposit_paid_amount) > 0)
-  const isFullyReceived = po.status === 'received' || (items.length > 0 && items.every((i) => Number(i.qty_received) >= Number(i.quantity)))
-  const canEdit = canCreatePurchasing(profile.role) && !isPaidInFull && po.status !== 'cancelled' && po.status !== 'received'
-  const canReceive = canReceiveGoods(profile.role) && ['open', 'partial'].includes(po.status) && !isFullyReceived
-  const anyQty = items.some((i) => Number(qty[i.id]) > 0)
-
   const poTotals = computePoTotals(po, items)
   const isVatIncluded = poTotals.isVatIncluded
   const subtotalBeforeVat = poTotals.amountBeforeVat
   const vatVal = poTotals.vatAmount
   const whtVal = poTotals.whtAmount
   const grandTotalVal = poTotals.netPayable
+
+  const paySummary = computePoPaymentSummary(po, items, payments)
+  const isPaidInFull = paySummary.isPaidInFull
+  const isFullyReceived = po.status === 'received' || (items.length > 0 && items.every((i) => Number(i.qty_received) >= Number(i.quantity)))
+  const canEdit = canCreatePurchasing(profile.role) && !isPaidInFull && po.status !== 'cancelled' && po.status !== 'received'
+  const canReceive = canReceiveGoods(profile.role) && ['open', 'partial'].includes(po.status) && !isFullyReceived
+  const anyQty = items.some((i) => Number(qty[i.id]) > 0)
 
   const dueStatus = getPoDueStatus(po)
 
@@ -608,6 +609,11 @@ export default function PODetail() {
                       <CheckCircle2 className="h-3 w-3" />
                       <span>ชำระครบแล้ว</span>
                     </span>
+                  ) : paySummary.hasPartialPaid && po.status !== 'cancelled' ? (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-bold rounded-full bg-amber-500/20 text-amber-300 border border-amber-400/30 whitespace-nowrap">
+                      <Clock className="h-3 w-3" />
+                      <span>จ่ายบางส่วน (฿{baht(paySummary.paidAmount)}) · ค้าง ฿{baht(paySummary.remainingAmount)}</span>
+                    </span>
                   ) : po.status !== 'cancelled' && isFullyReceived ? (
                     <span className="inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-bold rounded-full bg-amber-500/20 text-amber-300 border border-amber-400/30 whitespace-nowrap">
                       <Clock className="h-3 w-3" />
@@ -667,10 +673,10 @@ export default function PODetail() {
                   type="button"
                   onClick={() => setShowPaymentModal(true)}
                   className="inline-flex items-center gap-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 h-9 px-3.5 text-xs font-black shadow-xs transition cursor-pointer"
-                  title={`คลิกเพื่อจ่ายชำระเงินตามยอดสั่งซื้อ ฿${baht(grandTotalVal)} บ.`}
+                  title={`คลิกเพื่อจ่ายชำระเงิน (ค้างจ่าย ฿${baht(paySummary.remainingAmount)} บ.)`}
                 >
                   <CreditCard className="h-3.5 w-3.5" />
-                  <span>จ่ายชำระเงิน</span>
+                  <span>{paySummary.hasPartialPaid ? `จ่ายงวดถัดไป (฿${baht(paySummary.remainingAmount)})` : 'จ่ายชำระเงิน'}</span>
                 </button>
               )}
 
@@ -1522,34 +1528,74 @@ export default function PODetail() {
               {/* Sub-tab 3: ประวัติจ่ายชำระเงิน (PV) */}
               {activeTab === 'payments' && (
                 <div className="space-y-3">
-                  {payments.length > 0 ? (
-                    payments.map((p) => (
-                      <div key={p.id} className="p-4 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1.5">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono font-bold text-sm text-emerald-800">
-                              {p.transaction_no || `PV-${p.id.slice(0, 8)}`}
-                            </span>
-                            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-sky-100 text-sky-800">
-                              {p.payment_stage === 'deposit' ? 'จ่ายมัดจำ' : 'จ่ายเต็มจำนวน/งวดคงเหลือ'}
-                            </span>
-                          </div>
-                          <span className="font-mono font-black text-sm text-emerald-900">
-                            ฿{baht(p.amount || p.amount_paid)} บาท
-                          </span>
-                        </div>
-                        <div className="flex flex-wrap items-center justify-between text-slate-600 pt-1">
-                          <div>
-                            วันที่จ่าย: <b>{p.payment_date}</b> · ช่องทาง: <b>{p.payment_channel || p.payment_method || 'โอนเงิน'}</b>
-                          </div>
-                          {p.slip_reference_no && (
-                            <div className="text-[11px] text-slate-500">
-                              สลิปอ้างอิง: {p.slip_reference_no}
-                            </div>
-                          )}
-                        </div>
+                  {/* แถบสรุปสถานะการจ่ายแบ่งงวด / มัดจำ */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-xs">
+                    <div>
+                      <span className="text-[11px] text-slate-500 block">ยอดที่ต้องชำระสุทธิ</span>
+                      <span className="font-mono font-black text-sm text-slate-900 dark:text-white">฿{baht(paySummary.totalPayable)}</span>
+                    </div>
+                    <div>
+                      <span className="text-[11px] text-slate-500 block">ชำระสะสมแล้ว</span>
+                      <span className="font-mono font-black text-sm text-emerald-700 dark:text-emerald-400">฿{baht(paySummary.paidAmount)}</span>
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <div>
+                        <span className="text-[11px] text-slate-500 block">ยอดค้างจ่ายคงเหลือ</span>
+                        <span className={`font-mono font-black text-sm ${paySummary.remainingAmount > 0.05 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-400'}`}>
+                          ฿{baht(paySummary.remainingAmount)}
+                        </span>
                       </div>
-                    ))
+                      {!isPaidInFull && po.status !== 'cancelled' && (
+                        <button
+                          type="button"
+                          onClick={() => setShowPaymentModal(true)}
+                          className="px-3 py-1.5 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs shadow-2xs transition cursor-pointer"
+                        >
+                          {paySummary.hasPartialPaid ? 'จ่ายงวดถัดไป' : 'จ่ายเงิน'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {payments.length > 0 ? (
+                    payments.map((p) => {
+                      const stageText =
+                        p.payment_stage === 'deposit'
+                          ? 'จ่ายมัดจำ'
+                          : p.payment_stage === 'installment'
+                          ? 'แบ่งจ่ายบางส่วน (งวด)'
+                          : p.payment_stage === 'remaining'
+                          ? 'จ่ายงวดถัดไป/คงเหลือ'
+                          : 'จ่ายเต็มจำนวน'
+
+                      return (
+                        <div key={p.id} className="p-4 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1.5">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono font-bold text-sm text-emerald-800">
+                                {p.transaction_no || `PV-${p.id.slice(0, 8)}`}
+                              </span>
+                              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-sky-100 text-sky-800">
+                                {stageText}
+                              </span>
+                            </div>
+                            <span className="font-mono font-black text-sm text-emerald-900">
+                              ฿{baht(p.amount || p.amount_paid)} บาท
+                            </span>
+                          </div>
+                          <div className="flex flex-wrap items-center justify-between text-slate-600 pt-1">
+                            <div>
+                              วันที่จ่าย: <b>{p.payment_date}</b> · ช่องทาง: <b>{p.payment_channel || p.payment_method || 'โอนเงิน'}</b>
+                            </div>
+                            {p.slip_reference_no && (
+                              <div className="text-[11px] text-slate-500">
+                                สลิปอ้างอิง: {p.slip_reference_no}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })
                   ) : (
                     <div className="p-8 text-center text-slate-400 text-xs bg-slate-50 rounded-2xl border border-slate-200">
                       {isPaidInFull ? 'เอกสารนี้ชำระเงินครบถ้วนแล้ว' : 'ยังไม่มีประวัติการจ่ายเงิน กรุณากดปุ่ม "จ่ายชำระเงิน (PAY)" ด้านบน'}
@@ -1779,12 +1825,12 @@ export default function PODetail() {
             vendorId={po.vendor_id}
             contactName={po.vendors?.vendor_name}
             items={items}
-            totalAmount={grandTotalVal}
-            alreadyPaid={po.deposit_paid_amount || 0}
+            totalAmount={paySummary.totalPayable}
+            alreadyPaid={paySummary.paidAmount}
             depositAmount={po.deposit_amount || 0}
-            remainingAmount={po.remaining_amount || 0}
+            remainingAmount={paySummary.remainingAmount}
             hasDeposit={po.deposit_type === 'deposit'}
-            paymentStatus={po.payment_status || 'รอชำระเงิน'}
+            paymentStatus={paySummary.effectivePaymentStatus}
             requestedChannel={po.payment_channel_requested || 'transfer'}
             projectId={po.project_id}
             projectName={po.projects?.project_name}

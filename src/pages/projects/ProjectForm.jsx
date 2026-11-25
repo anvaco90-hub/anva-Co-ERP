@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
+import CustomerSelectField from "../../components/CustomerSelectField";
 import { STATUS_LABELS } from "../../lib/projects";
 import { FieldError, fieldErrorClass } from "../../components/FieldError";
 
@@ -152,15 +153,14 @@ export default function ProjectForm() {
           />
           <FieldError error={errors.project_name} />
         </label>
-        <label className="text-sm">
-          <span className="font-semibold text-steel-800">ชื่อลูกค้า</span>
-          <input
-            className="input mt-1 w-full"
-            placeholder="ชื่อบริษัทหรือผู้ว่าจ้าง"
+        <div className="text-sm">
+          <span className="font-semibold text-steel-800 block mb-1">ชื่อลูกค้า</span>
+          <CustomerSelectField
+            placeholder="ค้นหาจากสมุดรายชื่อ หรือพิมพ์ชื่อบริษัท/ผู้ว่าจ้าง..."
             value={form.client_name ?? ""}
-            onChange={set("client_name")}
+            onChange={(val) => set("client_name")({ target: { value: val } })}
           />
-        </label>
+        </div>
         <label className="text-sm">
           <span className="font-semibold text-steel-800">งบประมาณรวม (บาท)</span>
           <input

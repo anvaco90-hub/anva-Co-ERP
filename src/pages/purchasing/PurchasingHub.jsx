@@ -1,8 +1,9 @@
 import { Fragment, useCallback, useEffect, useState, useMemo } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
+import { fetchUnifiedVendors } from '../../lib/contactsSync'
 import { useAuth } from '../../context/AuthContext'
-import { PR_STATUS, PO_STATUS, canCreatePurchasing, canReceiveGoods, formatDateTimeParts } from '../../lib/purchasing'
+import { PR_STATUS, PO_STATUS, canCreatePurchasing, canReceiveGoods, formatDateTimeParts, computePoPaymentSummary } from '../../lib/purchasing'
 import { baht } from '../../lib/projects'
 import { computePoTotals } from '../../lib/tax'
 import { getPoDueStatus, formatThaiDate } from '../../lib/poDueStatus'
@@ -249,7 +250,7 @@ export default function PurchasingHub() {
           .order('order_date', { ascending: false })
           .order('po_no', { ascending: false }),
         supabase.from('projects').select('id, project_code, project_name').order('project_code'),
-        supabase.from('vendors').select('id, vendor_code, vendor_name, contact_person, phone, tax_id, address').order('vendor_code'),
+        fetchUnifiedVendors().then((data) => ({ data, error: null })).catch((error) => ({ data: [], error })),
         supabase
           .from('goods_receipts')
           .select('id, grn_no, received_date, po_id, purchase_orders(id, po_no, total_amount, grand_total, order_date, vendors(vendor_name), custom_vendor_name, projects(project_code, project_name), custom_project_name, customer_name), goods_receipt_items(id, qty_received, unit_cost, po_item_id, purchase_order_items(id, item_name, unit, unit_price))')
@@ -501,11 +502,11 @@ export default function PurchasingHub() {
   const openPos = pos.filter((p) => p.status === 'open')
   const partialPos = pos.filter((p) => p.status === 'partial')
   const receivedUnpaidPos = pos.filter((p) => {
-    const isPaid = p.payment_status === 'ชำระครบแล้ว' || (Number(p.remaining_amount) <= 0.05 && Number(p.deposit_paid_amount) > 0)
+    const isPaid = computePoPaymentSummary(p, p.purchase_order_items).isPaidInFull
     return p.status === 'received' && !isPaid
   })
   const fullyClosedPos = pos.filter((p) => {
-    const isPaid = p.payment_status === 'ชำระครบแล้ว' || (Number(p.remaining_amount) <= 0.05 && Number(p.deposit_paid_amount) > 0)
+    const isPaid = computePoPaymentSummary(p, p.purchase_order_items).isPaidInFull
     return p.status === 'received' && isPaid
   })
   const getPoPayable = (poRow) => computePoTotals(poRow, poRow?.purchase_order_items).netPayable
@@ -531,7 +532,7 @@ export default function PurchasingHub() {
   const filterRow = (row, fields) => {
     if (filterProject && row.project_id !== filterProject) return false
     if (filterStatus) {
-      const isPaid = row.payment_status === 'ชำระครบแล้ว' || (Number(row.remaining_amount) <= 0.05 && Number(row.deposit_paid_amount) > 0)
+      const isPaid = computePoPaymentSummary(row, row?.purchase_order_items).isPaidInFull
       if (filterStatus === 'received_unpaid') {
         if (row.status !== 'received' || isPaid) return false
       } else if (filterStatus === 'completed_paid') {
@@ -1268,7 +1269,8 @@ export default function PurchasingHub() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 p-4 bg-steel-50/40 dark:bg-slate-900/40">
                   {paginatedPos.map((r) => {
                     const dueStatus = getPoDueStatus(r)
-                    const isPaid = r.payment_status === 'ชำระครบแล้ว' || (Number(r.remaining_amount) <= 0.05 && Number(r.deposit_paid_amount) > 0)
+                    const poPay = computePoPaymentSummary(r, r.purchase_order_items)
+                    const isPaid = poPay.isPaidInFull
 
                     return (
                       <div
@@ -1456,7 +1458,8 @@ export default function PurchasingHub() {
                     <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
                       {paginatedPos.map((r, rowIdx) => {
                         const dueStatus = getPoDueStatus(r)
-                        const isPaid = r.payment_status === 'ชำระครบแล้ว' || (Number(r.remaining_amount) <= 0.05 && Number(r.deposit_paid_amount) > 0)
+                        const poPay = computePoPaymentSummary(r, r.purchase_order_items)
+                        const isPaid = poPay.isPaidInFull
 
                         return (
                           <tr
@@ -2861,31 +2864,34 @@ export default function PurchasingHub() {
       )}
 
       {/* โมดัล 4: จ่ายชำระเงิน (PAY) */}
-      {paymentTargetPo && (
-        <PaymentActionModal
-          isOpen={true}
-          type="disburse"
-          docType="PO"
-          docId={paymentTargetPo.id}
-          docNo={paymentTargetPo.po_no}
-          vendorId={paymentTargetPo.vendor_id}
-          contactName={paymentTargetPo.vendors?.vendor_name}
-          items={paymentTargetPo.purchase_order_items || []}
-          totalAmount={getPoPayable(paymentTargetPo)}
-          alreadyPaid={paymentTargetPo.deposit_paid_amount || 0}
-          depositAmount={paymentTargetPo.deposit_amount || 0}
-          remainingAmount={paymentTargetPo.remaining_amount || 0}
-          hasDeposit={paymentTargetPo.deposit_type === 'deposit'}
-          paymentStatus={paymentTargetPo.payment_status || 'รอชำระเงิน'}
-          requestedChannel={paymentTargetPo.payment_channel_requested || 'transfer'}
-          projectId={paymentTargetPo.project_id}
-          projectName={paymentTargetPo.projects?.project_name}
-          onClose={() => setPaymentTargetPo(null)}
-          onSuccess={() => {
-            loadData()
-          }}
-        />
-      )}
+      {paymentTargetPo && (() => {
+        const targetPay = computePoPaymentSummary(paymentTargetPo, paymentTargetPo.purchase_order_items || [])
+        return (
+          <PaymentActionModal
+            isOpen={true}
+            type="disburse"
+            docType="PO"
+            docId={paymentTargetPo.id}
+            docNo={paymentTargetPo.po_no}
+            vendorId={paymentTargetPo.vendor_id}
+            contactName={paymentTargetPo.vendors?.vendor_name}
+            items={paymentTargetPo.purchase_order_items || []}
+            totalAmount={targetPay.totalPayable}
+            alreadyPaid={targetPay.paidAmount}
+            depositAmount={paymentTargetPo.deposit_amount || 0}
+            remainingAmount={targetPay.remainingAmount}
+            hasDeposit={paymentTargetPo.deposit_type === 'deposit'}
+            paymentStatus={targetPay.effectivePaymentStatus}
+            requestedChannel={paymentTargetPo.payment_channel_requested || 'transfer'}
+            projectId={paymentTargetPo.project_id}
+            projectName={paymentTargetPo.projects?.project_name}
+            onClose={() => setPaymentTargetPo(null)}
+            onSuccess={() => {
+              loadData()
+            }}
+          />
+        )
+      })()}
       {/* โมดัล 5: ดูประวัติการใช้วัสดุในโครงการและย้อนหลัง */}
       {selectedUsageItem && (
         <ItemProjectUsageModal
@@ -2910,14 +2916,15 @@ export default function PurchasingHub() {
         >
           {activeDropdown.type === 'po' && (() => {
             const po = activeDropdown.item
-            const isPaid = po.payment_status === 'ชำระครบแล้ว' || (Number(po.remaining_amount) <= 0.05 && Number(po.deposit_paid_amount) > 0)
+            const poPay = computePoPaymentSummary(po, po.purchase_order_items || [])
+            const isPaid = poPay.isPaidInFull
 
             return (
               <div className="space-y-1">
                 {/* Header */}
                 <div className="px-2.5 py-1.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
                   <span className="font-bold text-slate-800 dark:text-slate-200 font-mono">{po.po_no}</span>
-                  <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">฿{baht(po.total_amount)}</span>
+                  <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">฿{baht(poPay.totalPayable)}</span>
                 </div>
 
                 {/* Section 1: Documents & Print */}
@@ -2981,9 +2988,9 @@ export default function PurchasingHub() {
                     >
                       <div className="flex items-center gap-2">
                         <DollarSign className="h-3.5 w-3.5 text-sky-600 dark:text-sky-400" />
-                        <span>จ่ายชำระเงิน</span>
+                        <span>{poPay.hasPartialPaid ? 'จ่ายงวดถัดไป' : 'จ่ายชำระเงิน'}</span>
                       </div>
-                      <span className="font-mono text-[10px]">฿{baht(po.net_amount || po.total_amount)}</span>
+                      <span className="font-mono text-[10px]">฿{baht(poPay.remainingAmount)}</span>
                     </button>
                   )}
 
@@ -3012,7 +3019,7 @@ export default function PurchasingHub() {
                     </Link>
                   )}
 
-                  {canCreate && po.status !== 'cancelled' && po.payment_status !== 'ชำระครบแล้ว' && po.status !== 'received' && (
+                  {canCreate && po.status !== 'cancelled' && !isPaid && po.status !== 'received' && (
                     <button
                       type="button"
                       onClick={() => {

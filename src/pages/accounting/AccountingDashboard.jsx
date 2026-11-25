@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
+import { fetchUnifiedVendors } from '../../lib/contactsSync'
 import { baht } from '../../lib/projects'
 import PaymentActionModal from '../../components/PaymentActionModal'
 import ExpenseFormModal from './ExpenseFormModal'
@@ -35,7 +36,7 @@ export default function AccountingDashboard() {
           .select('*, projects(project_code, project_name)')
           .order('expense_date', { ascending: false }),
         supabase.from('projects').select('id, project_code, project_name').order('project_code'),
-        supabase.from('vendors').select('id, vendor_code, vendor_name, tax_id').order('vendor_name'),
+        fetchUnifiedVendors().then((data) => ({ data, error: null })).catch((error) => ({ data: [], error })),
       ])
 
       setApList(apRes.data || [])

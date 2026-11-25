@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import { baht } from '../../lib/projects'
 import { formatThaiDate } from '../../lib/poDueStatus'
+import { computePoPaymentSummary } from '../../lib/purchasing'
 import { PAYMENT_TYPES } from '../../pages/purchasing/POForm'
 
 /**
@@ -46,10 +47,9 @@ export function computeProcurementFlow({
       (poItems.length > 0 && poItems.every((i) => Number(i.qty_received || 0) >= Number(i.quantity || 0)))
     const isPartialReceived = !isFullyReceived && (po.status === 'partial' || totalReceived > 0)
 
-    const isPaidInFull =
-      po.payment_status === 'ชำระครบแล้ว' ||
-      (Number(po.remaining_amount) <= 0.05 && Number(po.deposit_paid_amount) > 0)
-    const hasDepositPaid = !isPaidInFull && Number(po.deposit_paid_amount || 0) > 0
+    const paySummary = computePoPaymentSummary(po, poItems, payments)
+    const isPaidInFull = paySummary.isPaidInFull
+    const hasDepositPaid = paySummary.hasPartialPaid
     const isComplete = !isCancelled && isFullyReceived && isPaidInFull
 
     let currentStep = 3
@@ -133,14 +133,11 @@ export function computeProcurementFlow({
   })
   const allPaid =
     activePos.length > 0 &&
-    activePos.every(
-      (p) =>
-        p.payment_status === 'ชำระครบแล้ว' ||
-        (Number(p.remaining_amount) <= 0.05 && Number(p.deposit_paid_amount) > 0)
-    )
-  const somePaid = activePos.some(
-    (p) => p.payment_status === 'ชำระครบแล้ว' || Number(p.deposit_paid_amount || 0) > 0
-  )
+    activePos.every((p) => computePoPaymentSummary(p, p.purchase_order_items).isPaidInFull)
+  const somePaid = activePos.some((p) => {
+    const s = computePoPaymentSummary(p, p.purchase_order_items)
+    return s.isPaidInFull || s.hasPartialPaid
+  })
   const isComplete = !isCancelled && hasActivePo && allReceived && allPaid
 
   let currentStep = 2
@@ -320,8 +317,10 @@ export default function ProcurementWorkflowStepper({
     ? PAYMENT_TYPES.find((p) => p.value === po.payment_type)?.label?.split('(')[0]?.trim()
     : 'เครดิตเทอม'
 
-  const grandTotalVal = Number(po?.net_amount || po?.grand_total || po?.total_amount || 0)
-  const remainingAmt = Math.max(0, Number(po?.remaining_amount ?? (grandTotalVal - Number(po?.deposit_paid_amount || 0))))
+  const poPaySummary = computePoPaymentSummary(po, items, payments)
+  const grandTotalVal = poPaySummary.totalPayable
+  const paidAmt = poPaySummary.paidAmount
+  const remainingAmt = poPaySummary.remainingAmount
   const primaryLinkedPo = flow.activePos?.[0] || linkedPos?.[0]
 
   return (
@@ -633,13 +632,13 @@ export default function ProcurementWorkflowStepper({
                 ? flow.isPaidInFull
                   ? `จ่ายครบ ฿${baht(grandTotalVal)}`
                   : flow.hasDepositPaid
-                  ? `มัดจำแล้ว · ค้าง ฿${baht(remainingAmt)}`
+                  ? `จ่ายแล้ว ฿${baht(paidAmt)} · ค้าง ฿${baht(remainingAmt)}`
                   : `ยอดสุทธิ ฿${baht(grandTotalVal)}`
                 : flow.hasActivePo
                 ? flow.allPaid
                   ? 'ชำระเงินครบถ้วน'
                   : flow.somePaid
-                  ? 'ชำระมัดจำบางส่วนแล้ว'
+                  ? 'ชำระมัดจำ/บางส่วนแล้ว'
                   : 'รอตั้งเบิกจ่ายเงิน'
                 : 'รอตั้งเบิกตามเงื่อนไข'}
             </div>
@@ -661,14 +660,31 @@ export default function ProcurementWorkflowStepper({
                   <span>ดูประวัติจ่ายเงิน ({payments.length})</span>
                 </button>
               ) : !isCancelled && !flow.isPaidInFull && onOpenPayment ? (
-                <button
-                  type="button"
-                  onClick={onOpenPayment}
-                  className="text-amber-900 dark:text-amber-300 hover:underline font-bold flex items-center gap-1 cursor-pointer"
-                >
-                  <CreditCard className="h-3 w-3" />
-                  <span>{flow.isFullyReceived ? 'จ่ายชำระเงิน (PAY)' : 'จ่ายมัดจำ / ชำระล่วงหน้า'}</span>
-                </button>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <button
+                    type="button"
+                    onClick={onOpenPayment}
+                    className="text-amber-900 dark:text-amber-300 hover:underline font-bold flex items-center gap-1 cursor-pointer"
+                  >
+                    <CreditCard className="h-3 w-3" />
+                    <span>
+                      {flow.hasDepositPaid
+                        ? `จ่ายงวดถัดไป (฿${baht(remainingAmt)})`
+                        : flow.isFullyReceived
+                        ? 'จ่ายชำระเงิน (PAY)'
+                        : 'จ่ายมัดจำ / แบ่งจ่าย'}
+                    </span>
+                  </button>
+                  {payments.length > 0 && onOpenPayTab && (
+                    <button
+                      type="button"
+                      onClick={onOpenPayTab}
+                      className="text-sky-700 dark:text-sky-400 hover:underline font-semibold text-[10px] cursor-pointer"
+                    >
+                      ประวัติ ({payments.length})
+                    </button>
+                  )}
+                </div>
               ) : (
                 <span className="text-slate-400">{isCancelled ? 'ยกเลิกการจ่ายเงิน' : 'ชำระตามกำหนด'}</span>
               )

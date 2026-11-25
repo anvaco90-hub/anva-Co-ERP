@@ -2,6 +2,12 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams, useSearchParams, Link } from 'react-router-dom'
 import { Upload, Image as ImageIcon, FileText, CheckCircle2, X, Eye } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
+import {
+  fetchUnifiedCustomers,
+  fetchUnifiedVendors,
+  ensureLegacyVendorId,
+  upsertUnifiedContactFromLegacy,
+} from '../../lib/contactsSync'
 import { useAuth } from '../../context/AuthContext'
 import { EMPTY_ITEM, itemsValid } from '../../lib/purchasing'
 import { getItemVendorHistory } from '../../lib/purchasingHistory'
@@ -88,9 +94,9 @@ export default function POForm() {
 
   // โหลดรายชื่อผู้ขายและโครงการ
   useEffect(() => {
-    supabase.from('vendors').select('id, vendor_code, vendor_name, phone, tax_id').order('vendor_code').then(({ data }) => setVendors(data ?? []))
+    fetchUnifiedVendors().then((data) => setVendors(data ?? []))
     supabase.from('projects').select('id, project_code, project_name').order('project_code').then(({ data }) => setProjects(data ?? []))
-    supabase.from('customers').select('id, customer_code, customer_name').order('customer_name').then(({ data }) => setCustomers(data ?? []))
+    fetchUnifiedCustomers().then((data) => setCustomers(data ?? []))
 
     if (!id) {
       supabase.from('purchase_requisitions')
@@ -414,33 +420,42 @@ export default function POForm() {
       if (vendorMode === 'custom') {
         const matchedV = vendors.find(v => (v.vendor_name || '').trim().toLowerCase() === finalCustomVendorName.toLowerCase())
         if (matchedV) {
-          finalVendorId = matchedV.id
+          finalVendorId = await ensureLegacyVendorId(matchedV) || matchedV.id
         } else {
+          const autoCode = `VEND-${Date.now().toString().slice(-4)}`
+          const customPayload = {
+            vendor_code: autoCode,
+            vendor_name: finalCustomVendorName,
+            phone: customVendorPhone.trim() || null,
+            tax_id: customVendorTaxId.trim() || null,
+            address: customVendorAddress.trim() || null,
+          }
           try {
-            const autoCode = `VEND-${Date.now().toString().slice(-4)}`
-            const { data: newV, error: vInsErr } = await supabase.from('vendors').insert({
-              vendor_code: autoCode,
-              vendor_name: finalCustomVendorName,
-              phone: customVendorPhone.trim() || null,
-              tax_id: customVendorTaxId.trim() || null,
-              address: customVendorAddress.trim() || null,
-            }).select().single()
+            const { data: newV, error: vInsErr } = await supabase.from('vendors').insert(customPayload).select().single()
 
             if (!vInsErr && newV) {
               finalVendorId = newV.id
               setVendors(prev => [...prev, newV])
+              await upsertUnifiedContactFromLegacy({ role: 'vendor', record: newV })
             }
           } catch (e) {
             console.warn('Auto insert vendor fallback:', e)
           }
 
           if (!finalVendorId && vendors.length > 0) {
-            finalVendorId = vendors[0].id
+            finalVendorId = await ensureLegacyVendorId(vendors[0]) || vendors[0].id
           }
         }
       } else {
         const chosenV = vendors.find(v => v.id === finalVendorId)
-        if (chosenV) finalCustomVendorName = chosenV.vendor_name
+        if (chosenV) {
+          finalCustomVendorName = chosenV.vendor_name
+          const guaranteedId = await ensureLegacyVendorId(chosenV)
+          if (guaranteedId) finalVendorId = guaranteedId
+        } else if (finalVendorId) {
+          const guaranteedId = await ensureLegacyVendorId(finalVendorId)
+          if (guaranteedId) finalVendorId = guaranteedId
+        }
       }
 
       // 2. จัดการโครงการ (Project)
@@ -484,7 +499,7 @@ export default function POForm() {
         deposit_type: hasDeposit ? 'deposit' : 'none',
         deposit_percent: hasDeposit ? (Number(depositPercent) || 0) : 0,
         deposit_amount: calcDepositAmount,
-        remaining_amount: calcRemainingAmount,
+        remaining_amount: Math.max(0, Math.round((netAmount - Number(po?.deposit_paid_amount || 0)) * 100) / 100),
         payment_channel_requested: paymentChannelRequested,
         payment_status: sendToAccounting ? 'รอชำระเงิน' : (po?.payment_status || 'รอชำระเงิน'),
         quotation_no: quotationNo || null,

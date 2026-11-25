@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../../lib/supabase'
+import { fetchUnifiedVendors, buildEntityLookupMap } from '../../lib/contactsSync'
 import { formatBaht, formatThaiDate, calculateAging, exportToCSV } from '../../lib/accounting'
 import {
   Building2, Calendar, Filter, Search, Download, RefreshCw, FileText,
@@ -29,8 +30,26 @@ export default function ApAgingPage() {
           .from('accounts_payable')
           .select('*, vendors(id, vendor_code, vendor_name, tax_id), purchase_orders(po_no, project_id, projects(project_code, project_name))')
           .order('due_date', { ascending: true }),
-        supabase.from('vendors').select('id, vendor_code, vendor_name, tax_id').order('vendor_name'),
-      ])
+        fetchUnifiedVendors().catch(() => []),
+      ]).then(([rawApRes, unifiedVnds]) => {
+        const vndList = unifiedVnds || []
+        const vndMap = buildEntityLookupMap(vndList)
+        const enriched = (rawApRes?.data || []).map((ap) => {
+          const matched =
+            vndMap.get(ap.vendor_id) ||
+            vndMap.get(ap.contact_id) ||
+            null
+          return {
+            ...ap,
+            vendor_id: ap.vendor_id || matched?.id || null,
+            vendors: ap.vendors || matched || null,
+          }
+        })
+        return [
+          { ...rawApRes, data: enriched },
+          { data: vndList, error: null },
+        ]
+      })
 
       setApList(apRes.data || [])
       setVendors(vndRes.data || [])

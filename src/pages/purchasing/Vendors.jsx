@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
+import {
+  fetchUnifiedVendors,
+  upsertUnifiedContactFromLegacy,
+} from '../../lib/contactsSync'
 import { useAuth } from '../../context/AuthContext'
 import { canCreatePurchasing, PO_STATUS } from '../../lib/purchasing'
 import { baht } from '../../lib/projects'
@@ -30,7 +34,9 @@ export default function Vendors() {
 
   const load = useCallback(async () => {
     const [vendorsRes, posRes] = await Promise.all([
-      supabase.from('vendors').select('*').order('vendor_code'),
+      fetchUnifiedVendors()
+        .then((data) => ({ data, error: null }))
+        .catch((err) => ({ data: [], error: err })),
       supabase.from('purchase_orders')
         .select('id, po_no, vendor_id, order_date, total_amount, status, projects(project_code, project_name), purchase_order_items(item_name, quantity, unit, unit_price)')
         .neq('status', 'cancelled')
@@ -80,14 +86,25 @@ export default function Vendors() {
       return
     }
 
-    const { error: insErr } = await supabase.from('vendors').insert({
+    const vendorPayload = {
       vendor_code: form.vendor_code.trim(),
       vendor_name: form.vendor_name.trim(),
       contact_person: form.contact_person || null,
       phone: form.phone || null,
       tax_id: form.tax_id || null,
       address: form.address || null,
-    })
+    }
+    const { data: insertedVendor, error: insErr } = await supabase
+      .from('vendors')
+      .insert(vendorPayload)
+      .select()
+      .maybeSingle()
+    if (!insErr) {
+      await upsertUnifiedContactFromLegacy({
+        role: 'vendor',
+        record: insertedVendor || vendorPayload,
+      })
+    }
     if (insErr) return setError(insErr.code === '23505' ? 'รหัสผู้ขายนี้ถูกใช้แล้ว' : 'เพิ่มผู้ขายไม่สำเร็จ')
     setSuccess(`เพิ่มผู้ขาย "${form.vendor_name}" เรียบร้อยแล้ว`)
     setTimeout(() => setSuccess(''), 3000)
@@ -99,14 +116,42 @@ export default function Vendors() {
   async function saveEdit() {
     if (!editingVendor || !editingVendor.vendor_name?.trim()) return
     setEditBusy(true)
-    const { error: updErr } = await supabase.from('vendors').update({
+    const editPayload = {
       vendor_code: editingVendor.vendor_code?.trim(),
       vendor_name: editingVendor.vendor_name?.trim(),
       contact_person: editingVendor.contact_person || null,
       phone: editingVendor.phone || null,
       tax_id: editingVendor.tax_id || null,
       address: editingVendor.address || null,
-    }).eq('id', editingVendor.id)
+    }
+
+    let updErr = null
+    let syncedRecord = editPayload
+    if (editingVendor.isContactOnly) {
+      const { data: insertedLeg, error: insLegErr } = await supabase
+        .from('vendors')
+        .insert(editPayload)
+        .select()
+        .maybeSingle()
+      updErr = insLegErr || null
+      if (insertedLeg) syncedRecord = insertedLeg
+    } else {
+      const targetVendorId = editingVendor.legacyVendorId || editingVendor.id
+      const { error: uErr } = await supabase
+        .from('vendors')
+        .update(editPayload)
+        .eq('id', targetVendorId)
+      updErr = uErr || null
+      syncedRecord = { ...editPayload, id: targetVendorId }
+    }
+
+    if (!updErr) {
+      await upsertUnifiedContactFromLegacy({
+        role: 'vendor',
+        record: syncedRecord,
+        previousName: editingVendor._originalName || '',
+      })
+    }
 
     setEditBusy(false)
     if (updErr) {
@@ -234,7 +279,7 @@ export default function Vendors() {
                     {canEdit && (
                       <button
                         type="button"
-                        onClick={() => setEditingVendor({ ...v })}
+                        onClick={() => setEditingVendor({ ...v, _originalName: v.vendor_name })}
                         className="rounded-lg border border-steel-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-steel-700 hover:bg-steel-50 transition cursor-pointer flex items-center gap-1"
                         title="แก้ไขข้อมูลผู้ขาย"
                       >

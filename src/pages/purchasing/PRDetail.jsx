@@ -74,7 +74,7 @@ export default function PRDetail() {
       supabase
         .from('purchase_orders')
         .select(
-          'id, po_no, order_date, expected_delivery_date, status, total_amount, grand_total, net_amount, payment_status, deposit_paid_amount, remaining_amount, payment_type, custom_vendor_name, vendors(vendor_name), purchase_order_items(quantity, qty_received)'
+          'id, po_no, order_date, expected_delivery_date, status, total_amount, grand_total, net_amount, tax_type, vat_rate, vat_amount, wht_rate, wht_amount, payment_status, deposit_paid_amount, remaining_amount, payment_type, custom_vendor_name, vendors(vendor_name), purchase_order_items(quantity, unit_price, qty_received)'
         )
         .eq('pr_id', id),
     ]).then(async ([a, b, c]) => {
