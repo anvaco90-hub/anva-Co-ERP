@@ -1,4 +1,5 @@
 import { baht } from '../../lib/projects'
+import { inferQuotationTaxType } from '../../lib/tax'
 import { printElement } from '../../lib/printElement'
 import R2Image from '../R2Image'
 
@@ -18,6 +19,8 @@ export default function QuotationPrintModal({ quotation, items, onClose }) {
     : '-'
 
   const currency = quotation.currency || 'THB'
+  const inferredTaxType = inferQuotationTaxType(quotation)
+  const vatRateDisplay = inferredTaxType === 'vat_exempt' ? 0 : (quotation.vat_rate ?? 7)
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
@@ -153,11 +156,15 @@ export default function QuotationPrintModal({ quotation, items, onClose }) {
                   </tr>
                 )}
                 <tr>
-                  <td className="py-1 px-2 text-right font-medium">ราคาหลังหักส่วนลด:</td>
+                  <td className="py-1 px-2 text-right font-medium">
+                    {inferredTaxType === 'vat_included' ? 'ราคาหลังหักส่วนลด (รวม VAT):' : 'ราคาหลังหักส่วนลด:'}
+                  </td>
                   <td className="py-1 px-3 text-right font-semibold">{baht(quotation.after_discount)}</td>
                 </tr>
                 <tr>
-                  <td className="py-1 px-2 text-right text-neutral-600">ภาษีมูลค่าเพิ่ม ({quotation.vat_rate || 7}%):</td>
+                  <td className="py-1 px-2 text-right text-neutral-600">
+                    ภาษีมูลค่าเพิ่ม ({vatRateDisplay}%{inferredTaxType === 'vat_included' ? ' ในยอด' : ''}):
+                  </td>
                   <td className="py-1 px-3 text-right text-neutral-600">{baht(quotation.vat_amount)}</td>
                 </tr>
                 {Number(quotation.wht_amount) > 0 && (

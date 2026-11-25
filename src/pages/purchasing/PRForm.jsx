@@ -3,6 +3,7 @@ import { useNavigate, useParams, useSearchParams, Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { EMPTY_ITEM, itemsValid } from '../../lib/purchasing'
 import { baht } from '../../lib/projects'
+import { inferQuotationTaxType, round2 } from '../../lib/tax'
 import ItemsEditor from './ItemsEditor'
 import { FieldError } from '../../components/FieldError'
 import SearchableSelect from '../../components/SearchableSelect'
@@ -30,24 +31,34 @@ export default function PRForm() {
   const [showItemErrors, setShowItemErrors] = useState(false)
 
   // จัดการการซิงค์ราคาและภาษีจากใบเสนอราคา (Quotation -> PR Sync)
+  // ค่าเริ่มต้นของใบขอซื้อ (PR) ควรเป็น "ราคาก่อน VAT" เพื่อไม่ให้บวก VAT ซ้ำเมื่อส่งต่อไปออก PO
   const [quotationSync, setQuotationSync] = useState(null)
-  const [prPriceMode, setPrPriceMode] = useState('with_vat') // 'with_vat' | 'net_before_vat'
+  const [prPriceMode, setPrPriceMode] = useState('net_before_vat') // 'net_before_vat' | 'with_vat'
   const loadedQuotationRef = useRef(false)
+  const PR_VAT_INCLUDED_TAG = '[ราคารวม VAT 7% แล้ว]'
 
   const applyPriceMode = (mode, syncData = quotationSync) => {
     if (!syncData) return
     setPrPriceMode(mode)
-    const vatMultiplier = (mode === 'with_vat' && syncData.hasVat) ? (1 + syncData.vatRate / 100) : 1
+
+    let vatMultiplier = 1
+    if (syncData.hasVat) {
+      if (syncData.qTaxType === 'vat_included') {
+        vatMultiplier = mode === 'net_before_vat' ? 1 / (1 + syncData.vatRate / 100) : 1
+      } else {
+        vatMultiplier = mode === 'with_vat' ? 1 + syncData.vatRate / 100 : 1
+      }
+    }
 
     setItems(syncData.rawItems.map((i) => {
       const rawPrice = Number(i.unit_price) || 0
       const discPct = Number(i.discount_percent) || 0
-      const baseEffective = discPct > 0 
-        ? rawPrice * (1 - discPct / 100) 
-        : (i.total_amount && Number(i.quantity) > 0 
-            ? Number(i.total_amount) / Number(i.quantity) 
+      const baseEffective = discPct > 0
+        ? rawPrice * (1 - discPct / 100)
+        : (i.total_amount && Number(i.quantity) > 0
+            ? Number(i.total_amount) / Number(i.quantity)
             : rawPrice)
-      const finalPrice = Math.round(baseEffective * vatMultiplier * 100) / 100
+      const finalPrice = round2(baseEffective * vatMultiplier)
 
       return {
         item_name: i.item_name,
@@ -57,6 +68,18 @@ export default function PRForm() {
         discount_percent: discPct > 0 ? String(discPct) : '0',
       }
     }))
+
+    setNotes((prev) => {
+      const cleaned = (prev || '')
+        .split('\n')
+        .filter((line) => line.trim() !== PR_VAT_INCLUDED_TAG)
+        .join('\n')
+        .trim()
+      if (mode === 'with_vat' && syncData.hasVat) {
+        return cleaned ? `${cleaned}\n${PR_VAT_INCLUDED_TAG}` : PR_VAT_INCLUDED_TAG
+      }
+      return cleaned
+    })
   }
 
   useEffect(() => {
@@ -79,22 +102,35 @@ export default function PRForm() {
         if (qRes.data?.customer_name) {
           setCustomerName(qRes.data.customer_name)
         }
-        
-        const qItems = itemsRes.data || []
-        const hasVat = qRes.data?.tax_type !== 'vat_exempt' && Number(qRes.data?.vat_rate ?? 7) > 0
-        const vatRate = Number(qRes.data?.vat_rate ?? 7)
 
-        const subtotalNet = qItems.reduce((s, i) => {
+        const qItems = itemsRes.data || []
+        const qTaxType = inferQuotationTaxType(qRes.data)
+        const vatRate = Number(qRes.data?.vat_rate ?? 7)
+        const hasVat = qTaxType !== 'vat_exempt' && vatRate > 0
+
+        const rawAfterDisc = qItems.reduce((s, i) => {
           const rawPrice = Number(i.unit_price) || 0
           const discPct = Number(i.discount_percent) || 0
           const eff = discPct > 0 ? rawPrice * (1 - discPct / 100) : (i.total_amount ? Number(i.total_amount) / (Number(i.quantity) || 1) : rawPrice)
           return s + eff * (Number(i.quantity) || 1)
         }, 0)
-        const vatAmt = hasVat ? Math.round(subtotalNet * (vatRate / 100) * 100) / 100 : 0
-        const grandTotal = Math.round((subtotalNet + vatAmt) * 100) / 100
+
+        let subtotalNet = round2(rawAfterDisc)
+        let vatAmt = 0
+        let grandTotal = round2(rawAfterDisc)
+
+        if (qTaxType === 'vat_included' && hasVat) {
+          vatAmt = round2((rawAfterDisc * vatRate) / (100 + vatRate))
+          subtotalNet = Math.max(0, round2(rawAfterDisc - vatAmt))
+          grandTotal = round2(rawAfterDisc)
+        } else if (hasVat) {
+          vatAmt = round2(subtotalNet * (vatRate / 100))
+          grandTotal = round2(subtotalNet + vatAmt)
+        }
 
         const syncObj = {
           quotation_no: qRes.data?.quotation_no,
+          qTaxType,
           subtotalNet,
           hasVat,
           vatRate,
@@ -113,8 +149,8 @@ export default function PRForm() {
           })
         }
 
-        // ค่าเริ่มต้น: ซิงค์ราคาตามราคาสุทธิรวมภาษี (ถ้ามี VAT) เพื่อให้ยอด PR ตรงกับยอดรวมทั้งสิ้นของใบเสนอราคา
-        applyPriceMode(hasVat ? 'with_vat' : 'net_before_vat', syncObj)
+        // ค่าเริ่มต้น: ใช้ราคาก่อน VAT เสมอ เพื่อนำไปคำนวณภาษีซื้อใน PO เพียงรอบเดียว
+        applyPriceMode('net_before_vat', syncObj)
       })
     }
 
@@ -386,40 +422,45 @@ export default function PRForm() {
                 <FileText className="h-4 w-4 text-sky-700" />
                 <span>ซิงค์ข้อมูลจากใบเสนอราคา: <b className="font-mono text-sky-800">{quotationSync.quotation_no}</b></span>
               </div>
-              <div className="flex items-center gap-1 bg-white p-0.5 rounded-lg border border-sky-200">
-                <button
-                  type="button"
-                  onClick={() => applyPriceMode('with_vat')}
-                  className={`px-3 py-1.5 rounded-md font-bold text-xs transition cursor-pointer flex items-center gap-1 ${
-                    prPriceMode === 'with_vat' ? 'bg-sky-700 text-white shadow-2xs' : 'text-sky-700 hover:bg-sky-50'
-                  }`}
-                  title="ปรับราคาต่อหน่วยให้รวม VAT เพื่อให้ยอดรวม PR ตรงกับยอดสุทธิทั้งสิ้น"
-                >
-                  <CheckCircle2 className={`h-3.5 w-3.5 ${prPriceMode === 'with_vat' ? 'inline' : 'hidden'}`} />
-                  <span>ราคารวม VAT 7% (฿{baht(quotationSync.grandTotal)} บ.)</span>
-                </button>
+              <div className="flex flex-wrap items-center gap-1 bg-white p-0.5 rounded-lg border border-sky-200">
                 <button
                   type="button"
                   onClick={() => applyPriceMode('net_before_vat')}
                   className={`px-3 py-1.5 rounded-md font-bold text-xs transition cursor-pointer flex items-center gap-1 ${
                     prPriceMode === 'net_before_vat' ? 'bg-sky-700 text-white shadow-2xs' : 'text-sky-700 hover:bg-sky-50'
                   }`}
-                  title="ใช้ราคาหลังหักส่วนลด แต่ยังไม่รวมภาษีมูลค่าเพิ่ม"
+                  title="ใช้ราคาก่อน VAT (แนะนำ) เพื่อนำไปคำนวณภาษีซื้อใน PO เพียงรอบเดียว"
                 >
                   <CheckCircle2 className={`h-3.5 w-3.5 ${prPriceMode === 'net_before_vat' ? 'inline' : 'hidden'}`} />
-                  <span>ราคาก่อน VAT (฿{baht(quotationSync.subtotalNet)} บ.)</span>
+                  <span>ราคาก่อน VAT · แนะนำ (฿{baht(quotationSync.subtotalNet)} บ.)</span>
                 </button>
+                {quotationSync.hasVat && (
+                  <button
+                    type="button"
+                    onClick={() => applyPriceMode('with_vat')}
+                    className={`px-3 py-1.5 rounded-md font-bold text-xs transition cursor-pointer flex items-center gap-1 ${
+                      prPriceMode === 'with_vat' ? 'bg-sky-700 text-white shadow-2xs' : 'text-sky-700 hover:bg-sky-50'
+                    }`}
+                    title="ใช้ราคารวม VAT 7% (ระบบจะทำเครื่องหมายให้ PO รู้ว่ารวม VAT แล้ว)"
+                  >
+                    <CheckCircle2 className={`h-3.5 w-3.5 ${prPriceMode === 'with_vat' ? 'inline' : 'hidden'}`} />
+                    <span>ราคารวม VAT 7% (฿{baht(quotationSync.grandTotal)} บ.)</span>
+                  </button>
+                )}
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-4 text-slate-600 text-xs">
-              <span>ยอดสินค้าหลังส่วนลด: <b className="font-mono text-slate-900">{baht(quotationSync.subtotalNet)}</b> บ.</span>
+              <span>ยอดสินค้าก่อน VAT (ใน QT): <b className="font-mono text-slate-900">{baht(quotationSync.subtotalNet)}</b> บ.</span>
               {quotationSync.hasVat && (
-                <span>ภาษี VAT {quotationSync.vatRate}%: <b className="font-mono text-slate-900">+{baht(quotationSync.vatAmt)}</b> บ.</span>
+                <span>VAT {quotationSync.vatRate}% (ใน QT): <b className="font-mono text-slate-900">+{baht(quotationSync.vatAmt)}</b> บ.</span>
               )}
               <span className="text-emerald-800 font-bold">
-                ยอดสุทธิทั้งสิ้น: <b className="font-mono">{baht(quotationSync.grandTotal)}</b> บาท
+                ยอดรวมสุทธิ (QT): <b className="font-mono">{baht(quotationSync.grandTotal)}</b> บาท
               </span>
             </div>
+            <p className="text-[11px] text-sky-900/80">
+              * ปกติใบขอซื้อ (PR) ควรใช้ <b>ราคาก่อน VAT</b> แล้วค่อยให้ระบบไปคิดภาษีซื้อ (VAT 7%) ตอนออกใบสั่งซื้อ (PO) กับร้านค้าเพื่อไม่ให้บวก VAT ซ้ำ 2 รอบ (อย่าลืมปรับราคา/หน่วยเป็นราคาต้นทุนซื้อจริงจากร้านค้า)
+            </p>
           </div>
         )}
 

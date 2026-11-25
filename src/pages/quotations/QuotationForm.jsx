@@ -3,6 +3,7 @@ import { useNavigate, useParams, Link, useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
 import { baht } from '../../lib/projects'
+import { calculateTaxBreakdown, inferQuotationTaxType } from '../../lib/tax'
 import { uploadQuotationFile, openFile } from '../../lib/files'
 import R2Image from '../../components/R2Image'
 import { FieldError, fieldErrorClass } from '../../components/FieldError'
@@ -199,7 +200,7 @@ export default function QuotationForm() {
             setWarehouseName(q.warehouse_name || WAREHOUSES[0])
             setCustomerNotes(q.customer_notes || '')
             setInternalNotes(q.internal_notes || '')
-            setTaxType(q.vat_rate === 0 ? 'vat_exempt' : 'vat_excluded')
+            setTaxType(inferQuotationTaxType(q))
             setWhtRate(String(q.wht_rate || '0'))
 
             if (itRes.data && itRes.data.length > 0) {
@@ -243,7 +244,7 @@ export default function QuotationForm() {
         setInternalNotes(q.internal_notes || '')
         setSignatureUrl(q.signature_url || '')
         setAttachmentUrl(q.attachment_url || '')
-        setTaxType(q.vat_rate === 0 ? 'vat_exempt' : 'vat_excluded')
+        setTaxType(inferQuotationTaxType(q))
         setWhtRate(String(q.wht_rate || '0'))
 
         if (itRes.data && itRes.data.length > 0) {
@@ -330,22 +331,18 @@ export default function QuotationForm() {
   const totalDiscount = lineTotals.reduce((s, l) => s + l.discountVal, 0)
   const afterDiscount = subtotal - totalDiscount
 
-  let vatAmount = 0
-  let totalWithVat = afterDiscount
-
-  if (taxType === 'vat_excluded') {
-    vatAmount = Math.round(afterDiscount * 0.07 * 100) / 100
-    totalWithVat = Math.round((afterDiscount + vatAmount) * 100) / 100
-  } else if (taxType === 'vat_included') {
-    vatAmount = Math.round(((afterDiscount * 7) / 107) * 100) / 100
-    totalWithVat = afterDiscount
-  } else {
-    vatAmount = 0
-    totalWithVat = afterDiscount
-  }
-
-  const whtAmount = Math.round(afterDiscount * (Number(whtRate) / 100) * 100) / 100
-  const grandTotal = Math.round((totalWithVat - whtAmount) * 100) / 100
+  const {
+    amountBeforeVat,
+    vatAmount,
+    totalWithVat,
+    whtAmount,
+    netPayable: grandTotal,
+  } = calculateTaxBreakdown({
+    rawTotal: afterDiscount,
+    taxType,
+    whtRate,
+    vatRate: 7,
+  })
 
   // จัดการอัปโหลดไฟล์แนบและลายเซ็น
   const handleUploadFile = async (e, type) => {
@@ -442,6 +439,7 @@ export default function QuotationForm() {
       subtotal,
       discount_amount: totalDiscount,
       after_discount: afterDiscount,
+      tax_type: taxType,
       vat_rate: taxType === 'vat_exempt' ? 0 : 7,
       vat_amount: vatAmount,
       wht_rate: Number(whtRate) || 0,
@@ -525,8 +523,10 @@ export default function QuotationForm() {
             continue
           }
 
-          // Column does not exist
-          const colMatch = errMsg.match(/column "(.*?)" of relation "quotations" does not exist/)
+          // Column does not exist (รองรับทั้ง PostgreSQL และ PostgREST schema cache message)
+          const colMatch =
+            errMsg.match(/column "(.*?)" of relation "quotations" does not exist/) ||
+            errMsg.match(/Could not find the '(.*?)' column of 'quotations'/)
           if (colMatch && colMatch[1]) {
             delete activePayload[colMatch[1]]
             continue
@@ -1103,13 +1103,21 @@ export default function QuotationForm() {
               <span className="font-mono font-bold">- {baht(totalDiscount)} {currency}</span>
             </div>
             <div className="flex justify-between font-bold text-slate-800 dark:text-slate-100 border-t border-slate-200 dark:border-slate-700 pt-2">
-              <span>ราคาหลังหักส่วนลด:</span>
+              <span>{taxType === 'vat_included' ? 'ราคาหลังหักส่วนลด (รวม VAT):' : 'ราคาหลังหักส่วนลด:'}</span>
               <span className="font-mono">{baht(afterDiscount)} {currency}</span>
             </div>
+            {taxType === 'vat_included' && (
+              <div className="flex justify-between text-slate-600 dark:text-slate-300">
+                <span>มูลค่าสินค้าก่อนภาษี (Before VAT):</span>
+                <span className="font-mono font-semibold text-slate-800 dark:text-slate-100">
+                  {baht(amountBeforeVat)} {currency}
+                </span>
+              </div>
+            )}
             <div className="flex justify-between text-slate-600 dark:text-slate-300">
-              <span>ภาษีมูลค่าเพิ่ม (VAT {taxType === 'vat_exempt' ? '0' : '7'}%):</span>
+              <span>ภาษีมูลค่าเพิ่ม (VAT {taxType === 'vat_exempt' ? '0' : '7'}%{taxType === 'vat_included' ? ' รวมในยอด' : ''}):</span>
               <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">
-                + {baht(vatAmount)} {currency}
+                {taxType === 'vat_included' ? '' : '+ '}{baht(vatAmount)} {currency}
               </span>
             </div>
             {Number(whtRate) > 0 && (

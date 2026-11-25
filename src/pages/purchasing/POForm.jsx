@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext'
 import { EMPTY_ITEM, itemsValid } from '../../lib/purchasing'
 import { getItemVendorHistory } from '../../lib/purchasingHistory'
 import { baht } from '../../lib/projects'
+import { calculateTaxBreakdown, inferPoTaxType, inferQuotationTaxType } from '../../lib/tax'
 import { uploadQuotationFile, openFile } from '../../lib/files'
 import ItemsEditor from './ItemsEditor'
 import ItemProjectUsageModal from '../../components/ItemProjectUsageModal'
@@ -147,13 +148,7 @@ export default function POForm() {
           setQuotationNo(qRes.data.quotation_no || '')
           setQuotationDate(qRes.data.issue_date || '')
           // ซิงค์ประเภทภาษีจากใบเสนอราคามาให้ตรงกัน (vat_exempt, vat_included, vat_excluded)
-          if (qRes.data.vat_rate === 0) {
-            setTaxType('vat_exempt')
-          } else if (qRes.data.tax_type) {
-            setTaxType(qRes.data.tax_type)
-          } else {
-            setTaxType('vat_excluded')
-          }
+          setTaxType(inferQuotationTaxType(qRes.data))
           if (qRes.data.wht_rate !== undefined && qRes.data.wht_rate !== null) {
             setWhtRate(String(qRes.data.wht_rate))
           }
@@ -211,7 +206,7 @@ export default function POForm() {
       setQuotationNo(a.data.quotation_no || '')
       setQuotationDate(a.data.quotation_date || '')
       setQuotationUrl(a.data.quotation_url || '')
-      setTaxType(a.data.tax_type || 'vat_included')
+      setTaxType(inferPoTaxType(a.data))
       setWhtRate(String(a.data.wht_rate || '0'))
       setVendorTaxInvoiceNo(a.data.vendor_tax_invoice_no || '')
       setTaxInvoiceDate(a.data.tax_invoice_date || '')
@@ -255,6 +250,10 @@ export default function POForm() {
     }
     if (a.data.customer_name) {
       setCustomerName(a.data.customer_name)
+    }
+    // หาก PR ต้นทางระบุว่ากรอกราคาต่อหน่วยแบบรวม VAT 7% แล้ว ให้ตั้ง PO เป็น vat_included เพื่อไม่บวกซ้ำ
+    if (a.data.notes && a.data.notes.includes('[ราคารวม VAT 7% แล้ว]')) {
+      setTaxType('vat_included')
     }
     if (a.data.suggested_vendor) {
       setCustomVendorName(a.data.suggested_vendor)
@@ -319,27 +318,19 @@ export default function POForm() {
   // คำนวณภาษีและยอดสุทธิ
   const rawSubtotal = items.reduce((s, i) => s + (Number(i.quantity) || 0) * (Number(i.price) || 0), 0)
   const subtotal = rawSubtotal
-  let amountBeforeVat = rawSubtotal
-  let vatAmount = 0
-  let totalWithVat = rawSubtotal
-
-  if (taxType === 'vat_included') {
-    vatAmount = Math.round((rawSubtotal * 7 / 107) * 100) / 100
-    amountBeforeVat = Math.round((rawSubtotal - vatAmount) * 100) / 100
-    totalWithVat = rawSubtotal
-  } else if (taxType === 'vat_excluded') {
-    amountBeforeVat = rawSubtotal
-    vatAmount = Math.round((rawSubtotal * 0.07) * 100) / 100
-    totalWithVat = Math.round((rawSubtotal + vatAmount) * 100) / 100
-  } else {
-    amountBeforeVat = rawSubtotal
-    vatAmount = 0
-    totalWithVat = rawSubtotal
-  }
-
+  const {
+    amountBeforeVat,
+    vatAmount,
+    totalWithVat,
+    whtAmount,
+    netPayable: netAmount,
+  } = calculateTaxBreakdown({
+    rawTotal: rawSubtotal,
+    taxType,
+    whtRate,
+    vatRate: 7,
+  })
   const grandTotal = totalWithVat
-  const whtAmount = Math.round((amountBeforeVat * (Number(whtRate) / 100)) * 100) / 100
-  const netAmount = Math.round((totalWithVat - whtAmount) * 100) / 100
 
   // หาข้อมูลผู้ขายที่เลือก เพื่อวิเคราะห์ประเภทแบบภาษี ภ.ง.ด.3 / ภ.ง.ด.53
   const selectedVendor = vendors.find((v) => v.id === vendorId)
@@ -499,6 +490,8 @@ export default function POForm() {
         quotation_no: quotationNo || null,
         quotation_date: quotationDate || null,
         quotation_url: finalQuotationUrl || null,
+        total_amount: subtotal,
+        grand_total: grandTotal,
         tax_type: taxType,
         vat_rate: taxType === 'vat_exempt' ? 0 : 7,
         vat_amount: vatAmount,
@@ -1607,7 +1600,7 @@ export default function POForm() {
                 <span className="font-semibold">{baht(amountBeforeVat)} บาท</span>
               </div>
               <div className="flex justify-between text-steel-600">
-                <span>ภาษีมูลค่าเพิ่ม (VAT {taxType === 'vat_exempt' ? '0' : '7'}%):</span>
+                <span>ภาษีมูลค่าเพิ่ม (VAT {taxType === 'vat_exempt' ? '0' : '7'}%{taxType === 'vat_included' ? ' รวมในยอด' : ''}):</span>
                 <span className="font-semibold">{baht(vatAmount)} บาท</span>
               </div>
               <div className="flex justify-between font-bold text-ink border-t border-steel-200 pt-1">

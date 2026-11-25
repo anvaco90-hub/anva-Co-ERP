@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
 import { PO_STATUS, canCreatePurchasing, canReceiveGoods } from '../../lib/purchasing'
 import { baht } from '../../lib/projects'
+import { computePoTotals } from '../../lib/tax'
 import StatusBadge from '../../components/common/StatusBadge'
 import AuditPanel from './AuditPanel'
 import ItemProjectUsageModal from '../../components/ItemProjectUsageModal'
@@ -254,41 +255,8 @@ export default function PODetail() {
 
   useEffect(() => { load() }, [load])
 
-  // คำนวณยอดเงินและซิงค์ภาษีในฐานข้อมูลอัตโนมัติ (วางไว้ก่อน conditional return ตามกฎของ React Hooks)
-  const computedItemsTotal = items.reduce((sum, it) => sum + (Number(it.quantity || 1) * Number(it.unit_price || 0)), 0)
-  const totalAmountVal = Number(po?.total_amount) || computedItemsTotal || 0
-  const vatVal = Number(po?.vat_amount) || 0
-  const whtVal = Number(po?.wht_amount) || 0
-
-  useEffect(() => {
-    if (po && vatVal > 0 && Number(po.grand_total) <= totalAmountVal && Number(po.grand_total) > 0) {
-      const correctedGrandTotal = Math.round((totalAmountVal + vatVal - whtVal) * 100) / 100
-      const correctedRemaining = po.payment_status === 'ชำระครบแล้ว'
-        ? 0
-        : Math.max(0, correctedGrandTotal - Number(po.deposit_paid_amount || 0))
-
-      supabase
-        .from('purchase_orders')
-        .update({
-          grand_total: correctedGrandTotal,
-          net_amount: correctedGrandTotal,
-          remaining_amount: correctedRemaining,
-          tax_type: 'vat_excluded',
-        })
-        .eq('id', po.id)
-        .then(({ error: syncErr }) => {
-          if (!syncErr) {
-            setPo((prev) => prev ? ({
-              ...prev,
-              grand_total: correctedGrandTotal,
-              net_amount: correctedGrandTotal,
-              remaining_amount: correctedRemaining,
-              tax_type: 'vat_excluded',
-            }) : prev)
-          }
-        })
-    }
-  }, [po?.id, vatVal, totalAmountVal, whtVal])
+  // ไม่แก้ค่าภาษีใน DB อัตโนมัติขณะเปิดอ่าน — ให้ computePoTotals คำนวณจาก po และ items โดยตรง
+  // (ป้องกันบั๊กเดิมที่เปลี่ยน vat_included เป็น vat_excluded แล้วบวก VAT ซ้ำ 2 รอบ)
 
   async function receive() {
     if (isFullyReceived) {
@@ -565,20 +533,12 @@ export default function PODetail() {
   const canReceive = canReceiveGoods(profile.role) && ['open', 'partial'].includes(po.status) && !isFullyReceived
   const anyQty = items.some((i) => Number(qty[i.id]) > 0)
 
-  // ตรวจสอบว่าระบบเคยบันทึกแบบราคารวม VAT หรือไม่
-  const isVatIncluded = po.tax_type === 'vat_included' && Number(po.grand_total) === totalAmountVal && Number(po.grand_total) > 0
-  const subtotalBeforeVat = isVatIncluded
-    ? Math.max(0, Math.round((totalAmountVal - vatVal) * 100) / 100)
-    : totalAmountVal
-
-  // คำนวณยอดสุทธิทั้งสิ้น (บวกภาษี VAT 7% เข้ากับราคาวัสดุเสมอเมื่อมีภาษี)
-  let grandTotalVal = Number(po.grand_total) || 0
-  if (vatVal > 0 && grandTotalVal <= totalAmountVal) {
-    // กรณีเดิมยอดสุทธิไม่บวกภาษี ให้บวกภาษีมูลค่าเพิ่มเข้าไปเพื่อให้ถูกต้องพร้อมชำระ
-    grandTotalVal = Math.round((totalAmountVal + vatVal - whtVal) * 100) / 100
-  } else if (!grandTotalVal) {
-    grandTotalVal = Math.round((totalAmountVal + (po.tax_type === 'vat_exempt' ? 0 : vatVal) - whtVal) * 100) / 100
-  }
+  const poTotals = computePoTotals(po, items)
+  const isVatIncluded = poTotals.isVatIncluded
+  const subtotalBeforeVat = poTotals.amountBeforeVat
+  const vatVal = poTotals.vatAmount
+  const whtVal = poTotals.whtAmount
+  const grandTotalVal = poTotals.netPayable
 
   const dueStatus = getPoDueStatus(po)
 
@@ -1507,7 +1467,7 @@ export default function PODetail() {
 
                     {vatVal > 0 && (
                       <div className="flex justify-between py-1 border-b border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400">
-                        <span>ภาษีมูลค่าเพิ่ม 7% (VAT):</span>
+                        <span>ภาษีมูลค่าเพิ่ม {poTotals.vatRate}% (VAT){isVatIncluded ? ' · รวมในราคาสินค้า' : ''}:</span>
                         <span className="font-mono font-semibold text-slate-800 dark:text-slate-200">+{baht(vatVal)} บาท</span>
                       </div>
                     )}
@@ -1750,7 +1710,7 @@ export default function PODetail() {
                 </div>
                 {vatVal > 0 && (
                   <div className="flex justify-between text-slate-700">
-                    <span>ภาษีมูลค่าเพิ่ม (VAT 7%):</span>
+                    <span>ภาษีมูลค่าเพิ่ม (VAT {poTotals.vatRate}%){isVatIncluded ? ' · รวมในยอด' : ''}:</span>
                     <span className="font-mono font-semibold">+{baht(vatVal)} บาท</span>
                   </div>
                 )}

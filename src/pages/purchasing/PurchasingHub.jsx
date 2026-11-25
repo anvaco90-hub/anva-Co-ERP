@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
 import { PR_STATUS, PO_STATUS, canCreatePurchasing, canReceiveGoods, formatDateTimeParts } from '../../lib/purchasing'
 import { baht } from '../../lib/projects'
+import { computePoTotals } from '../../lib/tax'
 import { getPoDueStatus, formatThaiDate } from '../../lib/poDueStatus'
 import PaymentActionModal from '../../components/PaymentActionModal'
 import PODocumentModal from '../../components/reports/PODocumentModal'
@@ -507,7 +508,8 @@ export default function PurchasingHub() {
     const isPaid = p.payment_status === 'ชำระครบแล้ว' || (Number(p.remaining_amount) <= 0.05 && Number(p.deposit_paid_amount) > 0)
     return p.status === 'received' && isPaid
   })
-  const totalSpend = pos.filter((p) => p.status !== 'cancelled').reduce((s, p) => s + Number(p.total_amount || 0), 0)
+  const getPoPayable = (poRow) => computePoTotals(poRow, poRow?.purchase_order_items).netPayable
+  const totalSpend = pos.filter((p) => p.status !== 'cancelled').reduce((s, p) => s + getPoPayable(p), 0)
 
   // คำนวณสถิติสถานะวันครบกำหนดส่งมอบ (Due Date Status Tracking)
   const overduePos = pos.filter((p) => getPoDueStatus(p)?.code === 'overdue')
@@ -793,8 +795,8 @@ export default function PurchasingHub() {
       }
       if (sortBy === 'code_asc') return (a.po_no || '').localeCompare(b.po_no || '', undefined, { numeric: true })
       if (sortBy === 'code_desc') return (b.po_no || '').localeCompare(a.po_no || '', undefined, { numeric: true })
-      if (sortBy === 'amount_desc') return Number(b.net_amount || b.total_amount || 0) - Number(a.net_amount || a.total_amount || 0)
-      if (sortBy === 'amount_asc') return Number(a.net_amount || a.total_amount || 0) - Number(b.net_amount || b.total_amount || 0)
+      if (sortBy === 'amount_desc') return getPoPayable(b) - getPoPayable(a)
+      if (sortBy === 'amount_asc') return getPoPayable(a) - getPoPayable(b)
       if (sortBy === 'date_asc') return (a.order_date || '').localeCompare(b.order_date || '')
       // Default: date_desc
       return (b.order_date || '').localeCompare(a.order_date || '')
@@ -1375,7 +1377,7 @@ export default function PurchasingHub() {
                           <div>
                             <div className="text-[10px] text-steel-400 dark:text-slate-500 font-medium">ยอดรวมสุทธิ</div>
                             <div className="font-mono font-black text-sm text-steel-900 dark:text-slate-100">
-                              ฿{baht(r.total_amount)}
+                              ฿{baht(getPoPayable(r))}
                             </div>
                           </div>
 
@@ -1541,7 +1543,7 @@ export default function PurchasingHub() {
                             {isPoColVisible('amount') && (
                               <td className="py-3 px-3.5 align-middle text-right whitespace-nowrap border-r border-slate-200/60 dark:border-slate-800/60">
                                 <div className="font-mono font-black text-sm text-steel-900 dark:text-slate-100 tabular-nums">
-                                  ฿{baht(r.total_amount)}
+                                  ฿{baht(getPoPayable(r))}
                                 </div>
                                 <div className="text-[10px] text-steel-400 dark:text-slate-500 font-normal">บาท</div>
                               </td>
@@ -2625,7 +2627,7 @@ export default function PurchasingHub() {
                                           </div>
                                           <div className="text-right">
                                             <span className="font-mono font-black text-sm text-emerald-900 dark:text-emerald-300">
-                                              ฿{baht(p.total_amount)} บ.
+                                              ฿{baht(getPoPayable(p))} บ.
                                             </span>
                                           </div>
                                         </div>

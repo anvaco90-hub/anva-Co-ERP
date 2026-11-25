@@ -1,4 +1,5 @@
 import { baht } from '../../lib/projects'
+import { computePoTotals } from '../../lib/tax'
 import { PAYMENT_TYPES } from '../../pages/purchasing/POForm'
 import { printElement } from '../../lib/printElement'
 import { Printer, X } from 'lucide-react'
@@ -14,30 +15,14 @@ export default function PODocumentModal({ po, items, onClose }) {
     ? new Date(po.order_date).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })
     : '-'
 
-  const rawSubtotal = (items ?? []).reduce((s, i) => s + Number(i.quantity || 0) * Number(i.unit_price || 0), 0)
-  const taxType = po.tax_type || (Number(po.vat_amount) > 0 ? 'vat_excluded' : 'vat_excluded')
-  let amountBeforeVat = rawSubtotal
-  let vatAmount = Number(po.vat_amount || 0)
-  let totalWithVat = Number(po.total_amount || rawSubtotal)
-
-  if (taxType === 'vat_included' && Number(po.grand_total) === Number(po.total_amount) && Number(po.total_amount) > 0) {
-    vatAmount = vatAmount > 0 ? vatAmount : Math.round((rawSubtotal * 7 / 107) * 100) / 100
-    amountBeforeVat = Math.round((rawSubtotal - vatAmount) * 100) / 100
-    totalWithVat = rawSubtotal
-  } else if (taxType === 'vat_excluded' || vatAmount > 0) {
-    amountBeforeVat = rawSubtotal
-    vatAmount = vatAmount > 0 ? vatAmount : Math.round((rawSubtotal * 0.07) * 100) / 100
-    totalWithVat = Math.round((rawSubtotal + vatAmount) * 100) / 100
-  } else {
-    // vat_exempt
-    amountBeforeVat = rawSubtotal
-    vatAmount = 0
-    totalWithVat = rawSubtotal
-  }
-
-  const whtRate = Number(po.wht_rate || 0)
-  const whtAmount = Number(po.wht_amount || (whtRate > 0 ? Math.round(amountBeforeVat * (whtRate / 100) * 100) / 100 : 0))
-  const netAmount = Number(po.net_amount || (totalWithVat - whtAmount))
+  const {
+    vatRate,
+    amountBeforeVat,
+    vatAmount,
+    whtRate,
+    whtAmount,
+    netPayable: netAmount,
+  } = computePoTotals(po, items)
 
   const paymentLabel = PAYMENT_TYPES.find((p) => p.value === po.payment_type)?.label || 'เครดิตเทอม 30 วัน'
 
@@ -168,7 +153,7 @@ export default function PODocumentModal({ po, items, onClose }) {
                   <td className="py-1.5 px-3 text-right font-semibold">{baht(amountBeforeVat)}</td>
                 </tr>
                 <tr>
-                  <td className="py-1 px-3 text-right text-neutral-600">ภาษีมูลค่าเพิ่ม ({taxType === 'vat_exempt' ? '0' : '7'}%):</td>
+                  <td className="py-1 px-3 text-right text-neutral-600">ภาษีมูลค่าเพิ่ม ({vatRate}%):</td>
                   <td className="py-1 px-3 text-right text-neutral-600">{baht(vatAmount)}</td>
                 </tr>
                 {whtRate > 0 && (

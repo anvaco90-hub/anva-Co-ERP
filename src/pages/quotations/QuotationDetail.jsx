@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { baht } from '../../lib/projects'
+import { inferQuotationTaxType } from '../../lib/tax'
 import { formatIntQty } from '../../lib/store'
 import { uploadQuotationFile, openFile } from '../../lib/files'
 import R2Image, { useFileUrl } from '../../components/R2Image'
@@ -779,11 +780,12 @@ export default function QuotationDetail() {
             <div>
               <div className="text-slate-400">การคิดภาษี (VAT Mode)</div>
               <div className="font-medium text-slate-800 dark:text-slate-200 mt-0.5">
-                {quotation.tax_type === 'vat_included'
-                  ? 'ราคารวมภาษีแล้ว (VAT Included 7%)'
-                  : quotation.tax_type === 'vat_exempt'
-                  ? 'ได้รับการยกเว้นภาษี (VAT Exempt 0%)'
-                  : 'ราคาแยกภาษีมูลค่าเพิ่ม (VAT Excluded +7%)'}
+                {(() => {
+                  const qtTaxType = inferQuotationTaxType(quotation)
+                  if (qtTaxType === 'vat_included') return 'ราคารวมภาษีแล้ว (VAT Included 7%)'
+                  if (qtTaxType === 'vat_exempt') return 'ได้รับการยกเว้นภาษี (VAT Exempt 0%)'
+                  return 'ราคาแยกภาษีมูลค่าเพิ่ม (VAT Excluded +7%)'
+                })()}
               </div>
             </div>
           </div>
@@ -874,16 +876,24 @@ export default function QuotationDetail() {
                 <span className="font-mono font-bold">-{baht(quotation.discount_amount || 0)} {quotation.currency || 'THB'}</span>
               </div>
             )}
-            <div className="flex justify-between font-bold text-slate-800 dark:text-slate-100 border-t border-slate-200 dark:border-slate-700 pt-2">
-              <span>ราคาหลังหักส่วนลด:</span>
-              <span className="font-mono">{baht(quotation.after_discount || quotation.subtotal || 0)} {quotation.currency || 'THB'}</span>
-            </div>
-            <div className="flex justify-between text-slate-600 dark:text-slate-300">
-              <span>ภาษีมูลค่าเพิ่ม (VAT {quotation.vat_rate || 7}%):</span>
-              <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">
-                +{baht(quotation.vat_amount || 0)} {quotation.currency || 'THB'}
-              </span>
-            </div>
+            {(() => {
+              const qtTaxType = inferQuotationTaxType(quotation)
+              const vatRateDisp = qtTaxType === 'vat_exempt' ? 0 : (quotation.vat_rate ?? 7)
+              return (
+                <>
+                  <div className="flex justify-between font-bold text-slate-800 dark:text-slate-100 border-t border-slate-200 dark:border-slate-700 pt-2">
+                    <span>{qtTaxType === 'vat_included' ? 'ราคาหลังหักส่วนลด (รวม VAT):' : 'ราคาหลังหักส่วนลด:'}</span>
+                    <span className="font-mono">{baht(quotation.after_discount || quotation.subtotal || 0)} {quotation.currency || 'THB'}</span>
+                  </div>
+                  <div className="flex justify-between text-slate-600 dark:text-slate-300">
+                    <span>ภาษีมูลค่าเพิ่ม (VAT {vatRateDisp}%{qtTaxType === 'vat_included' ? ' รวมในยอด' : ''}):</span>
+                    <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">
+                      {qtTaxType === 'vat_included' ? '' : '+'}{baht(quotation.vat_amount || 0)} {quotation.currency || 'THB'}
+                    </span>
+                  </div>
+                </>
+              )
+            })()}
             {Number(quotation.wht_amount || 0) > 0 && (
               <div className="flex justify-between text-amber-700 dark:text-amber-400 font-semibold">
                 <span>หักภาษี ณ ที่จ่าย ({quotation.wht_rate}%):</span>
