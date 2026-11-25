@@ -48,16 +48,47 @@ export default function TaxReportsPage() {
       const contactIds = [...new Set((taxList || []).map((r) => r.contact_id).filter(Boolean))]
       const projectIds = [...new Set((taxList || []).map((r) => r.project_id).filter(Boolean))]
 
-      const [contactsRes, projectsRes] = await Promise.all([
+      const [contactsRes, vendorsRes, customersRes, projectsRes] = await Promise.all([
         contactIds.length > 0
           ? supabase.from('contacts').select('id, company_name, business_name, tax_id, branch_code, address').in('id', contactIds)
+          : { data: [] },
+        contactIds.length > 0
+          ? supabase.from('vendors').select('id, vendor_name, tax_id, address').in('id', contactIds)
+          : { data: [] },
+        contactIds.length > 0
+          ? supabase.from('customers').select('id, customer_name, tax_id, address').in('id', contactIds)
           : { data: [] },
         projectIds.length > 0
           ? supabase.from('projects').select('id, project_code, project_name').in('id', projectIds)
           : { data: [] },
       ])
 
-      const contactMap = Object.fromEntries((contactsRes.data || []).map((c) => [c.id, c]))
+      const contactMap = {}
+      for (const v of vendorsRes.data || []) {
+        contactMap[v.id] = {
+          id: v.id,
+          company_name: v.vendor_name,
+          business_name: v.vendor_name,
+          tax_id: v.tax_id,
+          branch_code: '00000',
+          address: v.address,
+        }
+      }
+      for (const cu of customersRes.data || []) {
+        if (!contactMap[cu.id]) {
+          contactMap[cu.id] = {
+            id: cu.id,
+            company_name: cu.customer_name,
+            business_name: cu.customer_name,
+            tax_id: cu.tax_id,
+            branch_code: '00000',
+            address: cu.address,
+          }
+        }
+      }
+      for (const c of contactsRes.data || []) {
+        contactMap[c.id] = c
+      }
       const projectMap = Object.fromEntries((projectsRes.data || []).map((p) => [p.id, p]))
 
       const mapped = (taxList || []).map((r) => ({

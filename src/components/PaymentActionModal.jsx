@@ -2,6 +2,14 @@ import { useState, useEffect } from 'react'
 import { AlertTriangle, CheckCircle2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { baht } from '../lib/projects'
+import {
+  ADVANCE_DEPOSIT_ACCOUNT_CODE,
+  computePoPaymentAccountingPlan,
+  detectWhtFormType,
+  ensureAdvanceDepositAccountId,
+  fetchPoPaymentContext,
+  recordPoPaymentWhtTax,
+} from '../lib/poPaymentAccounting'
 
 export const COMPANY_BANKS = [
   { code: '1110-02', name: 'ธนาคารกสิกรไทย (KBANK)', accountNo: '045-8-12345-6', accountName: 'บจก. แอนวา แอนด์ โค (กระแสรายวัน/ออมทรัพย์)' },
@@ -34,6 +42,11 @@ export default function PaymentActionModal({
   projectId = null,
   projectName = '',
   items = null, // รายการวัสดุ/สินค้าที่สั่งซื้อ (ถ้าส่งมาจะแสดงทันที ไม่ต้องดึงซ้ำ)
+  whtRate = 0,
+  whtAmount = 0,
+  subtotalBeforeVat = 0,
+  hasGoodsReceipt = null,
+  vendorTaxId = '',
 }) {
   if (!isOpen) return null
 
@@ -117,6 +130,42 @@ export default function PaymentActionModal({
   const [notes, setNotes] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [whtFormOverride, setWhtFormOverride] = useState('')
+  const [poPayCtx, setPoPayCtx] = useState(() => ({
+    hasGoodsReceipt: hasGoodsReceipt === null ? docType !== 'PO' : Boolean(hasGoodsReceipt),
+    subtotalBeforeVat: Number(subtotalBeforeVat) || 0,
+    whtRate: Number(whtRate) || 0,
+    totalWhtAmount: Number(whtAmount) || 0,
+    previouslyWithheldWht: 0,
+    unclearedDepositBalance: 0,
+    vendorName: contactName || '',
+    vendorTaxId: vendorTaxId || '',
+    entityType: '',
+  }))
+
+  useEffect(() => {
+    if (!isOpen || docType !== 'PO' || type !== 'disburse' || !docId) return
+    let active = true
+    fetchPoPaymentContext({
+      poId: docId,
+      fallbackVendorName: contactName,
+      fallbackSubtotal: subtotalBeforeVat,
+      fallbackWhtRate: whtRate,
+      fallbackWhtAmount: whtAmount,
+    })
+      .then((ctx) => {
+        if (!active) return
+        setPoPayCtx((prev) => ({
+          ...ctx,
+          hasGoodsReceipt:
+            hasGoodsReceipt === null ? ctx.hasGoodsReceipt : Boolean(hasGoodsReceipt) || ctx.hasGoodsReceipt,
+          vendorTaxId: ctx.vendorTaxId || vendorTaxId || prev.vendorTaxId || '',
+        }))
+        setWhtFormOverride((cur) => cur || detectWhtFormType({ vendorName: ctx.vendorName || contactName }).taxType)
+      })
+      .catch((err) => console.warn('fetchPoPaymentContext notice:', err))
+    return () => { active = false }
+  }, [isOpen, docType, type, docId, contactName, subtotalBeforeVat, whtRate, whtAmount, hasGoodsReceipt, vendorTaxId])
 
   // ดึงข้อมูลบัญชีธนาคารของคู่ค้าจาก Contacts / Vendors
   useEffect(() => {
@@ -214,6 +263,24 @@ export default function PaymentActionModal({
   const isOverpaid = numericPay > Math.round((outstanding + 0.01) * 100) / 100
   const overpaidAmount = isOverpaid ? Math.round((numericPay - outstanding) * 100) / 100 : 0
 
+  const accountingPlan = computePoPaymentAccountingPlan({
+    type,
+    docType,
+    payAmount: numericPay,
+    bankFee: numericFee,
+    totalPayable: totalAmount,
+    alreadyPaid,
+    subtotalBeforeVat: poPayCtx.subtotalBeforeVat,
+    whtRate: poPayCtx.whtRate,
+    totalWhtAmount: poPayCtx.totalWhtAmount,
+    previouslyWithheldWht: poPayCtx.previouslyWithheldWht,
+    hasGoodsReceipt: poPayCtx.hasGoodsReceipt,
+    unclearedDepositBalance: poPayCtx.unclearedDepositBalance,
+    vendorName: poPayCtx.vendorName || contactName,
+    entityType: poPayCtx.entityType,
+    whtFormHint: whtFormOverride,
+  })
+
   // หากมียอดจ่ายมาแล้วบางส่วน ให้ตรวจจากยอดคงเหลือจริง (outstanding) เสมอ เพื่อไม่ให้ค้างสถานะปิดรับเงินเมื่อยังค้างจ่าย
   const isAlreadyFullyPaid =
     Number(totalAmount) > 0 && Number(alreadyPaid) > 0
@@ -255,19 +322,28 @@ export default function PaymentActionModal({
         selectedAccountCode,
         '1130-01', // ลูกหนี้การค้า
         '2110-01', // เจ้าหนี้การค้า
-        '1150-01', // เงินมัดจำจ่ายล่วงหน้า
+        ADVANCE_DEPOSIT_ACCOUNT_CODE, // 1170-01 เงินมัดจำจ่ายล่วงหน้า
+        '2120-01', // ภาษีหัก ณ ที่จ่ายค้างจ่าย ภ.ง.ด.3
+        '2120-02', // ภาษีหัก ณ ที่จ่ายค้างจ่าย ภ.ง.ด.53
         '5250-01', // ค่าธรรมเนียมธนาคาร
       ]
 
-      const { data: coaRows } = await supabase
-        .from('chart_of_accounts')
-        .select('id, account_code')
-        .in('account_code', neededCodes)
+      const [{ data: coaRows }, ensuredAdvId] = await Promise.all([
+        supabase
+          .from('chart_of_accounts')
+          .select('id, account_code')
+          .in('account_code', neededCodes),
+        accountingPlan.isPreReceiptDeposit || accountingPlan.depositToClear > 0
+          ? ensureAdvanceDepositAccountId(supabase).catch(() => null)
+          : Promise.resolve(null),
+      ])
 
       const coaMap = (coaRows || []).reduce((acc, c) => ({ ...acc, [c.account_code]: c.id }), {})
       const cashBankAccId = coaMap[selectedAccountCode]
       const arAccId = coaMap['1130-01']
       const apAccId = coaMap['2110-01']
+      const advDepositAccId = ensuredAdvId || coaMap[ADVANCE_DEPOSIT_ACCOUNT_CODE] || null
+      const whtAccId = coaMap[accountingPlan.whtAccountCode] || coaMap['2120-02'] || coaMap['2120-01'] || null
       const feeAccId = coaMap['5250-01']
 
       // 2. สร้าง Journal Entry (สมุดรายวันทั่วไป)
@@ -359,14 +435,25 @@ export default function PaymentActionModal({
           }
         } else {
           // ฝั่งจ่ายเงิน (Disbursement - PAY / PV)
-          // Dr. เจ้าหนี้การค้า (2110-01)
-          if (apAccId) {
+          const canUseAdvAcc = Boolean(advDepositAccId)
+          const effectiveDepositClear = canUseAdvAcc ? accountingPlan.depositToClear : 0
+          const effectiveWhtAmt = whtAccId ? accountingPlan.whtForThisPayment : 0
+          const primaryDebitAccId =
+            accountingPlan.isPreReceiptDeposit && advDepositAccId ? advDepositAccId : apAccId
+          const primaryDebitAmount = Math.round(
+            (numericPay + effectiveWhtAmt + effectiveDepositClear) * 100
+          ) / 100
+
+          // Dr. 1170-01 เงินมัดจำจ่ายล่วงหน้า (ถ้าจ่ายก่อนรับของ RI) หรือ Dr. 2110-01 เจ้าหนี้การค้า
+          if (primaryDebitAccId) {
             lines.push({
               journal_entry_id: currentJvId,
-              account_id: apAccId,
-              debit: numericPay,
+              account_id: primaryDebitAccId,
+              debit: primaryDebitAmount,
               credit: 0,
-              line_description: `ตัดเจ้าหนี้การค้า ${docNo} (${stageLabel}) [${voucherNo}]`,
+              line_description: accountingPlan.isPreReceiptDeposit && advDepositAccId
+                ? `จ่ายมัดจำ/ล่วงหน้าก่อนรับของ ${docNo} (${stageLabel}) [${voucherNo}]`
+                : `ตัดเจ้าหนี้การค้า ${docNo} (${stageLabel}) [${voucherNo}]`,
             })
           }
           // Dr. ค่าธรรมเนียมธนาคาร (ถ้ามี)
@@ -379,12 +466,32 @@ export default function PaymentActionModal({
               line_description: `ค่าธรรมเนียมโอนเงินธนาคาร - ${docNo}`,
             })
           }
+          // Cr. ล้างเงินมัดจำจ่ายล่วงหน้า (1170-01) เมื่อจ่ายปิดยอดหลังรับของแล้ว
+          if (effectiveDepositClear > 0 && advDepositAccId && !accountingPlan.isPreReceiptDeposit) {
+            lines.push({
+              journal_entry_id: currentJvId,
+              account_id: advDepositAccId,
+              debit: 0,
+              credit: effectiveDepositClear,
+              line_description: `ล้างยอดเงินมัดจำล่วงหน้า - ${docNo}`,
+            })
+          }
+          // Cr. ภาษีเงินได้หัก ณ ที่จ่ายค้างจ่าย (2120-01 ภ.ง.ด.3 / 2120-02 ภ.ง.ด.53)
+          if (effectiveWhtAmt > 0 && whtAccId) {
+            lines.push({
+              journal_entry_id: currentJvId,
+              account_id: whtAccId,
+              debit: 0,
+              credit: effectiveWhtAmt,
+              line_description: `ภาษีหัก ณ ที่จ่าย ${accountingPlan.whtRate}% (${accountingPlan.whtFormLabel}) - ${docNo}`,
+            })
+          }
           // Cr. ธนาคาร / เงินสด
           lines.push({
             journal_entry_id: currentJvId,
             account_id: cashBankAccId,
             debit: 0,
-            credit: numericPay + numericFee,
+            credit: Math.round((numericPay + numericFee) * 100) / 100,
             line_description: `จ่ายเงินตามเอกสาร ${docNo} (${methodLabel}) [${voucherNo}]`,
           })
         }
@@ -422,6 +529,11 @@ export default function PaymentActionModal({
         cash_source_account: paymentMethod === 'cash' ? cashSource : null,
         cash_voucher_no: paymentMethod === 'cash' ? cashVoucherNo : null,
         slip_reference_no: paymentMethod === 'transfer' ? slipRef : paymentMethod === 'cash' ? cashVoucherNo : chequeAttachmentNote,
+        wht_rate: accountingPlan.whtForThisPayment > 0 ? accountingPlan.whtRate : 0,
+        wht_amount: accountingPlan.whtForThisPayment,
+        wht_form_type: accountingPlan.whtForThisPayment > 0 ? accountingPlan.whtTaxType : null,
+        tax_base_amount: accountingPlan.whtBaseForThisPayment,
+        is_pre_receipt_deposit: accountingPlan.isPreReceiptDeposit,
         notes: notes || null,
         journal_entry_id: currentJvId || null,
       }
@@ -441,6 +553,25 @@ export default function PaymentActionModal({
         }
         console.warn(`Payment transaction notice (optional):`, ptErr?.message || ptErr)
         break
+      }
+
+      // 4.5 บันทึกภาษีหัก ณ ที่จ่าย (WHT_3 / WHT_53) ลงตาราง tax_records สำหรับออกรายงานภาษีและ RD Prep
+      if (accountingPlan.whtForThisPayment > 0) {
+        await recordPoPaymentWhtTax({
+          taxType: accountingPlan.whtTaxType,
+          paymentDate: todayStr,
+          docNo,
+          voucherNo,
+          contactId,
+          vendorId: vendorId || poPayCtx.vendorId || null,
+          vendorName: poPayCtx.vendorName || contactName,
+          vendorTaxId: poPayCtx.vendorTaxId || vendorTaxId || '',
+          projectId: projectId || poPayCtx.projectId || null,
+          baseAmount: accountingPlan.whtBaseForThisPayment,
+          whtRate: accountingPlan.whtRate,
+          whtAmount: accountingPlan.whtForThisPayment,
+          journalEntryId: currentJvId || null,
+        })
       }
 
       // 5. ตัดยอดหนี้คงค้างในเอกสารเป้าหมาย แบบ Self-Healing
@@ -1170,6 +1301,52 @@ export default function PaymentActionModal({
                   />
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* กล่องสรุปสิทธิ์ทางบัญชี & หัก ณ ที่จ่าย (สำหรับ PO) */}
+          {type === 'disburse' && docType === 'PO' && !isAlreadyFullyPaid && (
+            <div className="rounded-xl border border-indigo-200 bg-indigo-50/60 p-3 space-y-2 text-xs">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="font-bold text-indigo-950">
+                  การลงบัญชีอัตโนมัติ:
+                </span>
+                <span
+                  className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                    accountingPlan.isPreReceiptDeposit
+                      ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                      : 'bg-emerald-100 text-emerald-900 border border-emerald-300'
+                  }`}
+                >
+                  {accountingPlan.isPreReceiptDeposit
+                    ? `ยังไม่ได้รับของ (RI) → Dr. ${ADVANCE_DEPOSIT_ACCOUNT_CODE} เงินมัดจำจ่ายล่วงหน้า`
+                    : accountingPlan.depositToClear > 0
+                    ? `รับของแล้ว → Dr. 2110-01 เจ้าหนี้ + ล้างมัดจำ ${baht(accountingPlan.depositToClear)} บ.`
+                    : 'รับของแล้ว → Dr. 2110-01 ตัดยอดเจ้าหนี้การค้า'}
+                </span>
+              </div>
+
+              {accountingPlan.whtRate > 0 && (
+                <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-indigo-200/80">
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-purple-900">
+                      หัก ณ ที่จ่าย ({accountingPlan.whtRate}%):
+                    </span>
+                    <select
+                      value={whtFormOverride || accountingPlan.whtTaxType}
+                      onChange={(e) => setWhtFormOverride(e.target.value)}
+                      className="rounded border border-purple-300 bg-white px-2 py-0.5 text-[11px] font-bold text-purple-900"
+                    >
+                      <option value="WHT_53">ภ.ง.ด. 53 (นิติบุคคล)</option>
+                      <option value="WHT_3">ภ.ง.ด. 3 (บุคคลธรรมดา)</option>
+                    </select>
+                  </div>
+                  <div className="font-mono text-[11px] text-purple-900">
+                    ฐานภาษี <b>{baht(accountingPlan.whtBaseForThisPayment)}</b> บ. · ภาษีหัก{' '}
+                    <b className="text-purple-950 underline">{baht(accountingPlan.whtForThisPayment)}</b> บ.
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

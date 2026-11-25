@@ -1846,13 +1846,18 @@ export default function PODetail() {
             docId={po.id}
             docNo={po.po_no}
             vendorId={po.vendor_id}
-            contactName={po.vendors?.vendor_name}
+            vendorTaxId={po.vendors?.tax_id || ''}
+            contactName={po.vendors?.vendor_name || po.custom_vendor_name}
             items={items}
             totalAmount={paySummary.totalPayable}
             alreadyPaid={paySummary.paidAmount}
             depositAmount={po.deposit_amount || 0}
             remainingAmount={paySummary.remainingAmount}
             hasDeposit={po.deposit_type === 'deposit'}
+            whtRate={poTotals.whtRate}
+            whtAmount={poTotals.whtAmount}
+            subtotalBeforeVat={poTotals.amountBeforeVat}
+            hasGoodsReceipt={grns.length > 0 || ['partial', 'received'].includes(po.status)}
             paymentStatus={paySummary.effectivePaymentStatus}
             requestedChannel={po.payment_channel_requested || 'transfer'}
             projectId={po.project_id}
