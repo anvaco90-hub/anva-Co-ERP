@@ -242,6 +242,8 @@ export default function JournalEntriesPage() {
             <option value="ALL">ประเภทเอกสาร: ทั้งหมด</option>
             <option value="INV">INV - ขายและลูกหนี้</option>
             <option value="RI">RI - รับวัสดุเข้าสโตร์</option>
+            <option value="ISS">ISS - เบิกวัสดุเข้าโครงการ/หน้างาน</option>
+            <option value="ADJ">ADJ - คืนวัสดุ/ปรับปรุงสต็อก</option>
             <option value="EXP">EXP - ค่าใช้จ่าย</option>
             <option value="RC">RC - รับชำระเงิน</option>
             <option value="PAY">PAY - จ่ายชำระเงิน</option>

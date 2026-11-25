@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
+import { useAuth } from '../../context/AuthContext'
 import { baht } from '../../lib/projects'
 import { fmtDateTime, formatDateTimeParts } from '../../lib/purchasing'
 import { formatIntQty, toIntQty } from '../../lib/store'
+import { ensureStockAdjustmentAccounting } from '../../lib/storeAccounting'
 import { FieldError, fieldErrorClass } from '../../components/FieldError'
 import SearchableProjectSelect from '../../components/SearchableProjectSelect'
 import SearchableItemSelect from '../../components/SearchableItemSelect'
@@ -99,6 +101,8 @@ function parseAdjustReason(rawReason = '') {
 
 export default function AdjustStock() {
   const navigate = useNavigate()
+  const location = useLocation()
+  const { profile } = useAuth()
   const [items, setItems] = useState([])
   const [projects, setProjects] = useState([])
   const [history, setHistory] = useState([])
@@ -177,14 +181,37 @@ export default function AdjustStock() {
   }, [])
 
   useEffect(() => {
+    const queryParams = new URLSearchParams(location.search)
+    const initialTab = queryParams.get('tab')
+    const initialProjectId = queryParams.get('project') || queryParams.get('project_id')
+    const initialItemId = queryParams.get('item_id')
+
+    if (initialTab === 'return_stock' || initialTab === 'reduce_stock') {
+      setActiveTab(initialTab)
+      setSelectedReason(
+        initialTab === 'return_stock' ? 'ของเหลือใช้จากโครงการ (ปิดงาน)' : 'สินค้าชำรุด/เสื่อมสภาพ'
+      )
+    }
+
     loadItems()
     loadHistory()
     supabase
       .from('projects')
       .select('id, project_code, project_name')
       .order('project_code')
-      .then(({ data }) => setProjects(data ?? []))
-  }, [loadItems, loadHistory])
+      .then(({ data }) => {
+        const list = data ?? []
+        setProjects(list)
+        if (initialProjectId && list.some((p) => p.id === initialProjectId)) {
+          setTargetType('project')
+          setOrigin(initialProjectId)
+        }
+      })
+
+    if (initialItemId) {
+      setItemId(initialItemId)
+    }
+  }, [loadItems, loadHistory, location.search])
 
   // สลับแท็บ ให้เปลี่ยน default reason ให้เหมาะกับโหมด
   const handleTabChange = (tab) => {
@@ -259,7 +286,9 @@ export default function AdjustStock() {
     }
 
     setBusy(true)
-    const unitCostNum = cost !== '' ? Number(cost) : null
+    const fallbackAvg = Number(item?.avg_unit_cost || 0)
+    const unitCostNum =
+      cost !== '' && !Number.isNaN(Number(cost)) ? Number(cost) : fallbackAvg
 
     let targetSummary = ''
     if (targetType === 'project') {
@@ -288,13 +317,17 @@ export default function AdjustStock() {
       return setError(rpcErr.message)
     }
 
-    // อัปเดต avg_unit_cost ถ้ามีการแก้ไขต้นทุน
-    if (unitCostNum !== null && unitCostNum >= 0) {
-      await supabase
-        .from('inventory_items')
-        .update({ avg_unit_cost: unitCostNum, updated_at: new Date().toISOString() })
-        .eq('id', itemId)
-    }
+    await ensureStockAdjustmentAccounting({
+      adjId,
+      itemId,
+      sourceProjectId: targetType === 'project' && origin ? origin : null,
+      prevQty: currentStoreQty,
+      newQty: toIntQty(calculatedTotal),
+      unitCost: unitCostNum,
+      curAvgCost: fallbackAvg,
+      reason: fullReason,
+      userId: profile?.id || null,
+    }).catch((accErr) => console.warn('ensureStockAdjustmentAccounting notice:', accErr))
 
     setBusy(false)
     setDone(

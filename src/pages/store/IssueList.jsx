@@ -93,7 +93,7 @@ export default function IssueList() {
       const issPromise = supabase
         .from('stock_issues')
         .select(
-          'id, issue_no, issue_date, notes, created_at, issue_target, issue_reason, target_location, projects(id, project_code, project_name), issuer:profiles!issued_by(full_name), stock_issue_items(quantity, unit_cost, inventory_items(id, item_name, unit, item_code))'
+          'id, issue_no, issue_date, notes, created_at, issue_target, issue_reason, target_location, projects(id, project_code, project_name), issuer:profiles!issued_by(full_name), stock_issue_items(quantity, unit_cost, inventory_items(id, item_name, unit, item_code, avg_unit_cost))'
         )
         .order('created_at', { ascending: false })
         .limit(200)
@@ -102,7 +102,7 @@ export default function IssueList() {
       const adjPromise = supabase
         .from('stock_adjustments')
         .select(
-          'id, adj_no, qty_before, qty_after, unit_cost, reason, created_at, source_project_id, item_id, inventory_items(id, item_code, item_name, unit), projects:source_project_id(id, project_code, project_name)'
+          'id, adj_no, qty_before, qty_after, unit_cost, reason, created_at, source_project_id, item_id, inventory_items(id, item_code, item_name, unit, avg_unit_cost), projects:source_project_id(id, project_code, project_name)'
         )
         .order('created_at', { ascending: false })
         .limit(200)
@@ -117,7 +117,7 @@ export default function IssueList() {
         const fbIss = await supabase
           .from('stock_issues')
           .select(
-            'id, issue_no, issue_date, notes, created_at, projects(id, project_code, project_name), stock_issue_items(quantity, unit_cost, inventory_items(id, item_name, unit, item_code))'
+            'id, issue_no, issue_date, notes, created_at, projects(id, project_code, project_name), stock_issue_items(quantity, unit_cost, inventory_items(id, item_name, unit, item_code, avg_unit_cost))'
           )
           .order('created_at', { ascending: false })
           .limit(200)
@@ -130,7 +130,7 @@ export default function IssueList() {
         const fbAdj = await supabase
           .from('stock_adjustments')
           .select(
-            'id, adj_no, qty_before, qty_after, unit_cost, reason, created_at, source_project_id, item_id, inventory_items(id, item_code, item_name, unit)'
+            'id, adj_no, qty_before, qty_after, unit_cost, reason, created_at, source_project_id, item_id, inventory_items(id, item_code, item_name, unit, avg_unit_cost)'
           )
           .order('created_at', { ascending: false })
           .limit(200)
@@ -151,8 +151,10 @@ export default function IssueList() {
     // Map Issues
     for (const r of issues) {
       const itemsList = r.stock_issue_items || []
+      const resolveLineCost = (i) =>
+        Number(i.unit_cost) > 0 ? Number(i.unit_cost) : Number(i.inventory_items?.avg_unit_cost || 0)
       const totalAmount = itemsList.reduce(
-        (s, i) => s + Number(i.quantity || 0) * Number(i.unit_cost || 0),
+        (s, i) => s + Number(i.quantity || 0) * resolveLineCost(i),
         0
       )
 
@@ -178,15 +180,18 @@ export default function IssueList() {
         reason: r.issue_reason || '',
         notes: r.notes || '',
         userName: r.issuer?.full_name || 'เจ้าหน้าที่สโตร์',
-        items: itemsList.map((i) => ({
-          id: i.inventory_items?.id,
-          name: i.inventory_items?.item_name || 'พัสดุ',
-          code: i.inventory_items?.item_code || '',
-          unit: i.inventory_items?.unit || '',
-          quantity: toIntQty(i.quantity || 0),
-          unitCost: Number(i.unit_cost || 0),
-          totalCost: Number(i.quantity || 0) * Number(i.unit_cost || 0),
-        })),
+        items: itemsList.map((i) => {
+          const uc = resolveLineCost(i)
+          return {
+            id: i.inventory_items?.id,
+            name: i.inventory_items?.item_name || 'พัสดุ',
+            code: i.inventory_items?.item_code || '',
+            unit: i.inventory_items?.unit || '',
+            quantity: toIntQty(i.quantity || 0),
+            unitCost: uc,
+            totalCost: Number(i.quantity || 0) * uc,
+          }
+        }),
         totalAmount,
       })
     }
@@ -195,7 +200,8 @@ export default function IssueList() {
     for (const a of adjustments) {
       const isReturn = Number(a.qty_after) > Number(a.qty_before) || (a.reason && a.reason.includes('คืนของ'))
       const diffQty = Math.abs(Number(a.qty_after || 0) - Number(a.qty_before || 0))
-      const unitCost = Number(a.unit_cost || 0)
+      const unitCost =
+        Number(a.unit_cost) > 0 ? Number(a.unit_cost) : Number(a.inventory_items?.avg_unit_cost || 0)
       const totalAmount = diffQty * unitCost
 
       // Detect origin from reason string or project

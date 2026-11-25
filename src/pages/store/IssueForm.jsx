@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useLocation, Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
+import { useAuth } from '../../context/AuthContext'
 import { baht } from '../../lib/projects'
 import { formatIntQty, toIntQty } from '../../lib/store'
+import { ensureStockIssueAccounting } from '../../lib/storeAccounting'
 import { FieldError, fieldErrorClass } from '../../components/FieldError'
 import SearchableProjectSelect from '../../components/SearchableProjectSelect'
 import SearchableItemSelect from '../../components/SearchableItemSelect'
@@ -48,6 +50,7 @@ const ISSUE_REASONS = [
 export default function IssueForm() {
   const navigate = useNavigate()
   const location = useLocation()
+  const { profile } = useAuth()
   const [projects, setProjects] = useState([])
   const [items, setItems] = useState([])
   const [lines, setLines] = useState([{ ...EMPTY_LINE }])
@@ -68,6 +71,7 @@ export default function IssueForm() {
   useEffect(() => {
     const queryParams = new URLSearchParams(location.search)
     const initialItemId = queryParams.get('item_id')
+    const initialProjectId = queryParams.get('project') || queryParams.get('project_id')
 
     Promise.all([
       supabase
@@ -81,9 +85,15 @@ export default function IssueForm() {
         .gt('qty_on_hand', 0)
         .order('item_name'),
     ]).then(([pRes, iRes]) => {
-      setProjects(pRes.data ?? [])
+      const fetchedProjects = pRes.data ?? []
+      setProjects(fetchedProjects)
       const fetchedItems = iRes.data ?? []
       setItems(fetchedItems)
+
+      if (initialProjectId && fetchedProjects.some((pr) => pr.id === initialProjectId)) {
+        setTargetType('project')
+        setProjectId(initialProjectId)
+      }
 
       if (initialItemId && fetchedItems.some((it) => it.id === initialItemId)) {
         setLines([{ item_id: initialItemId, quantity: '1' }])
@@ -157,7 +167,7 @@ export default function IssueForm() {
     const formattedNotes = `[ปลายทาง: ${targetSummary} | เหตุผล: ${issueReason}] ${notes.trim()}`.trim()
 
     // เรียก confirm_stock_issue
-    const { error: rpcErr } = await supabase.rpc('confirm_stock_issue', {
+    const { data: rpcIssueId, error: rpcErr } = await supabase.rpc('confirm_stock_issue', {
       p_project_id: targetType === 'project' ? projectId : null,
       p_items: payload,
       p_notes: formattedNotes,
@@ -166,8 +176,9 @@ export default function IssueForm() {
       p_target_location: targetLocation.trim() || null,
     })
 
+    let createdIssueId = rpcIssueId || null
     if (rpcErr) {
-      const { error: fallbackErr } = await supabase.rpc('confirm_stock_issue', {
+      const { data: fbIssueId, error: fallbackErr } = await supabase.rpc('confirm_stock_issue', {
         p_project_id: targetType === 'project' ? projectId : null,
         p_items: payload,
         p_notes: formattedNotes,
@@ -178,7 +189,17 @@ export default function IssueForm() {
         setError(fallbackErr.message || rpcErr.message)
         return
       }
+      createdIssueId = fbIssueId || null
     }
+
+    await ensureStockIssueAccounting({
+      issueId: createdIssueId,
+      projectId: targetType === 'project' ? projectId : null,
+      issueTarget: targetType,
+      lines: payload,
+      itemsMap: byId,
+      userId: profile?.id || null,
+    }).catch((accErr) => console.warn('ensureStockIssueAccounting notice:', accErr))
 
     setBusy(false)
     navigate('/store/issues')

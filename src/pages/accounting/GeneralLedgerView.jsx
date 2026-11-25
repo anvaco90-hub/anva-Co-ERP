@@ -134,6 +134,8 @@ export default function GeneralLedgerView() {
               <option value="ALL">ทั้งหมด (All)</option>
               <option value="INV">INV - ใบแจ้งหนี้/ขาย</option>
               <option value="RI">RI - ใบรับของเข้าคลัง</option>
+              <option value="ISS">ISS - เบิกวัสดุเข้าหน้างาน/โครงการ</option>
+              <option value="ADJ">ADJ - คืนวัสดุ/ปรับปรุงสต็อก</option>
               <option value="EXP">EXP - ค่าใช้จ่าย</option>
               <option value="RC">RC - ใบเสร็จรับเงิน</option>
               <option value="PAY">PAY - ใบสำคัญจ่าย</option>

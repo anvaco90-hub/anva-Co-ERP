@@ -162,7 +162,7 @@ export default function ProjectDetail() {
           safeListQuery(
             supabase
               .from("stock_issues")
-              .select("id, issue_no, issue_date, notes, created_at, stock_issue_items(quantity, unit_cost, inventory_items(id, item_code, item_name, unit))")
+              .select("id, issue_no, issue_date, notes, created_at, stock_issue_items(quantity, unit_cost, inventory_items(id, item_code, item_name, unit, avg_unit_cost))")
               .eq("project_id", id)
               .order("created_at", { ascending: false }),
             "stock_issues"
@@ -170,7 +170,7 @@ export default function ProjectDetail() {
           safeListQuery(
             supabase
               .from("stock_adjustments")
-              .select("id, adj_no, qty_before, qty_after, unit_cost, reason, created_at, source_project_id, inventory_items(id, item_code, item_name, unit)")
+              .select("id, adj_no, qty_before, qty_after, unit_cost, reason, created_at, source_project_id, inventory_items(id, item_code, item_name, unit, avg_unit_cost)")
               .eq("source_project_id", id)
               .order("created_at", { ascending: false }),
             "stock_adjustments"
@@ -261,6 +261,7 @@ export default function ProjectDetail() {
     poTotalSpent,
     expTotalSpent,
     netStoreCost,
+    netStoreDelta,
     storeIssuedTotal,
     storeReturnedTotal,
     totalActualSpent,
@@ -698,7 +699,7 @@ export default function ProjectDetail() {
             <span className="font-bold text-amber-800">{budgetUsagePct}%</span>
           </div>
           <div className="text-[10px] text-steel-500 mt-1">
-            PO {baht(poTotalSpent)} · EXP {baht(expTotalSpent)} · คลัง {baht(netStoreCost)}
+            PO {baht(poTotalSpent)} · EXP {baht(expTotalSpent)} · คลัง {netStoreDelta < 0 ? `-${baht(Math.abs(netStoreDelta))}` : baht(netStoreCost)}
           </div>
           <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-amber-100">
             <div
@@ -1422,22 +1423,28 @@ export default function ProjectDetail() {
               <div>
                 <h3 className="font-bold text-sm text-steel-900">สโตร์: เบิก-คืนพัสดุเข้าหน้างาน</h3>
                 <p className="text-[11px] text-steel-500">
-                  เบิก {baht(storeIssuedTotal)} บ. · คืนคลัง {baht(storeReturnedTotal)} บ. · สุทธิ {baht(netStoreCost)} บ.
+                  เบิก {baht(storeIssuedTotal)} บ. · คืนคลัง {baht(storeReturnedTotal)} บ. · สุทธิ {netStoreDelta < 0 ? `-${baht(Math.abs(netStoreDelta))}` : baht(netStoreCost)} บ.
                 </p>
               </div>
             </div>
-            <Link to="/store/issues" className="text-xs font-bold text-emerald-700 hover:underline flex items-center gap-1">
-              <span>ไปที่คลังพัสดุ</span>
-              <ArrowRight className="h-3 w-3" />
-            </Link>
+            <div className="flex items-center gap-2 text-xs font-bold flex-wrap">
+              <Link to={`/store/issues/new?project=${id}`} className="text-amber-700 hover:underline">+ เบิกพัสดุ</Link>
+              <span className="text-steel-300">|</span>
+              <Link to={`/store/adjust?project=${id}&tab=return_stock`} className="text-emerald-700 hover:underline">↩️ คืนคลัง</Link>
+              <span className="text-steel-300">|</span>
+              <Link to="/store/issues" className="text-steel-700 hover:underline flex items-center gap-1">
+                <span>ประวัติ</span>
+                <ArrowRight className="h-3 w-3" />
+              </Link>
+            </div>
           </div>
 
           <div className="mt-3 space-y-2.5">
             {stockIssues.map((iss) => {
-              const issTotal = (iss.stock_issue_items || []).reduce(
-                (s, li) => s + Number(li.quantity || 0) * Number(li.unit_cost || 0),
-                0
-              );
+              const issTotal = (iss.stock_issue_items || []).reduce((s, li) => {
+                const uc = Number(li.unit_cost) > 0 ? Number(li.unit_cost) : Number(li.inventory_items?.avg_unit_cost || 0);
+                return s + Number(li.quantity || 0) * uc;
+              }, 0);
               return (
                 <div key={iss.id} className="rounded-xl border border-steel-100 p-3 flex items-center justify-between">
                   <div className="min-w-0 pr-2">
@@ -1461,7 +1468,8 @@ export default function ProjectDetail() {
               .filter((adj) => Number(adj.qty_after || 0) > Number(adj.qty_before || 0))
               .map((ret) => {
                 const qtyReturned = Number(ret.qty_after || 0) - Number(ret.qty_before || 0);
-                const retValue = qtyReturned * Number(ret.unit_cost || 0);
+                const retUnitCost = Number(ret.unit_cost) > 0 ? Number(ret.unit_cost) : Number(ret.inventory_items?.avg_unit_cost || 0);
+                const retValue = qtyReturned * retUnitCost;
                 return (
                   <div key={ret.id} className="rounded-xl border border-emerald-100 bg-emerald-50/40 p-3 flex items-center justify-between">
                     <div className="min-w-0 pr-2">

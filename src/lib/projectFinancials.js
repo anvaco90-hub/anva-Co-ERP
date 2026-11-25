@@ -152,7 +152,11 @@ export function calculateStoreMaterialNetCost(stockIssues = [], stockAdjustments
   for (const iss of stockIssues || []) {
     if (!iss || isCancelledStatus(iss.status)) continue
     for (const line of iss.stock_issue_items || []) {
-      issuedTotal += Number(line?.quantity || 0) * Number(line?.unit_cost || 0)
+      const unitCost =
+        Number(line?.unit_cost) > 0
+          ? Number(line.unit_cost)
+          : Number(line?.inventory_items?.avg_unit_cost || 0)
+      issuedTotal += (Number(line?.quantity) || 0) * unitCost
     }
   }
 
@@ -161,14 +165,21 @@ export function calculateStoreMaterialNetCost(stockIssues = [], stockAdjustments
     if (!adj) continue
     const diff = Number(adj.qty_after || 0) - Number(adj.qty_before || 0)
     if (diff > 0) {
-      returnedTotal += diff * Number(adj.unit_cost || 0)
+      const unitCost =
+        Number(adj?.unit_cost) > 0
+          ? Number(adj.unit_cost)
+          : Number(adj?.inventory_items?.avg_unit_cost || 0)
+      returnedTotal += diff * unitCost
     }
   }
+
+  const netStoreDelta = round2(issuedTotal - returnedTotal)
 
   return {
     issuedTotal: round2(issuedTotal),
     returnedTotal: round2(returnedTotal),
-    netStoreCost: Math.max(0, round2(issuedTotal - returnedTotal)),
+    netStoreDelta,
+    netStoreCost: Math.max(0, netStoreDelta),
   }
 }
 
@@ -214,7 +225,10 @@ export function computeProjectFinancialSummary({
   const itemReportedSpent = round2(
     (budgetItems || []).reduce((sum, item) => sum + Number(item?.actual_spent || 0), 0)
   )
-  const liveDocumentsSpent = round2(poTotalSpent + expTotalSpent + storeMetrics.netStoreCost)
+  const liveDocumentsSpent = Math.max(
+    0,
+    round2(poTotalSpent + expTotalSpent + storeMetrics.netStoreDelta)
+  )
   const totalActualSpent = Math.max(itemReportedSpent, liveDocumentsSpent)
 
   const contractInfo = resolveProjectContractInfo(project, quotations, boqs)
@@ -282,9 +296,10 @@ export function computeProjectFinancialSummary({
     catMap[cat].itemsList.push(item)
   }
 
-  // Attribute real POs & Net Store Material Cost into Material/Equipment category
-  catMap[BUDGET_CATEGORIES[0]].liveDocSpent = round2(
-    catMap[BUDGET_CATEGORIES[0]].liveDocSpent + poTotalSpent + storeMetrics.netStoreCost
+  // Attribute real POs & Net Store Material Cost (including return credit) into Material/Equipment category
+  catMap[BUDGET_CATEGORIES[0]].liveDocSpent = Math.max(
+    0,
+    round2(catMap[BUDGET_CATEGORIES[0]].liveDocSpent + poTotalSpent + storeMetrics.netStoreDelta)
   )
 
   // Attribute each EXP to its accounting cost category
@@ -313,6 +328,7 @@ export function computeProjectFinancialSummary({
     expTotalSpent,
     storeIssuedTotal: storeMetrics.issuedTotal,
     storeReturnedTotal: storeMetrics.returnedTotal,
+    netStoreDelta: storeMetrics.netStoreDelta,
     netStoreCost: storeMetrics.netStoreCost,
     liveDocumentsSpent,
     totalActualSpent,
