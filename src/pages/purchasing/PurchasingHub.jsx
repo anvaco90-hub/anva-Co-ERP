@@ -1547,21 +1547,31 @@ export default function PurchasingHub() {
                               </td>
                             )}
 
-                            {/* 6. สถานะวงจร (รับของ & จ่ายเงิน) (จัดกึ่งกลาง) */}
+                            {/* 6. สถานะวงจร (รับของ & จ่ายเงิน + ขั้นตอน 1-5) (จัดกึ่งกลาง) */}
                             {isPoColVisible('status') && (
                               <td className="py-3 px-3 align-middle text-center whitespace-nowrap border-r border-slate-200/60 dark:border-slate-800/60">
                                 {(() => {
+                                  const poFlow = computeProcurementFlow({ mode: 'po', po: r })
                                   if (r.status === 'cancelled') {
                                     return <StatusBadge status="cancelled" label="ยกเลิกคำสั่งซื้อ" />
                                   }
                                   if (r.status === 'received' && isPaid) {
-                                    return <StatusBadge status="success" label="รับครบ & จ่ายแล้ว" />
+                                    return (
+                                      <div className="flex flex-col items-center gap-0.5">
+                                        <StatusBadge status="success" label="รับครบ & จ่ายแล้ว" />
+                                        <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400">
+                                          {poFlow.currentStepLabel}
+                                        </span>
+                                      </div>
+                                    )
                                   }
                                   if (r.status === 'received') {
                                     return (
                                       <div className="flex flex-col items-center gap-1">
-                                        <StatusBadge status="received" label="รับของเข้าคลังแล้ว" />
-                                        <StatusBadge status="warning" label="ยังไม่จ่าย (รอจ่าย)" />
+                                        <StatusBadge status="warning" label="รับครบ · รอจ่ายเงิน" />
+                                        <span className="text-[10px] font-bold text-amber-800 dark:text-amber-300">
+                                          {poFlow.currentStepLabel}
+                                        </span>
                                       </div>
                                     )
                                   }
@@ -1569,8 +1579,8 @@ export default function PurchasingHub() {
                                     return (
                                       <div className="flex flex-col items-center gap-0.5">
                                         <StatusBadge status="partial" label="รับบางส่วน" />
-                                        <span className="text-[10px] text-amber-700 dark:text-amber-400 font-semibold">
-                                          {isPaid ? 'จ่ายเงินแล้ว' : 'รอจ่ายเงิน'}
+                                        <span className="text-[10px] text-amber-700 dark:text-amber-400 font-bold">
+                                          {poFlow.currentStepLabel}
                                         </span>
                                       </div>
                                     )
@@ -1578,8 +1588,8 @@ export default function PurchasingHub() {
                                   return (
                                     <div className="flex flex-col items-center gap-0.5">
                                       <StatusBadge status="open" label="รอรับของ" />
-                                      <span className={`text-[10px] font-semibold ${isPaid ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400'}`}>
-                                        {isPaid ? 'จ่ายล่วงหน้าแล้ว' : 'รอรับของก่อนจ่าย'}
+                                      <span className={`text-[10px] font-bold ${isPaid ? 'text-emerald-700 dark:text-emerald-400' : 'text-sky-700 dark:text-sky-400'}`}>
+                                        {poFlow.currentStepLabel}
                                       </span>
                                     </div>
                                   )
@@ -1780,12 +1790,20 @@ export default function PurchasingHub() {
                               </td>
                             )}
 
-                            {/* 4. สถานะ PR (จัดกึ่งกลาง บน-ล่าง ซ้าย-ขวา) */}
-                            {isPrColVisible('status') && (
-                              <td className="py-3 px-3 align-middle text-center whitespace-nowrap border-r border-slate-200/60 dark:border-slate-800/60">
-                                <StatusBadge status={r.status} />
-                              </td>
-                            )}
+                            {/* 4. สถานะ PR + ขั้นตอน Workflow (จัดกึ่งกลาง บน-ล่าง ซ้าย-ขวา) */}
+                            {isPrColVisible('status') && (() => {
+                              const prFlow = computeProcurementFlow({ mode: 'pr', pr: r, linkedPos })
+                              return (
+                                <td className="py-3 px-3 align-middle text-center whitespace-nowrap border-r border-slate-200/60 dark:border-slate-800/60">
+                                  <div className="flex flex-col items-center gap-0.5">
+                                    <StatusBadge status={r.status} />
+                                    <span className={`text-[10px] font-bold ${prFlow.isComplete ? 'text-emerald-700 dark:text-emerald-400' : prFlow.isCancelled ? 'text-rose-600' : 'text-slate-500 dark:text-slate-400'}`}>
+                                      {prFlow.currentStepLabel}
+                                    </span>
+                                  </div>
+                                </td>
+                              )
+                            })()}
 
                             {/* 5. ใบสั่งซื้อที่เกี่ยวข้อง (PO Link) (จัดกึ่งกลาง บน-ล่าง ซ้าย-ขวา) */}
                             {isPrColVisible('linked_po') && (
@@ -2369,33 +2387,51 @@ export default function PurchasingHub() {
             </div>
           )}
 
-          {/* TAB 4: แผนภาพวงจรจัดซื้อ (Pipeline View) */}
+          {/* TAB 4: แผนภาพวงจรจัดซื้อ (Pipeline View 5 ขั้นตอน) */}
           {activeTab === 'pipeline' && (
             <div className="space-y-4">
-              {/* สรุป 4 กล่องกระบวนการจัดซื้อ */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div className="rounded-2xl border border-steel-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-xs">
-                  <div className="text-xs font-bold text-steel-500 dark:text-slate-400 uppercase tracking-wider">1. PR รอออก PO</div>
-                  <div className="mt-1 text-2xl font-black text-amber-900 dark:text-amber-400">{pendingPrs.length} <span className="text-xs font-normal text-amber-700 dark:text-amber-300">ใบ</span></div>
-                  <div className="mt-1 text-[11px] text-amber-600 dark:text-amber-400">คำขอจัดซื้อจากไซต์งาน</div>
+              {/* สรุป 5 กล่องกระบวนการจัดซื้อ (ตรงตาม Flow 5 ขั้นตอน) */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                <div
+                  onClick={() => changeTab('pr')}
+                  className="rounded-2xl border border-amber-200 dark:border-amber-900/50 bg-white dark:bg-slate-900 p-4 shadow-xs cursor-pointer hover:border-amber-400 transition"
+                >
+                  <div className="text-[11px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider">1. PR รอออก PO</div>
+                  <div className="mt-1 text-2xl font-black text-amber-900 dark:text-amber-300">{pendingPrs.length} <span className="text-xs font-normal">ใบ</span></div>
+                  <div className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">รอเปิดคำสั่งซื้อ</div>
                 </div>
 
-                <div className="rounded-2xl border border-steel-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-xs">
-                  <div className="text-xs font-bold text-steel-500 dark:text-slate-400 uppercase tracking-wider">2. PO รอรับของ</div>
-                  <div className="mt-1 text-2xl font-black text-blue-900 dark:text-sky-400">{openPos.length} <span className="text-xs font-normal text-blue-700 dark:text-sky-300">ใบ</span></div>
-                  <div className="mt-1 text-[11px] text-blue-600 dark:text-sky-400">สั่งของแล้ว รอนำส่ง</div>
+                <div
+                  onClick={() => changeTab('po')}
+                  className="rounded-2xl border border-sky-200 dark:border-sky-900/50 bg-white dark:bg-slate-900 p-4 shadow-xs cursor-pointer hover:border-sky-400 transition"
+                >
+                  <div className="text-[11px] font-bold text-sky-700 dark:text-sky-400 uppercase tracking-wider">2. ออก PO · รอรับของ</div>
+                  <div className="mt-1 text-2xl font-black text-sky-900 dark:text-sky-300">{openPos.length} <span className="text-xs font-normal">ใบ</span></div>
+                  <div className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">สั่งซื้อแล้ว รอจัดส่ง</div>
                 </div>
 
-                <div className="rounded-2xl border border-steel-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-xs">
-                  <div className="text-xs font-bold text-steel-500 dark:text-slate-400 uppercase tracking-wider">3. รับบางส่วน</div>
-                  <div className="mt-1 text-2xl font-black text-purple-900 dark:text-purple-400">{partialPos.length} <span className="text-xs font-normal text-purple-700 dark:text-purple-300">ใบ</span></div>
-                  <div className="mt-1 text-[11px] text-purple-600 dark:text-purple-400">ทยอยเข้าสโตร์</div>
+                <div
+                  onClick={() => changeTab('receipts')}
+                  className="rounded-2xl border border-purple-200 dark:border-purple-900/50 bg-white dark:bg-slate-900 p-4 shadow-xs cursor-pointer hover:border-purple-400 transition"
+                >
+                  <div className="text-[11px] font-bold text-purple-700 dark:text-purple-400 uppercase tracking-wider">3. รับบางส่วน</div>
+                  <div className="mt-1 text-2xl font-black text-purple-900 dark:text-purple-300">{partialPos.length} <span className="text-xs font-normal">ใบ</span></div>
+                  <div className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">กำลังทยอยเข้าสโตร์</div>
                 </div>
 
-                <div className="rounded-2xl border border-steel-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-xs">
-                  <div className="text-xs font-bold text-steel-500 dark:text-slate-400 uppercase tracking-wider">4. ยอดสั่งซื้อสะสม</div>
-                  <div className="mt-1 text-xl font-black text-ink dark:text-slate-100">{baht(totalSpend)}</div>
-                  <div className="mt-1 text-[11px] text-steel-500 dark:text-slate-400">รวม {pos.length} ใบสั่งซื้อ</div>
+                <div
+                  onClick={() => changeTab('po')}
+                  className="rounded-2xl border border-orange-200 dark:border-orange-900/50 bg-white dark:bg-slate-900 p-4 shadow-xs cursor-pointer hover:border-orange-400 transition"
+                >
+                  <div className="text-[11px] font-bold text-orange-700 dark:text-orange-400 uppercase tracking-wider">4. รับครบ · รอจ่ายเงิน</div>
+                  <div className="mt-1 text-2xl font-black text-orange-900 dark:text-orange-300">{receivedUnpaidPos.length} <span className="text-xs font-normal">ใบ</span></div>
+                  <div className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">พร้อมจ่ายชำระเงิน</div>
+                </div>
+
+                <div className="rounded-2xl border border-emerald-200 dark:border-emerald-900/50 bg-emerald-50/40 dark:bg-emerald-950/20 p-4 shadow-xs">
+                  <div className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">5. ปิดวงจรสมบูรณ์</div>
+                  <div className="mt-1 text-2xl font-black text-emerald-900 dark:text-emerald-300">{fullyClosedPos.length} <span className="text-xs font-normal">ใบ</span></div>
+                  <div className="mt-1 text-[11px] text-emerald-700 dark:text-emerald-400 font-mono">ยอดรวม ฿{baht(totalSpend)}</div>
                 </div>
               </div>
 
@@ -2404,10 +2440,11 @@ export default function PurchasingHub() {
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-steel-100 dark:border-slate-800 pb-3">
                   <div>
                     <h3 className="text-sm font-black text-ink dark:text-slate-100 uppercase tracking-wider flex items-center gap-2">
-                      <span>แผนผังการผูกโยงเอกสาร (PR  PO Linkage Flow)</span>
+                      <Workflow className="h-4 w-4 text-sky-600" />
+                      <span>ผังลำดับขั้นตอนการจัดซื้อ (PR → PO → GR → PAY Pipeline Flow)</span>
                     </h3>
                     <p className="text-xs text-steel-500 dark:text-slate-400 mt-0.5">
-                      แสดงความเชื่อมโยงของเอกสารวงจรจัดซื้อ ตั้งแต่ใบขอซื้อ (PR) ไปจนถึงใบสั่งซื้อ (PO) และสถานะการรับของ/จ่ายเงิน
+                      แสดงสถานะล่าสุดของเอกสารจัดซื้อทุกใบ (ทั้งจาก PR และเปิด PO ตรง) ว่ากำลังอยู่ในขั้นตอนใดของกระบวนการ
                     </p>
                   </div>
 
@@ -2447,82 +2484,121 @@ export default function PurchasingHub() {
                         <p className="font-semibold text-xs">ไม่พบข้อมูลวงจรเอกสารตามเงื่อนไขหรือช่วงวันที่ที่ค้นหา</p>
                       </div>
                     ) : (
-                      paginatedPipeline.map((r) => {
-                        const linkedPos = poByPrId[r.id] || []
-                        const linkedTotal = linkedPos.reduce((s, p) => s + Number(p.total_amount || 0), 0)
+                      paginatedPipeline.map((entry) => {
+                        const isDirectPo = entry.type === 'direct_po'
+                        const r = entry.pr
+                        const linkedPos = entry.linkedPos || []
+                        const primaryPo = linkedPos[0] || null
+                        const projObj = r?.projects || primaryPo?.projects
+                        const customProj = r?.custom_project_name || primaryPo?.custom_project_name
+                        const custName = r?.customer_name || primaryPo?.customer_name
+                        const flow = isDirectPo
+                          ? computeProcurementFlow({ mode: 'po', po: primaryPo })
+                          : computeProcurementFlow({ mode: 'pr', pr: r, linkedPos })
 
                         return (
                           <div
-                            key={r.id}
+                            key={entry.id}
                             className="rounded-2xl border border-steel-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-4 sm:p-5 shadow-xs hover:shadow-md transition-shadow space-y-3 relative"
                           >
-                            {/* Card Top: โครงการ + วันที่ขอ + สถานะ PR */}
+                            {/* Card Top: โครงการ + วันที่ขอ + ป้ายขั้นตอนปัจจุบัน */}
                             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-steel-100 dark:border-slate-800/80 pb-2.5">
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2 flex-wrap">
                                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-xs font-bold bg-steel-100 dark:bg-slate-800 text-steel-800 dark:text-slate-200 border border-steel-200 dark:border-slate-700">
-                                  <span></span>
-                                  <span>{r.projects ? `${r.projects.project_code} · ${r.projects.project_name}` : 'ของกลางบริษัท / สต็อกส่วนกลาง'}</span>
+                                  <span>{projObj ? `${projObj.project_code} · ${projObj.project_name}` : customProj || 'ของกลางบริษัท / สต็อกส่วนกลาง'}</span>
                                 </span>
-                                {r.customer_name && (
+                                {custName && (
                                   <span className="text-xs text-steel-500 dark:text-slate-400">
-                                    ลูกค้า: {r.customer_name}
+                                    ลูกค้า: {custName}
                                   </span>
                                 )}
                               </div>
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2 flex-wrap">
                                 <span className="text-xs text-steel-500 dark:text-slate-400 font-mono">
-                                  ขอซื้อเมื่อ: {formatThaiDate(r.request_date)}
+                                  {isDirectPo ? `สั่งซื้อ: ${formatThaiDate(primaryPo?.order_date)}` : `ขอซื้อ: ${formatThaiDate(r?.request_date)}`}
                                 </span>
-                                <StatusBadge status={r.status} />
+                                <span
+                                  className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${
+                                    flow.isCancelled
+                                      ? 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800'
+                                      : flow.isComplete
+                                      ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+                                      : 'bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800'
+                                  }`}
+                                >
+                                  {flow.statusBadgeText}
+                                </span>
                               </div>
                             </div>
 
                             {/* Card Flow: PR [ต้นทาง] ── PO [ปลายทาง] */}
                             <div className="grid grid-cols-1 md:grid-cols-11 gap-3 items-center">
-                              {/* ต้นทาง: ใบขอซื้อ (PR Box) */}
-                              <div className="md:col-span-5 rounded-xl border border-sky-200 dark:border-sky-900/60 bg-sky-50/50 dark:bg-sky-950/20 p-3.5 space-y-2">
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center gap-2">
-                                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-sky-100 dark:bg-sky-900/60 text-sky-700 dark:text-sky-300 font-black text-xs">
-                                      PR
-                                    </span>
+                              {/* ต้นทาง: ใบขอซื้อ (PR Box) หรือ Direct PO Badge */}
+                              {isDirectPo ? (
+                                <div className="md:col-span-5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-800/50 p-3.5 space-y-1.5">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                      <span className="flex h-7 px-2 items-center justify-center rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-black text-[11px]">
+                                        Direct PO
+                                      </span>
+                                      <span className="font-bold text-xs text-slate-700 dark:text-slate-200">
+                                        สั่งซื้อตรง (ไม่ผ่านใบขอซื้อ PR)
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                                    {primaryPo?.quotation_no
+                                      ? `อ้างอิงใบเสนอราคา: ${primaryPo.quotation_no}`
+                                      : 'เปิดคำสั่งซื้อตรงเข้าฝ่ายจัดซื้อ'}
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="md:col-span-5 rounded-xl border border-sky-200 dark:border-sky-900/60 bg-sky-50/50 dark:bg-sky-950/20 p-3.5 space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                      <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-sky-100 dark:bg-sky-900/60 text-sky-700 dark:text-sky-300 font-black text-xs">
+                                        PR
+                                      </span>
+                                      <Link
+                                        to={`/purchasing/pr/${r.id}`}
+                                        className="font-mono font-bold text-sm text-sky-800 dark:text-sky-400 hover:underline"
+                                      >
+                                        {r.pr_no}
+                                      </Link>
+                                    </div>
                                     <Link
                                       to={`/purchasing/pr/${r.id}`}
-                                      className="font-mono font-bold text-sm text-sky-800 dark:text-sky-400 hover:underline"
+                                      className="inline-flex items-center gap-1 text-[11px] font-semibold text-sky-700 dark:text-sky-400 hover:underline"
                                     >
-                                      {r.pr_no}
+                                      <span>เปิดดู PR</span>
+                                      <ExternalLink className="h-3 w-3" />
                                     </Link>
                                   </div>
-                                  <Link
-                                    to={`/purchasing/pr/${r.id}`}
-                                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-sky-700 dark:text-sky-400 hover:underline"
-                                  >
-                                    <span>เปิดดู PR</span>
-                                    <ExternalLink className="h-3 w-3" />
-                                  </Link>
-                                </div>
 
-                                <div className="text-xs text-steel-600 dark:text-slate-300 space-y-1">
-                                  <div className="flex items-center justify-between text-[11px]">
-                                    <span className="text-steel-400 dark:text-slate-500">ร้านค้าแนะนำ:</span>
-                                    <span className="font-semibold text-steel-800 dark:text-slate-200">{r.suggested_vendor || '-'}</span>
-                                  </div>
-                                  {r.notes && (
-                                    <div className="text-[11px] text-steel-500 dark:text-slate-400 line-clamp-1 italic">
-                                      "{r.notes}"
+                                  <div className="text-xs text-steel-600 dark:text-slate-300 space-y-1">
+                                    <div className="flex items-center justify-between text-[11px]">
+                                      <span className="text-steel-400 dark:text-slate-500">ร้านค้าแนะนำ:</span>
+                                      <span className="font-semibold text-steel-800 dark:text-slate-200">{r.suggested_vendor || '-'}</span>
                                     </div>
-                                  )}
+                                    {r.notes && (
+                                      <div className="text-[11px] text-steel-500 dark:text-slate-400 line-clamp-1 italic">
+                                        "{r.notes}"
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
-                              </div>
+                              )}
 
                               {/* ตัวเชื่อมโยง (Linkage Arrow) */}
                               <div className="md:col-span-1 flex flex-col items-center justify-center py-1">
                                 <div className="hidden md:flex flex-col items-center text-steel-400 dark:text-slate-500">
-                                  <span className="text-[10px] font-bold uppercase tracking-wider mb-0.5">ออก PO</span>
+                                  <span className="text-[10px] font-bold uppercase tracking-wider mb-0.5">
+                                    {isDirectPo ? 'ตรง' : 'ออก PO'}
+                                  </span>
                                   <ArrowRight className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                                 </div>
                                 <div className="md:hidden flex items-center justify-center gap-1.5 text-xs text-emerald-600 font-bold py-1">
-                                  <span>↓ แปลงเป็นคำสั่งซื้อ (PO)</span>
+                                  <span>↓ คำสั่งซื้อ (PO)</span>
                                 </div>
                               </div>
 
@@ -2579,18 +2655,32 @@ export default function PurchasingHub() {
                                     <div className="text-xs text-steel-500 dark:text-slate-400 font-semibold">
                                       ⏳ รายการนี้ยังไม่ได้สร้างใบสั่งซื้อ (PO)
                                     </div>
-                                    {canCreate && (
+                                    {canCreate && r && (
                                       <Link
                                         to={`/purchasing/po/new?pr=${r.id}`}
                                         className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-steel-900 dark:bg-amber-500 hover:bg-steel-800 text-hivis dark:text-slate-950 font-bold text-xs shadow-xs transition"
                                       >
                                         <Plus className="h-3.5 w-3.5" />
-                                        <span> ออกใบสั่งซื้อจาก PR นี้</span>
+                                        <span>ออกใบสั่งซื้อจาก PR นี้</span>
                                       </Link>
                                     )}
                                   </div>
                                 )}
                               </div>
+                            </div>
+
+                            {/* แถบแสดง 5 ขั้นตอนปัจจุบันของรายการนี้ (1.PR -> 2.PO -> 3.รับของ -> 4.จ่าย -> 5.ปิดงาน) */}
+                            <div className="pt-2.5 border-t border-steel-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
+                              <CompactProcurementSteps flow={flow} />
+                              {primaryPo && (
+                                <Link
+                                  to={`/purchasing/po/${primaryPo.id}`}
+                                  className="text-[11px] font-bold text-sky-700 dark:text-sky-400 hover:underline flex items-center gap-1"
+                                >
+                                  <span>ดูความคืบหน้า &amp; จัดการต่อ</span>
+                                  <ExternalLink className="h-3 w-3" />
+                                </Link>
+                              )}
                             </div>
                           </div>
                         )
@@ -2598,17 +2688,17 @@ export default function PurchasingHub() {
                     )}
                   </div>
                 ) : (
-                  /* 2. มุมมองตารางรายงาน (Table View: จัดระเบียบตารางทางการ สลับสี มีเส้นตารางชัดเจน) */
+                  /* 2. มุมมองตารางรายงาน (Table View: จัดระเบียบตารางทางการ สลับสี ไม่มีแถบล้นเกินจอ) */
                   <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs">
-                    <table className="table-auto w-full text-left text-xs min-w-[850px] divide-y divide-slate-200 dark:divide-slate-800 border-collapse">
+                    <table className="table-auto w-full text-left text-xs divide-y divide-slate-200 dark:divide-slate-800 border-collapse">
                       <thead className="bg-slate-100/90 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 font-bold uppercase tracking-wider text-[11px] border-b-2 border-slate-300 dark:border-slate-700">
                         <tr>
-                          <th className="py-3.5 px-3.5 text-center w-40 border-r border-slate-200/70 dark:border-slate-700/60 whitespace-nowrap">ใบขอซื้อ (PR) / วันที่</th>
-                          <th className="py-3.5 px-3.5 min-w-[200px] border-r border-slate-200/70 dark:border-slate-700/60">โครงการ / ลูกค้า</th>
-                          <th className="py-3.5 px-3 text-center w-32 border-r border-slate-200/70 dark:border-slate-700/60 whitespace-nowrap">สถานะ PR</th>
-                          <th className="py-3.5 px-3.5 text-center min-w-[180px] border-r border-slate-200/70 dark:border-slate-700/60 whitespace-nowrap">ใบสั่งซื้อที่ออก (PO)</th>
-                          <th className="py-3.5 px-3.5 text-right w-36 border-r border-slate-200/70 dark:border-slate-700/60 whitespace-nowrap">ยอดรวม PO (บาท)</th>
-                          <th className="py-3.5 px-3.5 text-center w-36 whitespace-nowrap">การจัดการ</th>
+                          <th className="py-3 px-3 text-center w-36 border-r border-slate-200/70 dark:border-slate-700/60 whitespace-nowrap">PR / ต้นทาง</th>
+                          <th className="py-3 px-3 border-r border-slate-200/70 dark:border-slate-700/60">โครงการ / ลูกค้า</th>
+                          <th className="py-3 px-3 text-center border-r border-slate-200/70 dark:border-slate-700/60 whitespace-nowrap">ขั้นตอนปัจจุบัน (Flow)</th>
+                          <th className="py-3 px-3 text-center border-r border-slate-200/70 dark:border-slate-700/60 whitespace-nowrap">ใบสั่งซื้อ (PO)</th>
+                          <th className="py-3 px-3 text-right w-28 border-r border-slate-200/70 dark:border-slate-700/60 whitespace-nowrap">ยอดรวม (บาท)</th>
+                          <th className="py-3 px-3 text-center w-24 whitespace-nowrap">ดูข้อมูล</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-200 dark:divide-slate-800 bg-white dark:bg-slate-900">
@@ -2619,38 +2709,55 @@ export default function PurchasingHub() {
                             </td>
                           </tr>
                         ) : (
-                          paginatedPipeline.map((r, rowIdx) => {
-                            const linkedPos = poByPrId[r.id] || []
+                          paginatedPipeline.map((entry, rowIdx) => {
+                            const isDirectPo = entry.type === 'direct_po'
+                            const r = entry.pr
+                            const linkedPos = entry.linkedPos || []
+                            const primaryPo = linkedPos[0] || null
+                            const projObj = r?.projects || primaryPo?.projects
+                            const customProj = r?.custom_project_name || primaryPo?.custom_project_name
                             const linkedTotal = linkedPos.reduce((s, p) => s + Number(p.total_amount || 0), 0)
+                            const flow = isDirectPo
+                              ? computeProcurementFlow({ mode: 'po', po: primaryPo })
+                              : computeProcurementFlow({ mode: 'pr', pr: r, linkedPos })
+
                             return (
                               <tr
-                                key={r.id}
+                                key={entry.id}
                                 className={`transition-colors border-b border-slate-200 dark:border-slate-800 ${
                                   rowIdx % 2 === 0
                                     ? 'bg-white dark:bg-slate-900'
                                     : 'bg-slate-50/70 dark:bg-slate-800/40'
                                 } hover:!bg-amber-50/70 dark:hover:!bg-slate-750`}
                               >
-                                <td className="py-3 px-3.5 text-center align-middle whitespace-nowrap border-r border-slate-200/60 dark:border-slate-800/60">
-                                  <Link to={`/purchasing/pr/${r.id}`} className="font-bold text-sky-700 dark:text-sky-400 hover:underline font-mono inline-flex items-center justify-center gap-1">
-                                    <span>{r.pr_no}</span>
-                                  </Link>
-                                  <div className="text-[11px] text-steel-500 dark:text-slate-400 font-mono mt-0.5">
-                                    วันที่ขอ: {formatThaiDate(r.request_date)}
+                                <td className="py-3 px-3 text-center align-middle whitespace-nowrap border-r border-slate-200/60 dark:border-slate-800/60">
+                                  {isDirectPo ? (
+                                    <span className="inline-block px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold text-[10px]">
+                                      Direct PO
+                                    </span>
+                                  ) : (
+                                    <>
+                                      <Link to={`/purchasing/pr/${r.id}`} className="font-bold text-sky-700 dark:text-sky-400 hover:underline font-mono inline-flex items-center justify-center gap-1">
+                                        <span>{r.pr_no}</span>
+                                      </Link>
+                                      <div className="text-[11px] text-steel-500 dark:text-slate-400 font-mono mt-0.5">
+                                        {formatThaiDate(r.request_date)}
+                                      </div>
+                                    </>
+                                  )}
+                                </td>
+                                <td className="py-3 px-3 align-middle border-r border-slate-200/60 dark:border-slate-800/60">
+                                  <div className="font-bold text-steel-900 dark:text-slate-100 truncate max-w-[180px]" title={projObj?.project_code || customProj || 'ของกลาง'}>
+                                    {projObj?.project_code || customProj || 'ของกลาง'}
+                                  </div>
+                                  <div className="text-[11px] text-steel-500 dark:text-slate-400 truncate max-w-[180px]" title={projObj?.project_name || 'สต็อกส่วนกลางบริษัท'}>
+                                    {projObj?.project_name || 'สต็อกส่วนกลางบริษัท'}
                                   </div>
                                 </td>
-                                <td className="py-3 px-3.5 align-middle border-r border-slate-200/60 dark:border-slate-800/60">
-                                  <div className="font-bold text-steel-900 dark:text-slate-100 truncate max-w-[200px]" title={r.projects?.project_code || 'ของกลาง'}>
-                                    {r.projects?.project_code || 'ของกลาง'}
-                                  </div>
-                                  <div className="text-[11px] text-steel-500 dark:text-slate-400 truncate max-w-[200px]" title={r.projects?.project_name || 'สต็อกส่วนกลางบริษัท'}>
-                                    {r.projects?.project_name || 'สต็อกส่วนกลางบริษัท'}
-                                  </div>
+                                <td className="py-3 px-3 align-middle border-r border-slate-200/60 dark:border-slate-800/60">
+                                  <CompactProcurementSteps flow={flow} />
                                 </td>
-                                <td className="py-3 px-3.5 align-middle text-center whitespace-nowrap border-r border-slate-200/60 dark:border-slate-800/60">
-                                  <StatusBadge status={r.status} />
-                                </td>
-                                <td className="py-3 px-3.5 align-middle text-center border-r border-slate-200/60 dark:border-slate-800/60">
+                                <td className="py-3 px-3 align-middle text-center border-r border-slate-200/60 dark:border-slate-800/60">
                                   {linkedPos.length > 0 ? (
                                     <div className="flex flex-wrap items-center justify-center gap-1.5">
                                       {linkedPos.map((p) => (
@@ -2661,33 +2768,36 @@ export default function PurchasingHub() {
                                           title={`สั่งซื้อเมื่อ: ${formatThaiDate(p.order_date)}`}
                                         >
                                           <span>{p.po_no}</span>
-                                          <span className="text-[10px] font-normal text-emerald-700 dark:text-emerald-400">({formatThaiDate(p.order_date)})</span>
                                         </Link>
                                       ))}
                                     </div>
                                   ) : (
-                                    <span className="inline-flex items-center gap-1 text-steel-400 dark:text-slate-500 text-xs italic">
-                                      <span>⏳ ยังไม่ออก PO</span>
+                                    <span className="text-steel-400 dark:text-slate-500 text-xs italic">
+                                      ⏳ ยังไม่ออก PO
                                     </span>
                                   )}
                                 </td>
-                                <td className="py-3 px-3.5 align-middle text-right font-mono font-black text-slate-900 dark:text-slate-100 border-r border-slate-200/60 dark:border-slate-800/60 whitespace-nowrap tabular-nums">
-                                  {linkedTotal > 0 ? `฿${baht(linkedTotal)} บ.` : '-'}
+                                <td className="py-3 px-3 align-middle text-right font-mono font-black text-slate-900 dark:text-slate-100 border-r border-slate-200/60 dark:border-slate-800/60 whitespace-nowrap tabular-nums">
+                                  {linkedTotal > 0 ? `฿${baht(linkedTotal)}` : '-'}
                                 </td>
-                                <td className="py-3 px-3.5 align-middle text-center whitespace-nowrap">
+                                <td className="py-3 px-3 align-middle text-center whitespace-nowrap">
                                   <div className="flex items-center justify-center gap-1.5">
-                                    <Link
-                                      to={`/purchasing/pr/${r.id}`}
-                                      className="px-2 py-1 rounded-lg border border-steel-300 dark:border-slate-700 hover:bg-steel-50 dark:hover:bg-slate-800 text-xs font-semibold text-steel-700 dark:text-slate-200 transition"
-                                    >
-                                      ดู PR
-                                    </Link>
-                                    {linkedPos.length > 0 && (
+                                    {r && (
                                       <Link
-                                        to={`/purchasing/po/${linkedPos[0].id}`}
-                                        className="px-2 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-xs font-bold text-white transition shadow-2xs"
+                                        to={`/purchasing/pr/${r.id}`}
+                                        className="px-2 py-1 rounded-lg border border-steel-300 dark:border-slate-700 hover:bg-steel-50 dark:hover:bg-slate-800 text-xs font-semibold text-steel-700 dark:text-slate-200 transition"
+                                        title="ดูใบขอซื้อ (PR)"
                                       >
-                                        ดู PO
+                                        PR
+                                      </Link>
+                                    )}
+                                    {primaryPo && (
+                                      <Link
+                                        to={`/purchasing/po/${primaryPo.id}`}
+                                        className="px-2 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-xs font-bold text-white transition shadow-2xs"
+                                        title="ดูใบสั่งซื้อ (PO)"
+                                      >
+                                        PO
                                       </Link>
                                     )}
                                   </div>
