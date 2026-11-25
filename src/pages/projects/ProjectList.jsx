@@ -4,7 +4,7 @@ import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../context/AuthContext";
 import { baht, canEditProjects } from "../../lib/projects";
 import StatusBadge from "./StatusBadge";
-import { SIMULATED_PROJECTS } from "../../lib/dashboardSimulationData";
+import { resolveProjectContractInfo } from "../../lib/projectFinancials";
 import { Building2, Calendar, DollarSign, Plus, Search, ArrowRight, Layers } from "lucide-react";
 import Pagination from "../../components/Pagination";
 import TableSortFilter from "../../components/TableSortFilter";
@@ -44,36 +44,66 @@ export default function ProjectList() {
   ];
 
   useEffect(() => {
-    supabase
-      .from("projects")
-      .select("id, project_code, project_name, client_name, customer_name, contract_amount, budget_total, status, start_date, end_date, updated_at, created_at")
-      .order("created_at", { ascending: false })
-      .then(({ data, error }) => {
-        if (error || !data || data.length === 0) {
-          // Fallback to rich realistic simulated projects so evaluators see a full system
-          setProjects(
-            SIMULATED_PROJECTS.map((p) => ({
-              ...p,
-              client_name: p.client_name || p.customer_name,
-              budget_total: p.budget_total || p.contract_amount * 0.8,
-            }))
-          );
-          setIsDemo(true);
-        } else {
-          setProjects(data);
+    Promise.all([
+      supabase.from("projects").select("*").order("created_at", { ascending: false }),
+      supabase
+        .from("quotations")
+        .select("id, project_id, quotation_no, status, grand_total, total_amount")
+        .order("issue_date", { ascending: false }),
+      supabase
+        .from("boqs")
+        .select("id, project_id, boq_no, status, grand_total")
+        .order("created_at", { ascending: false }),
+    ])
+      .then(([pRes, qRes, bRes]) => {
+        if (pRes.error) {
+          console.error(pRes.error);
+          setError("ไม่สามารถโหลดข้อมูลโครงการได้");
+          setProjects([]);
           setIsDemo(false);
+          return;
         }
-        setLoading(false);
-      })
-      .catch(() => {
-        setProjects(
-          SIMULATED_PROJECTS.map((p) => ({
+        const rawProjects = pRes.data || [];
+        const quotes = qRes.error ? [] : qRes.data || [];
+        const boqsList = bRes.error ? [] : bRes.data || [];
+
+        const quotesByPrj = {};
+        quotes.forEach((qt) => {
+          if (!qt.project_id) return;
+          if (!quotesByPrj[qt.project_id]) quotesByPrj[qt.project_id] = [];
+          quotesByPrj[qt.project_id].push(qt);
+        });
+
+        const boqsByPrj = {};
+        boqsList.forEach((b) => {
+          if (!b.project_id) return;
+          if (!boqsByPrj[b.project_id]) boqsByPrj[b.project_id] = [];
+          boqsByPrj[b.project_id].push(b);
+        });
+
+        const enriched = rawProjects.map((p) => {
+          const contractInfo = resolveProjectContractInfo(
+            p,
+            quotesByPrj[p.id] || [],
+            boqsByPrj[p.id] || []
+          );
+          return {
             ...p,
-            client_name: p.client_name || p.customer_name,
-            budget_total: p.budget_total || p.contract_amount * 0.8,
-          }))
-        );
-        setIsDemo(true);
+            contract_amount: contractInfo.amount,
+            contract_source_label: contractInfo.sourceLabel,
+          };
+        });
+
+        setProjects(enriched);
+        setIsDemo(false);
+      })
+      .catch((err) => {
+        console.error(err);
+        setError("ไม่สามารถโหลดข้อมูลโครงการได้");
+        setProjects([]);
+        setIsDemo(false);
+      })
+      .finally(() => {
         setLoading(false);
       });
   }, []);
@@ -202,9 +232,9 @@ export default function ProjectList() {
           {paginatedProjects.map((p) => {
             const displayDate = p.updated_at || p.created_at;
             const contractAmt = Number(p.contract_amount || 0);
-            const budgetAmt = Number(p.budget_total || contractAmt * 0.8);
-            const grossMargin = contractAmt > 0 && budgetAmt > 0 ? contractAmt - budgetAmt : 0;
-            const grossMarginPct = contractAmt > 0 ? ((grossMargin / contractAmt) * 100).toFixed(1) : 0;
+            const budgetAmt = Number(p.budget_total || 0);
+            const grossMargin = contractAmt > 0 ? contractAmt - budgetAmt : 0;
+            const grossMarginPct = contractAmt > 0 ? ((grossMargin / contractAmt) * 100).toFixed(1) : "0.0";
 
             return (
               <div
@@ -233,7 +263,9 @@ export default function ProjectList() {
                   <div className="mt-3.5 grid grid-cols-2 gap-2 rounded-xl bg-slate-50 p-3 border border-steel-100 text-xs">
                     <div>
                       <div className="text-[11px] text-steel-500">มูลค่าสัญญา</div>
-                      <div className="font-bold font-mono text-steel-900 text-sm">{baht(contractAmt || budgetAmt)} บ.</div>
+                      <div className="font-bold font-mono text-steel-900 text-sm">
+                        {contractAmt > 0 ? `${baht(contractAmt)} บ.` : "-"}
+                      </div>
                     </div>
                     <div>
                       <div className="text-[11px] text-steel-500">งบประมาณควบคุม</div>

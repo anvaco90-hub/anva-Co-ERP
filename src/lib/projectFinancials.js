@@ -1,4 +1,4 @@
-import { BUDGET_CATEGORIES } from './projects'
+import { BUDGET_CATEGORIES } from './projects.js'
 
 const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100
 
