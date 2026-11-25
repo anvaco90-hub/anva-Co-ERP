@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
 import { PO_STATUS, canCreatePurchasing, canReceiveGoods } from '../../lib/purchasing'
@@ -11,6 +11,7 @@ import PODocumentModal from '../../components/reports/PODocumentModal'
 import EnvelopePrintModal from '../../components/reports/EnvelopePrintModal'
 import POShareModal from '../../components/purchasing/POShareModal'
 import PaymentActionModal from '../../components/PaymentActionModal'
+import ProcurementWorkflowStepper from '../../components/purchasing/ProcurementWorkflowStepper'
 import { PAYMENT_TYPES } from './POForm'
 import { getPoDueStatus, formatThaiDate } from '../../lib/poDueStatus'
 import {
@@ -29,6 +30,7 @@ import {
   List,
   FileText,
   Package,
+  PackageCheck,
   ArrowLeft,
   ExternalLink,
   Layers,
@@ -42,6 +44,15 @@ import {
   Copy,
   Mail,
   Share2,
+  ShoppingCart,
+  Trash2,
+  Calendar,
+  FolderGit2,
+  Store,
+  History,
+  Workflow,
+  Coins,
+  AlertTriangle,
 } from 'lucide-react'
 import { uploadQuotationFile, openFile } from '../../lib/files'
 import R2Image from '../../components/R2Image'
@@ -100,7 +111,10 @@ export function thaiBahtText(num) {
 export default function PODetail() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { profile } = useAuth()
+  const receiveSectionRef = useRef(null)
+  const tabsSectionRef = useRef(null)
 
   const [po, setPo] = useState(null)
   const [items, setItems] = useState([])
@@ -137,10 +151,25 @@ export default function PODetail() {
     }
   }
 
-  // มุมมองมาตรฐาน A4 Paper Sheet (รูปแบบกระดาษพิมพ์ขนาดมาตรฐาน)
-  const [viewStyle, setViewStyle] = useState('paper')
-  const [itemsLayout, setItemsLayout] = useState('cards') // 'cards' (Thai Watsadu style) | 'table'
+  // ค่าเริ่มต้นเป็น 'portal' เพื่อแสดง Executive Header + ผัง Workflow 5 ขั้นตอนทันที
+  const [viewStyle, setViewStyle] = useState(() => (searchParams.get('mode') === 'paper' ? 'paper' : 'portal'))
+  const [itemsLayout, setItemsLayout] = useState('table') // 'table' | 'cards'
   const [activeTab, setActiveTab] = useState('items') // 'items' | 'receiving' | 'payments' | 'lifecycle' | 'audit'
+
+  const scrollToReceive = () => {
+    if (viewStyle !== 'portal') setViewStyle('portal')
+    setTimeout(() => {
+      receiveSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }, 60)
+  }
+
+  const jumpToTab = (tabKey) => {
+    if (viewStyle !== 'portal') setViewStyle('portal')
+    setActiveTab(tabKey)
+    setTimeout(() => {
+      tabsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 60)
+  }
 
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -553,139 +582,293 @@ export default function PODetail() {
 
   const dueStatus = getPoDueStatus(po)
 
+  const vendorDisplayName = po.custom_vendor_name || po.vendors?.vendor_name || 'ผู้ขายหน้าร้าน'
+  const projectDisplayName = po.custom_project_name || (po.projects ? `[${po.projects.project_code}] ${po.projects.project_name}` : 'ของกลางบริษัท / คลังพัสดุ')
+
   return (
-    <div className="min-h-screen bg-[#F8FAFC] pb-20 pt-2 font-sans space-y-5">
-      <div className="max-w-6xl mx-auto px-4 space-y-4">
+    <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0B0F19] pb-20 pt-2 font-sans space-y-5">
+      <div className="max-w-6xl mx-auto px-4 space-y-5">
 
-        {/* 1. Modern Unified Action Bar (เรียบหรู ไม่ซ้ำซ้อน ไม่ตกบรรทัด) */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3 sm:p-4 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs">
-          {/* ซ้าย: Breadcrumb & เอกสาร */}
-          <div className="flex items-center gap-2.5">
-            <Link
-              to="/purchasing?tab=po"
-              className="inline-flex items-center gap-1 text-xs font-bold text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition"
-              title="กลับไปรายการใบสั่งซื้อ"
-            >
-              <ArrowLeft className="h-3.5 w-3.5" />
-              <span>รายการ PO</span>
-            </Link>
-            <span className="text-slate-300 dark:text-slate-700">/</span>
-            <span className="font-mono font-black text-sm text-slate-950 dark:text-white">{po.po_no}</span>
-            <StatusBadge status={po.status} />
-          </div>
+        {/* 0. แถบนำทางด้านบนและปุ่มสลับมุมมอง (Breadcrumb & View Mode Switcher) */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <Link
+            to="/purchasing?tab=po"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 px-3 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 shadow-2xs transition"
+            title="กลับไปรายการใบสั่งซื้อ"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            <span>กลับรายการใบสั่งซื้อ (PO)</span>
+          </Link>
 
-          {/* ขวา: ปุ่มหลัก (Primary Action) + พิมพ์ PDF + เมนูเพิ่มเติม (...) */}
-          <div className="flex flex-wrap items-center gap-2">
-            {/* Primary Action Button เด่น 1 อันตามสถานะ */}
-            {isPaidInFull ? (
-              <span className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-300 dark:border-emerald-700 px-3 py-1.5 text-xs font-bold text-emerald-800 dark:text-emerald-300">
-                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
-                <span>ชำระครบแล้ว ฿{baht(grandTotalVal)} บ.</span>
-              </span>
-            ) : po.status !== 'cancelled' ? (
-              <button
-                type="button"
-                onClick={() => setShowPaymentModal(true)}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm shadow-emerald-600/30 transition cursor-pointer active:scale-95"
-                title={`คลิกเพื่อจ่ายชำระเงินตามยอดสั่งซื้อ ฿${baht(grandTotalVal)} บ.`}
-              >
-                <span>จ่ายชำระเงิน · ฿{baht(grandTotalVal)} บ.</span>
-              </button>
-            ) : null}
-
-            {/* Print PDF Button */}
+          <div className="flex items-center bg-slate-200/70 dark:bg-slate-800 p-0.5 rounded-xl border border-slate-300/70 dark:border-slate-700 text-xs">
             <button
               type="button"
-              onClick={() => window.print()}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 text-white px-3.5 py-1.5 text-xs font-bold shadow-2xs transition cursor-pointer"
+              onClick={() => setViewStyle('portal')}
+              className={`px-3 py-1 rounded-lg font-bold transition cursor-pointer ${
+                viewStyle === 'portal'
+                  ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-2xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
             >
-              <Printer className="h-3.5 w-3.5" />
-              <span>พิมพ์ PDF (A4)</span>
+              มุมมองระบบ & Workflow
             </button>
+            <button
+              type="button"
+              onClick={() => setViewStyle('paper')}
+              className={`px-3 py-1 rounded-lg font-bold transition cursor-pointer ${
+                viewStyle === 'paper'
+                  ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-2xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              แบบฟอร์ม A4
+            </button>
+          </div>
+        </div>
 
-            {/* Dropdown เมนูเพิ่มเติม (...) */}
-            <div className="relative">
+        {/* 1. แบนเนอร์หัวเอกสารระดับบริหาร (#0f172a สไตล์เดียวกับ QuotationDetail & BOQDetail) */}
+        <div className="rounded-2xl border border-slate-800 bg-[#0f172a] p-5 text-white shadow-sm space-y-4">
+          {/* ชั้นที่ 1: หัวเรื่อง รหัส ป้ายสถานะ (ซ้าย) และ ปุ่มจัดการ (ขวา) */}
+          <div className="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-4">
+            <div className="flex items-start gap-3.5 min-w-0">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-sky-500/15 border border-sky-400/20 text-sky-400 shrink-0 mt-0.5">
+                <ShoppingCart className="h-5 w-5" />
+              </div>
+
+              <div className="min-w-0 space-y-1.5">
+                {/* แถบป้ายกำกับ (Badge Row) */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[10px] font-mono uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-sky-500/15 text-sky-300 border border-sky-400/25 font-bold whitespace-nowrap">
+                    PURCHASE ORDER
+                  </span>
+                  <StatusBadge status={po.status} />
+
+                  {isPaidInFull ? (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-bold rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 whitespace-nowrap">
+                      <CheckCircle2 className="h-3 w-3" />
+                      <span>ชำระครบแล้ว</span>
+                    </span>
+                  ) : po.status !== 'cancelled' && isFullyReceived ? (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-bold rounded-full bg-amber-500/20 text-amber-300 border border-amber-400/30 whitespace-nowrap">
+                      <Clock className="h-3 w-3" />
+                      <span>รับครบ · รอจ่ายเงิน</span>
+                    </span>
+                  ) : null}
+
+                  {pr && (
+                    <Link
+                      to={`/purchasing/pr/${pr.id}`}
+                      className="inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-bold rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-400/30 hover:underline whitespace-nowrap"
+                      title="คลิกเปิดดูใบขอซื้อต้นทาง"
+                    >
+                      <FileText className="h-3 w-3" />
+                      <span>PR: {pr.pr_no}</span>
+                    </Link>
+                  )}
+
+                  {dueStatus && po.status !== 'cancelled' && po.status !== 'received' && (
+                    <span className={`text-[11px] px-2.5 py-0.5 rounded-full font-bold border whitespace-nowrap ${dueStatus.badgeCls}`}>
+                      {dueStatus.label}
+                    </span>
+                  )}
+                </div>
+
+                {/* เลขที่ PO & ยอดรวม */}
+                <div className="flex flex-wrap items-baseline gap-3">
+                  <h1 className="text-2xl font-black tracking-tight text-white font-mono whitespace-nowrap">
+                    {po.po_no}
+                  </h1>
+                  <span className="font-mono text-sm font-bold text-amber-300">
+                    ฿{baht(grandTotalVal)} บาท
+                  </span>
+                </div>
+
+                <p className="text-xs text-slate-400 truncate">
+                  ผู้ขาย / ร้านค้า: <strong className="text-slate-200">{vendorDisplayName}</strong> · {items.length} รายการพัสดุ ({thaiBahtText(grandTotalVal)})
+                </p>
+              </div>
+            </div>
+
+            {/* แถบปุ่ม Action ด้านขวา (สัดส่วนคงที่ h-9 - Option A: แก้ไขข้างนอก ลบใน ⋮) */}
+            <div className="flex items-center gap-2 flex-wrap xl:justify-end shrink-0">
+              {canReceive && (
+                <button
+                  type="button"
+                  onClick={scrollToReceive}
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white h-9 px-3.5 text-xs font-bold shadow-xs transition cursor-pointer"
+                >
+                  <PackageCheck className="h-3.5 w-3.5" />
+                  <span>ตรวจรับของ (ออก RI)</span>
+                </button>
+              )}
+
+              {!isPaidInFull && po.status !== 'cancelled' && (
+                <button
+                  type="button"
+                  onClick={() => setShowPaymentModal(true)}
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 h-9 px-3.5 text-xs font-black shadow-xs transition cursor-pointer"
+                  title={`คลิกเพื่อจ่ายชำระเงินตามยอดสั่งซื้อ ฿${baht(grandTotalVal)} บ.`}
+                >
+                  <CreditCard className="h-3.5 w-3.5" />
+                  <span>จ่ายชำระเงิน</span>
+                </button>
+              )}
+
               <button
                 type="button"
-                onClick={() => setShowMoreActions(!showMoreActions)}
-                className="inline-flex items-center gap-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 transition cursor-pointer shadow-2xs"
-                title="ตัวเลือกและการจัดการเพิ่มเติม"
+                onClick={() => setShowPoPdf(true)}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-sky-400/30 bg-sky-500/15 hover:bg-sky-500/25 text-sky-200 h-9 px-3.5 text-xs font-bold shadow-xs transition cursor-pointer"
+                title="พิมพ์ใบสั่งซื้อ (PO) ขนาด A4 หรือบันทึก PDF"
               >
-                <span>ตัวเลือก</span>
-                <MoreVertical className="h-3.5 w-3.5 text-slate-400" />
+                <Printer className="h-3.5 w-3.5" />
+                <span>พิมพ์ใบสั่งซื้อ (PDF)</span>
               </button>
 
-              {showMoreActions && (
-                <>
-                  <div
-                    className="fixed inset-0 z-20"
-                    onClick={() => setShowMoreActions(false)}
-                  />
-                  <div className="absolute right-0 top-full mt-1.5 z-30 w-48 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xl p-1.5 text-xs space-y-0.5 animate-in fade-in zoom-in-95 duration-100">
-                    {canEdit && (
-                      <Link
-                        to={`/purchasing/po/${po.id}/edit`}
-                        onClick={() => setShowMoreActions(false)}
-                        className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 font-semibold transition"
-                      >
-                        <Edit3 className="h-3.5 w-3.5 text-sky-600" />
-                        <span>แก้ไขข้อมูล PO</span>
-                      </Link>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowMoreActions(false)
-                        navigate(`/purchasing/po/new?duplicate_from=${po.id}`)
-                      }}
-                      className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 font-semibold transition cursor-pointer"
-                    >
-                      <Copy className="h-3.5 w-3.5 text-purple-600" />
-                      <span>สร้างซ้ำเป็นใบใหม่</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowMoreActions(false)
-                        setShowEnvelope(true)
-                      }}
-                      className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 font-semibold transition cursor-pointer"
-                    >
-                      <Mail className="h-3.5 w-3.5 text-amber-600" />
-                      <span>พิมพ์หน้าซองจดหมาย</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowMoreActions(false)
-                        setShowShare(true)
-                      }}
-                      className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 font-semibold transition cursor-pointer"
-                    >
-                      <Share2 className="h-3.5 w-3.5 text-blue-600" />
-                      <span>คัดลอกลิงก์ / แชร์</span>
-                    </button>
+              {canEdit && (
+                <Link
+                  to={`/purchasing/po/${po.id}/edit`}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800/90 hover:bg-slate-700 h-9 px-3 text-xs font-bold text-slate-200 hover:text-white transition shadow-xs"
+                >
+                  <Edit3 className="h-3.5 w-3.5" />
+                  <span>แก้ไข</span>
+                </Link>
+              )}
 
-                    {canCreatePurchasing(profile.role) && !isPaidInFull && !isFullyReceived && po.status !== 'cancelled' && (
-                      <>
-                        <div className="border-t border-slate-100 dark:border-slate-700 my-1" />
+              {/* เมนูเพิ่มเติม [ ⋮ ] */}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setShowMoreActions(!showMoreActions)}
+                  className={`inline-flex items-center justify-center rounded-xl border h-9 w-9 text-xs transition cursor-pointer shadow-xs ${
+                    showMoreActions
+                      ? 'border-sky-400 bg-sky-500/20 text-sky-300'
+                      : 'border-slate-700 bg-slate-800/90 hover:bg-slate-700 text-slate-300'
+                  }`}
+                  title="ตัวเลือกเพิ่มเติม"
+                >
+                  <MoreVertical className="h-4 w-4" />
+                </button>
+
+                {showMoreActions && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-20"
+                      onClick={() => setShowMoreActions(false)}
+                    />
+                    <div className="absolute right-0 top-full mt-2 z-50 w-52 rounded-xl border border-slate-700 bg-slate-800 py-1.5 text-xs shadow-xl space-y-0.5 animate-in fade-in zoom-in-95 duration-100">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowMoreActions(false)
+                          navigate(`/purchasing/po/new?duplicate_from=${po.id}`)
+                        }}
+                        className="w-full flex items-center gap-2 px-3.5 py-2 text-left text-slate-200 hover:bg-slate-700/80 transition cursor-pointer"
+                      >
+                        <Copy className="h-3.5 w-3.5 text-sky-400" />
+                        <span>ทำสำเนา / สร้างซ้ำ</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowMoreActions(false)
+                          setShowEnvelope(true)
+                        }}
+                        className="w-full flex items-center gap-2 px-3.5 py-2 text-left text-slate-200 hover:bg-slate-700/80 transition cursor-pointer"
+                      >
+                        <Mail className="h-3.5 w-3.5 text-amber-400" />
+                        <span>พิมพ์หน้าซองจดหมาย</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowMoreActions(false)
+                          setShowShare(true)
+                        }}
+                        className="w-full flex items-center gap-2 px-3.5 py-2 text-left text-slate-200 hover:bg-slate-700/80 transition cursor-pointer"
+                      >
+                        <Share2 className="h-3.5 w-3.5 text-emerald-400" />
+                        <span>คัดลอกลิงก์ / แชร์ LINE</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowMoreActions(false)
+                          setViewStyle((v) => (v === 'portal' ? 'paper' : 'portal'))
+                        }}
+                        className="w-full flex items-center gap-2 px-3.5 py-2 text-left text-slate-200 hover:bg-slate-700/80 transition cursor-pointer"
+                      >
+                        <FileText className="h-3.5 w-3.5 text-purple-400" />
+                        <span>{viewStyle === 'portal' ? 'สลับเป็นแบบฟอร์ม A4' : 'สลับเป็นมุมมองระบบ'}</span>
+                      </button>
+
+                      {canCreatePurchasing(profile.role) && !isPaidInFull && !isFullyReceived && po.status !== 'cancelled' && (
+                        <>
+                          <div className="my-1 border-t border-slate-700/70" />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowMoreActions(false)
+                              cancelPo()
+                            }}
+                            className="w-full flex items-center gap-2 px-3.5 py-2 text-left text-amber-300 hover:bg-amber-500/15 transition cursor-pointer font-semibold"
+                          >
+                            <X className="h-3.5 w-3.5 text-amber-400" />
+                            <span>ยกเลิกใบสั่งซื้อ</span>
+                          </button>
+                        </>
+                      )}
+
+                      {canCreatePurchasing(profile.role) && !isPaidInFull && !isFullyReceived && (
                         <button
                           type="button"
                           onClick={() => {
                             setShowMoreActions(false)
-                            cancelPo()
+                            removePo()
                           }}
-                          className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 font-bold transition cursor-pointer"
+                          className="w-full flex items-center gap-2 px-3.5 py-2 text-left text-rose-400 hover:bg-rose-500/15 transition cursor-pointer font-bold"
                         >
-                          <X className="h-3.5 w-3.5" />
-                          <span>ยกเลิกใบสั่งซื้อ</span>
+                          <Trash2 className="h-3.5 w-3.5 text-rose-400" />
+                          <span>ลบใบสั่งซื้อ</span>
                         </button>
-                      </>
-                    )}
-                  </div>
-                </>
-              )}
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
+          </div>
+
+          {/* ชั้นที่ 2: แถบข้อมูลสรุปอ้างอิงเต็มความกว้าง */}
+          <div className="pt-3 border-t border-slate-800/80 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-slate-300">
+            <span className="flex items-center gap-1.5 shrink-0 whitespace-nowrap">
+              <Calendar className="h-3.5 w-3.5 text-sky-400 shrink-0" />
+              <span>วันที่สั่งซื้อ: <strong className="text-white font-mono">{formatThaiDate(po.order_date)}</strong></span>
+            </span>
+
+            <span className="flex items-center gap-1.5 shrink-0 whitespace-nowrap">
+              <Clock className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+              <span>กำหนดส่งมอบ: <strong className="text-white font-mono">{po.expected_delivery_date ? formatThaiDate(po.expected_delivery_date) : 'ตามตกลง'}</strong></span>
+            </span>
+
+            <span className="flex items-center gap-1.5 shrink-0 whitespace-nowrap">
+              <Store className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+              <span>ผู้ขาย: <strong className="text-white">{vendorDisplayName}</strong></span>
+            </span>
+
+            <span className="flex items-center gap-1.5 shrink-0 whitespace-nowrap">
+              <FolderGit2 className="h-3.5 w-3.5 text-purple-400 shrink-0" />
+              <span>โครงการ: <strong className="text-sky-300">{projectDisplayName}</strong></span>
+            </span>
+
+            {po.customer_name && (
+              <span className="flex items-center gap-1.5 shrink-0 whitespace-nowrap">
+                <Building className="h-3.5 w-3.5 text-teal-400 shrink-0" />
+                <span>ลูกค้า: <strong className="text-white">{po.customer_name}</strong></span>
+              </span>
+            )}
           </div>
         </div>
 
@@ -701,255 +884,35 @@ export default function PODetail() {
         )}
 
         {/* ============================================================== */}
-        {/* MODE A: INTERACTIVE WEB PORTAL (หน้าเว็บจัดการสีสันทันสมัย สไตล์ ANVA & Co) */}
+        {/* MODE A: INTERACTIVE WEB PORTAL (ผัง Workflow 5 ขั้นตอน + รายละเอียดครบ) */}
         {/* ============================================================== */}
         {viewStyle === 'portal' && (
           <div className="space-y-5">
-            {/* 1. Hero Showcase Banner (ANVA & Co Tech & Solar Portal Identity) */}
-            <div className="relative rounded-3xl bg-gradient-to-br from-[#0B111E] via-[#0F172A] to-[#1E293B] p-6 sm:p-8 text-white shadow-xl overflow-hidden border border-slate-800">
-              {/* Background Solar Energy Glow */}
-              <div className="absolute -top-24 -right-24 w-80 h-80 rounded-full bg-gradient-to-br from-amber-500/20 via-emerald-500/10 to-transparent blur-3xl pointer-events-none" />
-              <div className="absolute -bottom-24 -left-24 w-80 h-80 rounded-full bg-gradient-to-tr from-sky-500/15 via-blue-500/10 to-transparent blur-3xl pointer-events-none" />
+            {/* 2. ผังลำดับขั้นตอนการทำงานจัดซื้อ 5 ขั้นตอน (แบบเดียวกับ QuotationDetail) */}
+            <ProcurementWorkflowStepper
+              mode="po"
+              pr={pr}
+              po={po}
+              items={items}
+              grns={grns}
+              payments={payments}
+              canReceive={canReceive}
+              onPrintPdf={() => setShowPoPdf(true)}
+              onOpenPayment={() => setShowPaymentModal(true)}
+              onScrollToReceive={scrollToReceive}
+              onOpenGrnTab={() => jumpToTab('receiving')}
+              onOpenPayTab={() => jumpToTab('payments')}
+              onOpenAuditTab={() => jumpToTab('audit')}
+            />
 
-              <div className="relative z-10 flex flex-wrap items-start justify-between gap-6">
-                <div className="space-y-3 max-w-2xl">
-                  {/* Branding & Category Pill */}
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-400/20 text-amber-300 border border-amber-400/30 backdrop-blur-md">
-                      <Sun className="h-3.5 w-3.5 text-amber-400" />
-                      <span>ANVA & CO · งานจัดซื้อวิศวกรรมโซลาร์เซลล์</span>
-                    </span>
-
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-white/10 text-slate-200 border border-white/10">
-                      <span>รหัสสั่งซื้อ:</span>
-                      <span className="font-mono text-white">{po.po_no}</span>
-                    </span>
-                  </div>
-
-                  {/* Title & Key Subject */}
-                  <div>
-                    <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-center gap-3">
-                      <span>{po.po_no}</span>
-                      <span className="text-sm font-semibold text-slate-300 font-sans">
-                        · {po.custom_vendor_name || po.vendors?.vendor_name || 'ผู้ขายหน้าร้าน'}
-                      </span>
-                    </h1>
-                    <p className="text-xs sm:text-sm text-slate-300 mt-1 flex items-center gap-1.5">
-                      <MapPin className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
-                      <span>โครงการ: <b>{po.custom_project_name || (po.projects ? `${po.projects.project_code} ${po.projects.project_name}` : 'ของกลางบริษัท / คลังพัสดุ')}</b></span>
-                      {po.customer_name && <span className="text-amber-300 font-semibold ml-2">({po.customer_name})</span>}
-                    </p>
-                  </div>
-
-                  {/* Status Badges Row */}
-                  <div className="flex flex-wrap items-center gap-2 pt-1">
-                    <StatusBadge status={po.status} />
-
-                    {isPaidInFull ? (
-                      <span className="text-xs px-3 py-1 rounded-xl font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 inline-flex items-center gap-1.5 backdrop-blur-md">
-                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
-                        <span>ชำระเงินครบถ้วนแล้ว</span>
-                      </span>
-                    ) : isFullyReceived ? (
-                      <span className="text-xs px-3 py-1 rounded-xl font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 inline-flex items-center gap-1.5 backdrop-blur-md animate-pulse">
-                        <Clock className="h-3.5 w-3.5 text-amber-400" />
-                        <span>รับของครบแล้ว · รอจ่ายเงิน</span>
-                      </span>
-                    ) : (
-                      <span className="text-xs px-3 py-1 rounded-xl font-bold bg-sky-500/20 text-sky-300 border border-sky-500/40 inline-flex items-center gap-1.5 backdrop-blur-md">
-                        <Clock className="h-3.5 w-3.5 text-sky-400" />
-                        <span>รอตรวจรับของก่อนจ่ายเงิน</span>
-                      </span>
-                    )}
-
-                    {dueStatus && (
-                      <span className={`text-xs px-3 py-1 rounded-xl font-bold border inline-flex items-center gap-1.5 backdrop-blur-md ${dueStatus.badgeCls}`}>
-                        <span>{dueStatus.icon}</span>
-                        <span>{dueStatus.label}</span>
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Thai Watsadu Style Large Price Card */}
-                <div className="rounded-2xl bg-white/[0.08] border border-white/15 p-5 backdrop-blur-md text-right sm:min-w-[260px] space-y-1 shadow-lg">
-                  <div className="text-[11px] font-bold uppercase tracking-wider text-amber-300">
-                    ยอดสั่งซื้อสุทธิรวมทั้งสิ้น
-                  </div>
-                  <div className="text-3xl sm:text-4xl font-black font-mono text-white tracking-tight">
-                    <span className="text-amber-400 text-2xl mr-1">฿</span>
-                    {baht(grandTotalVal)}
-                  </div>
-                  <div className="text-[11px] text-slate-300 pt-1 border-t border-white/10">
-                    {items.length} รายการพัสดุ · {po.payment_type ? PAYMENT_TYPES.find((p) => p.value === po.payment_type)?.label?.split(' ')[0] : 'เครดิตเทอม'}
-                  </div>
-                  <div className="text-[10px] text-amber-200/80 italic">
-                    ({thaiBahtText(grandTotalVal)})
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* 1.5 แถบวงจรจัดซื้อ 3 ขั้นตอน & คำแนะนำขั้นตอนต่อไป (Credit Term / 3-Way Matching Workflow Stepper) */}
-            <div className="rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs space-y-4">
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg"></span>
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-slate-100">
-                    ลำดับขั้นตอนวงจรจัดซื้อ (Procurement Lifecycle: รับของก่อนจ่ายเงิน)
-                  </h3>
-                </div>
-                <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
-                  เงื่อนไข: {po.payment_type ? PAYMENT_TYPES.find((p) => p.value === po.payment_type)?.label : 'เครดิตเทอม (รับของก่อนชำระเงิน)'}
-                </span>
-              </div>
-
-              {/* 3 ขั้นตอนหลัก */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                {/* ขั้นที่ 1: ออกใบสั่งซื้อ */}
-                <div className="flex items-start gap-3 p-3.5 rounded-xl border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/50 dark:bg-emerald-950/20">
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white text-xs font-black">
-
-                  </div>
-                  <div className="space-y-0.5 min-w-0">
-                    <div className="text-xs font-bold text-emerald-950 dark:text-emerald-300">1. ออกใบสั่งซื้อ (PO)</div>
-                    <div className="text-[11px] text-emerald-800 dark:text-emerald-400 font-mono">
-                      {formatThaiDate(po.order_date)}
-                    </div>
-                    <div className="text-[11px] text-emerald-700 dark:text-emerald-400">อนุมัติคำสั่งซื้อเรียบร้อย</div>
-                  </div>
-                </div>
-
-                {/* ขั้นที่ 2: ตรวจรับสินค้าเข้าคลัง */}
-                <div className={`flex items-start gap-3 p-3.5 rounded-xl border transition-all ${isFullyReceived
-                  ? 'border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/50 dark:bg-emerald-950/20'
-                  : po.status === 'partial'
-                    ? 'border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-950/20'
-                    : 'border-sky-300 dark:border-sky-700 bg-sky-50/50 dark:bg-sky-950/20'
-                  }`}>
-                  <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-black ${isFullyReceived
-                    ? 'bg-emerald-600 text-white'
-                    : 'bg-sky-600 text-white animate-pulse'
-                    }`}>
-                    {isFullyReceived ? '' : '2'}
-                  </div>
-                  <div className="space-y-0.5 min-w-0">
-                    <div className="text-xs font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
-                      <span>2. ตรวจรับสินค้า (GR/RI)</span>
-                    </div>
-                    <div className="text-[11px] font-semibold">
-                      {isFullyReceived ? (
-                        <span className="text-emerald-700 dark:text-emerald-300 font-bold">ตรวจรับเข้าสโตร์ครบแล้ว</span>
-                      ) : po.status === 'partial' ? (
-                        <span className="text-amber-700 dark:text-amber-300 font-bold">ทยอยรับเข้าบางส่วนแล้ว</span>
-                      ) : (
-                        <span className="text-sky-700 dark:text-sky-300 font-bold"> รอนำส่งสินค้าเข้าสโตร์</span>
-                      )}
-                    </div>
-                    <div className="text-[10px] text-slate-500 dark:text-slate-400">
-                      {isFullyReceived ? 'พัสดุเข้าคลังพร้อมใช้งาน' : 'สโตร์ตรวจนับของก่อนตั้งเบิก'}
-                    </div>
-                  </div>
-                </div>
-
-                {/* ขั้นที่ 3: จ่ายชำระเงิน */}
-                <div className={`flex items-start gap-3 p-3.5 rounded-xl border transition-all ${isPaidInFull
-                  ? 'border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/50 dark:bg-emerald-950/20'
-                  : isFullyReceived
-                    ? 'border-amber-400 dark:border-amber-500 bg-amber-50 dark:bg-amber-950/40 shadow-xs'
-                    : 'border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 opacity-70'
-                  }`}>
-                  <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-black ${isPaidInFull
-                    ? 'bg-emerald-600 text-white'
-                    : isFullyReceived
-                      ? 'bg-amber-500 text-slate-950 font-black animate-bounce'
-                      : 'bg-slate-300 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
-                    }`}>
-                    {isPaidInFull ? '' : '3'}
-                  </div>
-                  <div className="space-y-0.5 min-w-0">
-                    <div className="text-xs font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
-                      <span>3. จ่ายชำระเงิน (PAY)</span>
-                    </div>
-                    <div className="text-[11px] font-semibold">
-                      {isPaidInFull ? (
-                        <span className="text-emerald-700 dark:text-emerald-300 font-bold">ชำระเงินครบถ้วนแล้ว</span>
-                      ) : isFullyReceived ? (
-                        <span className="text-amber-800 dark:text-amber-300 font-black">⏳ รอฝ่ายบัญชีจ่ายเงิน</span>
-                      ) : (
-                        <span className="text-slate-500 dark:text-slate-400">รอรับของให้เสร็จก่อน</span>
-                      )}
-                    </div>
-                    <div className="text-[10px] text-slate-500 dark:text-slate-400">
-                      {isPaidInFull ? 'ตัดจ่ายสมุดรายวันเสร็จสิ้น' : isFullyReceived ? 'กดปุ่มจ่ายชำระเงินด้านบน' : 'ตามเงื่อนไขเครดิตเทอม'}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* กล่องสรุปสถานะปัจจุบัน และสิ่งที่ต้องทำต่อไป (Current Status & Next Step Guidance Box) */}
-              <div className={`rounded-xl p-4 border text-xs space-y-1.5 ${po.status === 'cancelled'
-                ? 'bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800 text-rose-900 dark:text-rose-200'
-                : isFullyReceived && isPaidInFull
-                  ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800 text-emerald-950 dark:text-emerald-200'
-                  : isFullyReceived && !isPaidInFull
-                    ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-700 text-amber-950 dark:text-amber-200'
-                    : 'bg-sky-50 dark:bg-sky-950/30 border-sky-200 dark:border-sky-800 text-sky-950 dark:text-sky-200'
-                }`}>
-                <div className="flex items-center justify-between gap-2">
-                  <div className="font-bold flex items-center gap-2">
-                    <span className="text-base">
-                      {po.status === 'cancelled' ? '' : isFullyReceived && isPaidInFull ? '' : isFullyReceived ? '' : ''}
-                    </span>
-                    <span>
-                      {po.status === 'cancelled'
-                        ? 'สถานะปัจจุบัน: ยกเลิกใบสั่งซื้อแล้ว'
-                        : isFullyReceived && isPaidInFull
-                          ? 'สถานะปัจจุบัน: ปิดวงจรจัดซื้อสมบูรณ์ 100% (รับของครบ & จ่ายเงินเรียบร้อย)'
-                          : isFullyReceived
-                            ? 'สถานะปัจจุบัน: ตรวจรับสินค้าเข้าคลังครบแล้ว (รอดำเนินการจ่ายเงิน)'
-                            : 'สถานะปัจจุบัน: สั่งซื้อแล้ว รอนำส่งสินค้าเข้าสโตร์ (รับของก่อนจ่ายเงิน)'}
-                    </span>
-                  </div>
-
-                  {/* Shortcut Action Button inside banner */}
-                  {isFullyReceived && !isPaidInFull && po.status !== 'cancelled' && (
-                    <button
-                      type="button"
-                      onClick={() => setShowPaymentModal(true)}
-                      className="shrink-0 px-3 py-1 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-lg shadow-xs cursor-pointer text-xs flex items-center gap-1"
-                    >
-                      <span></span>
-                      <span>จ่ายเงินตอนนี้</span>
-                    </button>
-                  )}
-                </div>
-
-                <div className="text-xs opacity-90 pl-6 leading-relaxed">
-                  {po.status === 'cancelled' ? (
-                    'ใบสั่งซื้อนี้ถูกยกเลิกแล้ว ข้อมูลและประวัติการยกเลิกถูกจัดเก็บไว้เป็นหลักฐาน'
-                  ) : isFullyReceived && isPaidInFull ? (
-                    'สินค้าถูกตรวจรับเข้าสโตร์และบันทึกสต็อกเรียบร้อยแล้ว ยอดชำระเงินถูกบันทึกตัดจ่ายทางบัญชีสมบูรณ์ครบถ้วน'
-                  ) : isFullyReceived ? (
-                    <span>
-                      <b>การจัดการขั้นตอนถัดไป:</b> สโตร์ตรวจรับของเข้าคลังเรียบร้อยแล้ว ส่งเอกสารใบกำกับภาษี/ใบส่งสินค้าให้ฝ่ายบัญชี จากนั้นกดปุ่ม <b>"จ่ายชำระเงิน (PAY)"</b> ด้านบน เพื่อตัดจ่ายเงินและปิดรอบบิล
-                    </span>
-                  ) : (
-                    <span>
-                      <b>การจัดการขั้นตอนถัดไป:</b> ติดตามผู้ขายนำส่งสินค้าเข้าหน้างานหรือสโตร์หลัก เมื่อสินค้ามาถึงให้สโตร์กด <b>"ตรวจรับสินค้า"</b> ด้านล่างก่อน หลังจากตรวจรับของครบแล้วจึงเข้าสู่ขั้นตอนจ่ายชำระเงิน
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* 2. Bento Grid: 4 Interactive Feature Cards */}
+            {/* 3. Bento Grid: 4 Interactive Feature Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Card 1: ผู้ขายและคู่ค้า (Vendor Card) */}
               <div className="rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs space-y-3 hover:border-amber-400/50 transition">
                 <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
                   <div className="flex items-center gap-2">
-                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 text-base font-bold">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 font-bold">
+                      <Store className="h-4 w-4" />
                     </span>
                     <span className="font-bold text-xs text-slate-800 dark:text-slate-200">ผู้ขาย / ร้านค้า</span>
                   </div>
@@ -983,8 +946,8 @@ export default function PODetail() {
               <div className="rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs space-y-3 hover:border-sky-400/50 transition">
                 <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
                   <div className="flex items-center gap-2">
-                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-400 text-base font-bold">
-
+                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-400 font-bold">
+                      <MapPin className="h-4 w-4" />
                     </span>
                     <span className="font-bold text-xs text-slate-800 dark:text-slate-200">หน้างาน / โครงการ</span>
                   </div>
@@ -1015,8 +978,8 @@ export default function PODetail() {
               <div className="rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs space-y-3 hover:border-emerald-400/50 transition">
                 <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
                   <div className="flex items-center gap-2">
-                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 text-base font-bold">
-
+                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 font-bold">
+                      <CreditCard className="h-4 w-4" />
                     </span>
                     <span className="font-bold text-xs text-slate-800 dark:text-slate-200">การเงิน & ภาษี</span>
                   </div>
@@ -1046,8 +1009,8 @@ export default function PODetail() {
               <div className="rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs space-y-3 hover:border-purple-400/50 transition">
                 <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
                   <div className="flex items-center gap-2">
-                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-400 text-base font-bold">
-
+                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-400 font-bold">
+                      <Truck className="h-4 w-4" />
                     </span>
                     <span className="font-bold text-xs text-slate-800 dark:text-slate-200">กำหนดส่ง & รับของ</span>
                   </div>
@@ -1081,7 +1044,8 @@ export default function PODetail() {
             <div className="rounded-2xl border border-sky-200/90 dark:border-sky-800/80 bg-gradient-to-r from-sky-50/70 via-blue-50/40 to-sky-50/70 dark:from-slate-900 dark:via-sky-950/20 dark:to-slate-900 p-5 shadow-xs space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-sky-100 dark:border-sky-900/60 pb-3">
                 <div className="flex items-center gap-2.5">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-600 text-white font-bold text-base shadow-xs">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-600 text-white font-bold shadow-xs">
+                    <FileText className="h-4 w-4" />
                   </span>
                   <div>
                     <div className="flex items-center gap-2">
@@ -1182,10 +1146,11 @@ export default function PODetail() {
             </div>
 
             {/* 3. Section: รายการพัสดุและแคตตาล็อกวัสดุ (Thai Watsadu Style Product Showcase) */}
-            <div className="rounded-3xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm space-y-4">
+            <div ref={receiveSectionRef} className="rounded-3xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm space-y-4">
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
                 <div className="flex items-center gap-2.5">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-500 text-slate-950 font-black text-xl shadow-sm">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-500 text-slate-950 font-black shadow-sm">
+                    <Package className="h-5 w-5" />
                   </span>
                   <div>
                     <h2 className="text-lg font-black text-slate-900 dark:text-slate-100 tracking-tight">
@@ -1422,12 +1387,13 @@ export default function PODetail() {
 
               {/* Action Bar for Goods Receiving */}
               {canReceive && (
-                <div className="flex flex-wrap items-center justify-between gap-3 bg-gradient-to-r from-sky-50 to-emerald-50 p-4 rounded-2xl border border-sky-200">
+                <div className="flex flex-wrap items-center justify-between gap-3 bg-gradient-to-r from-sky-50 to-emerald-50 dark:from-sky-950/40 dark:to-emerald-950/30 p-4 rounded-2xl border border-sky-200 dark:border-sky-800">
                   <div>
-                    <div className="font-bold text-xs text-slate-900 flex items-center gap-1.5">
-                      <span></span> ฝ่ายสโตร์และพัสดุ: ตรวจรับของเข้าสโตร์หลัก
+                    <div className="font-bold text-xs text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                      <PackageCheck className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+                      <span>ฝ่ายสโตร์และพัสดุ: ตรวจรับของเข้าสโตร์หลัก</span>
                     </div>
-                    <p className="mt-0.5 text-xs text-slate-600">
+                    <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-400">
                       ระบบจะสร้างใบตรวจรับของ (RI), เพิ่มสต็อกสโตร์ (`inventory_items`) และลงบัญชีสมุดรายวันอัตโนมัติ
                     </p>
                   </div>
@@ -1443,65 +1409,65 @@ export default function PODetail() {
             </div>
 
             {/* 4. Tab Navigation for Connected Features */}
-            <div className="rounded-3xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm space-y-4">
+            <div ref={tabsSectionRef} className="rounded-3xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm space-y-4">
               <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3 text-xs overflow-x-auto">
                 <button
                   type="button"
                   onClick={() => setActiveTab('items')}
-                  className={`px-4 py-2 font-bold rounded-xl transition cursor-pointer flex items-center gap-2 ${activeTab === 'items'
+                  className={`px-4 py-2 font-bold rounded-xl transition cursor-pointer flex items-center gap-2 whitespace-nowrap ${activeTab === 'items'
                     ? 'bg-slate-900 dark:bg-amber-500 text-white dark:text-slate-950 shadow-xs'
                     : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
                     }`}
                 >
-                  <span></span>
+                  <Coins className="h-3.5 w-3.5" />
                   <span>สรุปยอดเงินและเงื่อนไข</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setActiveTab('receiving')}
-                  className={`px-4 py-2 font-bold rounded-xl transition cursor-pointer flex items-center gap-2 ${activeTab === 'receiving'
+                  className={`px-4 py-2 font-bold rounded-xl transition cursor-pointer flex items-center gap-2 whitespace-nowrap ${activeTab === 'receiving'
                     ? 'bg-slate-900 dark:bg-amber-500 text-white dark:text-slate-950 shadow-xs'
                     : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
                     }`}
                 >
-                  <span></span>
+                  <PackageCheck className="h-3.5 w-3.5" />
                   <span>ประวัติรับของเข้าสโตร์ ({grns.length})</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setActiveTab('payments')}
-                  className={`px-4 py-2 font-bold rounded-xl transition cursor-pointer flex items-center gap-2 ${activeTab === 'payments'
+                  className={`px-4 py-2 font-bold rounded-xl transition cursor-pointer flex items-center gap-2 whitespace-nowrap ${activeTab === 'payments'
                     ? 'bg-slate-900 dark:bg-amber-500 text-white dark:text-slate-950 shadow-xs'
                     : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
                     }`}
                 >
-                  <span></span>
+                  <CreditCard className="h-3.5 w-3.5" />
                   <span>ประวัติจ่ายชำระเงิน ({payments.length})</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setActiveTab('lifecycle')}
-                  className={`px-4 py-2 font-bold rounded-xl transition cursor-pointer flex items-center gap-2 ${activeTab === 'lifecycle'
+                  className={`px-4 py-2 font-bold rounded-xl transition cursor-pointer flex items-center gap-2 whitespace-nowrap ${activeTab === 'lifecycle'
                     ? 'bg-slate-900 dark:bg-amber-500 text-white dark:text-slate-950 shadow-xs'
                     : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
                     }`}
                 >
-                  <span></span>
-                  <span>วงจรเอกสาร (PR  PO  RI  PV)</span>
+                  <Workflow className="h-3.5 w-3.5" />
+                  <span>วงจรเอกสาร (PR → PO → RI → PV)</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setActiveTab('audit')}
-                  className={`px-4 py-2 font-bold rounded-xl transition cursor-pointer flex items-center gap-2 ${activeTab === 'audit'
+                  className={`px-4 py-2 font-bold rounded-xl transition cursor-pointer flex items-center gap-2 whitespace-nowrap ${activeTab === 'audit'
                     ? 'bg-slate-900 dark:bg-amber-500 text-white dark:text-slate-950 shadow-xs'
                     : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
                     }`}
                 >
-                  <span>️</span>
+                  <History className="h-3.5 w-3.5" />
                   <span>บันทึกระบบ (Audit)</span>
                 </button>
               </div>

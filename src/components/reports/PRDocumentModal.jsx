@@ -1,10 +1,11 @@
 import { baht } from '../../lib/projects'
+import { printElement } from '../../lib/printElement'
 
 export default function PRDocumentModal({ pr, items, onClose }) {
   if (!pr) return null
 
   const handlePrint = () => {
-    window.print()
+    printElement('printable-report', `ใบขอซื้อ-${pr.pr_no}`)
   }
 
   const reqDate = pr.request_date
