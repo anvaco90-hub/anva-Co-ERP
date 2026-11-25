@@ -447,6 +447,21 @@ export default function ArAgingPage() {
         </div>
       </div>
 
+      {/* Create Sales Invoice Modal */}
+      {showInvoiceModal && (
+        <ArCreateInvoiceModal
+          isOpen={showInvoiceModal}
+          onClose={() => setShowInvoiceModal(false)}
+          onSuccess={() => {
+            setShowInvoiceModal(false)
+            loadData()
+            setToastMsg({ text: 'ออกใบแจ้งหนี้จริง (Sales Invoice) สำเร็จ', type: 'success' })
+          }}
+          customers={customers}
+          projects={projects}
+        />
+      )}
+
       {/* Opening Balance Modal */}
       {showOpeningModal && (
         <ArOpeningBalanceModal
@@ -640,6 +655,257 @@ function ArOpeningBalanceModal({ isOpen, onClose, onSuccess, customers = [] }) {
               className="px-5 py-2 bg-purple-700 text-white rounded-lg hover:bg-purple-800 font-bold shadow flex items-center gap-1.5 disabled:opacity-50"
             >
               {saving ? 'กำลังบันทึก...' : ' บันทึกยอดยกมา'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Modal to create a real Sales Invoice (ออกใบแจ้งหนี้จริง)
+ */
+function ArCreateInvoiceModal({ isOpen, onClose, onSuccess, customers = [], projects = [] }) {
+  if (!isOpen) return null
+
+  const today = new Date().toISOString().slice(0, 10)
+  const defaultDueDate = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10)
+  const [docNo, setDocNo] = useState(`INV-${new Date().toISOString().slice(0, 7).replace('-', '')}-${Math.floor(1000 + Math.random() * 9000)}`)
+  const [customerId, setCustomerId] = useState(customers[0]?.id || '')
+  const [projectId, setProjectId] = useState('')
+  const [issueDate, setIssueDate] = useState(today)
+  const [dueDate, setDueDate] = useState(defaultDueDate)
+  const [subtotal, setSubtotal] = useState('')
+  const [taxType, setTaxType] = useState('exclude') // 'exclude' (แยกนอก 7%) | 'include' (รวมใน 7%) | 'none' (ไม่มีภาษี 0%)
+  const [notes, setNotes] = useState('ใบแจ้งหนี้ค่างวดงาน / ค่าบริการ')
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+
+  // Compute VAT & Total
+  const numSubtotal = Number(subtotal) || 0
+  let finalSubtotal = numSubtotal
+  let vatAmount = 0
+  let totalAmount = numSubtotal
+
+  if (taxType === 'exclude') {
+    vatAmount = Math.round(numSubtotal * 0.07 * 100) / 100
+    totalAmount = Math.round((numSubtotal + vatAmount) * 100) / 100
+  } else if (taxType === 'include') {
+    finalSubtotal = Math.round((numSubtotal / 1.07) * 100) / 100
+    vatAmount = Math.round((numSubtotal - finalSubtotal) * 100) / 100
+    totalAmount = numSubtotal
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setError('')
+    if (totalAmount <= 0) {
+      return setError('กรุณาระบุจำนวนเงินที่ถูกต้อง')
+    }
+    if (!customerId) {
+      return setError('กรุณาเลือกลูกค้า')
+    }
+
+    setSaving(true)
+    try {
+      const selectedCust = customers.find((c) => c.id === customerId)
+      const resolvedCustomerId = await ensureLegacyCustomerId(selectedCust || customerId)
+      const resolvedContactId = await ensureContactIdForEntity(selectedCust || customerId, 'customer')
+
+      const { error: insErr } = await supabase.from('sales_invoices').insert({
+        invoice_no: docNo.trim(),
+        customer_id: resolvedCustomerId || customerId,
+        contact_id: resolvedContactId || null,
+        project_id: projectId || null,
+        issue_date: issueDate,
+        due_date: dueDate,
+        subtotal: finalSubtotal,
+        vat_rate: taxType === 'none' ? 0 : 7,
+        vat_amount: vatAmount,
+        total_amount: totalAmount,
+        remaining_amount: totalAmount,
+        paid_amount: 0,
+        is_opening_balance: false,
+        status: 'รอเก็บเงิน',
+        notes: notes.trim(),
+      })
+
+      if (insErr) throw insErr
+      onSuccess()
+    } catch (err) {
+      console.error('Error inserting sales invoice:', err)
+      setError(err.message || 'ออกใบแจ้งหนี้ไม่สำเร็จ')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+      <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl border border-steel-200 animate-in fade-in zoom-in duration-150">
+        <div className="flex items-center justify-between border-b border-steel-200 pb-3">
+          <div className="flex items-center gap-2">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-100 text-sky-800 font-bold">
+              <FileText className="h-5 w-5" />
+            </span>
+            <div>
+              <h3 className="font-bold text-ink text-base">
+                ออกใบแจ้งหนี้ขายใหม่ (New Sales Invoice)
+              </h3>
+              <p className="text-xs text-steel-500">
+                สร้างใบแจ้งหนี้จริงในระบบ พร้อมเชื่อมรายงานลูกหนี้ AR และคำนวณอายุหนี้อัตโนมัติ
+              </p>
+            </div>
+          </div>
+          <button onClick={onClose} className="text-steel-400 hover:text-steel-600 text-sm">✕</button>
+        </div>
+
+        {error && (
+          <div className="mt-3 p-3 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-700 font-medium">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="mt-4 space-y-3.5 text-xs">
+          <div>
+            <label className="font-bold text-steel-700 block mb-1">เลือกลูกค้า (Customer) *</label>
+            <select
+              required
+              value={customerId}
+              onChange={(e) => setCustomerId(e.target.value)}
+              className="w-full px-3 py-2 border border-steel-300 rounded-lg text-ink focus:ring-1 focus:ring-sky-500 bg-white"
+            >
+              <option value="">-- เลือกลูกค้า --</option>
+              {customers.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.company_name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="font-bold text-steel-700 block mb-1">เลขที่ใบแจ้งหนี้ *</label>
+              <input
+                type="text"
+                required
+                value={docNo}
+                onChange={(e) => setDocNo(e.target.value)}
+                className="w-full px-3 py-2 border border-steel-300 rounded-lg font-mono font-bold text-ink focus:ring-1 focus:ring-sky-500"
+              />
+            </div>
+            <div>
+              <label className="font-bold text-steel-700 block mb-1">โครงการ (Project)</label>
+              <select
+                value={projectId}
+                onChange={(e) => setProjectId(e.target.value)}
+                className="w-full px-3 py-2 border border-steel-300 rounded-lg text-ink focus:ring-1 focus:ring-sky-500 bg-white"
+              >
+                <option value="">-- ไม่ระบุโครงการ --</option>
+                {projects.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.project_code} - {p.project_name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="font-bold text-steel-700 block mb-1">วันที่ออกเอกสาร *</label>
+              <input
+                type="date"
+                required
+                value={issueDate}
+                onChange={(e) => setIssueDate(e.target.value)}
+                className="w-full px-3 py-2 border border-steel-300 rounded-lg text-ink focus:ring-1 focus:ring-sky-500"
+              />
+            </div>
+            <div>
+              <label className="font-bold text-steel-700 block mb-1">วันครบกำหนดชำระ *</label>
+              <input
+                type="date"
+                required
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                className="w-full px-3 py-2 border border-steel-300 rounded-lg text-ink focus:ring-1 focus:ring-sky-500"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="font-bold text-steel-700 block mb-1">ยอดเงินก่อนภาษี (บาท) *</label>
+              <input
+                type="number"
+                step="0.01"
+                min="0.01"
+                required
+                placeholder="0.00"
+                value={subtotal}
+                onChange={(e) => setSubtotal(e.target.value)}
+                className="w-full px-3 py-2 border border-steel-300 rounded-lg font-mono font-bold text-ink focus:ring-1 focus:ring-sky-500"
+              />
+            </div>
+            <div>
+              <label className="font-bold text-steel-700 block mb-1">การคำนวณภาษีมูลค่าเพิ่ม (VAT)</label>
+              <select
+                value={taxType}
+                onChange={(e) => setTaxType(e.target.value)}
+                className="w-full px-3 py-2 border border-steel-300 rounded-lg text-ink focus:ring-1 focus:ring-sky-500 bg-white"
+              >
+                <option value="exclude">ภาษี 7% (แยกนอก)</option>
+                <option value="include">ภาษี 7% (รวมใน)</option>
+                <option value="none">ไม่มีภาษี (0%)</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Tax summary breakdown */}
+          {numSubtotal > 0 && (
+            <div className="p-3 bg-steel-50 rounded-lg border border-steel-200 text-xs space-y-1">
+              <div className="flex justify-between text-steel-600">
+                <span>มูลค่าก่อน VAT:</span>
+                <span className="font-mono">{formatBaht(finalSubtotal)}</span>
+              </div>
+              <div className="flex justify-between text-steel-600">
+                <span>ภาษีขาย VAT (7%):</span>
+                <span className="font-mono">{formatBaht(vatAmount)}</span>
+              </div>
+              <div className="flex justify-between font-bold text-ink border-t border-steel-200 pt-1">
+                <span>ยอดรวมทั้งสิ้น (Total AR):</span>
+                <span className="font-mono text-sky-800">{formatBaht(totalAmount)}</span>
+              </div>
+            </div>
+          )}
+
+          <div>
+            <label className="font-bold text-steel-700 block mb-1">หมายเหตุ / คำอธิบาย</label>
+            <input
+              type="text"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className="w-full px-3 py-2 border border-steel-300 rounded-lg text-ink focus:ring-1 focus:ring-sky-500"
+            />
+          </div>
+
+          <div className="flex justify-end gap-2 pt-3 border-t border-steel-200">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 border border-steel-300 text-steel-600 rounded-lg hover:bg-steel-50 font-medium"
+            >
+              ยกเลิก
+            </button>
+            <button
+              type="submit"
+              disabled={saving}
+              className="px-5 py-2 bg-sky-700 text-white rounded-lg hover:bg-sky-800 font-bold shadow flex items-center gap-1.5 disabled:opacity-50"
+            >
+              {saving ? 'กำลังออกเอกสาร...' : ' ออกใบแจ้งหนี้'}
             </button>
           </div>
         </form>
