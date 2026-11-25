@@ -835,6 +835,22 @@ export default function PODetail() {
                 <span>ลูกค้า: <strong className="text-white">{po.customer_name}</strong></span>
               </span>
             )}
+
+            {(po.quotation_id || po.sales_quotation_no) && (
+              <span className="flex items-center gap-1.5 shrink-0 whitespace-nowrap">
+                <FileText className="h-3.5 w-3.5 text-amber-300 shrink-0" />
+                {po.quotation_id ? (
+                  <Link
+                    to={`/quotations/${po.quotation_id}`}
+                    className="text-amber-300 hover:underline font-mono font-bold"
+                  >
+                    QT ขาย: {po.sales_quotation_no || 'ดูใบเสนอราคา'}
+                  </Link>
+                ) : (
+                  <span>QT ขาย: <strong className="text-amber-300 font-mono">{po.sales_quotation_no}</strong></span>
+                )}
+              </span>
+            )}
           </div>
         </div>
 

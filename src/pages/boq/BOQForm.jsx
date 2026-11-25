@@ -3,6 +3,8 @@ import { useNavigate, useParams, Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { baht } from '../../lib/projects'
 import { FieldError, fieldErrorClass } from '../../components/FieldError'
+import CustomerSelectField from '../../components/CustomerSelectField'
+import { fetchUnifiedCustomers } from '../../lib/contactsSync'
 import {
   FileSpreadsheet,
   Plus,
@@ -97,11 +99,9 @@ export default function BOQForm() {
       .order('project_code')
       .then(({ data }) => setProjects(data ?? []))
 
-    supabase
-      .from('contacts')
-      .select('id, company_name, business_name, contact_type')
-      .order('company_name')
-      .then(({ data }) => setContacts(data ?? []))
+    fetchUnifiedCustomers()
+      .then((list) => setContacts(list ?? []))
+      .catch(() => {})
 
     supabase
       .from('inventory_items')
@@ -433,25 +433,17 @@ export default function BOQForm() {
               </select>
             </div>
 
-            {/* ชื่อลูกค้า / เจ้าของโครงการ (ข้อ 6: คีย์มีบันทึกรายชื่อในระบบให้เลือกด้วย) */}
+            {/* ชื่อลูกค้า / เจ้าของโครงการ (ดึงจากสมุดรายชื่อ + ลูกค้าอัตโนมัติ) */}
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
                 <span>ชื่อลูกค้า / เจ้าของโครงการ</span>
-                <span className="text-[10px] text-sky-600 dark:text-sky-400 font-normal">มีรายชื่อในระบบ</span>
+                <span className="text-[10px] text-sky-600 dark:text-sky-400 font-normal">ค้นหาจากสมุดรายชื่อได้</span>
               </label>
-              <input
-                type="text"
-                list="boq-customer-list"
-                className="input text-xs w-full"
-                placeholder="พิมพ์เพื่อค้นหา หรือเลือกจากรายชื่อลูกค้าในระบบ..."
+              <CustomerSelectField
                 value={customerName}
-                onChange={(e) => setCustomerName(e.target.value)}
+                onChange={(val) => setCustomerName(val)}
+                placeholder="ค้นหาชื่อลูกค้า หรือพิมพ์ชื่อใหม่..."
               />
-              <datalist id="boq-customer-list">
-                {customerSuggestions.map((name, i) => (
-                  <option key={i} value={name} />
-                ))}
-              </datalist>
             </div>
 
             {/* กำลังผลิตติดตั้ง */}

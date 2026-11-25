@@ -157,11 +157,40 @@ export default function ItemsEditor({ items, onChange, priceLabel, showErrors = 
               </div>
             </div>
 
-            {/* แถบแจ้งเตือนเมื่อวัสดุมีอยู่ในระบบ */}
-            {matched && (
-              <div className="mt-1 flex items-center gap-2 text-[11px] text-steel-500">
-                <span className="font-semibold text-emerald-700">พัสดุตรงกับรหัส {matched.item_code}</span>
-                {matched.avg_unit_cost ? <span>· ราคาเฉลี่ยเดิม {baht(matched.avg_unit_cost)} บาท</span> : null}
+            {/* แถบแจ้งเตือนเมื่อวัสดุมีอยู่ในระบบ หรือดึงมาจากใบเสนอราคาขาย */}
+            {(matched || Number(it.sellingPriceRef || 0) > 0 || it.costSource === 'manual') && (
+              <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[11px] text-steel-500">
+                {matched && (
+                  <>
+                    <span className="font-semibold text-emerald-700">พัสดุตรงกับรหัส {matched.item_code}</span>
+                    {matched.avg_unit_cost ? <span>· ราคาเฉลี่ยคลัง {baht(matched.avg_unit_cost)} บาท</span> : null}
+                  </>
+                )}
+                {Number(it.sellingPriceRef || 0) > 0 && (
+                  <span className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-700">
+                    ราคาขายใน QT (ก่อน VAT): ฿{baht(it.sellingPriceRef)}
+                  </span>
+                )}
+                {it.costSource === 'boq' && (
+                  <span className="rounded bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700">
+                    ต้นทุนวัสดุจาก BOQ
+                  </span>
+                )}
+                {it.costSource === 'stock' && (
+                  <span className="rounded bg-sky-50 border border-sky-200 px-1.5 py-0.5 text-[10px] font-bold text-sky-700">
+                    ต้นทุนเฉลี่ยในสโตร์
+                  </span>
+                )}
+                {it.costSource === 'manual' && !it.price && (
+                  <span className="rounded bg-amber-50 border border-amber-200 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">
+                    ระบุราคาซื้อจริงจากร้านค้า (ไม่ใช้ราคาขายลูกค้า)
+                  </span>
+                )}
+                {Number(it.sellingPriceRef || 0) > 0 && Number(it.price || 0) >= Number(it.sellingPriceRef || 0) && (
+                  <span className="rounded bg-rose-50 border border-rose-200 px-1.5 py-0.5 text-[10px] font-bold text-rose-700">
+                    ระวัง: ราคาซื้อ &ge; ราคาขาย QT!
+                  </span>
+                )}
               </div>
             )}
           </div>

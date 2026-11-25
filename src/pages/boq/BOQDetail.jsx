@@ -1,7 +1,15 @@
 import { useEffect, useState, useMemo, Fragment, useRef } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
+import { useAuth } from '../../context/AuthContext'
 import { baht } from '../../lib/projects'
+import { fetchUnifiedCustomers, ensureLegacyCustomerId } from '../../lib/contactsSync'
+import {
+  buildQuotationPayloadFromBoq,
+  matchBoqCustomer,
+  saveQuotationWithFallback,
+} from '../../lib/boqToQuotation'
+import { calculateTaxBreakdown } from '../../lib/tax'
 import BOQPrintModal from '../../components/reports/BOQPrintModal'
 import {
   FileSpreadsheet,
@@ -37,11 +45,15 @@ const STATUS_MAP = {
 export default function BOQDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { profile } = useAuth()
 
   const [boq, setBoq] = useState(null)
   const [items, setItems] = useState([])
+  const [unifiedCustomers, setUnifiedCustomers] = useState([])
   const [loading, setLoading] = useState(true)
   const [converting, setConverting] = useState(false)
+  const [showConvertModal, setShowConvertModal] = useState(false)
+  const [convertTaxType, setConvertTaxType] = useState('vat_excluded')
   const [showPrintModal, setShowPrintModal] = useState(false)
   const [existingQuotation, setExistingQuotation] = useState(null)
 
@@ -68,11 +80,40 @@ export default function BOQDetail() {
     }
   }, [showMoreMenu])
 
+  const findLinkedQuotation = async (boqRecord) => {
+    if (!boqRecord?.id && !boqRecord?.boq_no) return null
+
+    // Try querying by boq_id OR ref_no first; fall back to ref_no if boq_id column isn't migrated yet
+    if (boqRecord.id && boqRecord.boq_no) {
+      const orRes = await supabase
+        .from('quotations')
+        .select('id, quotation_no, status')
+        .or(`boq_id.eq.${boqRecord.id},ref_no.eq.${boqRecord.boq_no}`)
+        .order('created_at', { ascending: false })
+
+      if (!orRes.error) {
+        return (orRes.data || []).find((q) => !['rejected', 'cancelled'].includes(q.status)) || null
+      }
+    }
+
+    if (boqRecord.boq_no) {
+      const refRes = await supabase
+        .from('quotations')
+        .select('id, quotation_no, status')
+        .eq('ref_no', boqRecord.boq_no)
+        .order('created_at', { ascending: false })
+      if (!refRes.error) {
+        return (refRes.data || []).find((q) => !['rejected', 'cancelled'].includes(q.status)) || null
+      }
+    }
+    return null
+  }
+
   const fetchDetail = async () => {
     setLoading(true)
     try {
-      // ดึงข้อมูล boq, boq_items และ inventory_items ควบคู่กัน
-      const [bRes, itemsRes, invRes] = await Promise.all([
+      // ดึงข้อมูล boq, boq_items, inventory_items และ unifiedCustomers ควบคู่กัน
+      const [bRes, itemsRes, invRes, custList] = await Promise.all([
         supabase
           .from('boqs')
           .select('*')
@@ -86,9 +127,12 @@ export default function BOQDetail() {
         supabase
           .from('inventory_items')
           .select('item_code, item_name, item_categories(name)'),
+        fetchUnifiedCustomers().catch(() => []),
       ])
 
       if (bRes.error) throw bRes.error
+
+      setUnifiedCustomers(custList || [])
 
       let boqData = bRes.data
       if (boqData?.project_id) {
@@ -128,17 +172,8 @@ export default function BOQDetail() {
       setBoq(boqData)
       setItems(enrichedItems)
 
-      // ตรวจสอบว่า BOQ นี้เคยถูกแปลงเป็นใบเสนอราคาแล้วหรือไม่ โดยดูจาก ref_no
-      if (boqData?.boq_no) {
-        const { data: qLinked } = await supabase
-          .from('quotations')
-          .select('id, quotation_no')
-          .eq('ref_no', boqData.boq_no)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle()
-        setExistingQuotation(qLinked || null)
-      }
+      const linkedQt = await findLinkedQuotation(boqData)
+      setExistingQuotation(linkedQt)
     } catch (err) {
       console.error('Failed to load BOQ detail:', err)
     } finally {
@@ -150,98 +185,101 @@ export default function BOQDetail() {
     fetchDetail()
   }, [id])
 
-  // แปลง BOQ เป็นใบเสนอราคา (Convert to Quotation - ทำได้ครั้งเดียวเพื่อป้องกันเลขที่ซ้ำซ้อน)
+  const matchedCustomer = useMemo(
+    () => matchBoqCustomer(boq, unifiedCustomers),
+    [boq, unifiedCustomers]
+  )
+
+  const conversionPreview = useMemo(() => {
+    if (!boq) return null
+    return buildQuotationPayloadFromBoq({
+      boq,
+      boqItems: items,
+      matchedCustomer,
+      taxType: convertTaxType,
+      quotationNo: 'PREVIEW',
+      salesPerson: profile?.full_name || null,
+    })
+  }, [boq, items, matchedCustomer, convertTaxType, profile?.full_name])
+
+  // เปิดหน้าต่างเลือก VAT และตรวจซ้ำก่อนแปลง BOQ -> Quotation
   const handleConvertToQuotation = async () => {
     if (!boq || items.length === 0) return
 
-    // 1. ตรวจสอบว่าเคยแปลงไปแล้วหรือไม่
     if (existingQuotation) {
       alert(`เอกสาร BOQ นี้ได้เคยถูกแปลงเป็นใบเสนอราคาเลขที่ "${existingQuotation.quotation_no}" แล้ว\nระบบจะนำท่านไปยังใบเสนอราคาดังกล่าว`)
       navigate(`/quotations/${existingQuotation.id}`)
       return
     }
 
-    if (!window.confirm(`ยืนยันการแปลง BOQ "${boq.boq_no}" เป็นใบเสนอราคาหรือไม่?`)) {
+    const alreadyQ = await findLinkedQuotation(boq)
+    if (alreadyQ) {
+      alert(`เอกสาร BOQ นี้มีใบเสนอราคาเลขที่ "${alreadyQ.quotation_no}" ในระบบอยู่แล้ว\nระบบจะนำท่านไปยังใบเสนอราคาเดิม`)
+      setExistingQuotation(alreadyQ)
+      navigate(`/quotations/${alreadyQ.id}`)
       return
     }
 
+    setShowConvertModal(true)
+  }
+
+  // ยืนยันการแปลง BOQ เป็นใบเสนอราคาพร้อมข้อมูลลูกค้า + ภาษี + item reconciliation
+  const handleConfirmConvert = async () => {
+    if (!boq || items.length === 0) return
     setConverting(true)
     try {
-      // 2. ตรวจสอบซ้ำจากฐานข้อมูลแบบเรียลไทม์ ป้องกันการคลิกซ้ำหรือมีคนอื่นสร้างไปแล้ว
-      const { data: alreadyQ } = await supabase
-        .from('quotations')
-        .select('id, quotation_no')
-        .eq('ref_no', boq.boq_no)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle()
-
+      const alreadyQ = await findLinkedQuotation(boq)
       if (alreadyQ) {
-        alert(`เอกสาร BOQ นี้มีใบเสนอราคาเลขที่ "${alreadyQ.quotation_no}" ในระบบอยู่แล้ว\nระบบจะนำท่านไปยังใบเสนอราคาเดิม`)
         setExistingQuotation(alreadyQ)
+        setShowConvertModal(false)
         navigate(`/quotations/${alreadyQ.id}`)
         return
       }
 
-      // 3. สร้างรหัสใบเสนอราคาใหม่
       const d = new Date()
-      const year = d.getFullYear()
-      const month = String(d.getMonth() + 1).padStart(2, '0')
+      const ym = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}`
       const rand = Math.floor(1000 + Math.random() * 9000)
-      const qNo = `QT-${year}${month}-${rand}`
+      const qNo = `QT-${ym}-${rand}`
 
-      const quotationPayload = {
-        quotation_no: qNo,
-        customer_name: boq.customer_name || boq.projects?.client_name || 'ลูกค้าโครงการ ' + (boq.projects?.project_code || ''),
-        project_id: boq.project_id || null,
-        issue_date: d.toISOString().split('T')[0],
-        validity_days: 30,
-        subtotal: boq.grand_total,
-        discount_amount: 0,
-        after_discount: boq.grand_total,
-        vat_rate: 7,
-        vat_amount: Math.round(Number(boq.grand_total) * 0.07 * 100) / 100,
-        grand_total: Math.round(Number(boq.grand_total) * 1.07 * 100) / 100,
-        status: 'draft',
-        ref_no: boq.boq_no,
-        customer_notes: boq.notes || `อ้างอิงเอกสารถอดแบบและประมาณราคาเลขที่ ${boq.boq_no}`,
+      const resolvedCustomerId = matchedCustomer
+        ? await ensureLegacyCustomerId(matchedCustomer)
+        : null
+
+      const { payload: quotationPayload, itemRows } = buildQuotationPayloadFromBoq({
+        boq,
+        boqItems: items,
+        matchedCustomer,
+        taxType: convertTaxType,
+        quotationNo: qNo,
+        salesPerson: profile?.full_name || null,
+        issueDate: d.toISOString().split('T')[0],
+        customerId: resolvedCustomerId,
+      })
+
+      if (profile?.id) {
+        quotationPayload.created_by = profile.id
       }
 
-      const { data: qData, error: qErr } = await supabase
-        .from('quotations')
-        .insert([quotationPayload])
-        .select('id, quotation_no')
-        .single()
+      const qData = await saveQuotationWithFallback(supabase, quotationPayload)
 
-      if (qErr) throw qErr
-
-      // 4. ใส่รายการสินค้าในใบเสนอราคา
-      const markupRatio = 1 + Number(boq.markup_percent || 0) / 100
-      const qItemRows = items.map((it) => {
-        const costPerUnit = Number(it.material_unit_cost || 0) + Number(it.labor_unit_cost || 0)
-        const sellingPricePerUnit = Math.round(costPerUnit * markupRatio * 100) / 100
-        const total = Math.round(sellingPricePerUnit * Number(it.quantity || 1) * 100) / 100
-
-        return {
-          quotation_id: qData.id,
-          item_name: it.item_name,
-          description: it.description || null,
-          quantity: it.quantity,
-          unit: it.unit,
-          unit_price: sellingPricePerUnit,
-          discount_percent: 0,
-          total_amount: total,
-        }
-      })
+      const qItemRows = itemRows.map((row) => ({
+        quotation_id: qData.id,
+        item_name: row.item_name,
+        description: row.description || null,
+        quantity: row.quantity,
+        unit: row.unit,
+        unit_price: row.unit_price,
+        discount_percent: 0,
+        total_amount: row.total_amount,
+      }))
 
       const { error: itemsErr } = await supabase.from('quotation_items').insert(qItemRows)
       if (itemsErr) throw itemsErr
 
-      // 5. อัปเดตสถานะ BOQ
       await supabase.from('boqs').update({ status: 'converted_to_quotation' }).eq('id', boq.id)
 
-      setExistingQuotation({ id: qData.id, quotation_no: qNo })
-      alert(`แปลงเป็นใบเสนอราคาเลขที่ ${qNo} สำเร็จ!`)
+      setExistingQuotation({ id: qData.id, quotation_no: qData.quotation_no || qNo })
+      setShowConvertModal(false)
       navigate(`/quotations/${qData.id}`)
     } catch (err) {
       alert('แปลงเป็นใบเสนอราคาไม่สำเร็จ: ' + err.message)
@@ -995,15 +1033,25 @@ export default function BOQDetail() {
             สถานะปัจจุบัน: <span className={`inline-block px-2 py-0.5 text-[11px] font-bold rounded-full border ${st.color}`}>{st.label}</span>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              disabled={converting}
-              onClick={handleConvertToQuotation}
-              className="rounded-xl bg-hivis hover:bg-amber-400 text-slate-950 px-4 py-2 text-xs font-black shadow-xs transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-            >
-              <FileCheck2 className="h-4 w-4" />
-              <span>{converting ? 'กำลังแปลง...' : 'แปลงเป็นใบเสนอราคา'}</span>
-            </button>
+            {existingQuotation ? (
+              <Link
+                to={`/quotations/${existingQuotation.id}`}
+                className="rounded-xl bg-sky-600 hover:bg-sky-500 text-white px-4 py-2 text-xs font-bold shadow-xs transition flex items-center gap-1.5"
+              >
+                <FileCheck2 className="h-4 w-4" />
+                <span>ดูใบเสนอราคา ({existingQuotation.quotation_no})</span>
+              </Link>
+            ) : (
+              <button
+                type="button"
+                disabled={converting}
+                onClick={handleConvertToQuotation}
+                className="rounded-xl bg-hivis hover:bg-amber-400 text-slate-950 px-4 py-2 text-xs font-black shadow-xs transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              >
+                <FileCheck2 className="h-4 w-4" />
+                <span>{converting ? 'กำลังแปลง...' : 'แปลงเป็นใบเสนอราคา'}</span>
+              </button>
+            )}
             <button
               type="button"
               onClick={() => setShowPrintModal(true)}
@@ -1015,6 +1063,133 @@ export default function BOQDetail() {
           </div>
         </div>
       </div>
+
+      {/* Modal แปลง BOQ เป็นใบเสนอราคา (เลือกประเภทภาษี + ตรวจข้อมูลลูกค้า) */}
+      {showConvertModal && conversionPreview && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
+          <div className="w-full max-w-lg rounded-2xl border border-steel-200 bg-white p-6 shadow-2xl space-y-4 text-xs">
+            <div className="flex items-start justify-between border-b border-steel-100 pb-3">
+              <div>
+                <h3 className="text-base font-black text-steel-900">
+                  แปลง BOQ เป็นใบเสนอราคา ({boq.boq_no})
+                </h3>
+                <p className="text-[11px] text-steel-500 mt-0.5">
+                  ตรวจสอบข้อมูลลูกค้าและเลือกรูปแบบภาษี (VAT 7%) ก่อนสร้างใบเสนอราคา
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowConvertModal(false)}
+                className="rounded-lg p-1 text-steel-400 hover:bg-steel-100 hover:text-steel-700"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="rounded-xl border border-steel-200 bg-slate-50 p-3 space-y-1">
+              <div className="font-bold text-steel-800">
+                ลูกค้า: {conversionPreview.payload.customer_name}
+              </div>
+              {matchedCustomer ? (
+                <div className="text-[11px] text-emerald-700 space-y-0.5">
+                  <div>
+                    เชื่อมข้อมูลจากสมุดรายชื่อสำเร็จ · เลขภาษี: {matchedCustomer.tax_id || '-'} · {conversionPreview.payload.customer_branch}
+                  </div>
+                  {matchedCustomer.address && (
+                    <div className="text-steel-500 truncate">ที่อยู่: {matchedCustomer.address}</div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-[11px] text-amber-700">
+                  ยังไม่พบข้อมูลเลขภาษี/ที่อยู่ในสมุดรายชื่อ (สามารถเพิ่มหรือแก้ไขต่อในใบเสนอราคาได้)
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <div className="font-bold text-steel-800">รูปแบบการคิดภาษีมูลค่าเพิ่ม (VAT)</div>
+              {[
+                {
+                  value: 'vat_excluded',
+                  title: 'แยกภาษีมูลค่าเพิ่ม +7% (VAT Excluded)',
+                  desc: 'บวก VAT 7% เพิ่มจากราคาขายใน BOQ',
+                },
+                {
+                  value: 'vat_included',
+                  title: 'รวมภาษีมูลค่าเพิ่ม 7% แล้ว (VAT Included)',
+                  desc: 'ราคาขายใน BOQ รวม VAT ไว้แล้ว ถอดฐานภาษี 7/107 อัตโนมัติ',
+                },
+                {
+                  value: 'vat_exempt',
+                  title: 'ไม่คิดภาษีมูลค่าเพิ่ม (VAT Exempt 0%)',
+                  desc: 'ยอดเสนอราคาเท่ากับยอดขาย BOQ โดยไม่มี VAT',
+                },
+              ].map((opt) => (
+                <label
+                  key={opt.value}
+                  className={`flex items-start gap-2.5 rounded-xl border p-3 cursor-pointer transition ${
+                    convertTaxType === opt.value
+                      ? 'border-sky-500 bg-sky-50/70'
+                      : 'border-steel-200 hover:bg-slate-50'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="convertTaxType"
+                    value={opt.value}
+                    checked={convertTaxType === opt.value}
+                    onChange={(e) => setConvertTaxType(e.target.value)}
+                    className="mt-0.5 text-sky-600"
+                  />
+                  <div>
+                    <div className="font-bold text-steel-900">{opt.title}</div>
+                    <div className="text-[11px] text-steel-500">{opt.desc}</div>
+                  </div>
+                </label>
+              ))}
+            </div>
+
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-3.5 space-y-1.5">
+              <div className="flex justify-between text-steel-700">
+                <span>รวมมูลค่ารายการ ({conversionPreview.itemRows.length} รายการ):</span>
+                <span className="font-mono font-bold">{baht(conversionPreview.payload.subtotal)} บ.</span>
+              </div>
+              <div className="flex justify-between text-steel-700">
+                <span>
+                  ภาษีมูลค่าเพิ่ม ({convertTaxType === 'vat_exempt' ? '0%' : '7%'}
+                  {convertTaxType === 'vat_included' ? ' รวมในยอด' : ''}):
+                </span>
+                <span className="font-mono font-bold text-emerald-700">
+                  {baht(conversionPreview.payload.vat_amount)} บ.
+                </span>
+              </div>
+              <div className="flex justify-between border-t border-emerald-200 pt-1.5 text-sm font-black text-emerald-900">
+                <span>ยอดเสนอราคารวมสุทธิ:</span>
+                <span className="font-mono">{baht(conversionPreview.payload.grand_total)} บาท</span>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-steel-100">
+              <button
+                type="button"
+                disabled={converting}
+                onClick={() => setShowConvertModal(false)}
+                className="rounded-xl border border-steel-300 bg-white px-4 py-2 font-bold text-steel-700 hover:bg-steel-50"
+              >
+                ยกเลิก
+              </button>
+              <button
+                type="button"
+                disabled={converting}
+                onClick={handleConfirmConvert}
+                className="rounded-xl bg-amber-400 hover:bg-amber-300 px-5 py-2 font-black text-slate-950 shadow-xs"
+              >
+                {converting ? 'กำลังสร้างใบเสนอราคา...' : 'ยืนยันสร้างใบเสนอราคา'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 5. Print Modal */}
       {showPrintModal && (

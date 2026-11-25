@@ -10,6 +10,9 @@ import {
 import { supabase } from '../../lib/supabase'
 import { baht } from '../../lib/projects'
 import { inferQuotationTaxType } from '../../lib/tax'
+import { ensureSalesInvoiceForQuotation, fetchQuotationLinkedDocs } from '../../lib/salesBilling'
+import { computeQuotationWorkflow } from '../../lib/salesFlowUtils'
+import PaymentActionModal from '../../components/PaymentActionModal'
 import { formatIntQty } from '../../lib/store'
 import { uploadQuotationFile, openFile } from '../../lib/files'
 import R2Image, { useFileUrl } from '../../components/R2Image'
@@ -30,6 +33,7 @@ export default function QuotationDetail() {
 
   const [quotation, setQuotation] = useState(null)
   const [items, setItems] = useState([])
+  const [sourceBoq, setSourceBoq] = useState(null)
   const [loading, setLoading] = useState(true)
   const [showPrintModal, setShowPrintModal] = useState(false)
   const [updatingStatus, setUpdatingStatus] = useState(false)
@@ -51,6 +55,12 @@ export default function QuotationDetail() {
     }
   }, [showMoreMenu])
 
+  // ข้อมูลเอกสารเชื่อมโยง (PR, PO, Sales Invoices) & Modal รับเงิน / ออก AR
+  const [linkedDocs, setLinkedDocs] = useState({ prs: [], pos: [], invoices: [] })
+  const [autoCreateArOnPo, setAutoCreateArOnPo] = useState(true)
+  const [creatingInvoice, setCreatingInvoice] = useState(false)
+  const [showPaymentModal, setShowPaymentModal] = useState(false)
+
   // จัดการข้อมูลการเซ็น PO ของลูกค้า (Customer PO)
   const [showPoModal, setShowPoModal] = useState(false)
   const [showCustomerPoDoc, setShowCustomerPoDoc] = useState(false)
@@ -66,7 +76,36 @@ export default function QuotationDetail() {
     setCustomerPoDate(quotation?.customer_po_date || new Date().toISOString().split('T')[0])
     setCustomerSignerName(quotation?.customer_signer_name || '')
     setCustomerPoFileUrl(quotation?.customer_po_file_url || '')
+    setAutoCreateArOnPo(linkedDocs.invoices.length === 0)
     setShowPoModal(true)
+  }
+
+  const refreshLinkedDocs = async (qt = quotation) => {
+    if (!qt?.id) return
+    const docs = await fetchQuotationLinkedDocs(qt)
+    setLinkedDocs(docs)
+  }
+
+  const handleCreateInvoiceNow = async () => {
+    if (!quotation?.id) return
+    setCreatingInvoice(true)
+    try {
+      const { invoice, created } = await ensureSalesInvoiceForQuotation({
+        quotation,
+        issueDate: quotation.customer_po_date || new Date().toISOString().split('T')[0],
+        customerPoNo: quotation.customer_po_no || '',
+      })
+      await refreshLinkedDocs(quotation)
+      alert(
+        created
+          ? `ออกใบแจ้งหนี้ตั้งลูกหนี้ (AR) เลขที่ ${invoice.invoice_no} และลงบัญชี / ภาษีขาย (ภ.พ.30) เรียบร้อยแล้ว`
+          : `ใบเสนอราคานี้มีใบแจ้งหนี้ AR เลขที่ ${invoice.invoice_no} อยู่ในระบบแล้ว`
+      )
+    } catch (err) {
+      alert('ออกใบแจ้งหนี้ AR ไม่สำเร็จ: ' + (err.message || ''))
+    } finally {
+      setCreatingInvoice(false)
+    }
   }
 
   const handleSaveCustomerPo = async (e) => {
@@ -87,9 +126,29 @@ export default function QuotationDetail() {
       }
       const { error } = await supabase.from('quotations').update(payload).eq('id', quotation.id)
       if (error) throw error
-      setQuotation((prev) => ({ ...prev, ...payload }))
+      const updatedQt = { ...quotation, ...payload }
+      setQuotation(updatedQt)
+
+      let invoiceMsg = ''
+      if (autoCreateArOnPo) {
+        try {
+          const { invoice, created } = await ensureSalesInvoiceForQuotation({
+            quotation: updatedQt,
+            issueDate: customerPoDate || new Date().toISOString().split('T')[0],
+            customerPoNo: customerPoNo.trim(),
+          })
+          invoiceMsg = created
+            ? `\n• ออกใบแจ้งหนี้ AR เลขที่ ${invoice.invoice_no} + ตั้งลูกหนี้ / ภาษีขายอัตโนมัติแล้ว`
+            : `\n• เชื่อมต่อใบแจ้งหนี้ AR เดิมเลขที่ ${invoice.invoice_no} แล้ว`
+        } catch (invErr) {
+          console.warn('Auto AR invoice notice:', invErr)
+          invoiceMsg = '\n• หมายเหตุ: สามารถกดออกใบแจ้งหนี้ AR เพิ่มเติมในขั้นที่ 5 ได้'
+        }
+      }
+
+      await refreshLinkedDocs(updatedQt)
       setShowPoModal(false)
-      alert('บันทึกการเซ็น PO ของลูกค้าเรียบร้อยแล้ว (สถานะเปลี่ยนเป็น: ลูกค้าอนุมัติ)')
+      alert(`บันทึกการเซ็น PO ของลูกค้าเรียบร้อยแล้ว (สถานะ: ลูกค้าอนุมัติ)${invoiceMsg}`)
     } catch (err) {
       alert('บันทึกไม่สำเร็จ: ' + err.message)
     } finally {
@@ -128,8 +187,37 @@ export default function QuotationDetail() {
       ])
 
       if (qRes.error) throw qRes.error
-      setQuotation(qRes.data)
+      const qt = qRes.data
+      setQuotation(qt)
       setItems(itemsRes.data || [])
+
+      // ดึงเอกสารเชื่อมโยงทั้งหมด (BOQ ต้นทาง + PR / PO + Sales Invoices)
+      const [docsResult, matchedBoqResult] = await Promise.all([
+        fetchQuotationLinkedDocs(qt),
+        (async () => {
+          let matchedBoq = null
+          if (qt?.boq_id) {
+            const { data: bById } = await supabase
+              .from('boqs')
+              .select('id, boq_no, title, status')
+              .eq('id', qt.boq_id)
+              .maybeSingle()
+            matchedBoq = bById || null
+          }
+          if (!matchedBoq && qt?.ref_no) {
+            const { data: bByNo } = await supabase
+              .from('boqs')
+              .select('id, boq_no, title, status')
+              .eq('boq_no', qt.ref_no)
+              .maybeSingle()
+            matchedBoq = bByNo || null
+          }
+          return matchedBoq
+        })(),
+      ])
+
+      setLinkedDocs(docsResult)
+      setSourceBoq(matchedBoqResult)
     } catch (err) {
       console.error('Failed to load quotation detail:', err)
     } finally {
@@ -167,6 +255,19 @@ export default function QuotationDetail() {
     try {
       const { error } = await supabase.from('quotations').delete().eq('id', quotation.id)
       if (error) throw error
+
+      // หากลบใบเสนอราคาที่แปลงมาจาก BOQ ให้คืนสถานะ BOQ เป็น approved หากไม่มีใบเสนอราคาอื่นผูกอยู่
+      if (sourceBoq?.id && sourceBoq.status === 'converted_to_quotation') {
+        const { data: remainingQt } = await supabase
+          .from('quotations')
+          .select('id')
+          .eq('ref_no', sourceBoq.boq_no)
+          .limit(1)
+        if (!remainingQt || remainingQt.length === 0) {
+          await supabase.from('boqs').update({ status: 'approved' }).eq('id', sourceBoq.id)
+        }
+      }
+
       alert('ลบใบเสนอราคาเรียบร้อยแล้ว')
       navigate('/quotations')
     } catch (err) {
@@ -201,6 +302,13 @@ export default function QuotationDetail() {
     label: quotation.status,
     color: 'bg-steel-100 text-steel-700 border-steel-300',
   }
+
+  const flow = computeQuotationWorkflow({
+    quotation,
+    prs: linkedDocs.prs,
+    pos: linkedDocs.pos,
+    invoices: linkedDocs.invoices,
+  })
 
   return (
     <div className="w-full space-y-6 pb-16">
@@ -377,6 +485,17 @@ export default function QuotationDetail() {
               <span>โครงการ: <strong className="text-sky-300">[{quotation.projects.project_code}] {quotation.projects.project_name}</strong></span>
             </span>
           )}
+
+          {sourceBoq && (
+            <Link
+              to={`/boq/${sourceBoq.id}`}
+              className="flex items-center gap-1.5 shrink-0 whitespace-nowrap rounded-full bg-amber-500/15 border border-amber-400/30 px-2.5 py-0.5 text-amber-300 hover:bg-amber-500/25 transition"
+            >
+              <FileSpreadsheet className="h-3 w-3 shrink-0" />
+              <span>BOQ ต้นทาง: <strong className="font-mono">{sourceBoq.boq_no}</strong></span>
+              <ExternalLink className="h-3 w-3 shrink-0" />
+            </Link>
+          )}
         </div>
       </div>
 
@@ -539,35 +658,62 @@ export default function QuotationDetail() {
             </div>
           </div>
 
-          {/* Step 4: ส่งต่อจัดซื้อ & สโตร์ */}
+          {/* Step 4: ส่งต่อจัดซื้อ & สโตร์ (เชื่อมข้อมูล PR / PO จริง) */}
           <div
             className={`rounded-xl border p-3.5 flex flex-col justify-between ${
-              quotation.customer_po_no || quotation.status === 'approved'
+              flow.step4State === 'done'
+                ? 'border-emerald-300 bg-emerald-50/50 dark:bg-emerald-950/20 dark:border-emerald-800'
+                : flow.step4State === 'in_progress'
+                ? 'border-sky-300 bg-sky-50/50 dark:bg-sky-950/20 dark:border-sky-800 ring-2 ring-sky-400/20'
+                : flow.step4State === 'ready'
                 ? 'border-amber-400 bg-amber-50/60 dark:bg-amber-950/30 dark:border-amber-700 ring-2 ring-amber-400/20'
                 : 'border-slate-200 bg-slate-50/40 dark:bg-slate-800/40 dark:border-slate-800 opacity-80'
             }`}
           >
             <div>
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-1">
                 <span
-                  className={`flex h-6 w-6 items-center justify-center rounded-full font-bold text-xs shadow-xs ${
-                    quotation.customer_po_no || quotation.status === 'approved'
+                  className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full font-bold text-xs shadow-xs ${
+                    flow.step4State === 'done'
+                      ? 'bg-emerald-600 text-white'
+                      : flow.step4State === 'in_progress'
+                      ? 'bg-sky-600 text-white'
+                      : flow.step4State === 'ready'
                       ? 'bg-amber-500 text-slate-950 font-black'
                       : 'bg-slate-200 text-slate-600'
                   }`}
                 >
-                  4
+                  {flow.step4State === 'done' ? <Check className="h-3.5 w-3.5" /> : '4'}
                 </span>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-amber-900 dark:text-amber-300">
-                  {quotation.customer_po_no ? 'พร้อมจัดซื้อ' : 'ขั้นตอนถัดไป'}
+                <span
+                  className={`text-[10px] font-bold uppercase tracking-wider truncate ${
+                    flow.step4State === 'done'
+                      ? 'text-emerald-800 dark:text-emerald-300'
+                      : flow.step4State === 'in_progress'
+                      ? 'text-sky-800 dark:text-sky-300'
+                      : flow.step4State === 'ready'
+                      ? 'text-amber-900 dark:text-amber-300'
+                      : 'text-slate-500'
+                  }`}
+                >
+                  {flow.step4Badge}
                 </span>
               </div>
               <div className="font-bold text-slate-900 dark:text-white mt-2 text-xs">
                 4. ส่งต่อจัดซื้อ &amp; สโตร์
               </div>
               <div className="text-[11px] text-slate-500 mt-1">
-                เปิด PR หรือออก PO สั่งแผง / อินเวอร์เตอร์ / อุปกรณ์
+                {flow.step4Detail}
               </div>
+              {flow.latestPO && (
+                <Link
+                  to={`/purchasing/po/${flow.latestPO.id}`}
+                  className="mt-1 inline-flex items-center gap-1 text-[11px] font-mono font-bold text-sky-700 hover:underline"
+                >
+                  <span>ดู PO ล่าสุด ({flow.latestPO.po_no})</span>
+                  <ExternalLink className="h-2.5 w-2.5" />
+                </Link>
+              )}
             </div>
             <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-800 flex items-center gap-2">
               <Link
@@ -587,26 +733,87 @@ export default function QuotationDetail() {
             </div>
           </div>
 
-          {/* Step 5: ติดตั้งส่งมอบ & บัญชี */}
-          <div className="rounded-xl border border-slate-200 bg-slate-50/40 dark:bg-slate-800/40 dark:border-slate-800 p-3.5 flex flex-col justify-between opacity-80">
+          {/* Step 5: ส่งมอบงาน & วางบิล AR (เชื่อมข้อมูล sales_invoices จริง) */}
+          <div
+            className={`rounded-xl border p-3.5 flex flex-col justify-between ${
+              flow.step5State === 'done'
+                ? 'border-emerald-300 bg-emerald-50/50 dark:bg-emerald-950/20 dark:border-emerald-800'
+                : flow.step5State === 'billed' || flow.step5State === 'partial'
+                ? 'border-sky-300 bg-sky-50/50 dark:bg-sky-950/20 dark:border-sky-800 ring-2 ring-sky-400/20'
+                : flow.step5State === 'ready'
+                ? 'border-amber-300 bg-amber-50/50 dark:bg-amber-950/20 dark:border-amber-800'
+                : 'border-slate-200 bg-slate-50/40 dark:bg-slate-800/40 dark:border-slate-800 opacity-80'
+            }`}
+          >
             <div>
-              <div className="flex items-center justify-between">
-                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-200 text-slate-600 font-bold text-xs">
-                  5
+              <div className="flex items-center justify-between gap-1">
+                <span
+                  className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full font-bold text-xs shadow-xs ${
+                    flow.step5State === 'done'
+                      ? 'bg-emerald-600 text-white'
+                      : flow.step5State === 'billed' || flow.step5State === 'partial'
+                      ? 'bg-sky-600 text-white'
+                      : flow.step5State === 'ready'
+                      ? 'bg-amber-500 text-slate-950 font-black'
+                      : 'bg-slate-200 text-slate-600'
+                  }`}
+                >
+                  {flow.step5State === 'done' ? <Check className="h-3.5 w-3.5" /> : '5'}
                 </span>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                  ปลายทางโครงการ
+                <span
+                  className={`text-[10px] font-bold uppercase tracking-wider truncate ${
+                    flow.step5State === 'done'
+                      ? 'text-emerald-800 dark:text-emerald-300'
+                      : flow.step5State === 'billed' || flow.step5State === 'partial'
+                      ? 'text-sky-800 dark:text-sky-300'
+                      : flow.step5State === 'ready'
+                      ? 'text-amber-800 dark:text-amber-300'
+                      : 'text-slate-500'
+                  }`}
+                >
+                  {flow.step5Badge}
                 </span>
               </div>
               <div className="font-bold text-slate-900 dark:text-white mt-2 text-xs">
-                5. ส่งมอบงาน &amp; วางบิล
+                5. ส่งมอบงาน &amp; วางบิล AR
               </div>
               <div className="text-[11px] text-slate-500 mt-1">
-                ติดตั้งระบบ ตรวจรับของ และส่งฝ่ายบัญชีวางบิล
+                {flow.step5Detail}
               </div>
             </div>
-            <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-800 text-[11px] text-slate-500">
-              สถานะ: รอส่งมอบโครงการ
+            <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2 text-[11px]">
+              {!flow.latestInvoice ? (
+                <button
+                  type="button"
+                  disabled={creatingInvoice}
+                  onClick={handleCreateInvoiceNow}
+                  className="text-sky-700 dark:text-sky-400 hover:underline font-bold flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                >
+                  <Plus className="h-3 w-3" />
+                  <span>{creatingInvoice ? 'กำลังสร้าง AR...' : 'ออกใบแจ้งหนี้ (AR)'}</span>
+                </button>
+              ) : flow.totalRemaining > 0.05 ? (
+                <button
+                  type="button"
+                  onClick={() => setShowPaymentModal(true)}
+                  className="text-emerald-700 dark:text-emerald-400 hover:underline font-bold flex items-center gap-1 cursor-pointer"
+                >
+                  <DollarSign className="h-3 w-3" />
+                  <span>รับชำระเงิน (RC)</span>
+                </button>
+              ) : (
+                <span className="text-emerald-700 font-bold flex items-center gap-1">
+                  <CheckCircle2 className="h-3 w-3" />
+                  <span>ปิดยอดลูกหนี้ครบ</span>
+                </span>
+              )}
+
+              <Link
+                to="/accounting/ar-aging"
+                className="text-slate-500 hover:text-sky-700 hover:underline font-medium shrink-0"
+              >
+                AR Aging →
+              </Link>
             </div>
           </div>
         </div>
@@ -625,6 +832,11 @@ export default function QuotationDetail() {
                 <span className="rounded-full bg-emerald-200 dark:bg-emerald-900/80 text-emerald-900 dark:text-emerald-200 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider">
                   CUSTOMER PO VERIFIED
                 </span>
+                {flow.latestInvoice && (
+                  <span className="rounded-full bg-sky-100 text-sky-900 px-2.5 py-0.5 text-[10px] font-mono font-bold">
+                    AR: {flow.latestInvoice.invoice_no}
+                  </span>
+                )}
               </div>
               <div className="mt-0.5 text-xs text-emerald-800 dark:text-emerald-300 font-mono flex flex-wrap gap-x-3 gap-y-1">
                 <span>เลขที่ PO ลูกค้า: <b>{quotation.customer_po_no}</b></span>
@@ -647,6 +859,26 @@ export default function QuotationDetail() {
               <Eye className="h-3.5 w-3.5" />
               <span>เปิดดูไฟล์ PO ลูกค้า</span>
             </button>
+            {!flow.latestInvoice ? (
+              <button
+                type="button"
+                disabled={creatingInvoice}
+                onClick={handleCreateInvoiceNow}
+                className="rounded-xl bg-sky-700 hover:bg-sky-800 text-white px-4 py-2 text-xs font-bold shadow-xs transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              >
+                <ReceiptText className="h-3.5 w-3.5" />
+                <span>{creatingInvoice ? 'กำลังออกใบแจ้งหนี้...' : 'ออกใบแจ้งหนี้ (AR)'}</span>
+              </button>
+            ) : flow.totalRemaining > 0.05 ? (
+              <button
+                type="button"
+                onClick={() => setShowPaymentModal(true)}
+                className="rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white px-4 py-2 text-xs font-bold shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+              >
+                <DollarSign className="h-3.5 w-3.5" />
+                <span>รับชำระเงิน ({baht(flow.totalRemaining)} บ.)</span>
+              </button>
+            ) : null}
             <Link
               to={`/purchasing/po/new?quotation_id=${quotation.id}`}
               className="rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 px-4 py-2 text-xs font-black shadow-xs transition flex items-center gap-1.5"
@@ -744,7 +976,17 @@ export default function QuotationDetail() {
             <div>
               <div className="text-slate-400">เลขที่อ้างอิง (Ref No. / BOQ)</div>
               <div className="font-mono font-bold text-slate-800 dark:text-slate-200 mt-0.5">
-                {quotation.ref_no || '-'}
+                {sourceBoq ? (
+                  <Link
+                    to={`/boq/${sourceBoq.id}`}
+                    className="inline-flex items-center gap-1 text-sky-700 hover:underline"
+                  >
+                    <span>{sourceBoq.boq_no}</span>
+                    <ExternalLink className="h-3 w-3" />
+                  </Link>
+                ) : (
+                  quotation.ref_no || '-'
+                )}
               </div>
             </div>
 
@@ -1104,11 +1346,26 @@ export default function QuotationDetail() {
                 </div>
               </div>
 
+              <label className="flex items-start gap-2 rounded-xl border border-sky-200 bg-sky-50/70 p-3 text-xs text-sky-900 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={autoCreateArOnPo}
+                  onChange={(e) => setAutoCreateArOnPo(e.target.checked)}
+                  className="mt-0.5 rounded border-steel-300 text-emerald-700"
+                />
+                <div>
+                  <div className="font-bold">ออกใบแจ้งหนี้ลูกหนี้ (AR) &amp; ลงภาษีขาย ภ.พ.30 อัตโนมัติทันที</div>
+                  <div className="text-[11px] text-sky-700">
+                    สร้างเอกสาร INV ตั้งลูกหนี้ AR Aging, ลงสมุดรายวัน (JV) และภาษีขาย 7% ให้อัตโนมัติ
+                  </div>
+                </div>
+              </label>
+
               <div className="rounded-xl bg-steel-50 p-3 border border-steel-200 text-steel-600 text-[11px] space-y-1">
                 <div className="font-bold text-steel-800">สิ่งที่จะเกิดขึ้นเมื่อกดยืนยัน:</div>
                 <div>1. สถานะใบเสนอราคาจะเปลี่ยนเป็น <b>ลูกค้าอนุมัติ (Approved)</b> ทันที</div>
                 <div>2. บันทึกเลขที่ PO และหลักฐานการเซ็นรับของลูกค้าในระบบ</div>
-                <div>3. พร้อมส่งต่อรายการวัสดุให้ฝ่ายจัดซื้อเปิด PO สั่งซื้อต่อไป</div>
+                <div>3. พร้อมส่งต่อรายการวัสดุให้ฝ่ายจัดซื้อเปิด PO และวางบิล AR ต่อได้ทันที</div>
               </div>
 
               <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-steel-100">
@@ -1131,6 +1388,28 @@ export default function QuotationDetail() {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Receive Payment Modal for Linked AR Invoice */}
+      {showPaymentModal && flow.latestInvoice && (
+        <PaymentActionModal
+          isOpen={true}
+          type="receive"
+          docType="INV"
+          docId={flow.latestInvoice.id}
+          docNo={flow.latestInvoice.invoice_no}
+          contactId={flow.latestInvoice.contact_id || null}
+          contactName={quotation.customer_name}
+          totalAmount={Number(flow.latestInvoice.total_amount || 0)}
+          alreadyPaid={Number(flow.latestInvoice.paid_amount || 0)}
+          projectId={quotation.project_id}
+          projectName={quotation.projects?.project_name}
+          onClose={() => setShowPaymentModal(false)}
+          onSuccess={() => {
+            setShowPaymentModal(false)
+            fetchDetail()
+          }}
+        />
       )}
     </div>
   )

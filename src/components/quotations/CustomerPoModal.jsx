@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { uploadQuotationFile, openFile } from '../../lib/files'
+import { ensureSalesInvoiceForQuotation } from '../../lib/salesBilling'
 import { X, Check, Upload, FileText } from 'lucide-react'
 
 export default function CustomerPoModal({ quotation, onClose, onSuccess }) {
@@ -10,6 +11,7 @@ export default function CustomerPoModal({ quotation, onClose, onSuccess }) {
   const [customerPoDate, setCustomerPoDate] = useState(quotation.customer_po_date || new Date().toISOString().split('T')[0])
   const [customerSignerName, setCustomerSignerName] = useState(quotation.customer_signer_name || '')
   const [customerPoFileUrl, setCustomerPoFileUrl] = useState(quotation.customer_po_file_url || '')
+  const [autoCreateInvoice, setAutoCreateInvoice] = useState(true)
   const [busy, setBusy] = useState(false)
   const [uploading, setUploading] = useState(false)
 
@@ -59,7 +61,20 @@ export default function CustomerPoModal({ quotation, onClose, onSuccess }) {
       const { error } = await supabase.from('quotations').update(payload).eq('id', quotation.id)
       if (error) throw error
 
-      if (onSuccess) onSuccess({ ...quotation, ...payload })
+      const updatedQt = { ...quotation, ...payload }
+      if (autoCreateInvoice) {
+        try {
+          await ensureSalesInvoiceForQuotation({
+            quotation: updatedQt,
+            issueDate: customerPoDate || new Date().toISOString().split('T')[0],
+            customerPoNo: customerPoNo.trim(),
+          })
+        } catch (invErr) {
+          console.warn('Auto create AR invoice warning:', invErr)
+        }
+      }
+
+      if (onSuccess) onSuccess(updatedQt)
       onClose()
     } catch (err) {
       alert('บันทึกไม่สำเร็จ: ' + err.message)
@@ -188,6 +203,22 @@ export default function CustomerPoModal({ quotation, onClose, onSuccess }) {
               )}
             </div>
           </div>
+
+          {/* ตัวเลือกสร้าง AR Invoice อัตโนมัติ */}
+          <label className="flex items-start gap-2 rounded-xl border border-sky-200 bg-sky-50/70 p-3 text-xs text-sky-900 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={autoCreateInvoice}
+              onChange={(e) => setAutoCreateInvoice(e.target.checked)}
+              className="mt-0.5 rounded border-steel-300 text-emerald-700"
+            />
+            <div>
+              <div className="font-bold">ออกใบแจ้งหนี้ลูกหนี้ (AR) &amp; ลงภาษีขาย ภ.พ.30 อัตโนมัติทันที</div>
+              <div className="text-[11px] text-sky-700">
+                บันทึกยอดเข้ารายงาน AR Aging สมุดรายวัน (JV) และภาษีขาย 7% ให้อัตโนมัติ
+              </div>
+            </div>
+          </label>
 
           {/* Buttons */}
           <div className="flex items-center justify-end gap-2 pt-3 border-t border-steel-100">

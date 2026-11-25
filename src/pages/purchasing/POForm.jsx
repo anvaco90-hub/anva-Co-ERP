@@ -13,6 +13,7 @@ import { EMPTY_ITEM, itemsValid } from '../../lib/purchasing'
 import { getItemVendorHistory } from '../../lib/purchasingHistory'
 import { baht } from '../../lib/projects'
 import { calculateTaxBreakdown, inferPoTaxType, inferQuotationTaxType } from '../../lib/tax'
+import { buildPurchaseItemsFromQuotation } from '../../lib/purchasingPricing'
 import { uploadQuotationFile, openFile } from '../../lib/files'
 import ItemsEditor from './ItemsEditor'
 import ItemProjectUsageModal from '../../components/ItemProjectUsageModal'
@@ -81,6 +82,10 @@ export default function POForm() {
   const [quotationUrl, setQuotationUrl] = useState('')
   const [quotationFile, setQuotationFile] = useState(null)
   const [uploadingQuotation, setUploadingQuotation] = useState(false)
+  const [salesQuotationId, setSalesQuotationId] = useState('')
+  const [salesQuotationNo, setSalesQuotationNo] = useState('')
+  const [quotationPricingMeta, setQuotationPricingMeta] = useState(null)
+  const [poPriceMode, setPoPriceMode] = useState('cost_baseline') // 'cost_baseline' | 'selling_ref'
   const [taxType, setTaxType] = useState('vat_excluded') // 'vat_excluded' (ราคาแยกภาษี +7% มาตรฐานจัดซื้อ) | 'vat_included' | 'vat_exempt'
   const [whtRate, setWhtRate] = useState('0') // '0' | '1' | '2' | '3' | '5'
   const [vendorTaxInvoiceNo, setVendorTaxInvoiceNo] = useState('')
@@ -141,43 +146,59 @@ export default function POForm() {
       })
     }
 
-    // โหลดรายการจากใบเสนอราคา (กรณีส่งต่อจากฝ่ายขาย Quotation -> PO)
+    // โหลดรายการจากใบเสนอราคาขาย (กรณีส่งต่อจากฝ่ายขาย Quotation -> PO)
     const qId = params.get('quotation_id')
     if (qId && !id) {
       Promise.all([
         supabase.from('quotations').select('*, projects(id, project_code, project_name)').eq('id', qId).single(),
         supabase.from('quotation_items').select('*').eq('quotation_id', qId),
-      ]).then(([qRes, itemsRes]) => {
-        if (qRes.data) {
-          if (qRes.data.project_id) setProjectId(qRes.data.project_id)
-          if (qRes.data.customer_name) setCustomerName(qRes.data.customer_name)
-          setQuotationNo(qRes.data.quotation_no || '')
-          setQuotationDate(qRes.data.issue_date || '')
-          // ซิงค์ประเภทภาษีจากใบเสนอราคามาให้ตรงกัน (vat_exempt, vat_included, vat_excluded)
-          setTaxType(inferQuotationTaxType(qRes.data))
-          if (qRes.data.wht_rate !== undefined && qRes.data.wht_rate !== null) {
-            setWhtRate(String(qRes.data.wht_rate))
+        supabase.from('inventory_items').select('id, item_code, item_name, unit, avg_unit_cost'),
+      ]).then(async ([qRes, itemsRes, invRes]) => {
+        const qt = qRes.data
+        const qItems = itemsRes.data || []
+        const invItems = invRes.data || []
+
+        // ดึงรายการต้นทุนจาก BOQ ต้นทางถ้ามี (แยกต้นทุนวัสดุจากราคาขาย)
+        let boqItems = []
+        if (qt?.boq_id) {
+          const { data: bi } = await supabase.from('boq_items').select('*').eq('boq_id', qt.boq_id)
+          if (bi) boqItems = bi
+        } else if (qt?.ref_no) {
+          const { data: bHead } = await supabase.from('boqs').select('id').eq('boq_no', qt.ref_no).maybeSingle()
+          if (bHead?.id) {
+            const { data: bi } = await supabase.from('boq_items').select('*').eq('boq_id', bHead.id)
+            if (bi) boqItems = bi
           }
         }
-        if (itemsRes.data && itemsRes.data.length > 0) {
-          setItems(itemsRes.data.map((i) => {
-            const rawPrice = Number(i.unit_price) || 0
-            const discPct = Number(i.discount_percent) || 0
-            // คำนวณราคาต่อหน่วยสุทธิหลังหักส่วนลดต่อรายการ
-            const effectiveUnitPrice = discPct > 0 
-              ? Math.round(rawPrice * (1 - discPct / 100) * 100) / 100 
-              : (i.total_amount && Number(i.quantity) > 0 
-                  ? Math.round((Number(i.total_amount) / Number(i.quantity)) * 100) / 100 
-                  : rawPrice)
 
-            return {
-              item_name: i.item_name,
-              quantity: String(i.quantity || 1),
-              unit: i.unit || 'ชุด',
-              price: String(effectiveUnitPrice || ''),
-              received: 0,
-            }
-          }))
+        if (qt) {
+          if (qt.project_id) setProjectId(qt.project_id)
+          if (qt.customer_name) setCustomerName(qt.customer_name)
+          // เก็บอ้างอิงใบเสนอราคาขายแยกจากช่องใบเสนอราคาจากผู้ขาย (Vendor Quotation)
+          setSalesQuotationId(qt.id || '')
+          setSalesQuotationNo(qt.quotation_no || '')
+          setTaxType(inferQuotationTaxType(qt))
+          if (qt.wht_rate !== undefined && qt.wht_rate !== null) {
+            setWhtRate(String(qt.wht_rate))
+          }
+        }
+
+        const meta = {
+          quotation: qt || {},
+          quotationItems: qItems,
+          boqItems,
+          inventoryItems: invItems,
+        }
+        setQuotationPricingMeta(meta)
+        setPoPriceMode('cost_baseline')
+
+        if (qItems.length > 0) {
+          setItems(
+            buildPurchaseItemsFromQuotation({
+              ...meta,
+              mode: 'cost_baseline',
+            })
+          )
         }
       })
     }
@@ -202,7 +223,8 @@ export default function POForm() {
       if (a.data.custom_project_name && !a.data.project_id) setProjectMode('custom')
 
       setCustomerName(a.data.customer_name || '')
-      setProjectId(a.data.project_id || '')
+      setSalesQuotationId(a.data.quotation_id || '')
+      setSalesQuotationNo(a.data.sales_quotation_no || '')
       setBuyerName(a.data.buyer_name || profile?.full_name || '')
       setPaymentType(a.data.payment_type || 'credit_30')
       setHasDeposit(a.data.deposit_type === 'deposit')
@@ -256,6 +278,12 @@ export default function POForm() {
     }
     if (a.data.customer_name) {
       setCustomerName(a.data.customer_name)
+    }
+    if (a.data.quotation_id) {
+      setSalesQuotationId(a.data.quotation_id)
+    }
+    if (a.data.sales_quotation_no) {
+      setSalesQuotationNo(a.data.sales_quotation_no)
     }
     // หาก PR ต้นทางระบุว่ากรอกราคาต่อหน่วยแบบรวม VAT 7% แล้ว ให้ตั้ง PO เป็น vat_included เพื่อไม่บวกซ้ำ
     if (a.data.notes && a.data.notes.includes('[ราคารวม VAT 7% แล้ว]')) {
@@ -502,6 +530,8 @@ export default function POForm() {
         remaining_amount: Math.max(0, Math.round((netAmount - Number(po?.deposit_paid_amount || 0)) * 100) / 100),
         payment_channel_requested: paymentChannelRequested,
         payment_status: sendToAccounting ? 'รอชำระเงิน' : (po?.payment_status || 'รอชำระเงิน'),
+        quotation_id: salesQuotationId || null,
+        sales_quotation_no: salesQuotationNo || null,
         quotation_no: quotationNo || null,
         quotation_date: quotationDate || null,
         quotation_url: finalQuotationUrl || null,
@@ -526,11 +556,28 @@ export default function POForm() {
 
       const applyExtraFields = async (targetId) => {
         let payload = { ...extraFields }
-        let res = await supabase.from('purchase_orders').update(payload).eq('id', targetId)
-        if (res.error && res.error.message?.includes('does not exist')) {
-          if (res.error.message?.includes('quotation_url')) {
-            delete payload.quotation_url
+        for (let attempt = 0; attempt < 6; attempt++) {
+          const res = await supabase.from('purchase_orders').update(payload).eq('id', targetId)
+          if (!res.error) return
+          const msg = res.error.message || ''
+          if (!msg.includes('does not exist') && !msg.includes('Could not find')) throw res.error
+
+          if (msg.includes('quotation_id')) {
+            delete payload.quotation_id
+            continue
           }
+          if (msg.includes('sales_quotation_no')) {
+            delete payload.sales_quotation_no
+            if (salesQuotationNo && !String(payload.notes || '').includes(salesQuotationNo)) {
+              payload.notes = [payload.notes, `[QT ขาย: ${salesQuotationNo}]`].filter(Boolean).join(' ')
+            }
+            continue
+          }
+          if (msg.includes('quotation_url')) {
+            delete payload.quotation_url
+            continue
+          }
+
           delete payload.customer_name
           delete payload.custom_project_name
           delete payload.custom_vendor_name
@@ -538,11 +585,10 @@ export default function POForm() {
             customerName.trim() ? `[ลูกค้า: ${customerName.trim()}]` : '',
             finalCustomProjectName ? `[โครงการ: ${finalCustomProjectName}]` : '',
             finalCustomVendorName ? `[ร้านค้า: ${finalCustomVendorName}]` : '',
+            salesQuotationNo ? `[QT ขาย: ${salesQuotationNo}]` : '',
           ].filter(Boolean).join(' ')
           payload.notes = (notes ? `${notes}\n${tags}` : tags) || null
-          res = await supabase.from('purchase_orders').update(payload).eq('id', targetId)
         }
-        if (res.error) throw res.error
       }
 
       if (id) {
@@ -1161,11 +1207,11 @@ export default function POForm() {
 
             <div>
               <label className="block text-xs font-semibold text-steel-700 mb-1">
-                เลขที่ใบเสนอราคา (Quotation No.)
+                เลขที่ใบเสนอราคาจากผู้ขาย (Vendor Quotation No.)
               </label>
               <input
                 className="input text-xs"
-                placeholder="เช่น QT-2026-089"
+                placeholder="เช่น QTV-SCG-2026-089"
                 value={quotationNo}
                 onChange={(e) => setQuotationNo(e.target.value)}
               />
@@ -1173,7 +1219,7 @@ export default function POForm() {
 
             <div>
               <label className="block text-xs font-semibold text-steel-700 mb-1">
-                วันที่ใบเสนอราคา
+                วันที่ใบเสนอราคาผู้ขาย
               </label>
               <input
                 type="date"
@@ -1502,6 +1548,75 @@ export default function POForm() {
             </div>
           </div>
         </div>
+
+        {/* แถบเชื่อมโยงใบเสนอราคาขายและเลือกโหมดต้นทุนซื้อจริง */}
+        {(salesQuotationNo || quotationPricingMeta) && (
+          <div className="rounded-xl border border-emerald-300 bg-emerald-50/70 p-4 space-y-2 text-xs">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2 font-bold text-emerald-950">
+                <FileText className="h-4 w-4 text-emerald-700" />
+                <span>
+                  สั่งซื้ออ้างอิงจากใบเสนอราคาขาย:{' '}
+                  <b className="font-mono text-emerald-800">{salesQuotationNo}</b>
+                </span>
+                {salesQuotationId && (
+                  <Link
+                    to={`/quotations/${salesQuotationId}`}
+                    className="rounded bg-white border border-emerald-300 px-2 py-0.5 text-[11px] text-emerald-800 hover:bg-emerald-100"
+                  >
+                    เปิดดู QT
+                  </Link>
+                )}
+              </div>
+
+              {quotationPricingMeta && (
+                <div className="flex items-center gap-1 rounded-lg border border-emerald-200 bg-white p-0.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPoPriceMode('cost_baseline')
+                      setItems(
+                        buildPurchaseItemsFromQuotation({
+                          ...quotationPricingMeta,
+                          mode: 'cost_baseline',
+                        })
+                      )
+                    }}
+                    className={`rounded px-2.5 py-1 text-[11px] font-bold transition cursor-pointer ${
+                      poPriceMode === 'cost_baseline'
+                        ? 'bg-emerald-700 text-white'
+                        : 'text-emerald-800 hover:bg-emerald-50'
+                    }`}
+                  >
+                    ต้นทุนซื้อจริง (BOQ/สต็อก)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPoPriceMode('selling_ref')
+                      setItems(
+                        buildPurchaseItemsFromQuotation({
+                          ...quotationPricingMeta,
+                          mode: 'selling_ref',
+                        })
+                      )
+                    }}
+                    className={`rounded px-2.5 py-1 text-[11px] font-bold transition cursor-pointer ${
+                      poPriceMode === 'selling_ref'
+                        ? 'bg-sky-700 text-white'
+                        : 'text-sky-700 hover:bg-sky-50'
+                    }`}
+                  >
+                    ดึงราคาขาย QT (ก่อน VAT)
+                  </button>
+                </div>
+              )}
+            </div>
+            <p className="text-[11px] text-emerald-900/80">
+              * ใบเสนอราคาขายแยกจากช่อง "ใบเสนอราคาจากผู้ขาย (Vendor Quote)" ด้านบน — กรอกหรือตรวจแก้ราคาซื้อจริงจากร้านค้าก่อนกดบันทึก
+            </p>
+          </div>
+        )}
 
         {/* รายการสั่งซื้อ */}
         <div className="text-sm font-medium text-ink pt-2">

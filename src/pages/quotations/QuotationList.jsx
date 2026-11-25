@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { baht } from '../../lib/projects'
+import { ensureSalesInvoiceForQuotation } from '../../lib/salesBilling'
 import QuotationPrintModal from '../../components/reports/QuotationPrintModal'
 import EnvelopePrintModal from '../../components/reports/EnvelopePrintModal'
 import QuotationShareModal from '../../components/quotations/QuotationShareModal'
@@ -225,6 +226,26 @@ export default function QuotationList() {
       setActionMenuId(null)
     } catch (err) {
       alert('ไม่สามารถลบใบเสนอราคาได้: ' + (err.message || 'โปรดตรวจสอบสิทธิ์'))
+    }
+  }
+
+  const handleOpenReceivePayment = async (q) => {
+    setActionMenuId(null)
+    try {
+      const { invoice } = await ensureSalesInvoiceForQuotation({ quotation: q })
+      setPaymentTarget({ quotation: q, invoice })
+    } catch (err) {
+      console.error('Failed to prepare AR invoice for payment:', err)
+      setPaymentTarget({
+        quotation: q,
+        invoice: {
+          id: q.id,
+          invoice_no: q.quotation_no,
+          total_amount: q.grand_total || q.net_amount || q.total_amount || 0,
+          paid_amount: 0,
+          contact_id: null,
+        },
+      })
     }
   }
 
@@ -855,17 +876,14 @@ export default function QuotationList() {
                                   <span>ทำซ้ำใบเสนอราคา (Duplicate)</span>
                                 </Link>
 
-                                {q.status === 'approved' && (
+                                {(q.status === 'approved' || q.status === 'partial') && (
                                   <button
                                     type="button"
-                                    onClick={() => {
-                                      setPaymentTarget(q)
-                                      setActionMenuId(null)
-                                    }}
+                                    onClick={() => handleOpenReceivePayment(q)}
                                     className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 font-semibold cursor-pointer transition"
                                   >
                                     <DollarSign className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-                                    <span>บันทึกรับชำระเงิน</span>
+                                    <span>บันทึกรับชำระเงิน (AR)</span>
                                   </button>
                                 )}
 
@@ -952,13 +970,20 @@ export default function QuotationList() {
           isOpen={true}
           type="receive"
           docType="INV"
-          docId={paymentTarget.id}
-          docNo={paymentTarget.quotation_no}
-          contactName={paymentTarget.customer_name}
-          totalAmount={paymentTarget.grand_total || paymentTarget.net_amount || paymentTarget.total_amount}
-          alreadyPaid={0}
-          projectId={paymentTarget.project_id}
-          projectName={paymentTarget.projects?.project_name}
+          docId={paymentTarget.invoice?.id || paymentTarget.quotation?.id}
+          docNo={paymentTarget.invoice?.invoice_no || paymentTarget.quotation?.quotation_no}
+          contactId={paymentTarget.invoice?.contact_id || null}
+          contactName={paymentTarget.quotation?.customer_name}
+          totalAmount={Number(
+            paymentTarget.invoice?.total_amount ||
+              paymentTarget.quotation?.grand_total ||
+              paymentTarget.quotation?.net_amount ||
+              paymentTarget.quotation?.total_amount ||
+              0
+          )}
+          alreadyPaid={Number(paymentTarget.invoice?.paid_amount || 0)}
+          projectId={paymentTarget.quotation?.project_id}
+          projectName={paymentTarget.quotation?.projects?.project_name}
           onClose={() => setPaymentTarget(null)}
           onSuccess={() => fetchQuotations()}
         />

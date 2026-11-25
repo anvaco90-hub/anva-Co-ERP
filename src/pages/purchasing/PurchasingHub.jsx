@@ -2552,8 +2552,8 @@ export default function PurchasingHub() {
                                     </div>
                                   </div>
                                   <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                                    {primaryPo?.quotation_no
-                                      ? `อ้างอิงใบเสนอราคา: ${primaryPo.quotation_no}`
+                                    {(primaryPo?.sales_quotation_no || primaryPo?.quotation_no)
+                                      ? `อ้างอิงใบเสนอราคา: ${primaryPo.sales_quotation_no || primaryPo.quotation_no}`
                                       : 'เปิดคำสั่งซื้อตรงเข้าฝ่ายจัดซื้อ'}
                                   </div>
                                 </div>

@@ -5,6 +5,7 @@ import { fetchUnifiedCustomers, fetchUnifiedVendors } from '../../lib/contactsSy
 import { EMPTY_ITEM, itemsValid } from '../../lib/purchasing'
 import { baht } from '../../lib/projects'
 import { inferQuotationTaxType, round2 } from '../../lib/tax'
+import { buildPurchaseItemsFromQuotation } from '../../lib/purchasingPricing'
 import ItemsEditor from './ItemsEditor'
 import { FieldError } from '../../components/FieldError'
 import SearchableSelect from '../../components/SearchableSelect'
@@ -31,10 +32,11 @@ export default function PRForm() {
   const [errors, setErrors] = useState({})
   const [showItemErrors, setShowItemErrors] = useState(false)
 
-  // จัดการการซิงค์ราคาและภาษีจากใบเสนอราคา (Quotation -> PR Sync)
-  // ค่าเริ่มต้นของใบขอซื้อ (PR) ควรเป็น "ราคาก่อน VAT" เพื่อไม่ให้บวก VAT ซ้ำเมื่อส่งต่อไปออก PO
+  // จัดการการซิงค์ต้นทุนและลิงก์จากใบเสนอราคาขาย (Quotation -> PR Sync)
+  const [salesQuotationId, setSalesQuotationId] = useState('')
+  const [salesQuotationNo, setSalesQuotationNo] = useState('')
   const [quotationSync, setQuotationSync] = useState(null)
-  const [prPriceMode, setPrPriceMode] = useState('net_before_vat') // 'net_before_vat' | 'with_vat'
+  const [prPriceMode, setPrPriceMode] = useState('cost_baseline') // 'cost_baseline' | 'net_before_vat' | 'with_vat'
   const loadedQuotationRef = useRef(false)
   const PR_VAT_INCLUDED_TAG = '[ราคารวม VAT 7% แล้ว]'
 
@@ -42,33 +44,41 @@ export default function PRForm() {
     if (!syncData) return
     setPrPriceMode(mode)
 
-    let vatMultiplier = 1
-    if (syncData.hasVat) {
-      if (syncData.qTaxType === 'vat_included') {
-        vatMultiplier = mode === 'net_before_vat' ? 1 / (1 + syncData.vatRate / 100) : 1
-      } else {
-        vatMultiplier = mode === 'with_vat' ? 1 + syncData.vatRate / 100 : 1
+    if (mode === 'cost_baseline') {
+      setItems(
+        buildPurchaseItemsFromQuotation({
+          quotation: syncData.quotation || {},
+          quotationItems: syncData.rawItems || [],
+          boqItems: syncData.boqItems || [],
+          inventoryItems: syncData.inventoryItems || [],
+          mode: 'cost_baseline',
+        })
+      )
+    } else {
+      let vatMultiplier = 1
+      if (syncData.hasVat) {
+        if (syncData.qTaxType === 'vat_included') {
+          vatMultiplier = mode === 'net_before_vat' ? 1 / (1 + syncData.vatRate / 100) : 1
+        } else {
+          vatMultiplier = mode === 'with_vat' ? 1 + syncData.vatRate / 100 : 1
+        }
       }
+
+      const refItems = buildPurchaseItemsFromQuotation({
+        quotation: syncData.quotation || {},
+        quotationItems: syncData.rawItems || [],
+        boqItems: syncData.boqItems || [],
+        inventoryItems: syncData.inventoryItems || [],
+        mode: 'selling_ref',
+      }).map((row) => ({
+        ...row,
+        price:
+          mode === 'with_vat' && syncData.hasVat
+            ? String(round2(Number(row.sellingPriceRef || 0) * (1 + syncData.vatRate / 100)) || '')
+            : row.price,
+      }))
+      setItems(refItems)
     }
-
-    setItems(syncData.rawItems.map((i) => {
-      const rawPrice = Number(i.unit_price) || 0
-      const discPct = Number(i.discount_percent) || 0
-      const baseEffective = discPct > 0
-        ? rawPrice * (1 - discPct / 100)
-        : (i.total_amount && Number(i.quantity) > 0
-            ? Number(i.total_amount) / Number(i.quantity)
-            : rawPrice)
-      const finalPrice = round2(baseEffective * vatMultiplier)
-
-      return {
-        item_name: i.item_name,
-        quantity: String(i.quantity || 1),
-        unit: i.unit || 'ชุด',
-        price: String(finalPrice || ''),
-        discount_percent: discPct > 0 ? String(discPct) : '0',
-      }
-    }))
 
     setNotes((prev) => {
       const cleaned = (prev || '')
@@ -88,25 +98,41 @@ export default function PRForm() {
     fetchUnifiedCustomers().then((data) => setCustomers(data ?? []))
     fetchUnifiedVendors().then((data) => setVendors(data ?? []))
 
-    // โหลดรายการจากใบเสนอราคาถ้ามีการส่งต่อมา (Quotation -> PR)
+    // โหลดรายการจากใบเสนอราคาขายถ้ามีการส่งต่อมา (Quotation -> PR)
     const qId = params.get('quotation_id')
     if (qId && !id && !loadedQuotationRef.current) {
       loadedQuotationRef.current = true
       Promise.all([
         supabase.from('quotations').select('*').eq('id', qId).single(),
         supabase.from('quotation_items').select('*').eq('quotation_id', qId),
-      ]).then(([qRes, itemsRes]) => {
-        if (qRes.data?.project_id) {
-          setProjectId(qRes.data.project_id)
+        supabase.from('inventory_items').select('id, item_code, item_name, unit, avg_unit_cost'),
+      ]).then(async ([qRes, itemsRes, invRes]) => {
+        const qt = qRes.data
+        if (qt?.project_id) {
+          setProjectId(qt.project_id)
           setProjectMode('select')
         }
-        if (qRes.data?.customer_name) {
-          setCustomerName(qRes.data.customer_name)
+        if (qt?.customer_name) {
+          setCustomerName(qt.customer_name)
+        }
+        setSalesQuotationId(qt?.id || '')
+        setSalesQuotationNo(qt?.quotation_no || '')
+
+        let boqItems = []
+        if (qt?.boq_id) {
+          const { data: bi } = await supabase.from('boq_items').select('*').eq('boq_id', qt.boq_id)
+          if (bi) boqItems = bi
+        } else if (qt?.ref_no) {
+          const { data: bHead } = await supabase.from('boqs').select('id').eq('boq_no', qt.ref_no).maybeSingle()
+          if (bHead?.id) {
+            const { data: bi } = await supabase.from('boq_items').select('*').eq('boq_id', bHead.id)
+            if (bi) boqItems = bi
+          }
         }
 
         const qItems = itemsRes.data || []
-        const qTaxType = inferQuotationTaxType(qRes.data)
-        const vatRate = Number(qRes.data?.vat_rate ?? 7)
+        const qTaxType = inferQuotationTaxType(qt)
+        const vatRate = Number(qt?.vat_rate ?? 7)
         const hasVat = qTaxType !== 'vat_exempt' && vatRate > 0
 
         const rawAfterDisc = qItems.reduce((s, i) => {
@@ -130,7 +156,8 @@ export default function PRForm() {
         }
 
         const syncObj = {
-          quotation_no: qRes.data?.quotation_no,
+          quotation: qt || {},
+          quotation_no: qt?.quotation_no,
           qTaxType,
           subtotalNet,
           hasVat,
@@ -138,20 +165,22 @@ export default function PRForm() {
           vatAmt,
           grandTotal,
           rawItems: qItems,
+          boqItems,
+          inventoryItems: invRes.data || [],
         }
         setQuotationSync(syncObj)
 
-        if (qRes.data?.quotation_no) {
-          const qNoTag = `อ้างอิงใบเสนอราคา: ${qRes.data.quotation_no}`
+        if (qt?.quotation_no) {
+          const qNoTag = `อ้างอิงใบเสนอราคา: ${qt.quotation_no}`
           setNotes((prev) => {
             if (!prev) return qNoTag
-            if (prev.includes(qRes.data.quotation_no)) return prev
+            if (prev.includes(qt.quotation_no)) return prev
             return `${prev}\n${qNoTag}`
           })
         }
 
-        // ค่าเริ่มต้น: ใช้ราคาก่อน VAT เสมอ เพื่อนำไปคำนวณภาษีซื้อใน PO เพียงรอบเดียว
-        applyPriceMode('net_before_vat', syncObj)
+        // ค่าเริ่มต้น: ดึงจากต้นทุน BOQ / สต็อก แทนการเอาราคาขายลูกค้ามาตั้งเป็นราคาซื้อตรงๆ
+        applyPriceMode('cost_baseline', syncObj)
       })
     }
 
@@ -232,10 +261,24 @@ export default function PRForm() {
           customer_name: customerName.trim() || null,
           custom_project_name: finalCustomProjectName || null,
           suggested_vendor: suggestedVendor.trim() || null,
+          quotation_id: salesQuotationId || null,
+          sales_quotation_no: salesQuotationNo || null,
           notes: notes || null,
         }
-        let updRes = await supabase.from('purchase_requisitions').update(prPayload).eq('id', targetPrId)
-        if (updRes.error && updRes.error.message?.includes('does not exist')) {
+        for (let attempt = 0; attempt < 4; attempt++) {
+          const updRes = await supabase.from('purchase_requisitions').update(prPayload).eq('id', targetPrId)
+          if (!updRes.error) break
+          const msg = updRes.error.message || ''
+          if (!msg.includes('does not exist') && !msg.includes('Could not find')) break
+
+          if (msg.includes('quotation_id')) {
+            delete prPayload.quotation_id
+            continue
+          }
+          if (msg.includes('sales_quotation_no')) {
+            delete prPayload.sales_quotation_no
+            continue
+          }
           delete prPayload.customer_name
           delete prPayload.custom_project_name
           delete prPayload.suggested_vendor
@@ -245,7 +288,6 @@ export default function PRForm() {
             suggestedVendor.trim() ? `[ร้านค้าแนะนำ: ${suggestedVendor.trim()}]` : '',
           ].filter(Boolean).join(' ')
           prPayload.notes = (notes ? `${notes}\n${tags}` : tags) || null
-          await supabase.from('purchase_requisitions').update(prPayload).eq('id', targetPrId)
         }
       }
 
@@ -415,25 +457,36 @@ export default function PRForm() {
           </div>
         </div>
 
-        {/* กล่องแสดงการซิงค์ข้อมูลและเลือกโหมดราคากับใบเสนอราคา */}
+        {/* กล่องแสดงการซิงค์ข้อมูลและเลือกโหมดราคากับใบเสนอราคาขาย */}
         {quotationSync && (
           <div className="rounded-xl border border-sky-300 bg-sky-50/70 p-4 space-y-2.5 text-xs shadow-2xs">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-sky-200/80 pb-2.5">
               <div className="font-bold text-sky-950 flex items-center gap-1.5">
                 <FileText className="h-4 w-4 text-sky-700" />
-                <span>ซิงค์ข้อมูลจากใบเสนอราคา: <b className="font-mono text-sky-800">{quotationSync.quotation_no}</b></span>
+                <span>ซิงค์ข้อมูลจากใบเสนอราคาขาย: <b className="font-mono text-sky-800">{quotationSync.quotation_no}</b></span>
               </div>
               <div className="flex flex-wrap items-center gap-1 bg-white p-0.5 rounded-lg border border-sky-200">
+                <button
+                  type="button"
+                  onClick={() => applyPriceMode('cost_baseline')}
+                  className={`px-3 py-1.5 rounded-md font-bold text-xs transition cursor-pointer flex items-center gap-1 ${
+                    prPriceMode === 'cost_baseline' ? 'bg-emerald-700 text-white shadow-2xs' : 'text-emerald-800 hover:bg-emerald-50'
+                  }`}
+                  title="ดึงต้นทุนวัสดุจาก BOQ หรือราคาเฉลี่ยคลัง และเว้นช่องที่ไม่รู้ให้กรอกราคาซื้อจริง"
+                >
+                  <CheckCircle2 className={`h-3.5 w-3.5 ${prPriceMode === 'cost_baseline' ? 'inline' : 'hidden'}`} />
+                  <span>ต้นทุนซื้อจริง (BOQ / สต็อก) · แนะนำ</span>
+                </button>
                 <button
                   type="button"
                   onClick={() => applyPriceMode('net_before_vat')}
                   className={`px-3 py-1.5 rounded-md font-bold text-xs transition cursor-pointer flex items-center gap-1 ${
                     prPriceMode === 'net_before_vat' ? 'bg-sky-700 text-white shadow-2xs' : 'text-sky-700 hover:bg-sky-50'
                   }`}
-                  title="ใช้ราคาก่อน VAT (แนะนำ) เพื่อนำไปคำนวณภาษีซื้อใน PO เพียงรอบเดียว"
+                  title="ดึงราคาเสนอขายลูกค้า (ก่อน VAT) มาใช้เป็นตัวเลขตั้งต้นอ้างอิง"
                 >
                   <CheckCircle2 className={`h-3.5 w-3.5 ${prPriceMode === 'net_before_vat' ? 'inline' : 'hidden'}`} />
-                  <span>ราคาก่อน VAT · แนะนำ (฿{baht(quotationSync.subtotalNet)} บ.)</span>
+                  <span>ราคาขาย QT ก่อน VAT (฿{baht(quotationSync.subtotalNet)})</span>
                 </button>
                 {quotationSync.hasVat && (
                   <button
@@ -445,7 +498,7 @@ export default function PRForm() {
                     title="ใช้ราคารวม VAT 7% (ระบบจะทำเครื่องหมายให้ PO รู้ว่ารวม VAT แล้ว)"
                   >
                     <CheckCircle2 className={`h-3.5 w-3.5 ${prPriceMode === 'with_vat' ? 'inline' : 'hidden'}`} />
-                    <span>ราคารวม VAT 7% (฿{baht(quotationSync.grandTotal)} บ.)</span>
+                    <span>รวม VAT 7% (฿{baht(quotationSync.grandTotal)})</span>
                   </button>
                 )}
               </div>
@@ -460,7 +513,7 @@ export default function PRForm() {
               </span>
             </div>
             <p className="text-[11px] text-sky-900/80">
-              * ปกติใบขอซื้อ (PR) ควรใช้ <b>ราคาก่อน VAT</b> แล้วค่อยให้ระบบไปคิดภาษีซื้อ (VAT 7%) ตอนออกใบสั่งซื้อ (PO) กับร้านค้าเพื่อไม่ให้บวก VAT ซ้ำ 2 รอบ (อย่าลืมปรับราคา/หน่วยเป็นราคาต้นทุนซื้อจริงจากร้านค้า)
+              * ระบบแยกราคาขายลูกค้าออกจากราคาขอซื้อจริงให้อัตโนมัติ (ดึงจาก BOQ/สต็อกก่อน หากไม่มีให้กรอกราคาประเมินซื้อจริง โดยแสดงราคาขาย QT กำกับใต้รายการให้เทียบกำไร)
             </p>
           </div>
         )}

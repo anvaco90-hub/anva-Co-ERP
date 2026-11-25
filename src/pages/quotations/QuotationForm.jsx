@@ -4,6 +4,8 @@ import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
 import { baht } from '../../lib/projects'
 import { calculateTaxBreakdown, inferQuotationTaxType } from '../../lib/tax'
+import { fetchUnifiedCustomers, ensureLegacyCustomerId } from '../../lib/contactsSync'
+import { buildQuotationItemsFromBoq, matchBoqCustomer, formatCustomerBranchLabel } from '../../lib/boqToQuotation'
 import { uploadQuotationFile, openFile } from '../../lib/files'
 import R2Image from '../../components/R2Image'
 import { FieldError, fieldErrorClass } from '../../components/FieldError'
@@ -58,7 +60,9 @@ export default function QuotationForm() {
   const { profile } = useAuth()
   const [searchParams] = useSearchParams()
   const duplicateFromId = searchParams.get('duplicate_from')
+  const boqIdParam = searchParams.get('boq_id')
   const [duplicatedFromNo, setDuplicatedFromNo] = useState('')
+  const [existingStatus, setExistingStatus] = useState('draft')
 
   // 1. ส่วนหัวเอกสารและข้อมูลอ้างอิง
   const [quotationNo, setQuotationNo] = useState('')
@@ -76,9 +80,11 @@ export default function QuotationForm() {
   const [customerTaxId, setCustomerTaxId] = useState('')
   const [customerBranch, setCustomerBranch] = useState('สำนักงานใหญ่')
 
-  // 3. การเชื่อมโยงโครงการ
+  // 3. การเชื่อมโยงโครงการ & BOQ
   const [projects, setProjects] = useState([])
   const [projectId, setProjectId] = useState('')
+  const [boqsList, setBoqsList] = useState([])
+  const [boqId, setBoqId] = useState('')
   const [refNo, setRefNo] = useState('')
 
   // 4. รายการสินค้าและบริการ
@@ -115,66 +121,72 @@ export default function QuotationForm() {
     }
   }, [issueDate, validityDays])
 
-  // โหลดโครงการ, ลูกค้า (รวมจาก contacts & customers), แคตตาล็อกสินค้า
+  // ฟังก์ชันดึงข้อมูลจาก BOQ มาใส่ในใบเสนอราคา
+  const applyBoqData = async (targetBoqId, boqPool = boqsList, custPool = customers) => {
+    setBoqId(targetBoqId)
+    if (!targetBoqId) return
+    const selectedBoq = boqPool.find((b) => b.id === targetBoqId)
+    if (!selectedBoq) return
+
+    setRefNo(selectedBoq.boq_no || '')
+    if (selectedBoq.project_id) setProjectId(selectedBoq.project_id)
+
+    const matchedCust = matchBoqCustomer(selectedBoq, custPool)
+    if (matchedCust) {
+      setCustomerName(matchedCust.customer_name)
+      if (matchedCust.address) setCustomerAddress(matchedCust.address)
+      if (matchedCust.postal_code) setCustomerPostalCode(matchedCust.postal_code)
+      if (matchedCust.tax_id) setCustomerTaxId(matchedCust.tax_id)
+      setCustomerBranch(formatCustomerBranchLabel(matchedCust))
+    } else if (selectedBoq.customer_name) {
+      setCustomerName(selectedBoq.customer_name)
+    }
+
+    if (selectedBoq.notes) {
+      setCustomerNotes(selectedBoq.notes)
+    }
+
+    const { data: bItems } = await supabase
+      .from('boq_items')
+      .select('*')
+      .eq('boq_id', targetBoqId)
+      .order('sort_order', { ascending: true })
+
+    if (bItems && bItems.length > 0) {
+      const converted = buildQuotationItemsFromBoq(selectedBoq, bItems)
+      setItems(
+        converted.map((row) => ({
+          item_name: row.item_name,
+          description: row.description || '',
+          quantity: String(row.quantity),
+          unit: row.unit || 'ชุด',
+          unit_price: String(row.unit_price),
+          discount_percent: '0',
+        }))
+      )
+    }
+  }
+
+  // โหลดโครงการ, ลูกค้า (จาก contacts + customers), BOQ, แคตตาล็อกสินค้า
   useEffect(() => {
-    supabase.from('projects').select('id, project_code, project_name, client_name').order('project_code').then(({ data }) => setProjects(data ?? []))
-
-    // ดึงรายชื่อลูกค้าจากทั้ง contacts (is_customer หรือ contact_type=customer) และ customers
     Promise.all([
-      supabase.from('contacts').select('*').or('contact_type.eq.customer,is_customer.eq.true').order('company_name'),
-      supabase.from('customers').select('*').order('customer_name'),
-    ]).then(([contactsRes, customersRes]) => {
-      const merged = []
-      const seenNames = new Set()
+      supabase.from('projects').select('id, project_code, project_name, client_name').order('project_code'),
+      fetchUnifiedCustomers().catch(() => []),
+      supabase.from('boqs').select('*').order('created_at', { ascending: false }),
+      supabase.from('inventory_items').select('id, item_code, item_name, unit, avg_unit_cost').order('item_name'),
+    ]).then(([projRes, unifiedCusts, boqRes, invRes]) => {
+      const projList = projRes.data ?? []
+      const custList = unifiedCusts ?? []
+      const bList = boqRes.error ? [] : boqRes.data ?? []
+      setProjects(projList)
+      setCustomers(custList)
+      setBoqsList(bList)
+      setCatalog(invRes.data ?? [])
 
-      // 1. เพิ่มจาก contacts
-      if (contactsRes.data) {
-        contactsRes.data.forEach((c) => {
-          const name = (c.company_name || c.business_name || '').trim()
-          if (name && !seenNames.has(name.toLowerCase())) {
-            seenNames.add(name.toLowerCase())
-            merged.push({
-              id: c.id,
-              customer_code: c.contact_code || '',
-              customer_name: name,
-              tax_id: c.tax_id || '',
-              address: c.registered_address || c.address || '',
-              postal_code: c.postal_code || '',
-              branch_type: c.branch_type || 'head_office',
-              branch_no: c.branch_code || '00000',
-              phone: c.office_phone || c.phone || '',
-              email: c.email || '',
-            })
-          }
-        })
+      if (!id && boqIdParam) {
+        applyBoqData(boqIdParam, bList, custList)
       }
-
-      // 2. เพิ่มจาก customers ถ้ายังไม่มี
-      if (customersRes.data) {
-        customersRes.data.forEach((c) => {
-          const name = (c.customer_name || c.company_name || '').trim()
-          if (name && !seenNames.has(name.toLowerCase())) {
-            seenNames.add(name.toLowerCase())
-            merged.push({
-              id: c.id,
-              customer_code: c.customer_code || '',
-              customer_name: name,
-              tax_id: c.tax_id || '',
-              address: c.address || '',
-              postal_code: c.postal_code || '',
-              branch_type: c.branch_type || 'head_office',
-              branch_no: c.branch_no || '00000',
-              phone: c.phone || '',
-              email: c.email || '',
-            })
-          }
-        })
-      }
-
-      setCustomers(merged)
     })
-
-    supabase.from('inventory_items').select('id, item_code, item_name, unit, avg_unit_cost').order('item_name').then(({ data }) => setCatalog(data ?? []))
 
     if (!id) {
       // สร้างเลขที่เอกสารชั่วคราว Auto Code เช่น QT2026110012
@@ -197,6 +209,8 @@ export default function QuotationForm() {
             setCustomerBranch(q.customer_branch || 'สำนักงานใหญ่')
             setProjectId(q.project_id || '')
             setRefNo(q.ref_no || '')
+            setBoqId('')
+            setExistingStatus('draft')
             setWarehouseName(q.warehouse_name || WAREHOUSES[0])
             setCustomerNotes(q.customer_notes || '')
             setInternalNotes(q.internal_notes || '')
@@ -238,7 +252,9 @@ export default function QuotationForm() {
         setCustomerTaxId(q.customer_tax_id || '')
         setCustomerBranch(q.customer_branch || 'สำนักงานใหญ่')
         setProjectId(q.project_id || '')
+        setBoqId(q.boq_id || '')
         setRefNo(q.ref_no || '')
+        setExistingStatus(q.status || 'draft')
         setWarehouseName(q.warehouse_name || WAREHOUSES[0])
         setCustomerNotes(q.customer_notes || '')
         setInternalNotes(q.internal_notes || '')
@@ -419,6 +435,13 @@ export default function QuotationForm() {
 
     const isUUID = (val) => typeof val === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val)
 
+    const matchedCust = customers.find(
+      (c) => (c.customer_name || '').toLowerCase() === customerName.trim().toLowerCase()
+    )
+    const resolvedCustomerId = matchedCust
+      ? await ensureLegacyCustomerId(matchedCust).catch(() => null)
+      : null
+
     const payload = {
       quotation_no: quotationNo.trim(),
       issue_date: issueDate,
@@ -428,12 +451,14 @@ export default function QuotationForm() {
       valid_until: expiryDate || null,
       sales_person: salesPerson.trim() || null,
       currency: currency || 'THB',
+      customer_id: isUUID(resolvedCustomerId) ? resolvedCustomerId : null,
       customer_name: customerName.trim(),
       customer_address: customerAddress.trim() || null,
       customer_postal_code: customerPostalCode.trim() || null,
       customer_tax_id: customerTaxId.trim() || null,
       customer_branch: customerBranch.trim() || 'สำนักงานใหญ่',
       project_id: isUUID(projectId) ? projectId : null,
+      boq_id: isUUID(boqId) ? boqId : null,
       ref_no: refNo.trim() || null,
       warehouse_name: warehouseName || 'สโตร์หลัก',
       subtotal,
@@ -451,7 +476,7 @@ export default function QuotationForm() {
       internal_notes: internalNotes.trim() || null,
       signature_url: signatureUrl || null,
       attachment_url: attachmentUrl || null,
-      status: 'draft',
+      status: id ? existingStatus : 'draft',
       updated_at: new Date().toISOString(),
     }
 
@@ -485,7 +510,7 @@ export default function QuotationForm() {
       let savedId = null
       let activePayload = { ...payload }
 
-      for (let attempt = 0; attempt < 5; attempt++) {
+      for (let attempt = 0; attempt < 6; attempt++) {
         try {
           savedId = await saveRecord(activePayload)
           break
@@ -508,6 +533,10 @@ export default function QuotationForm() {
             delete activePayload.created_by
             continue
           }
+          if (errMsg.includes('boq_id') || (errMsg.includes('foreign key') && errMsg.includes('boq'))) {
+            delete activePayload.boq_id
+            continue
+          }
           if (errMsg.includes('project_id') || (errMsg.includes('foreign key') && errMsg.includes('project'))) {
             delete activePayload.project_id
             continue
@@ -520,6 +549,7 @@ export default function QuotationForm() {
             delete activePayload.created_by
             delete activePayload.project_id
             delete activePayload.customer_id
+            delete activePayload.boq_id
             continue
           }
 
@@ -539,12 +569,16 @@ export default function QuotationForm() {
             continue
           }
 
-          if (attempt >= 3) throw dbErr
+          if (attempt >= 4) throw dbErr
         }
       }
 
       if (!savedId) {
         savedId = currentId || id || quotationNo.trim()
+      }
+
+      if (!id && isUUID(boqId)) {
+        await supabase.from('boqs').update({ status: 'converted_to_quotation' }).eq('id', boqId)
       }
 
       // บันทึกรายการย่อย (บังคับ quantity เป็นจำนวนเต็ม int)
@@ -754,6 +788,26 @@ export default function QuotationForm() {
               onChange={(e) => setRefNo(e.target.value)}
             />
           </div>
+
+          {!id && boqsList.length > 0 && (
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                ดึงรายการจาก BOQ (ถ้ามี)
+              </label>
+              <select
+                className="input text-xs"
+                value={boqId}
+                onChange={(e) => applyBoqData(e.target.value)}
+              >
+                <option value="">-- สร้างใหม่ / ไม่ดึงจาก BOQ --</option>
+                {boqsList.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.boq_no} · {b.title || b.customer_name || 'BOQ'}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
       </div>
 

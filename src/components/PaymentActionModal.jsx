@@ -496,14 +496,56 @@ export default function PaymentActionModal({
           })
           .eq('id', docId)
       } else if (docType === 'INV' || docType === 'quotation') {
-        const nextStatus = remainingAfter <= 0.05 ? 'approved' : 'partial'
-        await supabase
-          .from('quotations')
-          .update({
-            status: nextStatus,
-            updated_at: new Date().toISOString(),
-          })
+        // อัปเดตยอดรับชำระใน sales_invoices ก่อน (ค้นจาก docId หรือ quotation_id)
+        let invRow = null
+        const { data: invById } = await supabase
+          .from('sales_invoices')
+          .select('id, quotation_id, total_amount, paid_amount')
           .eq('id', docId)
+          .maybeSingle()
+
+        if (invById) {
+          invRow = invById
+        } else {
+          const { data: invByQt } = await supabase
+            .from('sales_invoices')
+            .select('id, quotation_id, total_amount, paid_amount')
+            .eq('quotation_id', docId)
+            .neq('status', 'cancelled')
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle()
+          invRow = invByQt || null
+        }
+
+        const linkedQtId = invRow?.quotation_id || (invRow ? null : docId)
+
+        if (invRow) {
+          const invTotal = Number(invRow.total_amount || totalAmount || 0)
+          const prevPaid = Number(invRow.paid_amount ?? alreadyPaid ?? 0)
+          const nextPaid = Math.min(invTotal, Math.round((prevPaid + numericPay) * 100) / 100)
+          const nextRemain = Math.max(0, Math.round((invTotal - nextPaid) * 100) / 100)
+          await supabase
+            .from('sales_invoices')
+            .update({
+              paid_amount: nextPaid,
+              remaining_amount: nextRemain,
+              status: nextRemain <= 0.05 ? 'เก็บเงินแล้ว' : 'รอเก็บเงิน',
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', invRow.id)
+        }
+
+        if (linkedQtId) {
+          const nextQtStatus = remainingAfter <= 0.05 ? 'approved' : 'partial'
+          await supabase
+            .from('quotations')
+            .update({
+              status: nextQtStatus,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', linkedQtId)
+        }
       }
 
       if (onSuccess) {

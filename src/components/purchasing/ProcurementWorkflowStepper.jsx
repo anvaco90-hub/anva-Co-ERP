@@ -397,8 +397,8 @@ export default function ProcurementWorkflowStepper({
                 ? `ขอซื้อ ${items?.length || 0} รายการ`
                 : flow.hasPr
                 ? 'เชื่อมโยงจากใบขอซื้อโครงการ'
-                : po?.quotation_no
-                ? `อ้างอิง QT: ${po.quotation_no}`
+                : po?.sales_quotation_no || po?.quotation_no
+                ? `อ้างอิง QT: ${po.sales_quotation_no || po.quotation_no}`
                 : 'เปิดคำสั่งซื้อตรงกับผู้ขาย'}
             </div>
           </div>
