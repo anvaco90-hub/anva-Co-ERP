@@ -20,6 +20,9 @@ import {
   User,
   Info,
   DollarSign,
+  FolderPlus,
+  ChevronRight,
+  ListPlus,
 } from 'lucide-react'
 
 export const SOLAR_BOQ_CATEGORIES = [
@@ -28,14 +31,12 @@ export const SOLAR_BOQ_CATEGORIES = [
   '3. งานโครงสร้างติดตั้งและอุปกรณ์ยึด (Mounting & Support)',
   '4. งานระบบไฟฟ้า AC/DC และตู้ MDB (AC/DC BOS & Protection)',
   '5. งานสายไฟ ท่อร้อยสาย และอุปกรณ์ประกอบ (Cables & Conduits)',
-  '6. งานค่าแรงติดตั้งและทดสอบระบบ (Installation Labor & Test)',
-  '7. งานวิศวกรรมและขออนุญาตภาครัฐ (Engineering & Grid Permitting)',
-  '8. งานระบบประปาและสุขาภิบาล (Plumbing & Sanitation)',
-  '9. งานโครงสร้างและงานโยธา (Civil & Structure)',
-  '10. งานอื่น ๆ และบริการทั่วไป (Other Services)',
+  '6. งานวิศวกรรมและขออนุญาตภาครัฐ (Engineering & Grid Permitting)',
+  '7. งานระบบประปาและสุขาภิบาล (Plumbing & Sanitation)',
+  '8. งานโครงสร้างและงานโยธา (Civil & Structure)',
+  '9. งานอื่น ๆ และบริการทั่วไป (Other Materials & Services)',
 ]
 
-// หน่วยนับมาตรฐานที่ใช้บ่อยในระบบวิศวกรรมและก่อสร้าง
 export const COMMON_UNITS = [
   'ชุด',
   'แผง',
@@ -53,16 +54,98 @@ export const COMMON_UNITS = [
   'เหมา',
 ]
 
-// ข้อ 2: บรรทัดว่างเริ่มต้น ไม่มีข้อมูลจำลอง เพื่อให้ผู้ใช้เลือกและกรอกเอง
-const EMPTY_BOQ_LINE = {
-  category: '',
+const EMPTY_MATERIAL_ITEM = {
   item_code: '',
   item_name: '',
   description: '',
-  quantity: '',
-  unit: '',
+  quantity: '1',
+  unit: 'ชุด',
   material_unit_cost: '',
+}
+
+const EMPTY_LABOR_ITEM = {
+  item_name: '',
+  description: '',
+  quantity: '1',
+  unit: 'งาน',
   labor_unit_cost: '',
+}
+
+const createCategory = (name = '') => ({
+  id: 'cat_' + Math.random().toString(36).slice(2, 9),
+  name: name || SOLAR_BOQ_CATEGORIES[0],
+  items: [
+    {
+      ...EMPTY_MATERIAL_ITEM,
+      id: 'item_' + Math.random().toString(36).slice(2, 9),
+    },
+  ],
+})
+
+/**
+ * แปลงรายการ boq_items จากฐานข้อมูลเข้าสู่โครงสร้าง State ที่แยกหมวดหมู่และค่าแรง
+ */
+function parseBoqItemsToState(rawItems) {
+  const catMap = new Map()
+  const laborList = []
+
+  rawItems.forEach((it) => {
+    const matCost = Number(it.material_unit_cost || 0)
+    const labCost = Number(it.labor_unit_cost || 0)
+    const isLaborOnly =
+      (labCost > 0 && matCost === 0) ||
+      String(it.category || '').includes('ค่าแรง') ||
+      String(it.category || '').toLowerCase().includes('labor')
+
+    if (isLaborOnly) {
+      laborList.push({
+        id: it.id || 'labor_' + Math.random().toString(36).slice(2, 9),
+        item_name: it.item_name || '',
+        description: it.description || '',
+        quantity: it.quantity != null ? String(it.quantity) : '1',
+        unit: it.unit || 'งาน',
+        labor_unit_cost: labCost ? String(labCost) : (matCost ? String(matCost) : ''),
+      })
+    } else {
+      const catName = it.category || SOLAR_BOQ_CATEGORIES[0]
+      if (!catMap.has(catName)) {
+        catMap.set(catName, [])
+      }
+      catMap.get(catName).push({
+        id: it.id || 'item_' + Math.random().toString(36).slice(2, 9),
+        item_code: it.item_code || '',
+        item_name: it.item_name || '',
+        description: it.description || '',
+        quantity: it.quantity != null ? String(it.quantity) : '1',
+        unit: it.unit || 'ชุด',
+        material_unit_cost: matCost ? String(matCost) : '',
+      })
+
+      // หากเป็นรายการเดิมที่มีทั้งค่าวัสดุและค่าแรงในแถวเดียวกัน ให้แยกค่าแรงออกมาเข้า laborList
+      if (labCost > 0) {
+        laborList.push({
+          id: 'labor_' + Math.random().toString(36).slice(2, 9),
+          item_name: `ค่าแรง: ${it.item_name}`,
+          description: it.description || '',
+          quantity: it.quantity != null ? String(it.quantity) : '1',
+          unit: it.unit || 'งาน',
+          labor_unit_cost: String(labCost),
+        })
+      }
+    }
+  })
+
+  let categories = Array.from(catMap.entries()).map(([name, items]) => ({
+    id: 'cat_' + Math.random().toString(36).slice(2, 9),
+    name,
+    items,
+  }))
+
+  if (categories.length === 0) {
+    categories = [createCategory(SOLAR_BOQ_CATEGORIES[0])]
+  }
+
+  return { categories, laborItems: laborList }
 }
 
 export default function BOQForm() {
@@ -83,8 +166,17 @@ export default function BOQForm() {
   const [markupPercent, setMarkupPercent] = useState('15')
   const [notes, setNotes] = useState('')
 
-  // Lines State (ข้อ 2: เริ่มต้นด้วยบรรทัดว่าง 1 แถว ให้ผู้ใช้กรอกเอง)
-  const [items, setItems] = useState([{ ...EMPTY_BOQ_LINE }])
+  // Categories State (จัดกลุ่มตามหมวดหมู่งาน เพิ่มรายการในหมวดเดิมได้ทันที)
+  const [categories, setCategories] = useState([createCategory(SOLAR_BOQ_CATEGORIES[0])])
+
+  // Labor Items State (แยกรายการค่าแรงออกมาต่างหาก ไม่ปนกับพัสดุ)
+  const [laborItems, setLaborItems] = useState([
+    {
+      ...EMPTY_LABOR_ITEM,
+      id: 'labor_' + Math.random().toString(36).slice(2, 9),
+      item_name: 'ค่าแรงติดตั้งและทดสอบระบบ (Installation & Commissioning)',
+    },
+  ])
 
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -110,7 +202,6 @@ export default function BOQForm() {
       .then(({ data }) => setCatalog(data ?? []))
 
     if (!id) {
-      // เลขรันเริ่มต้น
       const d = new Date()
       const year = d.getFullYear()
       const month = String(d.getMonth() + 1).padStart(2, '0')
@@ -122,7 +213,11 @@ export default function BOQForm() {
     // โหมดแก้ไข
     Promise.all([
       supabase.from('boqs').select('*').eq('id', id).single(),
-      supabase.from('boq_items').select('*').eq('boq_id', id).order('sort_order', { ascending: true }),
+      supabase
+        .from('boq_items')
+        .select('*')
+        .eq('boq_id', id)
+        .order('sort_order', { ascending: true }),
     ]).then(([bRes, itemsRes]) => {
       if (bRes.error) return setError('ไม่พบเอกสาร BOQ นี้')
       const b = bRes.data
@@ -135,37 +230,26 @@ export default function BOQForm() {
       setNotes(b.notes || '')
 
       if (itemsRes.data && itemsRes.data.length > 0) {
-        setItems(
-          itemsRes.data.map((it) => ({
-            category: it.category || SOLAR_BOQ_CATEGORIES[0],
-            item_code: it.item_code || '',
-            item_name: it.item_name || '',
-            description: it.description || '',
-            quantity: it.quantity != null ? String(it.quantity) : '',
-            unit: it.unit || '',
-            material_unit_cost: it.material_unit_cost != null ? String(it.material_unit_cost) : '',
-            labor_unit_cost: it.labor_unit_cost != null ? String(it.labor_unit_cost) : '',
-          }))
+        const { categories: parsedCats, laborItems: parsedLabors } = parseBoqItemsToState(
+          itemsRes.data
+        )
+        setCategories(parsedCats)
+        setLaborItems(
+          parsedLabors.length > 0
+            ? parsedLabors
+            : [
+                {
+                  ...EMPTY_LABOR_ITEM,
+                  id: 'labor_' + Math.random().toString(36).slice(2, 9),
+                  item_name: 'ค่าแรงติดตั้งและทดสอบระบบ',
+                },
+              ]
         )
       }
     })
   }, [id])
 
-  // รายชื่อลูกค้าและคู่ค้าในระบบทั้งหมด (ข้อ 6: คีย์มีบันทึกรายชื่อในระบบให้เลือกด้วย)
-  const customerSuggestions = useMemo(() => {
-    const set = new Set()
-      ; (contacts || []).forEach((c) => {
-        const name = (c.company_name || c.business_name || '').trim()
-        if (name) set.add(name)
-      })
-      ; (projects || []).forEach((p) => {
-        const name = (p.client_name || '').trim()
-        if (name) set.add(name)
-      })
-    return Array.from(set)
-  }, [contacts, projects])
-
-  // ข้อ 5: ถ้าเปลี่ยนโครงการ ควรเปลี่ยนชื่อและลูกค้าด้วย
+  // จัดการเมื่อเปลี่ยนโครงการ
   const handleProjectChange = (selectedId) => {
     setProjectId(selectedId)
     if (!selectedId) return
@@ -178,66 +262,165 @@ export default function BOQForm() {
     }
   }
 
-  // ฟังก์ชันลบแถว (ถ้าเหลือ 1 แถว จะล้างค่ากลับเป็นค่าว่างเพื่อให้ผู้ใช้กรอกใหม่)
-  const handleRemoveRow = (idxToRemove) => {
-    if (items.length <= 1) {
-      setItems([{ ...EMPTY_BOQ_LINE }])
+  // ── Category Actions ────────────────────────────────────────────────────────
+  const addCategory = () => {
+    const nextCatName =
+      SOLAR_BOQ_CATEGORIES[categories.length % SOLAR_BOQ_CATEGORIES.length] ||
+      `หมวดงานที่ ${categories.length + 1}`
+    setCategories([...categories, createCategory(nextCatName)])
+  }
+
+  const removeCategory = (catId) => {
+    if (categories.length <= 1) {
+      setCategories([createCategory(SOLAR_BOQ_CATEGORIES[0])])
     } else {
-      setItems(items.filter((_, i) => i !== idxToRemove))
+      setCategories(categories.filter((c) => c.id !== catId))
     }
   }
 
-  // ฟังก์ชันอัปเดตบรรทัด
-  const updItem = (index, key, val) => {
-    const next = items.map((it, idx) => {
-      if (idx !== index) return it
-      let processedVal = val
-      // ข้อกำหนด: จำนวน ต้องเป็นจำนวนเต็ม (int)
-      if (key === 'quantity' && val !== '') {
-        const parsed = parseInt(val, 10)
-        processedVal = isNaN(parsed) ? '' : String(Math.max(1, parsed))
-      }
-      const updated = { ...it, [key]: processedVal }
-
-      // Auto-suggest unit & price จาก catalog ถ้าเลือกชื่อวัสดุตรงกัน
-      if (key === 'item_name') {
-        const found = catalog.find(
-          (c) => c.item_name.toLowerCase() === String(val).trim().toLowerCase()
-        )
-        if (found) {
-          if (!updated.unit && found.unit) updated.unit = found.unit
-          if (!Number(updated.material_unit_cost) && found.avg_unit_cost) {
-            updated.material_unit_cost = String(found.avg_unit_cost)
-          }
-          if (found.item_code) updated.item_code = found.item_code
-        }
-      }
-      return updated
-    })
-    setItems(next)
+  const updateCategoryName = (catId, newName) => {
+    setCategories(categories.map((c) => (c.id === catId ? { ...c, name: newName } : c)))
   }
 
-  // คำนวณสรุปตัวเลข (Financial Calculations - จำนวนเป็น Int)
-  const lineCalcs = items.map((it) => {
-    const qty = parseInt(it.quantity, 10) || 0
-    const matUnit = Number(it.material_unit_cost) || 0
-    const labUnit = Number(it.labor_unit_cost) || 0
-    const totalMat = qty * matUnit
-    const totalLab = qty * labUnit
-    const totalLine = totalMat + totalLab
-    return { qty, matUnit, labUnit, totalMat, totalLab, totalLine }
-  })
+  // ── Item Actions under a Category ──────────────────────────────────────────
+  const addItemToCategory = (catId) => {
+    setCategories(
+      categories.map((c) => {
+        if (c.id !== catId) return c
+        return {
+          ...c,
+          items: [
+            ...c.items,
+            { ...EMPTY_MATERIAL_ITEM, id: 'item_' + Math.random().toString(36).slice(2, 9) },
+          ],
+        }
+      })
+    )
+  }
 
-  // ข้อ 4: แยกต้นทุนค่าวัสดุ และ ต้นทุนค่าแรง ออกต่างหาก
-  const totalMaterialCost = lineCalcs.reduce((s, l) => s + l.totalMat, 0)
-  const totalLaborCost = lineCalcs.reduce((s, l) => s + l.totalLab, 0)
+  const removeItemFromCategory = (catId, itemId) => {
+    setCategories(
+      categories.map((c) => {
+        if (c.id !== catId) return c
+        if (c.items.length <= 1) {
+          return {
+            ...c,
+            items: [
+              { ...EMPTY_MATERIAL_ITEM, id: 'item_' + Math.random().toString(36).slice(2, 9) },
+            ],
+          }
+        }
+        return {
+          ...c,
+          items: c.items.filter((it) => it.id !== itemId),
+        }
+      })
+    )
+  }
+
+  const updateItemInCategory = (catId, itemId, field, value) => {
+    setCategories(
+      categories.map((c) => {
+        if (c.id !== catId) return c
+        return {
+          ...c,
+          items: c.items.map((it) => {
+            if (it.id !== itemId) return it
+            let processedVal = value
+            if (field === 'quantity' && value !== '') {
+              const parsed = parseInt(value, 10)
+              processedVal = isNaN(parsed) ? '' : String(Math.max(1, parsed))
+            }
+            const updated = { ...it, [field]: processedVal }
+
+            if (field === 'item_name') {
+              const found = catalog.find(
+                (catItem) => catItem.item_name.toLowerCase() === String(value).trim().toLowerCase()
+              )
+              if (found) {
+                if (!updated.unit && found.unit) updated.unit = found.unit
+                if (!Number(updated.material_unit_cost) && found.avg_unit_cost) {
+                  updated.material_unit_cost = String(found.avg_unit_cost)
+                }
+                if (found.item_code) updated.item_code = found.item_code
+              }
+            }
+            return updated
+          }),
+        }
+      })
+    )
+  }
+
+  // ── Labor Actions (แยกต่างหาก) ─────────────────────────────────────────────
+  const addLaborItem = () => {
+    setLaborItems([
+      ...laborItems,
+      { ...EMPTY_LABOR_ITEM, id: 'labor_' + Math.random().toString(36).slice(2, 9) },
+    ])
+  }
+
+  const removeLaborItem = (laborId) => {
+    if (laborItems.length <= 1) {
+      setLaborItems([
+        { ...EMPTY_LABOR_ITEM, id: 'labor_' + Math.random().toString(36).slice(2, 9) },
+      ])
+    } else {
+      setLaborItems(laborItems.filter((l) => l.id !== laborId))
+    }
+  }
+
+  const updateLaborItem = (laborId, field, value) => {
+    setLaborItems(
+      laborItems.map((l) => {
+        if (l.id !== laborId) return l
+        let processedVal = value
+        if (field === 'quantity' && value !== '') {
+          const parsed = parseInt(value, 10)
+          processedVal = isNaN(parsed) ? '' : String(Math.max(1, parsed))
+        }
+        return { ...l, [field]: processedVal }
+      })
+    )
+  }
+
+  // ── Calculations ───────────────────────────────────────────────────────────
+  const categoryCalculations = useMemo(() => {
+    return categories.map((cat) => {
+      const itemCalcs = cat.items.map((it) => {
+        const qty = parseInt(it.quantity, 10) || 0
+        const matUnit = Number(it.material_unit_cost) || 0
+        const totalMat = qty * matUnit
+        return { qty, matUnit, totalMat }
+      })
+      const catTotal = itemCalcs.reduce((s, it) => s + it.totalMat, 0)
+      return { itemCalcs, catTotal }
+    })
+  }, [categories])
+
+  const totalMaterialCost = useMemo(() => {
+    return categoryCalculations.reduce((s, c) => s + c.catTotal, 0)
+  }, [categoryCalculations])
+
+  const laborCalculations = useMemo(() => {
+    return laborItems.map((l) => {
+      const qty = parseInt(l.quantity, 10) || 0
+      const labUnit = Number(l.labor_unit_cost) || 0
+      const totalLab = qty * labUnit
+      return { qty, labUnit, totalLab }
+    })
+  }, [laborItems])
+
+  const totalLaborCost = useMemo(() => {
+    return laborCalculations.reduce((s, l) => s + l.totalLab, 0)
+  }, [laborCalculations])
+
   const totalCost = totalMaterialCost + totalLaborCost
-
   const markupRate = Number(markupPercent) || 0
   const markupAmount = (totalCost * markupRate) / 100
   const grandTotal = totalCost + markupAmount
 
-  // บันทึก BOQ
+  // ── บันทึก BOQ ─────────────────────────────────────────────────────────────
   async function save() {
     setError('')
     const newErrors = {}
@@ -245,12 +428,22 @@ export default function BOQForm() {
     if (!boqNo.trim()) newErrors.boqNo = 'กรุณาระบุเลขที่ BOQ'
     if (!title.trim()) newErrors.title = 'กรุณาระบุชื่องาน / รายละเอียดโครงการ'
 
-    const hasEmptyName = items.some((it) => !it.item_name?.trim())
-    const hasInvalidQty = items.some((it) => !it.quantity || Number(it.quantity) <= 0)
+    const allMaterialItems = categories.flatMap((c) => c.items)
+    const hasEmptyMatName = allMaterialItems.some((it) => !it.item_name?.trim())
+    const hasInvalidMatQty = allMaterialItems.some(
+      (it) => !it.quantity || parseInt(it.quantity, 10) <= 0
+    )
 
-    if (hasEmptyName || hasInvalidQty) {
+    const activeLaborItems = laborItems.filter(
+      (l) => l.item_name?.trim() || Number(l.labor_unit_cost) > 0
+    )
+    const hasInvalidLaborQty = activeLaborItems.some(
+      (l) => !l.quantity || parseInt(l.quantity, 10) <= 0
+    )
+
+    if (hasEmptyMatName || hasInvalidMatQty || hasInvalidLaborQty) {
       setShowItemErrors(true)
-      newErrors.items = 'กรุณาระบุชื่อรายการและจำนวนที่มากกว่า 0 ให้ครบทุกแถว'
+      newErrors.items = 'กรุณาระบุชื่อรายการและจำนวนที่มากกว่า 0 ให้ครบถ้วน'
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -281,7 +474,11 @@ export default function BOQForm() {
         const { error: updErr } = await supabase.from('boqs').update(boqPayload).eq('id', id)
         if (updErr) throw updErr
       } else {
-        const { data: insData, error: insErr } = await supabase.from('boqs').insert([boqPayload]).select('id').single()
+        const { data: insData, error: insErr } = await supabase
+          .from('boqs')
+          .insert([boqPayload])
+          .select('id')
+          .single()
         if (insErr) throw insErr
         boqId = insData.id
       }
@@ -291,27 +488,59 @@ export default function BOQForm() {
         await supabase.from('boq_items').delete().eq('boq_id', boqId)
       }
 
-      const itemRows = items.map((it, idx) => {
-        const c = lineCalcs[idx]
-        return {
-          boq_id: boqId,
-          category: it.category || SOLAR_BOQ_CATEGORIES[0],
-          item_code: it.item_code || null,
-          item_name: it.item_name.trim(),
-          description: it.description?.trim() || null,
-          quantity: parseInt(it.quantity, 10) || 1,
-          unit: it.unit || 'ชุด',
-          material_unit_cost: c.matUnit,
-          labor_unit_cost: c.labUnit,
-          total_material_cost: c.totalMat,
-          total_labor_cost: c.totalLab,
-          total_amount: c.totalLine,
-          sort_order: idx + 1,
-        }
+      const itemRows = []
+      let sortOrder = 1
+
+      // 1. รายการพัสดุ (จัดตามหมวดหมู่งาน ตัดค่าแรงออก)
+      categories.forEach((cat) => {
+        cat.items.forEach((it) => {
+          const qty = parseInt(it.quantity, 10) || 1
+          const matUnit = Number(it.material_unit_cost) || 0
+          const totalMat = qty * matUnit
+          itemRows.push({
+            boq_id: boqId,
+            category: cat.name.trim() || SOLAR_BOQ_CATEGORIES[0],
+            item_code: it.item_code || null,
+            item_name: it.item_name.trim(),
+            description: it.description?.trim() || null,
+            quantity: qty,
+            unit: it.unit || 'ชุด',
+            material_unit_cost: matUnit,
+            labor_unit_cost: 0,
+            total_material_cost: totalMat,
+            total_labor_cost: 0,
+            total_amount: totalMat,
+            sort_order: sortOrder++,
+          })
+        })
       })
 
-      const { error: itemsErr } = await supabase.from('boq_items').insert(itemRows)
-      if (itemsErr) throw itemsErr
+      // 2. รายการค่าแรงและงานบริการติดตั้ง (แยกต่างหาก)
+      activeLaborItems.forEach((l) => {
+        const qty = parseInt(l.quantity, 10) || 1
+        const labUnit = Number(l.labor_unit_cost) || 0
+        const totalLab = qty * labUnit
+        itemRows.push({
+          boq_id: boqId,
+          category: '6. งานค่าแรงติดตั้งและทดสอบระบบ (Installation Labor & Test)',
+          item_code: null,
+          item_name: l.item_name.trim(),
+          description: l.description?.trim() || null,
+          quantity: qty,
+          unit: l.unit || 'งาน',
+          material_unit_cost: 0,
+          labor_unit_cost: labUnit,
+          total_material_cost: 0,
+          total_labor_cost: totalLab,
+          total_amount: totalLab,
+          sort_order: sortOrder++,
+        })
+      })
+
+      if (itemRows.length > 0) {
+        const { error: itemsErr } = await supabase.from('boq_items').insert(itemRows)
+        if (itemsErr) throw itemsErr
+      }
 
       navigate(`/boq/${boqId}`)
     } catch (err) {
@@ -341,7 +570,7 @@ export default function BOQForm() {
               <span>{isEdit ? `แก้ไข BOQ: ${boqNo}` : 'ถอดแบบและประมาณราคา (BOQ Form)'}</span>
             </h1>
             <p className="mt-1 text-xs sm:text-sm text-slate-300">
-              กำหนดหมวดหมู่งาน แยกค่าวัสดุ ค่าแรง และคำนวณราคาเสนอขายอัตโนมัติ (รองรับโหมดกลางวันและกลางคืน)
+              จัดกลุ่มรายการตามหมวดหมู่งาน เพิ่มรายการในงานเดิมได้ทันที และแยกส่วนค่าแรงออกต่างหากอย่างชัดเจน
             </p>
           </div>
 
@@ -362,9 +591,8 @@ export default function BOQForm() {
         </div>
       )}
 
-      {/* 2. Main Form Card (ข้อ 1 & 7: มองเห็นคมชัดทั้งกลางวันและกลางคืน จัดเลย์เอาต์เข้าใจง่าย) */}
-      <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm space-y-6">
-
+      {/* 2. Main Form Card */}
+      <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm space-y-8">
         {/* ส่วนที่ 1: ข้อมูลหัวเอกสารและโครงการ */}
         <div className="space-y-4">
           <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2.5">
@@ -385,7 +613,10 @@ export default function BOQForm() {
               </label>
               <input
                 type="text"
-                className={fieldErrorClass(errors.boqNo, 'input font-mono font-bold text-xs w-full bg-slate-50 dark:bg-slate-800/80')}
+                className={fieldErrorClass(
+                  errors.boqNo,
+                  'input font-mono font-bold text-xs w-full bg-slate-50 dark:bg-slate-800/80'
+                )}
                 value={boqNo}
                 onChange={(e) => setBoqNo(e.target.value)}
                 placeholder="BOQ-202611-001"
@@ -414,7 +645,7 @@ export default function BOQForm() {
               <FieldError error={errors.title} />
             </div>
 
-            {/* เชื่อมโยงโครงการ (ข้อ 5: เปลี่ยนโครงการ อัปเดตชื่องานและชื่อลูกค้าให้อัตโนมัติ) */}
+            {/* เชื่อมโยงโครงการ */}
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                 เชื่อมโยงโครงการ (ถ้ามี)
@@ -433,11 +664,13 @@ export default function BOQForm() {
               </select>
             </div>
 
-            {/* ชื่อลูกค้า / เจ้าของโครงการ (ดึงจากสมุดรายชื่อ + ลูกค้าอัตโนมัติ) */}
+            {/* ชื่อลูกค้า / เจ้าของโครงการ */}
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
                 <span>ชื่อลูกค้า / เจ้าของโครงการ</span>
-                <span className="text-[10px] text-sky-600 dark:text-sky-400 font-normal">ค้นหาจากสมุดรายชื่อได้</span>
+                <span className="text-[10px] text-sky-600 dark:text-sky-400 font-normal">
+                  ค้นหาจากสมุดรายชื่อได้
+                </span>
               </label>
               <CustomerSelectField
                 value={customerName}
@@ -465,225 +698,249 @@ export default function BOQForm() {
           </div>
         </div>
 
-        {/* ส่วนที่ 2: รายการถอดแบบพัสดุและค่าแรง (Itemized BOQ) */}
-        <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+        {/* Datalists สำหรับตัวเลือกหมวดหมู่งาน, รายการวัสดุในคลัง, และหน่วยนับ */}
+        <datalist id="boq-categories-list">
+          {SOLAR_BOQ_CATEGORIES.map((cat) => (
+            <option key={cat} value={cat} />
+          ))}
+        </datalist>
+
+        <datalist id="boq-catalog-items">
+          {catalog.map((c) => (
+            <option key={c.id} value={c.item_name}>
+              [{c.item_code}] ({c.unit}) ราคาเฉลี่ย {baht(c.avg_unit_cost)} บ.
+            </option>
+          ))}
+        </datalist>
+
+        <datalist id="boq-unit-list">
+          {COMMON_UNITS.map((u) => (
+            <option key={u} value={u} />
+          ))}
+        </datalist>
+
+        {/* ส่วนที่ 2: รายการถอดแบบพัสดุและอุปกรณ์ (จัดกลุ่มตามหมวดหมู่งาน ตัดค่าแรงออก) */}
+        <div className="space-y-5 pt-4 border-t border-slate-100 dark:border-slate-800">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
               <h2 className="font-bold text-sm text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                <Layers className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                <span>2. รายการถอดแบบพัสดุและค่าแรง (Itemized BOQ)</span>
+                <Layers className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+                <span>2. รายการถอดแบบพัสดุและอุปกรณ์ (Material Items by Category)</span>
               </h2>
               <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                พิมพ์สเปกแบบขยายลงล่างได้อิสระ แยกต้นทุนค่าวัสดุและค่าแรงออกจากกันชัดเจน
+                จัดกลุ่มรายการตามหมวดหมู่งาน ตัดช่องค่าแรงออกจากพัสดุ และสามารถเพิ่มรายการอื่นต่อในงานเดิมได้ทันที
               </p>
             </div>
             <button
               type="button"
-              onClick={() => setItems([...items, { ...EMPTY_BOQ_LINE }])}
-              className="rounded-xl border border-slate-200 dark:border-slate-700 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 text-emerald-800 dark:text-emerald-300 px-3.5 py-1.5 text-xs font-bold shadow-2xs flex items-center gap-1.5 cursor-pointer self-start sm:self-auto transition"
+              onClick={addCategory}
+              className="rounded-xl border border-sky-300 dark:border-sky-800 bg-sky-50 dark:bg-sky-950/40 hover:bg-sky-100 text-sky-800 dark:text-sky-300 px-3.5 py-1.5 text-xs font-bold shadow-2xs flex items-center gap-1.5 cursor-pointer self-start sm:self-auto transition"
             >
-              <Plus className="h-3.5 w-3.5" />
-              <span> เพิ่มรายการถอดแบบ</span>
+              <FolderPlus className="h-3.5 w-3.5" />
+              <span>+ เพิ่มหมวดหมู่งานใหม่</span>
             </button>
           </div>
 
-          {/* Datalists สำหรับหมวดหมู่งาน, รายการวัสดุในคลัง, และหน่วยนับ */}
-          <datalist id="boq-categories-list">
-            {SOLAR_BOQ_CATEGORIES.map((cat) => (
-              <option key={cat} value={cat} />
-            ))}
-          </datalist>
-
-          <datalist id="boq-catalog-items">
-            {catalog.map((c) => (
-              <option key={c.id} value={c.item_name}>
-                [{c.item_code}] ({c.unit}) ราคาเฉลี่ย {baht(c.avg_unit_cost)} บ.
-              </option>
-            ))}
-          </datalist>
-
-          <datalist id="boq-unit-list">
-            {COMMON_UNITS.map((u) => (
-              <option key={u} value={u} />
-            ))}
-          </datalist>
-
-          {/* เลย์เอาต์รายการถอดแบบ: จัดชิดซ้าย สวยงาม ได้สัดส่วนกว้างเต็มหน้าจอ และแยกค่าแรงออกต่างหาก */}
-          <div className="space-y-4">
-            {items.map((it, idx) => {
-              const c = lineCalcs[idx]
-              const nameEmpty = showItemErrors && !it.item_name?.trim()
-              const qtyEmpty = showItemErrors && (!it.quantity || parseInt(it.quantity, 10) <= 0)
+          {/* รายการหมวดหมู่งาน (แต่ละหมวดมีรายการย่อยอยู่ภายใน) */}
+          <div className="space-y-6">
+            {categories.map((cat, catIdx) => {
+              const catCalc = categoryCalculations[catIdx]
 
               return (
                 <div
-                  key={idx}
-                  className={`rounded-2xl border p-4 space-y-3.5 transition shadow-xs ${
-                    nameEmpty || qtyEmpty
-                      ? 'border-rose-300 dark:border-rose-800 bg-rose-50/25 dark:bg-rose-950/20'
-                      : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 hover:border-slate-300 dark:hover:border-slate-700'
-                  }`}
+                  key={cat.id}
+                  className="rounded-2xl border-2 border-sky-200 dark:border-sky-900/60 bg-white dark:bg-slate-900/95 overflow-hidden shadow-sm"
                 >
-                  {/* บรรทัดที่ 1: ลำดับ, หมวดหมู่งาน (พิมพ์ได้อิสระ), ชื่อรายการพัสดุ/บริการ, และปุ่มลบ (มองเห็นทันที 100%) */}
-                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
-                    {/* ลำดับ (#) */}
-                    <div className="flex items-center justify-between sm:justify-start gap-2 shrink-0">
-                      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 font-mono font-bold text-xs text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-                        #{idx + 1}
+                  {/* แถบหัวหมวดหมู่งาน */}
+                  <div className="p-3.5 sm:p-4 bg-sky-50/70 dark:bg-sky-950/40 border-b border-sky-200 dark:border-sky-900/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5 flex-1 min-w-[280px]">
+                      <span className="flex h-8 px-2.5 items-center justify-center rounded-xl bg-sky-700 text-white font-bold text-xs shrink-0 shadow-xs">
+                        หมวดที่ {catIdx + 1}
                       </span>
-                      <span className="text-xs font-bold text-slate-500 sm:hidden">
-                        รายการที่ {idx + 1}
-                      </span>
-                    </div>
-
-                    {/* หมวดหมู่งาน (พิมพ์ได้อิสระ หรือเลือกจากรายการ) */}
-                    <div className="w-full sm:w-72 lg:w-80 shrink-0">
-                      <input
-                        list="boq-categories-list"
-                        type="text"
-                        className="input text-xs w-full text-left font-bold text-sky-900 dark:text-sky-300 bg-sky-50/60 dark:bg-sky-950/40 border-sky-200 dark:border-sky-800 placeholder:text-sky-600/70"
-                        placeholder="เลือกหรือพิมพ์หมวดหมู่งาน..."
-                        value={it.category}
-                        onChange={(e) => updItem(idx, 'category', e.target.value)}
-                      />
-                    </div>
-
-                    {/* ชื่อรายการพัสดุ / บริการ */}
-                    <div className="flex-1 min-w-[200px]">
-                      <input
-                        list="boq-catalog-items"
-                        type="text"
-                        className={fieldErrorClass(
-                          nameEmpty,
-                          'input text-xs w-full text-left font-bold text-slate-900 dark:text-slate-100 placeholder:font-normal'
-                        )}
-                        placeholder="พิมพ์ชื่อพัสดุ / บริการ หรือเลือกจากคลังสินค้า..."
-                        value={it.item_name}
-                        onChange={(e) => updItem(idx, 'item_name', e.target.value)}
-                      />
-                    </div>
-
-                    {/* ปุ่มลบ (ถังขยะสีแดง มองเห็นทันที ไม่ต้องเลื่อนจอ) */}
-                    <div className="shrink-0 flex justify-end">
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveRow(idx)}
-                        className="h-9 px-3 text-rose-500 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 dark:hover:bg-rose-900/60 rounded-xl transition cursor-pointer border border-rose-200 dark:border-rose-900 shadow-2xs flex items-center justify-center gap-1.5 font-bold text-xs"
-                        title={items.length <= 1 ? 'ล้างข้อมูลแถวนี้เป็นค่าว่าง' : 'ลบแถวนี้'}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        <span className="hidden md:inline">ลบ</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* บรรทัดที่ 2: ช่องคำนวณ จัดชิดซ้าย สวยงาม ได้สัดส่วน พร้อมแยกค่าแรงออกต่างหาก */}
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 pt-2.5 border-t border-slate-100 dark:border-slate-800/80">
-                    {/* ช่องที่ 1: จำนวน และ หน่วยนับ (จัดชิดซ้าย ชัดเจน) */}
-                    <div className="rounded-xl p-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700">
-                      <span className="block text-left text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                        จำนวน & หน่วย
-                      </span>
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="flex-1">
                         <input
-                          type="number"
-                          step="1"
-                          min="1"
-                          className={fieldErrorClass(
-                            qtyEmpty,
-                            'input text-xs text-left w-full font-mono font-bold bg-white dark:bg-slate-900'
-                          )}
-                          placeholder="จำนวน"
-                          title="ระบุจำนวน"
-                          value={it.quantity}
-                          onChange={(e) => updItem(idx, 'quantity', e.target.value)}
-                        />
-                        <input
-                          list="boq-unit-list"
+                          list="boq-categories-list"
                           type="text"
-                          className="input text-xs text-left w-full bg-white dark:bg-slate-900"
-                          placeholder="หน่วย"
-                          title="ระบุหน่วยนับ"
-                          value={it.unit}
-                          onChange={(e) => updItem(idx, 'unit', e.target.value)}
+                          value={cat.name}
+                          onChange={(e) => updateCategoryName(cat.id, e.target.value)}
+                          className="input text-xs font-bold w-full bg-white dark:bg-slate-900 text-sky-950 dark:text-sky-200 border-sky-300 dark:border-sky-800 focus:ring-1 focus:ring-sky-500"
+                          placeholder="เลือกหรือพิมพ์ชื่อหมวดหมู่งาน เช่น 1. งานแผงโซล่าเซลล์..."
                         />
                       </div>
-                      <div className="text-[10px] text-left text-slate-400 mt-1 font-mono">
-                        ปริมาณรวม: <span className="font-bold text-slate-700 dark:text-slate-300">{it.quantity || '0'}</span> {it.unit || '-'}
-                      </div>
                     </div>
 
-                    {/* ช่องที่ 2: ค่าวัสดุ/หน่วย (จัดชิดซ้าย ชัดเจน) */}
-                    <div className="rounded-xl p-3 bg-sky-50/40 dark:bg-sky-950/20 border border-sky-200/80 dark:border-sky-800">
-                      <span className="block text-left text-[11px] font-bold text-sky-800 dark:text-sky-300 mb-1.5 flex items-center justify-start gap-1">
-                        <Package className="h-3.5 w-3.5 text-sky-600 dark:text-sky-400" />
-                        <span>ค่าวัสดุ/หน่วย (บ.)</span>
-                      </span>
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        className="input text-xs text-left w-full font-mono text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-900"
-                        placeholder="0.00"
-                        title="ต้นทุนค่าวัสดุต่อหน่วย"
-                        value={it.material_unit_cost}
-                        onChange={(e) => updItem(idx, 'material_unit_cost', e.target.value)}
-                      />
-                      <div className="text-[10px] text-left font-mono text-sky-700 dark:text-sky-300 mt-1 font-semibold">
-                        รวมวัสดุ: {baht(c.totalMat)} บ.
+                    <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0">
+                      <div className="text-right">
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-normal">
+                          รวมเฉพาะหมวดที่ {catIdx + 1}:
+                        </span>
+                        <span className="font-mono font-bold text-xs text-sky-800 dark:text-sky-300">
+                          {baht(catCalc?.catTotal || 0)} บ.
+                        </span>
                       </div>
-                    </div>
 
-                    {/* ช่องที่ 3: ค่าแรง/หน่วย (แยกต่างหาก พิมพ์ได้อิสระ จัดชิดซ้าย) */}
-                    <div className="rounded-xl p-3 bg-amber-50/60 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-800">
-                      <span className="block text-left text-[11px] font-bold text-amber-800 dark:text-amber-300 mb-1.5 flex items-center justify-start gap-1">
-                        <Wrench className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
-                        <span>ค่าแรง/หน่วย (บ.) - แยกต่างหาก</span>
-                      </span>
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        className="input text-xs text-left w-full font-mono text-amber-800 dark:text-amber-300 font-bold bg-white dark:bg-slate-900 border-amber-300 dark:border-amber-700 focus:border-amber-500"
-                        placeholder="0.00"
-                        title="ต้นทุนค่าแรงต่อหน่วย (พิมพ์ได้อิสระ)"
-                        value={it.labor_unit_cost}
-                        onChange={(e) => updItem(idx, 'labor_unit_cost', e.target.value)}
-                      />
-                      <div className="text-[10px] text-left font-mono font-bold text-amber-800 dark:text-amber-300 mt-1">
-                        รวมแรง: {baht(c.totalLab)} บ.
-                      </div>
-                    </div>
-
-                    {/* ช่องที่ 4: รวมเงินสุทธิของรายการ (จัดชิดซ้าย ชัดเจน) */}
-                    <div className="rounded-xl p-3 bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 flex flex-col justify-between">
-                      <span className="block text-left text-[11px] font-bold text-emerald-800 dark:text-emerald-300 mb-1.5">
-                        รวมเงินสุทธิ (บ.)
-                      </span>
-                      <div className="h-9 px-3 flex items-center justify-start font-mono font-black text-sm text-slate-900 dark:text-emerald-400 bg-white dark:bg-slate-900 rounded-xl border border-emerald-200 dark:border-emerald-800 shadow-2xs">
-                        {baht(c.totalLine)}
-                      </div>
-                      <div className="text-[10px] text-left text-slate-400 mt-1 font-mono">
-                        (วัสดุ {baht(c.totalMat)} + แรง {baht(c.totalLab)})
-                      </div>
+                      {categories.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeCategory(cat.id)}
+                          className="p-1.5 text-rose-500 hover:text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 dark:hover:bg-rose-900/60 rounded-lg transition border border-rose-200 dark:border-rose-900 shadow-2xs"
+                          title="ลบหมวดหมู่งานนี้ทั้งหมด"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )}
                     </div>
                   </div>
 
-                  {/* บรรทัดที่ 3: สเปกวิศวกรรมและเงื่อนไขเทคนิค */}
-                  <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80">
-                    <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mb-1">
-                      <span className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5 text-[11px]">
-                        <Info className="h-3.5 w-3.5 text-slate-400" />
-                        <span>สเปกวิศวกรรมและเงื่อนไขเทคนิค</span>
+                  {/* รายการพัสดุ / อุปกรณ์ภายในหมวดนี้ */}
+                  <div className="p-4 space-y-3.5 bg-slate-50/40 dark:bg-slate-900/40">
+                    {cat.items.map((it, itemIdx) => {
+                      const itemCalc = catCalc?.itemCalcs[itemIdx]
+                      const nameEmpty = showItemErrors && !it.item_name?.trim()
+                      const qtyEmpty =
+                        showItemErrors && (!it.quantity || parseInt(it.quantity, 10) <= 0)
+
+                      return (
+                        <div
+                          key={it.id}
+                          className={`rounded-xl border p-3.5 space-y-3 transition shadow-2xs bg-white dark:bg-slate-900 ${
+                            nameEmpty || qtyEmpty
+                              ? 'border-rose-300 dark:border-rose-800 bg-rose-50/30 dark:bg-rose-950/20'
+                              : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
+                          }`}
+                        >
+                          {/* บรรทัดที่ 1: ลำดับ, ชื่อพัสดุ / บริการ, และปุ่มลบ */}
+                          <div className="flex items-center gap-2.5">
+                            <span className="flex h-8 w-14 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 font-mono font-bold text-[11px] text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 shrink-0">
+                              #{catIdx + 1}.{itemIdx + 1}
+                            </span>
+
+                            <div className="flex-1 min-w-[200px]">
+                              <input
+                                list="boq-catalog-items"
+                                type="text"
+                                className={fieldErrorClass(
+                                  nameEmpty,
+                                  'input text-xs w-full text-left font-bold text-slate-900 dark:text-slate-100 placeholder:font-normal'
+                                )}
+                                placeholder="พิมพ์ชื่อพัสดุ / อุปกรณ์ หรือเลือกจากคลังสินค้า..."
+                                value={it.item_name}
+                                onChange={(e) =>
+                                  updateItemInCategory(cat.id, it.id, 'item_name', e.target.value)
+                                }
+                              />
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => removeItemFromCategory(cat.id, it.id)}
+                              className="h-8 px-2.5 text-rose-500 hover:text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 rounded-lg transition border border-rose-200 dark:border-rose-900 shadow-2xs flex items-center gap-1 font-bold text-xs shrink-0"
+                              title={
+                                cat.items.length <= 1 ? 'ล้างข้อมูลเป็นค่าว่าง' : 'ลบรายการนี้'
+                              }
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                              <span className="hidden sm:inline">ลบ</span>
+                            </button>
+                          </div>
+
+                          {/* บรรทัดที่ 2: ช่องคำนวณ (จำนวน, หน่วย, ค่าวัสดุ, รวมเงิน) - ตัดค่าแรงออก */}
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2 border-t border-slate-100 dark:border-slate-800/80">
+                            {/* ช่องที่ 1: จำนวน & หน่วยนับ */}
+                            <div className="rounded-lg p-2.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700">
+                              <span className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                จำนวน &amp; หน่วย
+                              </span>
+                              <div className="grid grid-cols-2 gap-1.5">
+                                <input
+                                  type="number"
+                                  step="1"
+                                  min="1"
+                                  className={fieldErrorClass(
+                                    qtyEmpty,
+                                    'input text-xs w-full font-mono font-bold bg-white dark:bg-slate-900'
+                                  )}
+                                  placeholder="จำนวน"
+                                  value={it.quantity}
+                                  onChange={(e) =>
+                                    updateItemInCategory(cat.id, it.id, 'quantity', e.target.value)
+                                  }
+                                />
+                                <input
+                                  list="boq-unit-list"
+                                  type="text"
+                                  className="input text-xs w-full bg-white dark:bg-slate-900"
+                                  placeholder="หน่วย"
+                                  value={it.unit}
+                                  onChange={(e) =>
+                                    updateItemInCategory(cat.id, it.id, 'unit', e.target.value)
+                                  }
+                                />
+                              </div>
+                            </div>
+
+                            {/* ช่องที่ 2: ค่าวัสดุ/หน่วย (บ.) */}
+                            <div className="rounded-lg p-2.5 bg-sky-50/40 dark:bg-sky-950/20 border border-sky-200/80 dark:border-sky-800">
+                              <span className="block text-[11px] font-bold text-sky-800 dark:text-sky-300 mb-1 flex items-center gap-1">
+                                <Package className="h-3.5 w-3.5 text-sky-600 dark:text-sky-400" />
+                                <span>ค่าวัสดุ/หน่วย (บ.)</span>
+                              </span>
+                              <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                className="input text-xs w-full font-mono text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-900"
+                                placeholder="0.00"
+                                value={it.material_unit_cost}
+                                onChange={(e) =>
+                                  updateItemInCategory(
+                                    cat.id,
+                                    it.id,
+                                    'material_unit_cost',
+                                    e.target.value
+                                  )
+                                }
+                              />
+                            </div>
+
+                            {/* ช่องที่ 3: รวมเงินสุทธิของรายการ (เฉพาะค่าวัสดุ) */}
+                            <div className="rounded-lg p-2.5 bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 flex flex-col justify-between">
+                              <span className="block text-[11px] font-bold text-emerald-800 dark:text-emerald-300 mb-1">
+                                รวมเงินวัสดุ (บ.)
+                              </span>
+                              <div className="h-8 px-2.5 flex items-center justify-start font-mono font-black text-xs text-slate-900 dark:text-emerald-400 bg-white dark:bg-slate-900 rounded-lg border border-emerald-200 dark:border-emerald-800 shadow-2xs">
+                                {baht(itemCalc?.totalMat || 0)} บาท
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* บรรทัดที่ 3: สเปกวิศวกรรมและเงื่อนไขเทคนิค */}
+                          <div className="pt-1.5 border-t border-slate-100 dark:border-slate-800/80">
+                            <input
+                              type="text"
+                              className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/60 px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:bg-white dark:focus:bg-slate-800 focus:outline-none"
+                              placeholder="สเปกเทคนิค / รุ่น / รายละเอียดเพิ่มเติม (เช่น แผง Tier-1 Half-cell, รางอลูมิเนียม 6005-T5)..."
+                              value={it.description || ''}
+                              onChange={(e) =>
+                                updateItemInCategory(cat.id, it.id, 'description', e.target.value)
+                              }
+                            />
+                          </div>
+                        </div>
+                      )
+                    })}
+
+                    {/* ปุ่มเพิ่มรายการในงานเดิมต่อได้ทันที โดยไม่ต้องเลือกหรือพิมพ์หมวดงานเดิมซ้ำอีก */}
+                    <button
+                      type="button"
+                      onClick={() => addItemToCategory(cat.id)}
+                      className="rounded-xl border-2 border-dashed border-sky-300 dark:border-sky-800 hover:border-sky-400 dark:hover:border-sky-700 bg-sky-50/60 dark:bg-sky-950/30 hover:bg-sky-100 dark:hover:bg-sky-900/40 text-sky-800 dark:text-sky-300 w-full py-2.5 text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer shadow-2xs"
+                    >
+                      <Plus className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+                      <span>
+                        + เพิ่มรายการอื่นในหมวดที่ {catIdx + 1} ({cat.name ? cat.name.split(' ')[1] || cat.name.slice(0, 25) : 'งานนี้'}) ต่อ
                       </span>
-                    </div>
-                    <textarea
-                      rows={2}
-                      className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 p-2.5 text-xs text-slate-800 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:bg-white dark:focus:bg-slate-800 focus:border-slate-900 dark:focus:border-amber-500 focus:outline-none transition leading-relaxed font-sans"
-                      placeholder="เช่น • สเปกแผง Tier-1 Mono Half-cell&#10;• รางอลูมิเนียมอะโนไดซ์ 6005-T5&#10;• รับประกันงานติดตั้ง 2 ปี"
-                      value={it.description || ''}
-                      onChange={(e) => updItem(idx, 'description', e.target.value)}
-                    />
+                    </button>
                   </div>
                 </div>
               )
@@ -692,25 +949,162 @@ export default function BOQForm() {
 
           <FieldError error={errors.items} />
 
+          {/* ปุ่มเพิ่มหมวดหมู่งานใหม่ */}
           <button
             type="button"
-            onClick={() => setItems([...items, { ...EMPTY_BOQ_LINE }])}
-            className="rounded-xl border border-dashed border-slate-300 dark:border-slate-700 w-full py-2.5 text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/60 hover:border-slate-400 transition flex items-center justify-center gap-1.5 cursor-pointer"
+            onClick={addCategory}
+            className="rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 w-full py-3.5 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60 hover:border-slate-400 transition flex items-center justify-center gap-2 cursor-pointer shadow-xs"
           >
-            <Plus className="h-4 w-4" />
-            <span> เพิ่มรายการพัสดุ / บริการใน BOQ</span>
+            <FolderPlus className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+            <span>+ เพิ่มหมวดหมู่งานใหม่ (Add New Work Category)</span>
           </button>
         </div>
 
-        {/* ส่วนที่ 3: สรุปต้นทุน กำไร และราคาเสนอขาย (Financial Summary) */}
-        <div className="pt-4 border-t border-slate-100 dark:border-slate-800 grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+        {/* ส่วนที่ 3: รายการค่าแรงและบริการติดตั้ง (แยกต่างหากชัดเจน) */}
+        <div className="space-y-4 pt-6 border-t-2 border-amber-200 dark:border-amber-900/60">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-amber-50/50 dark:bg-amber-950/20 p-4 rounded-2xl border border-amber-200 dark:border-amber-800">
+            <div>
+              <h2 className="font-bold text-sm text-amber-900 dark:text-amber-200 flex items-center gap-2">
+                <Wrench className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                <span>3. รายการค่าแรงและบริการติดตั้ง (Labor &amp; Installation Services - แยกต่างหาก)</span>
+              </h2>
+              <p className="text-[11px] text-amber-700/80 dark:text-amber-300/80 mt-0.5">
+                แยกต้นทุนค่าแรงและงานบริการติดตั้งออกจากรายการพัสดุชัดเจน กำหนดเป็นค่าแรงเหมา หรือค่าแรงตามหน่วยงานได้
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={addLaborItem}
+              className="rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-100 hover:bg-amber-200 text-amber-900 dark:text-amber-200 dark:bg-amber-900/60 dark:hover:bg-amber-900 px-3.5 py-1.5 text-xs font-bold shadow-2xs flex items-center gap-1.5 cursor-pointer self-start sm:self-auto transition"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              <span>+ เพิ่มรายการค่าแรง</span>
+            </button>
+          </div>
+
+          {/* รายการค่าแรง */}
+          <div className="space-y-3">
+            {laborItems.map((l, lIdx) => {
+              const lCalc = laborCalculations[lIdx]
+
+              return (
+                <div
+                  key={l.id}
+                  className="rounded-xl border border-amber-200 dark:border-amber-800/80 bg-amber-50/25 dark:bg-amber-950/20 p-3.5 space-y-3 transition shadow-2xs hover:border-amber-300"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <span className="flex h-8 px-2.5 items-center justify-center rounded-lg bg-amber-500 text-slate-950 font-bold text-xs shrink-0 shadow-2xs">
+                      ค่าแรง #{lIdx + 1}
+                    </span>
+
+                    <div className="flex-1 min-w-[200px]">
+                      <input
+                        type="text"
+                        className="input text-xs w-full font-bold text-amber-950 dark:text-amber-100 bg-white dark:bg-slate-900 border-amber-300 dark:border-amber-700 focus:ring-1 focus:ring-amber-500"
+                        placeholder="ระบุชื่องานค่าแรง / บริการติดตั้ง เช่น ค่าแรงติดตั้งแผงโซล่าเซลล์, ค่าทดสอบระบบ..."
+                        value={l.item_name}
+                        onChange={(e) => updateLaborItem(l.id, 'item_name', e.target.value)}
+                      />
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => removeLaborItem(l.id)}
+                      className="h-8 px-2.5 text-rose-500 hover:text-rose-700 dark:text-rose-400 bg-white dark:bg-slate-900 hover:bg-rose-50 rounded-lg transition border border-rose-200 dark:border-rose-900 shadow-2xs flex items-center gap-1 font-bold text-xs shrink-0"
+                      title="ลบรายการค่าแรงนี้"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      <span className="hidden sm:inline">ลบ</span>
+                    </button>
+                  </div>
+
+                  {/* ช่องตัวเลขค่าแรง */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2 border-t border-amber-100 dark:border-amber-900/60">
+                    <div className="rounded-lg p-2.5 bg-white dark:bg-slate-900 border border-amber-200/80 dark:border-amber-800">
+                      <span className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                        จำนวน &amp; หน่วย
+                      </span>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        <input
+                          type="number"
+                          step="1"
+                          min="1"
+                          className="input text-xs w-full font-mono font-bold bg-white dark:bg-slate-900"
+                          placeholder="จำนวน"
+                          value={l.quantity}
+                          onChange={(e) => updateLaborItem(l.id, 'quantity', e.target.value)}
+                        />
+                        <input
+                          list="boq-unit-list"
+                          type="text"
+                          className="input text-xs w-full bg-white dark:bg-slate-900"
+                          placeholder="หน่วย"
+                          value={l.unit}
+                          onChange={(e) => updateLaborItem(l.id, 'unit', e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="rounded-lg p-2.5 bg-white dark:bg-slate-900 border border-amber-200/80 dark:border-amber-800">
+                      <span className="block text-[11px] font-bold text-amber-800 dark:text-amber-300 mb-1 flex items-center gap-1">
+                        <Wrench className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                        <span>ค่าแรง/หน่วย (บ.)</span>
+                      </span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        className="input text-xs w-full font-mono font-bold text-amber-800 dark:text-amber-300 bg-white dark:bg-slate-900"
+                        placeholder="0.00"
+                        value={l.labor_unit_cost}
+                        onChange={(e) => updateLaborItem(l.id, 'labor_unit_cost', e.target.value)}
+                      />
+                    </div>
+
+                    <div className="rounded-lg p-2.5 bg-white dark:bg-slate-900 border border-amber-200/80 dark:border-amber-800 flex flex-col justify-between">
+                      <span className="block text-[11px] font-bold text-amber-900 dark:text-amber-300 mb-1">
+                        รวมเงินค่าแรง (บ.)
+                      </span>
+                      <div className="h-8 px-2.5 flex items-center justify-start font-mono font-black text-xs text-amber-900 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/50 rounded-lg border border-amber-200 dark:border-amber-800 shadow-2xs">
+                        {baht(lCalc?.totalLab || 0)} บาท
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* รายละเอียด/ขอบเขตงานค่าแรง */}
+                  <div className="pt-1.5 border-t border-amber-100 dark:border-amber-900/60">
+                    <input
+                      type="text"
+                      className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none"
+                      placeholder="ขอบเขตงานค่าแรง / เงื่อนไขการติดตั้งเพิ่มเติม..."
+                      value={l.description || ''}
+                      onChange={(e) => updateLaborItem(l.id, 'description', e.target.value)}
+                    />
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          <button
+            type="button"
+            onClick={addLaborItem}
+            className="rounded-xl border border-dashed border-amber-300 dark:border-amber-700 w-full py-2.5 text-xs font-bold text-amber-800 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/30 transition flex items-center justify-center gap-1.5 cursor-pointer"
+          >
+            <Plus className="h-4 w-4" />
+            <span>+ เพิ่มรายการค่าแรง / บริการติดตั้ง</span>
+          </button>
+        </div>
+
+        {/* ส่วนที่ 4: สรุปต้นทุน กำไร และราคาเสนอขาย (Financial Summary) */}
+        <div className="pt-6 border-t border-slate-100 dark:border-slate-800 grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
           {/* หมายเหตุ */}
           <div className="space-y-1.5">
             <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
               หมายเหตุ / เงื่อนไขทั่วไปใน BOQ
             </label>
             <textarea
-              rows={5}
+              rows={6}
               className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3 text-xs text-slate-800 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-slate-900 dark:focus:border-amber-500 focus:outline-none"
               placeholder="เช่น กำหนดยืนราคา 30 วัน, ไม่รวมงานปรับปรุงโครงสร้างหลังคาเดิม, การชำระเงินแบ่ง 3 งวด..."
               value={notes}
@@ -718,36 +1112,40 @@ export default function BOQForm() {
             />
           </div>
 
-          {/* สรุปตัวเลขทางการเงิน (ข้อ 4: แยกต้นทุนค่าวัสดุ และ ต้นทุนค่าแรง ออกต่างหาก) */}
-          <div className="rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 p-5 space-y-3 text-xs">
+          {/* สรุปตัวเลขทางการเงิน แยกค่าวัสดุ vs ค่าแรง ชัดเจน */}
+          <div className="rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 p-5 space-y-3.5 text-xs">
             {/* กล่องแยกค่าวัสดุ vs ค่าแรง */}
-            <div className="grid grid-cols-2 gap-2 pb-1">
+            <div className="grid grid-cols-2 gap-2.5 pb-1">
               {/* ค่าวัสดุ */}
-              <div className="rounded-xl bg-white dark:bg-slate-800 p-3 border border-sky-100 dark:border-sky-900/60 shadow-2xs">
+              <div className="rounded-xl bg-white dark:bg-slate-800 p-3.5 border border-sky-200 dark:border-sky-900/60 shadow-2xs">
                 <div className="flex items-center gap-1.5 text-sky-800 dark:text-sky-300 font-bold text-[11px] mb-1">
                   <Package className="h-3.5 w-3.5 text-sky-600 dark:text-sky-400" />
                   <span>รวมต้นทุนค่าวัสดุ</span>
                 </div>
-                <div className="font-mono font-bold text-sm text-slate-900 dark:text-slate-100">
-                  {baht(totalMaterialCost)} <span className="text-[10px] font-normal text-slate-500">บ.</span>
+                <div className="font-mono font-bold text-base text-slate-900 dark:text-slate-100">
+                  {baht(totalMaterialCost)}{' '}
+                  <span className="text-[10px] font-normal text-slate-500">บ.</span>
                 </div>
               </div>
 
               {/* ค่าแรง (แยกออกต่างหาก) */}
-              <div className="rounded-xl bg-amber-50/70 dark:bg-amber-950/40 p-3 border border-amber-200 dark:border-amber-900/80 shadow-2xs">
+              <div className="rounded-xl bg-amber-50/70 dark:bg-amber-950/40 p-3.5 border border-amber-300 dark:border-amber-900/80 shadow-2xs">
                 <div className="flex items-center gap-1.5 text-amber-900 dark:text-amber-300 font-bold text-[11px] mb-1">
                   <Wrench className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
-                  <span>รวมต้นทุนค่าแรง</span>
+                  <span>รวมต้นทุนค่าแรง (แยกต่างหาก)</span>
                 </div>
-                <div className="font-mono font-bold text-sm text-amber-900 dark:text-amber-300">
-                  {baht(totalLaborCost)} <span className="text-[10px] font-normal text-amber-700 dark:text-amber-400">บ.</span>
+                <div className="font-mono font-bold text-base text-amber-900 dark:text-amber-300">
+                  {baht(totalLaborCost)}{' '}
+                  <span className="text-[10px] font-normal text-amber-700 dark:text-amber-400">
+                    บ.
+                  </span>
                 </div>
               </div>
             </div>
 
             {/* รวมต้นทุนตรง */}
             <div className="flex justify-between items-center text-slate-800 dark:text-slate-200 pt-2 border-t border-slate-200 dark:border-slate-700 font-bold">
-              <span>รวมต้นทุนตรง (Total Direct Cost):</span>
+              <span>รวมต้นทุนตรงทั้งหมด (วัสดุ + แรง):</span>
               <span className="font-mono text-sm">{baht(totalCost)} บาท</span>
             </div>
 
@@ -755,7 +1153,7 @@ export default function BOQForm() {
             <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-slate-700">
               <span className="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                 <Calculator className="h-3.5 w-3.5 text-slate-500" />
-                <span>กำไร / มาร์กอัป (Markup %):</span>
+                <span>กำไรส่วนเพิ่ม (Markup %):</span>
               </span>
               <div className="flex items-center gap-1.5">
                 <input
@@ -772,13 +1170,13 @@ export default function BOQForm() {
             </div>
 
             <div className="flex justify-between text-emerald-800 dark:text-emerald-400">
-              <span>จำนวนเงินกำไร (Markup Value):</span>
+              <span>จำนวนเงินกำไร (Markup Amount):</span>
               <span className="font-mono font-bold">+{baht(markupAmount)} บาท</span>
             </div>
 
             {/* ราคารวมเสนอขายสุทธิ */}
             <div className="pt-3 border-t-2 border-slate-300 dark:border-slate-600 flex justify-between items-center text-sm font-black text-slate-900 dark:text-slate-100">
-              <span>ราคารวมเสนอขาย (Selling Price):</span>
+              <span>ราคารวมเสนอขายสุทธิ (Selling Price):</span>
               <span className="text-xl font-mono text-emerald-700 dark:text-emerald-400">
                 {baht(grandTotal)} <span className="text-xs font-normal text-slate-500">บาท</span>
               </span>
@@ -803,7 +1201,9 @@ export default function BOQForm() {
             className="rounded-xl bg-slate-900 dark:bg-amber-500 hover:bg-slate-800 dark:hover:bg-amber-400 text-amber-300 dark:text-slate-950 font-black px-6 py-2.5 text-xs transition shadow-sm disabled:opacity-50 flex items-center gap-2 cursor-pointer"
           >
             <CheckCircle2 className="h-4 w-4" />
-            <span>{busy ? 'กำลังบันทึก...' : isEdit ? 'บันทึกการแก้ไข BOQ' : 'บันทึกเอกสาร BOQ'}</span>
+            <span>
+              {busy ? 'กำลังบันทึก...' : isEdit ? 'บันทึกการแก้ไข BOQ' : 'บันทึกเอกสาร BOQ'}
+            </span>
           </button>
         </div>
       </div>
