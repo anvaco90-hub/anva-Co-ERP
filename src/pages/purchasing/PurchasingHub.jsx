@@ -2874,13 +2874,17 @@ export default function PurchasingHub() {
             docId={paymentTargetPo.id}
             docNo={paymentTargetPo.po_no}
             vendorId={paymentTargetPo.vendor_id}
-            contactName={paymentTargetPo.vendors?.vendor_name}
+            vendorTaxId={paymentTargetPo.vendors?.tax_id || ''}
+            contactName={paymentTargetPo.vendors?.vendor_name || paymentTargetPo.custom_vendor_name}
             items={paymentTargetPo.purchase_order_items || []}
             totalAmount={targetPay.totalPayable}
             alreadyPaid={targetPay.paidAmount}
             depositAmount={paymentTargetPo.deposit_amount || 0}
             remainingAmount={targetPay.remainingAmount}
             hasDeposit={paymentTargetPo.deposit_type === 'deposit'}
+            whtRate={Number(paymentTargetPo.wht_rate || 0)}
+            whtAmount={Number(paymentTargetPo.wht_amount || 0)}
+            hasGoodsReceipt={['partial', 'received'].includes(paymentTargetPo.status)}
             paymentStatus={targetPay.effectivePaymentStatus}
             requestedChannel={paymentTargetPo.payment_channel_requested || 'transfer'}
             projectId={paymentTargetPo.project_id}
