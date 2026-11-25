@@ -352,7 +352,7 @@ export default function BOQForm() {
     )
   }
 
-  // ── Labor Actions (แยกต่างหาก) ─────────────────────────────────────────────
+  // ── Labor Actions ─────────────────────────────────────────────────────────
   const addLaborItem = () => {
     setLaborItems([
       ...laborItems,
@@ -526,7 +526,7 @@ export default function BOQForm() {
         })
       })
 
-      // 2. รายการค่าแรงและงานบริการติดตั้ง (แยกต่างหาก)
+      // 2. รายการค่าแรงและงานบริการติดตั้ง
       activeLaborItems.forEach((l) => {
         const qty = parseInt(l.quantity, 10) || 1
         const labUnit = Number(l.labor_unit_cost) || 0
