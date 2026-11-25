@@ -164,7 +164,13 @@ export default function ProjectDetail() {
               .from("stock_issues")
               .select("id, issue_no, issue_date, notes, created_at, stock_issue_items(quantity, unit_cost, inventory_items(id, item_code, item_name, unit, avg_unit_cost))")
               .eq("project_id", id)
-              .order("created_at", { ascending: false }),
+              .order("created_at", { ascending: false })
+              .then(async (res) => {
+                if (res.error) {
+                  return supabase.from("stock_issues").select("*").eq("project_id", id);
+                }
+                return res;
+              }),
             "stock_issues"
           ),
           safeListQuery(
@@ -172,7 +178,13 @@ export default function ProjectDetail() {
               .from("stock_adjustments")
               .select("id, adj_no, qty_before, qty_after, unit_cost, reason, created_at, source_project_id, inventory_items(id, item_code, item_name, unit, avg_unit_cost)")
               .eq("source_project_id", id)
-              .order("created_at", { ascending: false }),
+              .order("created_at", { ascending: false })
+              .then(async (res) => {
+                if (res.error) {
+                  return supabase.from("stock_adjustments").select("*").eq("source_project_id", id);
+                }
+                return res;
+              }),
             "stock_adjustments"
           ),
           safeListQuery(
