@@ -370,9 +370,13 @@ export default function ArAgingPage() {
                   <tr key={row.id} className="hover:bg-steel-50/40 transition">
                     <td className="px-3 py-2.5">
                       <span className="font-mono font-bold text-sky-800 block">{row.invoice_no}</span>
-                      {row.is_opening_balance && (
-                        <span className="text-[9px] bg-purple-100 text-purple-800 px-1 rounded font-bold">
+                      {row.is_opening_balance ? (
+                        <span className="inline-block text-[9px] bg-purple-100 text-purple-800 px-1.5 py-0.2 rounded font-bold">
                           ยอดยกมา
+                        </span>
+                      ) : (
+                        <span className="inline-block text-[9px] bg-sky-100 text-sky-800 px-1.5 py-0.2 rounded font-bold">
+                          ใบแจ้งหนี้จริง
                         </span>
                       )}
                     </td>
