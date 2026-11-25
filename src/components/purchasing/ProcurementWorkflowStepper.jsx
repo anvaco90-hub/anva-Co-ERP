@@ -5,7 +5,6 @@ import {
   Printer,
   ShoppingCart,
   PackageCheck,
-  CreditCard,
   ExternalLink,
   Plus,
   FileText,
@@ -14,184 +13,12 @@ import {
   Workflow,
   ArrowRight,
 } from 'lucide-react'
-import { baht } from '../../lib/projects'
 import { formatThaiDate } from '../../lib/poDueStatus'
-import { computePoPaymentSummary } from '../../lib/purchasing'
+import { computeProcurementFlow } from '../../lib/purchasingFlow'
 import { extractPrSourceQuotation } from '../../lib/salesFlowUtils'
 import { PAYMENT_TYPES } from '../../pages/purchasing/POForm'
 
-/**
- * คำนวณสถานะ 5 ขั้นตอนของวงจรจัดซื้อ (1.PR -> 2.PO -> 3.ตรวจรับ -> 4.จ่ายเงิน -> 5.ปิดวงจร)
- * ใช้ร่วมกันได้ทั้ง PRDetail, PODetail และ PurchasingHub เพื่อให้แสดงผลตรงกันทั้งระบบ
- */
-export function computeProcurementFlow({
-  mode = 'po', // 'pr' | 'po'
-  pr = null,
-  po = null,
-  linkedPos = [],
-  items = [],
-  grns = [],
-  payments = [],
-}) {
-  if (mode === 'po' && po) {
-    const isCancelled = po.status === 'cancelled'
-    const prNo = pr?.pr_no || po.pr?.pr_no || null
-    const prId = pr?.id || po.pr_id || null
-    const hasPr = Boolean(prNo || prId)
-
-    const poItems = items.length > 0 ? items : po.purchase_order_items || []
-    const totalOrdered = poItems.reduce((s, i) => s + Number(i.quantity || 0), 0)
-    const totalReceived = poItems.reduce((s, i) => s + Number(i.qty_received || 0), 0)
-
-    const isFullyReceived =
-      po.status === 'received' ||
-      (poItems.length > 0 && poItems.every((i) => Number(i.qty_received || 0) >= Number(i.quantity || 0)))
-    const isPartialReceived = !isFullyReceived && (po.status === 'partial' || totalReceived > 0)
-
-    const paySummary = computePoPaymentSummary(po, poItems, payments)
-    const isPaidInFull = paySummary.isPaidInFull
-    const hasDepositPaid = paySummary.hasPartialPaid
-    const isComplete = !isCancelled && isFullyReceived && isPaidInFull
-
-    let currentStep = 3
-    let currentStepLabel = 'ขั้นที่ 3/5 · รอตรวจรับสินค้า'
-    let statusBadgeText = 'รอรับของเข้าสโตร์'
-
-    if (isCancelled) {
-      currentStep = 2
-      currentStepLabel = 'ยกเลิกคำสั่งซื้อ'
-      statusBadgeText = 'ยกเลิกคำสั่งซื้อ (Cancelled)'
-    } else if (isComplete) {
-      currentStep = 5
-      currentStepLabel = 'ขั้นที่ 5/5 · ปิดวงจรสมบูรณ์'
-      statusBadgeText = 'ปิดวงจรสมบูรณ์ (รับครบ & จ่ายแล้ว)'
-    } else if (isFullyReceived && !isPaidInFull) {
-      currentStep = 4
-      currentStepLabel = 'ขั้นที่ 4/5 · พร้อมจ่ายชำระเงิน'
-      statusBadgeText = hasDepositPaid ? 'รับของครบ · รอจ่ายส่วนที่เหลือ' : 'รับของครบแล้ว · รอจ่ายเงิน'
-    } else if (isPartialReceived) {
-      currentStep = 3
-      currentStepLabel = 'ขั้นที่ 3/5 · รับของบางส่วน'
-      statusBadgeText = 'รับของบางส่วน (Partial)'
-    } else if (po.payment_type === 'cbd' && !isPaidInFull) {
-      currentStep = 4
-      currentStepLabel = 'รอจ่ายเงินก่อนส่งมอบ (CBD)'
-      statusBadgeText = 'รอชำระเงินล่วงหน้า (CBD)'
-    }
-
-    return {
-      isCancelled,
-      hasPr,
-      prNo,
-      prId,
-      totalOrdered,
-      totalReceived,
-      isFullyReceived,
-      isPartialReceived,
-      isPaidInFull,
-      hasDepositPaid,
-      isComplete,
-      currentStep,
-      currentStepLabel,
-      statusBadgeText,
-      stepStates: {
-        s1: 'done',
-        s2: isCancelled ? 'cancelled' : 'done',
-        s3: isCancelled ? 'cancelled' : isFullyReceived ? 'done' : 'active',
-        s4: isCancelled
-          ? 'cancelled'
-          : isPaidInFull
-          ? 'done'
-          : isFullyReceived || hasDepositPaid || po.payment_type === 'cbd'
-          ? 'active'
-          : 'pending',
-        s5: isCancelled ? 'cancelled' : isComplete ? 'done' : 'pending',
-      },
-    }
-  }
-
-  // mode === 'pr'
-  const isCancelled = pr?.status === 'cancelled'
-  const activePos = (linkedPos || []).filter((p) => p.status !== 'cancelled')
-  const hasActivePo = activePos.length > 0 || pr?.status === 'ordered'
-
-  const allReceived =
-    activePos.length > 0 &&
-    activePos.every((p) => {
-      const pItems = p.purchase_order_items || []
-      return (
-        p.status === 'received' ||
-        (pItems.length > 0 && pItems.every((i) => Number(i.qty_received || 0) >= Number(i.quantity || 0)))
-      )
-    })
-  const someReceived = activePos.some((p) => {
-    const pItems = p.purchase_order_items || []
-    return (
-      p.status === 'received' ||
-      p.status === 'partial' ||
-      pItems.some((i) => Number(i.qty_received || 0) > 0)
-    )
-  })
-  const allPaid =
-    activePos.length > 0 &&
-    activePos.every((p) => computePoPaymentSummary(p, p.purchase_order_items).isPaidInFull)
-  const somePaid = activePos.some((p) => {
-    const s = computePoPaymentSummary(p, p.purchase_order_items)
-    return s.isPaidInFull || s.hasPartialPaid
-  })
-  const isComplete = !isCancelled && hasActivePo && allReceived && allPaid
-
-  let currentStep = 2
-  let currentStepLabel = 'ขั้นที่ 2/5 · รอออกใบสั่งซื้อ (PO)'
-  let statusBadgeText = 'รอสั่งซื้อ (Pending PO)'
-
-  if (isCancelled) {
-    currentStep = 1
-    currentStepLabel = 'ยกเลิกใบขอซื้อ'
-    statusBadgeText = 'ยกเลิกใบขอซื้อ (Cancelled)'
-  } else if (isComplete) {
-    currentStep = 5
-    currentStepLabel = 'ขั้นที่ 5/5 · ปิดวงจรสมบูรณ์'
-    statusBadgeText = 'ปิดวงจรสมบูรณ์ (รับครบ & จ่ายแล้ว)'
-  } else if (hasActivePo && allReceived && !allPaid) {
-    currentStep = 4
-    currentStepLabel = 'ขั้นที่ 4/5 · รับครบ · รอจ่ายเงิน'
-    statusBadgeText = somePaid ? 'รับครบ · จ่ายมัดจำแล้ว' : 'รับของครบแล้ว · รอจ่ายเงิน'
-  } else if (hasActivePo) {
-    currentStep = 3
-    currentStepLabel = someReceived ? 'ขั้นที่ 3/5 · รับของบางส่วน' : 'ขั้นที่ 3/5 · รอรับของเข้าสโตร์'
-    statusBadgeText = someReceived ? 'ออก PO แล้ว · รับบางส่วน' : 'ออก PO แล้ว · รอรับของ'
-  }
-
-  return {
-    isCancelled,
-    activePos,
-    hasActivePo,
-    allReceived,
-    someReceived,
-    allPaid,
-    somePaid,
-    isComplete,
-    currentStep,
-    currentStepLabel,
-    statusBadgeText,
-    stepStates: {
-      s1: isCancelled ? 'cancelled' : 'done',
-      s2: isCancelled ? 'cancelled' : hasActivePo ? 'done' : 'active',
-      s3: isCancelled ? 'cancelled' : !hasActivePo ? 'pending' : allReceived ? 'done' : 'active',
-      s4: isCancelled
-        ? 'cancelled'
-        : !hasActivePo
-        ? 'pending'
-        : allPaid
-        ? 'done'
-        : allReceived || somePaid
-        ? 'active'
-        : 'pending',
-      s5: isCancelled ? 'cancelled' : isComplete ? 'done' : 'pending',
-    },
-  }
-}
+export { computeProcurementFlow }
 
 /**
  * แถบ Stepper ขนาดกะทัดรัดสำหรับใช้ในตาราง/การ์ดของหน้า PurchasingHub
@@ -211,8 +38,7 @@ export function CompactProcurementSteps({ flow }) {
     { key: 's1', num: 1, label: 'PR', state: flow.stepStates.s1 },
     { key: 's2', num: 2, label: 'PO', state: flow.stepStates.s2 },
     { key: 's3', num: 3, label: 'รับของ', state: flow.stepStates.s3 },
-    { key: 's4', num: 4, label: 'จ่าย', state: flow.stepStates.s4 },
-    { key: 's5', num: 5, label: 'ปิดงาน', state: flow.stepStates.s5 },
+    { key: 's4', num: 4, label: 'ปิดงานจัดซื้อ', state: flow.stepStates.s4 },
   ]
 
   return (
@@ -250,8 +76,7 @@ export function CompactProcurementSteps({ flow }) {
 }
 
 /**
- * ผังแสดงลำดับขั้นตอนการทำงานจัดซื้อ 5 ขั้นตอน (Procurement Workflow Pipeline Card)
- * รูปแบบเดียวกับ QuotationDetail ("ลำดับขั้นตอนการทำงาน")
+ * ผังแสดงลำดับขั้นตอนการทำงานจัดซื้อ 4 ขั้นตอน (1. PR → 2. PO → 3. ตรวจรับ GR/RI → 4. ปิดงานจัดซื้อ)
  */
 export default function ProcurementWorkflowStepper({
   mode = 'po', // 'pr' | 'po'
@@ -260,17 +85,14 @@ export default function ProcurementWorkflowStepper({
   linkedPos = [],
   items = [],
   grns = [],
-  payments = [],
   canCreate = false,
   canReceive = false,
   onPrintPdf,
-  onOpenPayment,
   onScrollToReceive,
   onOpenGrnTab,
-  onOpenPayTab,
   onOpenAuditTab,
 }) {
-  const flow = computeProcurementFlow({ mode, pr, po, linkedPos, items, grns, payments })
+  const flow = computeProcurementFlow({ mode, pr, po, linkedPos, items, grns })
   const { stepStates, isCancelled } = flow
 
   const cardTheme = (state, tone = 'amber') => {
@@ -318,10 +140,6 @@ export default function ProcurementWorkflowStepper({
     ? PAYMENT_TYPES.find((p) => p.value === po.payment_type)?.label?.split('(')[0]?.trim()
     : 'เครดิตเทอม'
 
-  const poPaySummary = computePoPaymentSummary(po, items, payments)
-  const grandTotalVal = poPaySummary.totalPayable
-  const paidAmt = poPaySummary.paidAmount
-  const remainingAmt = poPaySummary.remainingAmount
   const primaryLinkedPo = flow.activePos?.[0] || linkedPos?.[0]
   const sourceQt = extractPrSourceQuotation({
     quotation_id: po?.quotation_id || pr?.quotation_id || po?.pr?.quotation_id,
@@ -339,10 +157,10 @@ export default function ProcurementWorkflowStepper({
           </div>
           <div>
             <h2 className="text-sm font-bold text-slate-900 dark:text-white">
-              ลำดับขั้นตอนการทำงาน (PR → PO Procurement Workflow)
+              ลำดับขั้นตอนการทำงาน (PR → PO → GR/RI Procurement Workflow)
             </h2>
             <p className="text-[11px] text-slate-500 dark:text-slate-400">
-              ผังกระบวนการจัดซื้อตั้งแต่ขอซื้อ ออกใบสั่งซื้อ ตรวจรับเข้าสโตร์ จนถึงจ่ายชำระเงิน ชี้ชัดว่างานอยู่จุดใดและต้องทำอะไรต่อ
+              ผังกระบวนการจัดซื้อตั้งแต่ขอซื้อ ออกใบสั่งซื้อ ตรวจรับเข้าสโตร์ จนถึงปิดงานจัดซื้อและส่งข้อมูลต่อฝ่ายบัญชี
             </p>
           </div>
         </div>
@@ -371,8 +189,8 @@ export default function ProcurementWorkflowStepper({
         </div>
       </div>
 
-      {/* 5-Step Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+      {/* 4-Step Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {/* Step 1: ใบขอซื้อ (PR / Source) */}
         <div className={cardTheme(stepStates.s1)}>
           <div>
@@ -637,11 +455,11 @@ export default function ProcurementWorkflowStepper({
           </div>
         </div>
 
-        {/* Step 4: จ่ายชำระเงิน & บัญชี (Payment & AP) */}
-        <div className={cardTheme(stepStates.s4, 'amber')}>
+        {/* Step 4: ปิดงานจัดซื้อ & ส่งต่อบัญชี (Accounting Handoff) */}
+        <div className={cardTheme(stepStates.s4)}>
           <div>
             <div className="flex items-center justify-between">
-              <span className={circleTheme(stepStates.s4, 'amber')}>
+              <span className={circleTheme(stepStates.s4)}>
                 {stepStates.s4 === 'done' ? (
                   <Check className="h-3.5 w-3.5" />
                 ) : stepStates.s4 === 'cancelled' ? (
@@ -650,146 +468,54 @@ export default function ProcurementWorkflowStepper({
                   '4'
                 )}
               </span>
-              <span className={labelTheme(stepStates.s4, 'amber')}>
+              <span className={labelTheme(stepStates.s4)}>
                 {stepStates.s4 === 'cancelled'
                   ? 'ยกเลิกแล้ว'
                   : stepStates.s4 === 'done'
-                  ? 'ชำระครบแล้ว'
-                  : stepStates.s4 === 'active'
-                  ? flow.hasDepositPaid || flow.somePaid
-                    ? 'จ่ายบางส่วน'
-                    : 'พร้อมจ่ายเงิน'
-                  : 'รอรับของก่อนจ่าย'}
-              </span>
-            </div>
-            <div className="font-bold text-slate-900 dark:text-white mt-2 text-xs">
-              4. จ่ายชำระเงิน (PAY)
-            </div>
-            <div className="text-[11px] font-mono mt-0.5 text-slate-700 dark:text-slate-300 font-semibold">
-              {mode === 'po'
-                ? flow.isPaidInFull
-                  ? `จ่ายครบ ฿${baht(grandTotalVal)}`
-                  : flow.hasDepositPaid
-                  ? `จ่ายแล้ว ฿${baht(paidAmt)} · ค้าง ฿${baht(remainingAmt)}`
-                  : `ยอดสุทธิ ฿${baht(grandTotalVal)}`
-                : flow.hasActivePo
-                ? flow.allPaid
-                  ? 'ชำระเงินครบถ้วน'
-                  : flow.somePaid
-                  ? 'ชำระมัดจำ/บางส่วนแล้ว'
-                  : 'รอตั้งเบิกจ่ายเงิน'
-                : 'รอตั้งเบิกตามเงื่อนไข'}
-            </div>
-            <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 line-clamp-1">
-              {mode === 'po'
-                ? paymentTypeShort
-                : 'ตัดจ่ายสมุดรายวันและเจ้าหนี้ AP'}
-            </div>
-          </div>
-          <div className="mt-3 pt-2 border-t border-slate-200/80 dark:border-slate-800 text-[11px]">
-            {mode === 'po' ? (
-              flow.isPaidInFull && onOpenPayTab ? (
-                <button
-                  type="button"
-                  onClick={onOpenPayTab}
-                  className="text-emerald-700 dark:text-emerald-400 hover:underline font-bold flex items-center gap-1 cursor-pointer"
-                >
-                  <History className="h-3 w-3" />
-                  <span>ดูประวัติจ่ายเงิน ({payments.length})</span>
-                </button>
-              ) : !isCancelled && !flow.isPaidInFull && onOpenPayment ? (
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <button
-                    type="button"
-                    onClick={onOpenPayment}
-                    className="text-amber-900 dark:text-amber-300 hover:underline font-bold flex items-center gap-1 cursor-pointer"
-                  >
-                    <CreditCard className="h-3 w-3" />
-                    <span>
-                      {flow.hasDepositPaid
-                        ? `จ่ายงวดถัดไป (฿${baht(remainingAmt)})`
-                        : flow.isFullyReceived
-                        ? 'จ่ายชำระเงิน (PAY)'
-                        : 'จ่ายมัดจำ / แบ่งจ่าย'}
-                    </span>
-                  </button>
-                  {payments.length > 0 && onOpenPayTab && (
-                    <button
-                      type="button"
-                      onClick={onOpenPayTab}
-                      className="text-sky-700 dark:text-sky-400 hover:underline font-semibold text-[10px] cursor-pointer"
-                    >
-                      ประวัติ ({payments.length})
-                    </button>
-                  )}
-                </div>
-              ) : (
-                <span className="text-slate-400">{isCancelled ? 'ยกเลิกการจ่ายเงิน' : 'ชำระตามกำหนด'}</span>
-              )
-            ) : flow.hasActivePo && primaryLinkedPo ? (
-              <Link
-                to={`/purchasing/po/${primaryLinkedPo.id}`}
-                className="text-amber-800 dark:text-amber-300 hover:underline font-bold flex items-center gap-1"
-              >
-                <CreditCard className="h-3 w-3" />
-                <span>{flow.allPaid ? 'ดูประวัติจ่ายเงินใน PO' : 'จัดการจ่ายเงินใน PO'}</span>
-              </Link>
-            ) : (
-              <span className="text-slate-400">สถานะ: รอดำเนินการ</span>
-            )}
-          </div>
-        </div>
-
-        {/* Step 5: ปิดวงจรจัดซื้อ (Completed & Audit) */}
-        <div className={cardTheme(stepStates.s5)}>
-          <div>
-            <div className="flex items-center justify-between">
-              <span className={circleTheme(stepStates.s5)}>
-                {stepStates.s5 === 'done' ? (
-                  <Check className="h-3.5 w-3.5" />
-                ) : stepStates.s5 === 'cancelled' ? (
-                  <XCircle className="h-3.5 w-3.5" />
-                ) : (
-                  '5'
-                )}
-              </span>
-              <span className={labelTheme(stepStates.s5)}>
-                {stepStates.s5 === 'cancelled'
-                  ? 'ยกเลิกแล้ว'
-                  : stepStates.s5 === 'done'
-                  ? 'ปิดวงจร 100%'
+                  ? 'ปิดงานจัดซื้อ 100%'
                   : 'ปลายทางจัดซื้อ'}
               </span>
             </div>
             <div className="font-bold text-slate-900 dark:text-white mt-2 text-xs">
-              5. ปิดวงจร &amp; บันทึกบัญชี
+              4. ปิดงานจัดซื้อ &amp; ส่งต่อบัญชี
             </div>
-            <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-              {flow.isComplete
-                ? 'พัสดุเข้าสต็อกพร้อมใช้งาน & ลงบัญชี AP สมบูรณ์แล้ว'
-                : isCancelled
-                ? 'บันทึกประวัติยกเลิกในระบบเรียบร้อย'
-                : 'รับของครบ จ่ายเงินครบ และปิดรอบบัญชีโครงการ'}
+            <div className="text-[11px] font-mono mt-0.5 text-slate-700 dark:text-slate-300 font-semibold">
+              {flow.isCancelled
+                ? 'เอกสารถูกยกเลิก'
+                : flow.isComplete
+                ? 'รับครบ · ปิดงานจัดซื้อแล้ว'
+                : 'รอตรวจรับเข้าสโตร์ครบ'}
+            </div>
+            <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 line-clamp-1">
+              {mode === 'po'
+                ? `เงื่อนไขชำระ: ${paymentTypeShort}${po?.deposit_type === 'deposit' ? ` (มัดจำ ${po.deposit_percent || 0}%)` : ''}`
+                : 'บันทึกเอกสารภาษีซื้อและส่งต่อโมดูลบัญชี'}
             </div>
           </div>
           <div className="mt-3 pt-2 border-t border-slate-200/80 dark:border-slate-800 text-[11px]">
-            {onOpenAuditTab ? (
+            {mode === 'po' && onOpenAuditTab ? (
               <button
                 type="button"
                 onClick={onOpenAuditTab}
                 className={`${
                   flow.isComplete
                     ? 'text-emerald-700 dark:text-emerald-400'
-                    : 'text-slate-600 dark:text-slate-400'
+                    : 'text-sky-700 dark:text-sky-400'
                 } hover:underline font-bold flex items-center gap-1 cursor-pointer`}
               >
                 <ShieldCheck className="h-3 w-3" />
-                <span>{flow.isComplete ? 'ดูบันทึกบัญชี / Audit' : 'ดูบันทึกประวัติเอกสาร'}</span>
+                <span>{flow.isComplete ? 'ดูบันทึกประวัติ & Audit' : 'ดูบันทึกประวัติเอกสาร'}</span>
               </button>
+            ) : flow.hasActivePo && primaryLinkedPo ? (
+              <Link
+                to={`/purchasing/po/${primaryLinkedPo.id}`}
+                className="text-emerald-700 dark:text-emerald-400 hover:underline font-bold flex items-center gap-1"
+              >
+                <ExternalLink className="h-3 w-3" />
+                <span>ดูสถานะใน PO ({primaryLinkedPo.po_no})</span>
+              </Link>
             ) : (
-              <span className={flow.isComplete ? 'text-emerald-700 font-bold' : 'text-slate-500'}>
-                {flow.isComplete ? 'เสร็จสมบูรณ์ 100%' : `ปัจจุบัน: ${flow.currentStepLabel}`}
-              </span>
+              <span className="text-slate-400">{flow.currentStepLabel}</span>
             )}
           </div>
         </div>

@@ -13,7 +13,13 @@ import { baht } from '../../lib/projects'
 import { inferQuotationTaxType } from '../../lib/tax'
 import { ensureSalesInvoiceForQuotation, fetchQuotationLinkedDocs } from '../../lib/salesBilling'
 import { computeQuotationWorkflow, getCustomerApprovalDisplay } from '../../lib/salesFlowUtils'
-import { checkQuotationStock, summarizeQuotationStock, summarizeItemLotSources } from '../../lib/quotationStockCheck'
+import {
+  checkQuotationStock,
+  summarizeQuotationStock,
+  summarizeItemLotSources,
+  buildShortfallPrItems,
+  summarizeQuotationPrCoverage,
+} from '../../lib/quotationStockCheck'
 import { buildQuotationTaxUpdatePayload } from '../../lib/quotationPrintUtils'
 import { saveQuotationWithFallback } from '../../lib/boqToQuotation'
 import PaymentActionModal from '../../components/PaymentActionModal'
@@ -252,6 +258,25 @@ export default function QuotationDetail() {
   )
   const stockSummary = useMemo(() => summarizeQuotationStock(stockRows), [stockRows])
   const lotSourcesByItem = useMemo(() => summarizeItemLotSources(stockLots), [stockLots])
+  const prCoverage = useMemo(() => {
+    const shortfallItems = buildShortfallPrItems({
+      quotation: quotation || {},
+      quotationItems: items,
+      boqItems: [],
+      inventoryItems,
+      mode: 'cost_baseline',
+    })
+    const activePrList = (linkedDocs.prs || []).filter(
+      (p) => p && !['cancelled', 'ยกเลิก'].includes(String(p.status || '').trim().toLowerCase())
+    )
+    const existingPrItems = activePrList.flatMap((pr) =>
+      (pr.purchase_requisition_items || []).map((pi) => ({
+        ...pi,
+        pr_no: pr.pr_no,
+      }))
+    )
+    return summarizeQuotationPrCoverage(shortfallItems, existingPrItems)
+  }, [quotation, items, inventoryItems, linkedDocs.prs])
   const userCanIssueStock = canIssueStock(profile?.role)
 
   if (loading) {
@@ -298,6 +323,7 @@ export default function QuotationDetail() {
           linkedPos: flow.activePOs,
         })
       : null
+  const prIdByNo = new Map(flow.activePRs.map((p) => [p.pr_no, p.id]))
   const approval = getCustomerApprovalDisplay(quotation)
 
   const renderLotSourceChips = (itemId) => {
@@ -779,16 +805,28 @@ export default function QuotationDetail() {
                 <span>เปิด PO ซื้อของ</span>
               </Link>
               <span className="text-slate-300">|</span>
-              <Link
-                to={`/purchasing/pr/new?quotation_id=${quotation.id}${stockSummary.shortageCount > 0 ? '&shortfall_only=1' : ''}`}
-                className="text-slate-700 dark:text-slate-300 hover:underline text-[11px] font-bold flex items-center gap-1"
-              >
-                <span>
-                  {stockSummary.shortageCount > 0
-                    ? `เปิด PR ส่วนที่ขาด (${stockSummary.shortageCount})`
-                    : 'เปิด PR'}
-                </span>
-              </Link>
+              {flow.activePRs.length > 0 && prCoverage.uncoveredCount === 0 ? (
+                <Link
+                  to={`/purchasing/pr/${flow.latestPR.id}`}
+                  className="text-sky-700 dark:text-sky-300 hover:underline text-[11px] font-bold flex items-center gap-1"
+                >
+                  <FileText className="h-3 w-3" />
+                  <span>ดูใบขอซื้อ ({flow.latestPR.pr_no})</span>
+                </Link>
+              ) : (
+                <Link
+                  to={`/purchasing/pr/new?quotation_id=${quotation.id}${stockSummary.shortageCount > 0 ? '&shortfall_only=1' : ''}`}
+                  className="text-slate-700 dark:text-slate-300 hover:underline text-[11px] font-bold flex items-center gap-1"
+                >
+                  <span>
+                    {flow.activePRs.length > 0 && prCoverage.uncoveredCount > 0
+                      ? `เปิด PR ส่วนที่ยังไม่ขอ (${prCoverage.uncoveredCount})`
+                      : stockSummary.shortageCount > 0
+                      ? `เปิด PR ส่วนที่ขาด (${stockSummary.shortageCount})`
+                      : 'เปิด PR'}
+                  </span>
+                </Link>
+              )}
             </div>
           </div>
 
@@ -1191,13 +1229,32 @@ export default function QuotationDetail() {
                 </Link>
               )}
 
-              {stockSummary.shortageCount > 0 && (
+              {flow.activePRs.length > 0 && (
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {flow.activePRs.map((prItem) => (
+                    <Link
+                      key={prItem.id}
+                      to={`/purchasing/pr/${prItem.id}`}
+                      className="inline-flex items-center gap-1.5 rounded-xl bg-sky-100 dark:bg-sky-950/60 border border-sky-300 dark:border-sky-800 hover:bg-sky-200/70 text-sky-900 dark:text-sky-200 px-3 py-1.5 text-xs font-bold font-mono shadow-2xs transition"
+                    >
+                      <FileText className="h-3.5 w-3.5" />
+                      <span>เปิด PR แล้ว: {prItem.pr_no} →</span>
+                    </Link>
+                  ))}
+                </div>
+              )}
+
+              {stockSummary.shortageCount > 0 && (flow.activePRs.length === 0 || prCoverage.uncoveredCount > 0) && (
                 <Link
                   to={`/purchasing/pr/new?quotation_id=${quotation.id}&shortfall_only=1`}
                   className="inline-flex items-center gap-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 px-3.5 py-1.5 text-xs font-black shadow-2xs transition"
                 >
                   <ShoppingCart className="h-3.5 w-3.5" />
-                  <span>เปิด PR เฉพาะส่วนที่ขาด ({stockSummary.shortageCount} รายการ)</span>
+                  <span>
+                    {flow.activePRs.length > 0
+                      ? `เปิด PR ส่วนที่ยังไม่ขอ (${prCoverage.uncoveredCount} รายการ)`
+                      : `เปิด PR เฉพาะส่วนที่ขาด (${stockSummary.shortageCount} รายการ)`}
+                  </span>
                 </Link>
               )}
             </div>
@@ -1294,12 +1351,34 @@ export default function QuotationDetail() {
                               เบิก {formatIntQty(Math.floor(stock.issueQty))}
                             </Link>
                           )}
-                          <Link
-                            to={prShortfallUrl}
-                            className="font-bold text-amber-800 dark:text-amber-300 hover:underline"
-                          >
-                            เปิด PR ขาด {formatIntQty(stock.shortfall)} →
-                          </Link>
+                          {(() => {
+                            const rowCov = prCoverage.getItemCoverage(it.item_name)
+                            if (rowCov.isFullyCovered && rowCov.prNos.length > 0) {
+                              const prId = prIdByNo.get(rowCov.prNos[0])
+                              return prId ? (
+                                <Link
+                                  to={`/purchasing/pr/${prId}`}
+                                  className="font-bold text-sky-700 dark:text-sky-300 hover:underline font-mono"
+                                >
+                                  ใน {rowCov.prNos.join(', ')} →
+                                </Link>
+                              ) : (
+                                <span className="font-bold text-sky-700 dark:text-sky-300 font-mono">
+                                  ใน {rowCov.prNos.join(', ')}
+                                </span>
+                              )
+                            }
+                            return (
+                              <Link
+                                to={prShortfallUrl}
+                                className="font-bold text-amber-800 dark:text-amber-300 hover:underline"
+                              >
+                                {rowCov.requestedQty > 0
+                                  ? `เปิด PR เพิ่ม (${formatIntQty(rowCov.uncoveredQty)}) →`
+                                  : `เปิด PR ขาด ${formatIntQty(stock.shortfall)} →`}
+                              </Link>
+                            )
+                          })()}
                         </div>
                         {renderLotSourceChips(stock.itemId)}
                       </div>
@@ -1313,12 +1392,34 @@ export default function QuotationDetail() {
                               : `ของหมด (ขาด ${formatIntQty(stock?.shortfall || 0)})`}
                           </span>
                         </span>
-                        <Link
-                          to={prShortfallUrl}
-                          className="text-[11px] font-bold text-rose-700 dark:text-rose-400 hover:underline"
-                        >
-                          เปิด PR ({formatIntQty(stock?.shortfall || 0)}) →
-                        </Link>
+                        {(() => {
+                          const rowCov = prCoverage.getItemCoverage(it.item_name)
+                          if (rowCov.isFullyCovered && rowCov.prNos.length > 0) {
+                            const prId = prIdByNo.get(rowCov.prNos[0])
+                            return prId ? (
+                              <Link
+                                to={`/purchasing/pr/${prId}`}
+                                className="text-[11px] font-bold font-mono text-sky-700 dark:text-sky-300 hover:underline"
+                              >
+                                เปิดแล้ว: {rowCov.prNos.join(', ')} →
+                              </Link>
+                            ) : (
+                              <span className="text-[11px] font-bold font-mono text-sky-700 dark:text-sky-300">
+                                เปิดแล้ว: {rowCov.prNos.join(', ')}
+                              </span>
+                            )
+                          }
+                          return (
+                            <Link
+                              to={prShortfallUrl}
+                              className="text-[11px] font-bold text-rose-700 dark:text-rose-400 hover:underline"
+                            >
+                              {rowCov.requestedQty > 0
+                                ? `เปิด PR ส่วนเหลือ (${formatIntQty(rowCov.uncoveredQty)}) →`
+                                : `เปิด PR (${formatIntQty(stock?.shortfall || 0)}) →`}
+                            </Link>
+                          )
+                        })()}
                       </div>
                     )}
                   </td>

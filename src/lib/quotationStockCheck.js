@@ -286,3 +286,82 @@ export function summarizeItemLotSources(stockLots = []) {
   }
   return result
 }
+
+/**
+ * Subtract item quantities already requested on existing active PRs for the same quotation
+ * from computed shortfall PR items so duplicate PR lines are avoided.
+ */
+export function summarizeQuotationPrCoverage(shortfallItems = [], existingPrItems = []) {
+  const requestedByName = new Map()
+
+  for (const prItem of existingPrItems || []) {
+    const key = normalizeName(prItem?.item_name)
+    const qty = Math.max(0, Number(prItem?.quantity || 0))
+    if (!key || !(qty > 0)) continue
+
+    const entry = requestedByName.get(key) || { qty: 0, prNos: new Set() }
+    entry.qty = Math.round((entry.qty + qty) * 1000) / 1000
+    if (prItem?.pr_no) entry.prNos.add(String(prItem.pr_no).trim())
+    requestedByName.set(key, entry)
+  }
+
+  const uncoveredItems = []
+  let coveredCount = 0
+  const coverageByName = new Map()
+
+  for (const sItem of shortfallItems || []) {
+    const key = normalizeName(sItem?.item_name)
+    const needed = Math.max(0, Number(sItem?.quantity || 0))
+    if (!key || !(needed > 0)) continue
+
+    const reqEntry = requestedByName.get(key)
+    const requestedQty = reqEntry ? reqEntry.qty : 0
+    const uncoveredQty = Math.round(Math.max(0, needed - requestedQty) * 1000) / 1000
+    const isFullyCovered = uncoveredQty <= 0
+    const prNos = reqEntry ? Array.from(reqEntry.prNos) : []
+
+    coverageByName.set(key, {
+      requestedQty,
+      uncoveredQty,
+      isFullyCovered,
+      prNos,
+    })
+
+    if (isFullyCovered) {
+      coveredCount += 1
+    } else {
+      uncoveredItems.push({
+        ...sItem,
+        quantity: String(uncoveredQty),
+        alreadyRequestedQty: Math.round(Math.min(needed, requestedQty) * 1000) / 1000,
+      })
+    }
+  }
+
+  const getItemCoverage = (itemName) => {
+    const key = normalizeName(itemName)
+    if (!key) {
+      return { requestedQty: 0, uncoveredQty: 0, isFullyCovered: false, prNos: [] }
+    }
+    if (coverageByName.has(key)) {
+      return coverageByName.get(key)
+    }
+    const reqEntry = requestedByName.get(key)
+    if (reqEntry) {
+      return {
+        requestedQty: reqEntry.qty,
+        uncoveredQty: 0,
+        isFullyCovered: true,
+        prNos: Array.from(reqEntry.prNos),
+      }
+    }
+    return { requestedQty: 0, uncoveredQty: 0, isFullyCovered: false, prNos: [] }
+  }
+
+  return {
+    uncoveredItems,
+    uncoveredCount: uncoveredItems.length,
+    coveredCount,
+    getItemCoverage,
+  }
+}

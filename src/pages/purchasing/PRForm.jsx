@@ -6,11 +6,12 @@ import { EMPTY_ITEM, itemsValid } from '../../lib/purchasing'
 import { baht } from '../../lib/projects'
 import { inferQuotationTaxType, round2 } from '../../lib/tax'
 import { buildPurchaseItemsFromQuotation } from '../../lib/purchasingPricing'
-import { buildShortfallPrItems } from '../../lib/quotationStockCheck'
+import { buildShortfallPrItems, summarizeQuotationPrCoverage } from '../../lib/quotationStockCheck'
+import { buildQuotationPrQuerySpecs } from '../../lib/salesFlowUtils'
 import ItemsEditor from './ItemsEditor'
 import { FieldError } from '../../components/FieldError'
 import SearchableSelect from '../../components/SearchableSelect'
-import { FileText, CheckCircle2 } from 'lucide-react'
+import { FileText, CheckCircle2, AlertTriangle, ExternalLink } from 'lucide-react'
 
 // สร้าง (/purchasing/pr/new) และแก้ไข (/purchasing/pr/:id/edit) ใบขอซื้อ
 export default function PRForm() {
@@ -37,11 +38,13 @@ export default function PRForm() {
   const [salesQuotationId, setSalesQuotationId] = useState('')
   const [salesQuotationNo, setSalesQuotationNo] = useState('')
   const [quotationSync, setQuotationSync] = useState(null)
+  const [existingQtPrs, setExistingQtPrs] = useState([])
+  const [includeAlreadyRequested, setIncludeAlreadyRequested] = useState(false)
   const [prPriceMode, setPrPriceMode] = useState('cost_baseline') // 'cost_baseline' | 'net_before_vat' | 'with_vat'
   const loadedQuotationRef = useRef(false)
   const PR_VAT_INCLUDED_TAG = '[ราคารวม VAT 7% แล้ว]'
 
-  const buildSyncedItems = (mode, syncData) => {
+  const buildSyncedItems = (mode, syncData, includeAllOverride = includeAlreadyRequested) => {
     const paramsObj = {
       quotation: syncData.quotation || {},
       quotationItems: syncData.rawItems || [],
@@ -49,20 +52,25 @@ export default function PRForm() {
       inventoryItems: syncData.inventoryItems || [],
       mode,
     }
-    return syncData.shortfallOnly
+    const rawBuilt = syncData.shortfallOnly
       ? buildShortfallPrItems(paramsObj)
       : buildPurchaseItemsFromQuotation(paramsObj)
+
+    if (syncData.shortfallOnly && !includeAllOverride && (syncData.existingPrItems || []).length > 0) {
+      return summarizeQuotationPrCoverage(rawBuilt, syncData.existingPrItems).uncoveredItems
+    }
+    return rawBuilt
   }
 
-  const applyPriceMode = (mode, syncData = quotationSync) => {
+  const applyPriceMode = (mode, syncData = quotationSync, includeAllOverride = includeAlreadyRequested) => {
     if (!syncData) return
     setPrPriceMode(mode)
 
     if (mode === 'cost_baseline') {
-      const built = buildSyncedItems('cost_baseline', syncData)
+      const built = buildSyncedItems('cost_baseline', syncData, includeAllOverride)
       setItems(built.length > 0 ? built : [{ ...EMPTY_ITEM }])
     } else {
-      const refItems = buildSyncedItems('selling_ref', syncData).map((row) => ({
+      const refItems = buildSyncedItems('selling_ref', syncData, includeAllOverride).map((row) => ({
         ...row,
         price:
           mode === 'with_vat' && syncData.hasVat
@@ -149,15 +157,59 @@ export default function PRForm() {
         }
 
         const invData = invRes.data || []
-        const shortfallPreviewCount = shortfallOnly
+        const rawShortfallItems = shortfallOnly
           ? buildShortfallPrItems({
               quotation: qt || {},
               quotationItems: qItems,
               boqItems,
               inventoryItems: invData,
               mode: 'cost_baseline',
-            }).length
-          : qItems.length
+            })
+          : qItems
+
+        let activeExistingPrs = []
+        let existingPrItems = []
+        if (qt?.id) {
+          try {
+            const prSpecs = buildQuotationPrQuerySpecs(qt)
+            if (prSpecs.primaryOr) {
+              let prRes = await supabase
+                .from('purchase_requisitions')
+                .select(prSpecs.primarySelect)
+                .or(prSpecs.primaryOr)
+                .order('request_date', { ascending: false })
+              if (prRes.error && prSpecs.fallbackOr) {
+                prRes = await supabase
+                  .from('purchase_requisitions')
+                  .select(prSpecs.fallbackSelect)
+                  .or(prSpecs.fallbackOr)
+                  .order('request_date', { ascending: false })
+              }
+              activeExistingPrs = (prRes.data || []).filter((p) => p && p.status !== 'cancelled')
+              const existingPrIds = activeExistingPrs.map((p) => p.id).filter(Boolean)
+              if (existingPrIds.length > 0) {
+                const piRes = await supabase
+                  .from('purchase_requisition_items')
+                  .select('id, pr_id, item_id, item_name, quantity, unit, estimated_price')
+                  .in('pr_id', existingPrIds)
+                if (!piRes.error && Array.isArray(piRes.data)) {
+                  const prNoById = new Map(activeExistingPrs.map((p) => [p.id, p.pr_no]))
+                  existingPrItems = piRes.data.map((pi) => ({
+                    ...pi,
+                    pr_no: prNoById.get(pi.pr_id) || '',
+                  }))
+                }
+              }
+            }
+          } catch {
+            // keep safe empty list
+          }
+        }
+        setExistingQtPrs(activeExistingPrs)
+
+        const prCoverage = shortfallOnly
+          ? summarizeQuotationPrCoverage(rawShortfallItems, existingPrItems)
+          : { uncoveredItems: rawShortfallItems, uncoveredCount: rawShortfallItems.length }
 
         const syncObj = {
           quotation: qt || {},
@@ -172,7 +224,9 @@ export default function PRForm() {
           boqItems,
           inventoryItems: invData,
           shortfallOnly,
-          shortfallCount: shortfallPreviewCount,
+          shortfallCount: rawShortfallItems.length,
+          uncoveredCount: prCoverage.uncoveredCount,
+          existingPrItems,
         }
         setQuotationSync(syncObj)
 
@@ -464,6 +518,51 @@ export default function PRForm() {
             />
           </div>
         </div>
+
+        {/* แจ้งเตือนหากใบเสนอราคานี้เปิด PR ไปแล้ว ป้องกันการเปิดซ้ำ */}
+        {existingQtPrs.length > 0 && !id && (
+          <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-xs text-amber-950 space-y-2 shadow-2xs">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2 font-bold">
+                <AlertTriangle className="h-4 w-4 text-amber-700 shrink-0" />
+                <span>
+                  ใบเสนอราคา {quotationSync?.quotation_no || salesQuotationNo} มีใบขอซื้ออยู่แล้ว {existingQtPrs.length} ใบ
+                </span>
+              </div>
+              {quotationSync?.shortfallOnly && !includeAlreadyRequested && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIncludeAlreadyRequested(true)
+                    applyPriceMode(prPriceMode, quotationSync, true)
+                  }}
+                  className="rounded-lg border border-amber-400 bg-white px-2.5 py-1 text-[11px] font-bold text-amber-900 hover:bg-amber-100 cursor-pointer"
+                >
+                  โหลดรายการที่ขอไปแล้วกลับมาทั้งหมด
+                </button>
+              )}
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {existingQtPrs.map((existingPr) => (
+                <Link
+                  key={existingPr.id}
+                  to={`/purchasing/pr/${existingPr.id}`}
+                  className="inline-flex items-center gap-1 rounded-lg bg-white border border-amber-300 px-2.5 py-1 font-mono font-bold text-amber-900 hover:bg-amber-100"
+                >
+                  <span>เปิดดู {existingPr.pr_no}</span>
+                  <ExternalLink className="h-3 w-3" />
+                </Link>
+              ))}
+            </div>
+            <p className="text-[11px] text-amber-800">
+              {quotationSync?.shortfallOnly && !includeAlreadyRequested
+                ? quotationSync.uncoveredCount > 0
+                  ? `ระบบคัดกรองออกให้แล้ว เหลือเฉพาะ ${quotationSync.uncoveredCount} รายการที่ยังไม่เคยขอซื้อใน PR เดิม`
+                  : 'รายการขาดสต็อกทั้งหมดถูกขอซื้อครบแล้วใน PR ด้านบน — แนะนำให้เปิดดูหรือแก้ไข PR เดิมแทนการสร้างใหม่'
+                : 'ตรวจสอบรายการด้านล่างก่อนบันทึกเพื่อหลีกเลี่ยงการขอซื้อซ้ำซ้อน'}
+            </p>
+          </div>
+        )}
 
         {/* กล่องแสดงการซิงค์ข้อมูลและเลือกโหมดราคากับใบเสนอราคาขาย */}
         {quotationSync && (

@@ -7,6 +7,7 @@ import {
   buildShortfallPrItems,
   buildIssuableStockLines,
   summarizeItemLotSources,
+  summarizeQuotationPrCoverage,
 } from '../src/lib/quotationStockCheck.js'
 
 describe('Quotation Stock Check & Shortfall PR Helpers (src/lib/quotationStockCheck.js)', () => {
@@ -200,5 +201,44 @@ describe('Quotation Stock Check & Shortfall PR Helpers (src/lib/quotationStockCh
       { projectId: 'pj-3', projectCode: 'PJ-000003', projectName: 'ร้าน B', qty: 1, isCentral: false },
     ])
     assert.deepEqual(summarizeItemLotSources([]), {})
+  })
+
+  it('computes remaining uncovered shortfall items after subtracting quantities already requested on existing active PRs', () => {
+    const shortfallItems = [
+      { item_name: 'Inverter 600w', quantity: '1', unit: 'ชุด', price: '5000' },
+      { item_name: 'ชุดจับยึดแผง', quantity: '4', unit: 'ชุด', price: '2000' },
+    ]
+
+    // Existing PR2026-0008 already requested all 1 Inverter and 2 mounting kits
+    const existingPrItems = [
+      { pr_id: 'pr-8', pr_no: 'PR2026-0008', item_name: '  inverter 600w ', quantity: 1 },
+      { pr_id: 'pr-8', pr_no: 'PR2026-0008', item_name: 'ชุดจับยึดแผง', quantity: 2 },
+    ]
+
+    const coverage = summarizeQuotationPrCoverage(shortfallItems, existingPrItems)
+    assert.equal(coverage.uncoveredCount, 1)
+    assert.equal(coverage.uncoveredItems[0].item_name, 'ชุดจับยึดแผง')
+    assert.equal(coverage.uncoveredItems[0].quantity, '2')
+    assert.equal(coverage.coveredCount, 1)
+    assert.deepEqual(coverage.getItemCoverage('Inverter 600w'), {
+      requestedQty: 1,
+      uncoveredQty: 0,
+      isFullyCovered: true,
+      prNos: ['PR2026-0008'],
+    })
+    assert.deepEqual(coverage.getItemCoverage('ชุดจับยึดแผง'), {
+      requestedQty: 2,
+      uncoveredQty: 2,
+      isFullyCovered: false,
+      prNos: ['PR2026-0008'],
+    })
+
+    // When everything is covered
+    const fullCoverage = summarizeQuotationPrCoverage(shortfallItems, [
+      { pr_id: 'pr-8', pr_no: 'PR2026-0008', item_name: 'Inverter 600w', quantity: 1 },
+      { pr_id: 'pr-8', pr_no: 'PR2026-0008', item_name: 'ชุดจับยึดแผง', quantity: 4 },
+    ])
+    assert.equal(fullCoverage.uncoveredCount, 0)
+    assert.equal(fullCoverage.coveredCount, 2)
   })
 })

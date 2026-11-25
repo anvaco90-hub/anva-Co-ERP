@@ -223,7 +223,32 @@ export async function fetchQuotationLinkedDocs(quotation, client = defaultSupaba
     return fb.error ? [] : fb.data || []
   }
 
+  let enrichedPrs = prsList
   let posList = await safePoQuery()
+
+  if (matchedPrIds.length > 0) {
+    try {
+      const prItemsRes = await client
+        .from('purchase_requisition_items')
+        .select('id, pr_id, item_id, item_name, quantity, unit, estimated_price')
+        .in('pr_id', matchedPrIds)
+      if (!prItemsRes.error && Array.isArray(prItemsRes.data)) {
+        const itemsByPr = new Map()
+        for (const row of prItemsRes.data) {
+          const list = itemsByPr.get(row.pr_id) || []
+          list.push(row)
+          itemsByPr.set(row.pr_id, list)
+        }
+        enrichedPrs = prsList.map((pr) => ({
+          ...pr,
+          purchase_requisition_items: itemsByPr.get(pr.id) || [],
+        }))
+      }
+    } catch {
+      // keep prsList without item breakdown if query is unavailable
+    }
+  }
+
   if (posList.length > 0) {
     try {
       const poIds = posList.map((po) => po.id).filter(Boolean)
@@ -253,7 +278,7 @@ export async function fetchQuotationLinkedDocs(quotation, client = defaultSupaba
   return {
     invoices: invRes.error ? [] : invRes.data || [],
     pos: posList,
-    prs: prsList,
+    prs: enrichedPrs,
     issues: issuesList,
   }
 }

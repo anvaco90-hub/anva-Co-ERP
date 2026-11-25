@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
-import { PO_STATUS, canCreatePurchasing, canReceiveGoods, computePoPaymentSummary } from '../../lib/purchasing'
+import { PO_STATUS, canCreatePurchasing, canReceiveGoods } from '../../lib/purchasing'
 import { baht } from '../../lib/projects'
 import { computePoTotals } from '../../lib/tax'
 import { buildReceivePayloadItems } from '../../lib/goodsReceiptUtils'
@@ -13,7 +13,6 @@ import ItemProjectUsageModal from '../../components/ItemProjectUsageModal'
 import PODocumentModal from '../../components/reports/PODocumentModal'
 import EnvelopePrintModal from '../../components/reports/EnvelopePrintModal'
 import POShareModal from '../../components/purchasing/POShareModal'
-import PaymentActionModal from '../../components/PaymentActionModal'
 import ProcurementWorkflowStepper from '../../components/purchasing/ProcurementWorkflowStepper'
 import { PAYMENT_TYPES } from './POForm'
 import { getPoDueStatus, formatThaiDate } from '../../lib/poDueStatus'
@@ -123,13 +122,11 @@ export default function PODetail() {
   const [items, setItems] = useState([])
   const [grns, setGrns] = useState([])
   const [pr, setPr] = useState(null)
-  const [payments, setPayments] = useState([])
   const [qty, setQty] = useState({})
   const [selectedUsageItem, setSelectedUsageItem] = useState(null)
   const [showPoPdf, setShowPoPdf] = useState(false)
   const [showEnvelope, setShowEnvelope] = useState(false)
   const [showShare, setShowShare] = useState(false)
-  const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [showCancelModal, setShowCancelModal] = useState(false)
   const [cancelReason, setCancelReason] = useState('')
   const [cancelling, setCancelling] = useState(false)
@@ -154,10 +151,10 @@ export default function PODetail() {
     }
   }
 
-  // ค่าเริ่มต้นเป็น 'portal' เพื่อแสดง Executive Header + ผัง Workflow 5 ขั้นตอนทันที
+  // ค่าเริ่มต้นเป็น 'portal' เพื่อแสดง Executive Header + ผัง Workflow 4 ขั้นตอนทันที
   const [viewStyle, setViewStyle] = useState(() => (searchParams.get('mode') === 'paper' ? 'paper' : 'portal'))
   const [itemsLayout, setItemsLayout] = useState('table') // 'table' | 'cards'
-  const [activeTab, setActiveTab] = useState('items') // 'items' | 'receiving' | 'payments' | 'lifecycle' | 'audit'
+  const [activeTab, setActiveTab] = useState('items') // 'items' | 'receiving' | 'lifecycle' | 'audit'
 
   const scrollToReceive = () => {
     if (viewStyle !== 'portal') setViewStyle('portal')
@@ -208,22 +205,6 @@ export default function PODetail() {
         setPr(prRow || null)
       } else {
         setPr(null)
-      }
-
-      try {
-        const { data: txList, error: txErr } = await supabase
-          .from('payment_transactions')
-          .select('*')
-          .eq('document_id', id)
-          .order('payment_date', { ascending: false })
-        if (!txErr && txList) {
-          setPayments(txList)
-        } else {
-          setPayments([])
-        }
-      } catch (ptErr) {
-        console.warn('Cannot load payment_transactions:', ptErr)
-        setPayments([])
       }
 
       const rawItems = b.data ?? []
@@ -541,10 +522,8 @@ export default function PODetail() {
   const whtVal = poTotals.whtAmount
   const grandTotalVal = poTotals.netPayable
 
-  const paySummary = computePoPaymentSummary(po, items, payments)
-  const isPaidInFull = paySummary.isPaidInFull
   const isFullyReceived = po.status === 'received' || (items.length > 0 && items.every((i) => Number(i.qty_received) >= Number(i.quantity)))
-  const canEdit = canCreatePurchasing(profile.role) && !isPaidInFull && po.status !== 'cancelled' && po.status !== 'received'
+  const canEdit = canCreatePurchasing(profile.role) && po.status !== 'cancelled' && po.status !== 'received'
   const canReceive = canReceiveGoods(profile.role) && ['open', 'partial'].includes(po.status) && !isFullyReceived
   const anyQty = items.some((i) => Number(qty[i.id]) > 0)
 
@@ -611,22 +590,12 @@ export default function PODetail() {
                   </span>
                   <StatusBadge status={po.status} />
 
-                  {isPaidInFull ? (
+                  {po.status !== 'cancelled' && isFullyReceived && (
                     <span className="inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-bold rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 whitespace-nowrap">
                       <CheckCircle2 className="h-3 w-3" />
-                      <span>ชำระครบแล้ว</span>
+                      <span>รับของครบ · ปิดงานจัดซื้อ</span>
                     </span>
-                  ) : paySummary.hasPartialPaid && po.status !== 'cancelled' ? (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-bold rounded-full bg-amber-500/20 text-amber-300 border border-amber-400/30 whitespace-nowrap">
-                      <Clock className="h-3 w-3" />
-                      <span>จ่ายบางส่วน (฿{baht(paySummary.paidAmount)}) · ค้าง ฿{baht(paySummary.remainingAmount)}</span>
-                    </span>
-                  ) : po.status !== 'cancelled' && isFullyReceived ? (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-bold rounded-full bg-amber-500/20 text-amber-300 border border-amber-400/30 whitespace-nowrap">
-                      <Clock className="h-3 w-3" />
-                      <span>รับครบ · รอจ่ายเงิน</span>
-                    </span>
-                  ) : null}
+                  )}
 
                   {pr && (
                     <Link
@@ -672,18 +641,6 @@ export default function PODetail() {
                 >
                   <PackageCheck className="h-3.5 w-3.5" />
                   <span>ตรวจรับของ (ออก RI)</span>
-                </button>
-              )}
-
-              {!isPaidInFull && po.status !== 'cancelled' && (
-                <button
-                  type="button"
-                  onClick={() => setShowPaymentModal(true)}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 h-9 px-3.5 text-xs font-black shadow-xs transition cursor-pointer"
-                  title={`คลิกเพื่อจ่ายชำระเงิน (ค้างจ่าย ฿${baht(paySummary.remainingAmount)} บ.)`}
-                >
-                  <CreditCard className="h-3.5 w-3.5" />
-                  <span>{paySummary.hasPartialPaid ? `จ่ายงวดถัดไป (฿${baht(paySummary.remainingAmount)})` : 'จ่ายชำระเงิน'}</span>
                 </button>
               )}
 
@@ -777,7 +734,7 @@ export default function PODetail() {
                         <span>{viewStyle === 'portal' ? 'สลับเป็นแบบฟอร์ม A4' : 'สลับเป็นมุมมองระบบ'}</span>
                       </button>
 
-                      {canCreatePurchasing(profile.role) && !isPaidInFull && !isFullyReceived && po.status !== 'cancelled' && (
+                      {canCreatePurchasing(profile.role) && !isFullyReceived && po.status !== 'cancelled' && (
                         <>
                           <div className="my-1 border-t border-slate-700/70" />
                           <button
@@ -794,7 +751,7 @@ export default function PODetail() {
                         </>
                       )}
 
-                      {canCreatePurchasing(profile.role) && !isPaidInFull && !isFullyReceived && (
+                      {canCreatePurchasing(profile.role) && !isFullyReceived && (
                         <button
                           type="button"
                           onClick={() => {
@@ -877,20 +834,17 @@ export default function PODetail() {
         {/* ============================================================== */}
         {viewStyle === 'portal' && (
           <div className="space-y-5">
-            {/* 2. ผังลำดับขั้นตอนการทำงานจัดซื้อ 5 ขั้นตอน (แบบเดียวกับ QuotationDetail) */}
+            {/* 2. ผังลำดับขั้นตอนการทำงานจัดซื้อ 4 ขั้นตอน */}
             <ProcurementWorkflowStepper
               mode="po"
               pr={pr}
               po={po}
               items={items}
               grns={grns}
-              payments={payments}
               canReceive={canReceive}
               onPrintPdf={() => setShowPoPdf(true)}
-              onOpenPayment={() => setShowPaymentModal(true)}
               onScrollToReceive={scrollToReceive}
               onOpenGrnTab={() => jumpToTab('receiving')}
-              onOpenPayTab={() => jumpToTab('payments')}
               onOpenAuditTab={() => jumpToTab('audit')}
             />
 
@@ -1426,18 +1380,6 @@ export default function PODetail() {
 
                 <button
                   type="button"
-                  onClick={() => setActiveTab('payments')}
-                  className={`px-4 py-2 font-bold rounded-xl transition cursor-pointer flex items-center gap-2 whitespace-nowrap ${activeTab === 'payments'
-                    ? 'bg-slate-900 dark:bg-amber-500 text-white dark:text-slate-950 shadow-xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-                    }`}
-                >
-                  <CreditCard className="h-3.5 w-3.5" />
-                  <span>ประวัติจ่ายชำระเงิน ({payments.length})</span>
-                </button>
-
-                <button
-                  type="button"
                   onClick={() => setActiveTab('lifecycle')}
                   className={`px-4 py-2 font-bold rounded-xl transition cursor-pointer flex items-center gap-2 whitespace-nowrap ${activeTab === 'lifecycle'
                     ? 'bg-slate-900 dark:bg-amber-500 text-white dark:text-slate-950 shadow-xs'
@@ -1445,7 +1387,7 @@ export default function PODetail() {
                     }`}
                 >
                   <Workflow className="h-3.5 w-3.5" />
-                  <span>วงจรเอกสาร (PR → PO → RI → PV)</span>
+                  <span>วงจรเอกสาร (PR → PO → RI)</span>
                 </button>
 
                 <button
@@ -1548,86 +1490,7 @@ export default function PODetail() {
                 </div>
               )}
 
-              {/* Sub-tab 3: ประวัติจ่ายชำระเงิน (PV) */}
-              {activeTab === 'payments' && (
-                <div className="space-y-3">
-                  {/* แถบสรุปสถานะการจ่ายแบ่งงวด / มัดจำ */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-xs">
-                    <div>
-                      <span className="text-[11px] text-slate-500 block">ยอดที่ต้องชำระสุทธิ</span>
-                      <span className="font-mono font-black text-sm text-slate-900 dark:text-white">฿{baht(paySummary.totalPayable)}</span>
-                    </div>
-                    <div>
-                      <span className="text-[11px] text-slate-500 block">ชำระสะสมแล้ว</span>
-                      <span className="font-mono font-black text-sm text-emerald-700 dark:text-emerald-400">฿{baht(paySummary.paidAmount)}</span>
-                    </div>
-                    <div className="flex items-center justify-between gap-2">
-                      <div>
-                        <span className="text-[11px] text-slate-500 block">ยอดค้างจ่ายคงเหลือ</span>
-                        <span className={`font-mono font-black text-sm ${paySummary.remainingAmount > 0.05 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-400'}`}>
-                          ฿{baht(paySummary.remainingAmount)}
-                        </span>
-                      </div>
-                      {!isPaidInFull && po.status !== 'cancelled' && (
-                        <button
-                          type="button"
-                          onClick={() => setShowPaymentModal(true)}
-                          className="px-3 py-1.5 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs shadow-2xs transition cursor-pointer"
-                        >
-                          {paySummary.hasPartialPaid ? 'จ่ายงวดถัดไป' : 'จ่ายเงิน'}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  {payments.length > 0 ? (
-                    payments.map((p) => {
-                      const stageText =
-                        p.payment_stage === 'deposit'
-                          ? 'จ่ายมัดจำ'
-                          : p.payment_stage === 'installment'
-                          ? 'แบ่งจ่ายบางส่วน (งวด)'
-                          : p.payment_stage === 'remaining'
-                          ? 'จ่ายงวดถัดไป/คงเหลือ'
-                          : 'จ่ายเต็มจำนวน'
-
-                      return (
-                        <div key={p.id} className="p-4 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1.5">
-                          <div className="flex flex-wrap items-center justify-between gap-2">
-                            <div className="flex items-center gap-2">
-                              <span className="font-mono font-bold text-sm text-emerald-800">
-                                {p.transaction_no || `PV-${p.id.slice(0, 8)}`}
-                              </span>
-                              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-sky-100 text-sky-800">
-                                {stageText}
-                              </span>
-                            </div>
-                            <span className="font-mono font-black text-sm text-emerald-900">
-                              ฿{baht(p.amount || p.amount_paid)} บาท
-                            </span>
-                          </div>
-                          <div className="flex flex-wrap items-center justify-between text-slate-600 pt-1">
-                            <div>
-                              วันที่จ่าย: <b>{p.payment_date}</b> · ช่องทาง: <b>{p.payment_channel || p.payment_method || 'โอนเงิน'}</b>
-                            </div>
-                            {p.slip_reference_no && (
-                              <div className="text-[11px] text-slate-500">
-                                สลิปอ้างอิง: {p.slip_reference_no}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )
-                    })
-                  ) : (
-                    <div className="p-8 text-center text-slate-400 text-xs bg-slate-50 rounded-2xl border border-slate-200">
-                      {isPaidInFull ? 'เอกสารนี้ชำระเงินครบถ้วนแล้ว' : 'ยังไม่มีประวัติการจ่ายเงิน กรุณากดปุ่ม "จ่ายชำระเงิน (PAY)" ด้านบน'}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Sub-tab 4: วงจรเอกสาร */}
+              {/* Sub-tab 3: วงจรเอกสาร */}
               {activeTab === 'lifecycle' && (
                 <div className="space-y-4 text-xs">
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
@@ -1664,17 +1527,13 @@ export default function PODetail() {
                     </div>
 
                     <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-1">
-                      <div className="text-[10px] font-bold uppercase text-slate-400">4. การชำระเงิน (PV)</div>
-                      {payments.length > 0 ? (
-                        <>
-                          <div className="font-mono font-bold text-emerald-700 dark:text-emerald-400">
-                            {payments.map((p) => p.transaction_no || `PV-${p.id.slice(0, 6)}`).join(', ')}
-                          </div>
-                          <div className="text-[11px] text-slate-500">{isPaidInFull ? 'ชำระครบถ้วนแล้ว' : 'มัดจำบางส่วน'}</div>
-                        </>
-                      ) : (
-                        <div className="text-slate-400">{isPaidInFull ? 'บันทึกชำระครบแล้ว' : 'รอชำระเงิน'}</div>
-                      )}
+                      <div className="text-[10px] font-bold uppercase text-slate-400">4. ปิดงานจัดซื้อ &amp; ส่งต่อบัญชี</div>
+                      <div className={`font-bold ${isFullyReceived ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-300'}`}>
+                        {isFullyReceived ? 'รับครบ · ส่งข้อมูลให้บัญชีแล้ว' : 'รอตรวจรับเข้าสโตร์ครบ'}
+                      </div>
+                      <div className="text-[11px] text-slate-500">
+                        เงื่อนไข: {PAYMENT_TYPES.find((p) => p.value === po.payment_type)?.label?.split('(')[0]?.trim() || 'เครดิตเทอม'}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1835,35 +1694,6 @@ export default function PODetail() {
             po={po}
             items={items}
             onClose={() => setShowPoPdf(false)}
-          />
-        )}
-
-        {showPaymentModal && (
-          <PaymentActionModal
-            isOpen={true}
-            type="disburse"
-            docType="PO"
-            docId={po.id}
-            docNo={po.po_no}
-            vendorId={po.vendor_id}
-            vendorTaxId={po.vendors?.tax_id || ''}
-            contactName={po.vendors?.vendor_name || po.custom_vendor_name}
-            items={items}
-            totalAmount={paySummary.totalPayable}
-            alreadyPaid={paySummary.paidAmount}
-            depositAmount={po.deposit_amount || 0}
-            remainingAmount={paySummary.remainingAmount}
-            hasDeposit={po.deposit_type === 'deposit'}
-            whtRate={poTotals.whtRate}
-            whtAmount={poTotals.whtAmount}
-            subtotalBeforeVat={poTotals.amountBeforeVat}
-            hasGoodsReceipt={grns.length > 0 || ['partial', 'received'].includes(po.status)}
-            paymentStatus={paySummary.effectivePaymentStatus}
-            requestedChannel={po.payment_channel_requested || 'transfer'}
-            projectId={po.project_id}
-            projectName={po.projects?.project_name}
-            onClose={() => setShowPaymentModal(false)}
-            onSuccess={() => load()}
           />
         )}
 

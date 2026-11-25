@@ -1,5 +1,5 @@
 import { baht } from '../../lib/projects'
-import { buildCustomerQuotationSummary } from '../../lib/quotationPrintUtils'
+import { buildCustomerQuotationSummary, getCustomerPrintItems } from '../../lib/quotationPrintUtils'
 import { getCustomerApprovalDisplay } from '../../lib/salesFlowUtils'
 import { printElement } from '../../lib/printElement'
 import R2Image from '../R2Image'
@@ -33,6 +33,7 @@ export default function QuotationPrintModal({
 
   const currency = quotation.currency || 'THB'
   const summary = buildCustomerQuotationSummary(quotation)
+  const printableItems = getCustomerPrintItems(items)
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
@@ -146,34 +147,42 @@ export default function QuotationPrintModal({
               </div>
             </div>
 
-            {/* ตารางรายการสินค้าและบริการ (แสดงเฉพาะรายการ จำนวน และหน่วย — ไม่แสดงราคาต่อชิ้น/ต้นทุน/สต็อก) */}
+            {/* ตารางรายการสินค้า (แสดงเฉพาะรายการสินค้า จำนวน และหน่วย — ซ่อนค่าแรง/บริการและราคาต้นทุน) */}
             <table className="w-full border-collapse text-xs">
               <thead>
                 <tr className="border-y-2 border-black bg-neutral-100 font-bold">
                   <th className="py-2 px-2 text-center w-12">ลำดับ</th>
-                  <th className="py-2 px-3 text-left">รายการสินค้าและบริการ / รายละเอียด</th>
+                  <th className="py-2 px-3 text-left">รายการสินค้า / รายละเอียด</th>
                   <th className="py-2 px-3 text-right w-24">จำนวน</th>
                   <th className="py-2 px-3 text-center w-24">หน่วย</th>
                 </tr>
               </thead>
               <tbody>
-                {(items ?? []).map((it, idx) => (
-                  <tr key={it.id || idx} className="border-b border-neutral-200">
-                    <td className="py-2.5 px-2 text-center text-neutral-500 font-mono">{idx + 1}</td>
-                    <td className="py-2.5 px-3">
-                      <div className="font-semibold text-neutral-900">{it.item_name}</div>
-                      {it.description && (
-                        <div className="text-[10px] text-neutral-600 mt-1 whitespace-pre-line leading-relaxed">
-                          {it.description}
-                        </div>
-                      )}
+                {printableItems.length > 0 ? (
+                  printableItems.map((it, idx) => (
+                    <tr key={it.id || idx} className="border-b border-neutral-200">
+                      <td className="py-2.5 px-2 text-center text-neutral-500 font-mono">{idx + 1}</td>
+                      <td className="py-2.5 px-3">
+                        <div className="font-semibold text-neutral-900">{it.item_name}</div>
+                        {it.description && (
+                          <div className="text-[10px] text-neutral-600 mt-1 whitespace-pre-line leading-relaxed">
+                            {it.description}
+                          </div>
+                        )}
+                      </td>
+                      <td className="py-2.5 px-3 text-right font-semibold font-mono">
+                        {Number(it.quantity || 0).toLocaleString('th-TH')}
+                      </td>
+                      <td className="py-2.5 px-3 text-center text-neutral-600">{it.unit || '-'}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr className="border-b border-neutral-200">
+                    <td colSpan={4} className="py-4 px-3 text-center text-neutral-500">
+                      งานบริการและติดตั้งตามรายละเอียดโครงการ
                     </td>
-                    <td className="py-2.5 px-3 text-right font-semibold font-mono">
-                      {Number(it.quantity || 0).toLocaleString('th-TH')}
-                    </td>
-                    <td className="py-2.5 px-3 text-center text-neutral-600">{it.unit || '-'}</td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
 

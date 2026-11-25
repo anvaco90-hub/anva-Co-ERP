@@ -1,4 +1,14 @@
 import { calculateTaxBreakdown, inferQuotationTaxType, round2 } from './tax.js'
+import { isServiceOrLaborItem } from './quotationStockCheck.js'
+
+/**
+ * คัดกรองเฉพาะรายการสินค้าสำหรับพิมพ์ใบเสนอราคาส่งลูกค้า (ซ่อนบรรทัดค่าแรง/บริการตามแนวทาง 1A)
+ * โดยไม่เปลี่ยนแปลงยอดรวมสุทธิและ VAT ของแพ็กเกจ
+ * @param {Array} items
+ */
+export function getCustomerPrintItems(items = []) {
+  return (items || []).filter((item) => item && !isServiceOrLaborItem(item))
+}
 
 /**
  * สรุปยอดรวมและสถานะ VAT สำหรับเอกสารใบเสนอราคาฝั่งลูกค้า (ไม่เปิดเผยต้นทุนหรือราคาซื้อ)

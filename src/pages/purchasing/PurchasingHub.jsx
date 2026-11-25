@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { fetchUnifiedVendors } from '../../lib/contactsSync'
 import { useAuth } from '../../context/AuthContext'
-import { PR_STATUS, PO_STATUS, canCreatePurchasing, canReceiveGoods, formatDateTimeParts, computePoPaymentSummary } from '../../lib/purchasing'
+import { PR_STATUS, PO_STATUS, canCreatePurchasing, canReceiveGoods, formatDateTimeParts } from '../../lib/purchasing'
 import { baht } from '../../lib/projects'
 import { computePoTotals } from '../../lib/tax'
 import { extractPrSourceQuotation } from '../../lib/salesFlowUtils'
@@ -80,7 +80,6 @@ export default function PurchasingHub() {
   }
 
   // โมดัลต่าง ๆ
-  const [paymentTargetPo, setPaymentTargetPo] = useState(null)
   const [poToCancel, setPoToCancel] = useState(null)
   const [cancelListReason, setCancelListReason] = useState('')
   const [cancellingList, setCancellingList] = useState(false)
@@ -498,18 +497,11 @@ export default function PurchasingHub() {
     }
   }
 
-  // คำนวณสรุปยอด (KPIs) ตามขั้นตอนวงจรจัดซื้อ 5 ขั้นตอน
+  // คำนวณสรุปยอด (KPIs) ตามขั้นตอนวงจรจัดซื้อ 4 ขั้นตอน
   const pendingPrs = prs.filter((p) => p.status === 'pending')
   const openPos = pos.filter((p) => p.status === 'open')
   const partialPos = pos.filter((p) => p.status === 'partial')
-  const receivedUnpaidPos = pos.filter((p) => {
-    const isPaid = computePoPaymentSummary(p, p.purchase_order_items).isPaidInFull
-    return p.status === 'received' && !isPaid
-  })
-  const fullyClosedPos = pos.filter((p) => {
-    const isPaid = computePoPaymentSummary(p, p.purchase_order_items).isPaidInFull
-    return p.status === 'received' && isPaid
-  })
+  const receivedPos = pos.filter((p) => p.status === 'received')
   const getPoPayable = (poRow) => computePoTotals(poRow, poRow?.purchase_order_items).netPayable
   const totalSpend = pos.filter((p) => p.status !== 'cancelled').reduce((s, p) => s + getPoPayable(p), 0)
 
@@ -532,16 +524,7 @@ export default function PurchasingHub() {
   const q = search.trim().toLowerCase()
   const filterRow = (row, fields) => {
     if (filterProject && row.project_id !== filterProject) return false
-    if (filterStatus) {
-      const isPaid = computePoPaymentSummary(row, row?.purchase_order_items).isPaidInFull
-      if (filterStatus === 'received_unpaid') {
-        if (row.status !== 'received' || isPaid) return false
-      } else if (filterStatus === 'completed_paid') {
-        if (row.status !== 'received' || !isPaid) return false
-      } else if (row.status !== filterStatus) {
-        return false
-      }
-    }
+    if (filterStatus && row.status !== filterStatus) return false
     if (!q) return true
     return fields.some((f) => String(f || '').toLowerCase().includes(q))
   }
@@ -1270,8 +1253,6 @@ export default function PurchasingHub() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 p-4 bg-steel-50/40 dark:bg-slate-900/40">
                   {paginatedPos.map((r) => {
                     const dueStatus = getPoDueStatus(r)
-                    const poPay = computePoPaymentSummary(r, r.purchase_order_items)
-                    const isPaid = poPay.isPaidInFull
 
                     return (
                       <div
@@ -1299,21 +1280,14 @@ export default function PurchasingHub() {
                               if (r.status === 'cancelled') {
                                 return (
                                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 dark:bg-rose-950/70 text-rose-800 dark:text-rose-300 border border-rose-300 dark:border-rose-700">
-                                    <span></span> ยกเลิก
-                                  </span>
-                                )
-                              }
-                              if (r.status === 'received' && isPaid) {
-                                return (
-                                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
-                                    <span></span> รับครบ & จ่ายแล้ว
+                                    ยกเลิก
                                   </span>
                                 )
                               }
                               if (r.status === 'received') {
                                 return (
-                                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-sky-100 dark:bg-sky-950/70 text-sky-800 dark:text-sky-300 border border-sky-300 dark:border-sky-700">
-                                    <span></span> รับของแล้ว · รอจ่าย
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
+                                    รับของครบแล้ว
                                   </span>
                                 )
                               }
@@ -1385,24 +1359,12 @@ export default function PurchasingHub() {
                           </div>
 
                           <div className="flex items-center gap-1">
-                            {r.status === 'received' && !isPaid && (
-                              <button
-                                type="button"
-                                onClick={() => setPaymentTargetPo(r)}
-                                className="inline-flex items-center gap-1 rounded-lg bg-amber-500 hover:bg-amber-600 px-2.5 py-1 text-xs font-bold text-slate-950 transition shadow-xs cursor-pointer"
-                                title="จ่ายเงิน"
-                              >
-                                <span></span>
-                                <span>จ่ายเงิน</span>
-                              </button>
-                            )}
                             {['open', 'partial'].includes(r.status) && (
                               <Link
                                 to={`/purchasing/po/${r.id}`}
                                 className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 px-2 py-1 text-xs font-bold text-white transition shadow-xs"
                                 title="ตรวจรับสินค้าเข้าสโตร์"
                               >
-                                <span></span>
                                 <span>รับของ</span>
                               </Link>
                             )}
@@ -1459,8 +1421,6 @@ export default function PurchasingHub() {
                     <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
                       {paginatedPos.map((r, rowIdx) => {
                         const dueStatus = getPoDueStatus(r)
-                        const poPay = computePoPaymentSummary(r, r.purchase_order_items)
-                        const isPaid = poPay.isPaidInFull
 
                         return (
                           <tr
@@ -1561,21 +1521,11 @@ export default function PurchasingHub() {
                                   if (r.status === 'cancelled') {
                                     return <StatusBadge status="cancelled" label="ยกเลิกคำสั่งซื้อ" />
                                   }
-                                  if (r.status === 'received' && isPaid) {
-                                    return (
-                                      <div className="flex flex-col items-center gap-0.5">
-                                        <StatusBadge status="success" label="รับครบ & จ่ายแล้ว" />
-                                        <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400">
-                                          {poFlow.currentStepLabel}
-                                        </span>
-                                      </div>
-                                    )
-                                  }
                                   if (r.status === 'received') {
                                     return (
-                                      <div className="flex flex-col items-center gap-1">
-                                        <StatusBadge status="warning" label="รับครบ · รอจ่ายเงิน" />
-                                        <span className="text-[10px] font-bold text-amber-800 dark:text-amber-300">
+                                      <div className="flex flex-col items-center gap-0.5">
+                                        <StatusBadge status="success" label="รับครบ · ปิดงานจัดซื้อ" />
+                                        <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400">
                                           {poFlow.currentStepLabel}
                                         </span>
                                       </div>
@@ -1594,7 +1544,7 @@ export default function PurchasingHub() {
                                   return (
                                     <div className="flex flex-col items-center gap-0.5">
                                       <StatusBadge status="open" label="รอรับของ" />
-                                      <span className={`text-[10px] font-bold ${isPaid ? 'text-emerald-700 dark:text-emerald-400' : 'text-sky-700 dark:text-sky-400'}`}>
+                                      <span className="text-[10px] font-bold text-sky-700 dark:text-sky-400">
                                         {poFlow.currentStepLabel}
                                       </span>
                                     </div>
@@ -1606,23 +1556,12 @@ export default function PurchasingHub() {
                             {/* 7. การจัดการ (จัดกึ่งกลาง) */}
                             <td className="py-3 px-3.5 align-middle text-center whitespace-nowrap">
                               <div className="inline-flex items-center justify-center gap-1.5 shrink-0">
-                                {r.status === 'received' && !isPaid ? (
-                                  <button
-                                    type="button"
-                                    onClick={() => setPaymentTargetPo(r)}
-                                    className="inline-flex items-center gap-1 rounded-lg bg-amber-500 hover:bg-amber-600 px-2 py-1 text-xs font-bold text-slate-950 transition shadow-xs cursor-pointer"
-                                    title={`รับของเข้าคลังแล้ว คลิกเพื่อจ่ายชำระเงินตามยอดสั่งซื้อ ฿${baht(r.net_amount || r.total_amount)} บ.`}
-                                  >
-                                    <span></span>
-                                    <span>จ่าย</span>
-                                  </button>
-                                ) : ['open', 'partial'].includes(r.status) ? (
+                                {['open', 'partial'].includes(r.status) ? (
                                   <Link
                                     to={`/purchasing/po/${r.id}`}
                                     className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 px-2 py-1 text-xs font-bold text-white transition shadow-xs"
                                     title="ตรวจรับสินค้าเข้าสโตร์"
                                   >
-                                    <span></span>
                                     <span>รับของ</span>
                                   </Link>
                                 ) : (
@@ -2404,11 +2343,11 @@ export default function PurchasingHub() {
             </div>
           )}
 
-          {/* TAB 4: แผนภาพวงจรจัดซื้อ (Pipeline View 5 ขั้นตอน) */}
+          {/* TAB 4: แผนภาพวงจรจัดซื้อ (Pipeline View 4 ขั้นตอน) */}
           {activeTab === 'pipeline' && (
             <div className="space-y-4">
-              {/* สรุป 5 กล่องกระบวนการจัดซื้อ (ตรงตาม Flow 5 ขั้นตอน) */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+              {/* สรุป 4 กล่องกระบวนการจัดซื้อ */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                 <div
                   onClick={() => changeTab('pr')}
                   className="rounded-2xl border border-amber-200 dark:border-amber-900/50 bg-white dark:bg-slate-900 p-4 shadow-xs cursor-pointer hover:border-amber-400 transition"
@@ -2438,17 +2377,11 @@ export default function PurchasingHub() {
 
                 <div
                   onClick={() => changeTab('po')}
-                  className="rounded-2xl border border-orange-200 dark:border-orange-900/50 bg-white dark:bg-slate-900 p-4 shadow-xs cursor-pointer hover:border-orange-400 transition"
+                  className="rounded-2xl border border-emerald-200 dark:border-emerald-900/50 bg-emerald-50/40 dark:bg-emerald-950/20 p-4 shadow-xs cursor-pointer hover:border-emerald-400 transition"
                 >
-                  <div className="text-[11px] font-bold text-orange-700 dark:text-orange-400 uppercase tracking-wider">4. รับครบ · รอจ่ายเงิน</div>
-                  <div className="mt-1 text-2xl font-black text-orange-900 dark:text-orange-300">{receivedUnpaidPos.length} <span className="text-xs font-normal">ใบ</span></div>
-                  <div className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">พร้อมจ่ายชำระเงิน</div>
-                </div>
-
-                <div className="rounded-2xl border border-emerald-200 dark:border-emerald-900/50 bg-emerald-50/40 dark:bg-emerald-950/20 p-4 shadow-xs">
-                  <div className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">5. ปิดวงจรสมบูรณ์</div>
-                  <div className="mt-1 text-2xl font-black text-emerald-900 dark:text-emerald-300">{fullyClosedPos.length} <span className="text-xs font-normal">ใบ</span></div>
-                  <div className="mt-1 text-[11px] text-emerald-700 dark:text-emerald-400 font-mono">ยอดรวม ฿{baht(totalSpend)}</div>
+                  <div className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">4. รับของครบ · ปิดงานจัดซื้อ</div>
+                  <div className="mt-1 text-2xl font-black text-emerald-900 dark:text-emerald-300">{receivedPos.length} <span className="text-xs font-normal">ใบ</span></div>
+                  <div className="mt-1 text-[11px] text-emerald-700 dark:text-emerald-400 font-mono">ยอดจัดซื้อรวม ฿{baht(totalSpend)}</div>
                 </div>
               </div>
 
@@ -2458,7 +2391,7 @@ export default function PurchasingHub() {
                   <div>
                     <h3 className="text-sm font-black text-ink dark:text-slate-100 uppercase tracking-wider flex items-center gap-2">
                       <Workflow className="h-4 w-4 text-sky-600" />
-                      <span>ผังลำดับขั้นตอนการจัดซื้อ (PR → PO → GR → PAY Pipeline Flow)</span>
+                      <span>ผังลำดับขั้นตอนการจัดซื้อ (PR → PO → GR/RI Pipeline Flow)</span>
                     </h3>
                     <p className="text-xs text-steel-500 dark:text-slate-400 mt-0.5">
                       แสดงสถานะล่าสุดของเอกสารจัดซื้อทุกใบ (ทั้งจาก PR และเปิด PO ตรง) ว่ากำลังอยู่ในขั้นตอนใดของกระบวนการ
@@ -2905,39 +2838,6 @@ export default function PurchasingHub() {
         />
       )}
 
-      {/* โมดัล 4: จ่ายชำระเงิน (PAY) */}
-      {paymentTargetPo && (() => {
-        const targetPay = computePoPaymentSummary(paymentTargetPo, paymentTargetPo.purchase_order_items || [])
-        return (
-          <PaymentActionModal
-            isOpen={true}
-            type="disburse"
-            docType="PO"
-            docId={paymentTargetPo.id}
-            docNo={paymentTargetPo.po_no}
-            vendorId={paymentTargetPo.vendor_id}
-            vendorTaxId={paymentTargetPo.vendors?.tax_id || ''}
-            contactName={paymentTargetPo.vendors?.vendor_name || paymentTargetPo.custom_vendor_name}
-            items={paymentTargetPo.purchase_order_items || []}
-            totalAmount={targetPay.totalPayable}
-            alreadyPaid={targetPay.paidAmount}
-            depositAmount={paymentTargetPo.deposit_amount || 0}
-            remainingAmount={targetPay.remainingAmount}
-            hasDeposit={paymentTargetPo.deposit_type === 'deposit'}
-            whtRate={Number(paymentTargetPo.wht_rate || 0)}
-            whtAmount={Number(paymentTargetPo.wht_amount || 0)}
-            hasGoodsReceipt={['partial', 'received'].includes(paymentTargetPo.status)}
-            paymentStatus={targetPay.effectivePaymentStatus}
-            requestedChannel={paymentTargetPo.payment_channel_requested || 'transfer'}
-            projectId={paymentTargetPo.project_id}
-            projectName={paymentTargetPo.projects?.project_name}
-            onClose={() => setPaymentTargetPo(null)}
-            onSuccess={() => {
-              loadData()
-            }}
-          />
-        )
-      })()}
       {/* โมดัล 5: ดูประวัติการใช้วัสดุในโครงการและย้อนหลัง */}
       {selectedUsageItem && (
         <ItemProjectUsageModal
@@ -2962,15 +2862,14 @@ export default function PurchasingHub() {
         >
           {activeDropdown.type === 'po' && (() => {
             const po = activeDropdown.item
-            const poPay = computePoPaymentSummary(po, po.purchase_order_items || [])
-            const isPaid = poPay.isPaidInFull
+            const poPayable = getPoPayable(po)
 
             return (
               <div className="space-y-1">
                 {/* Header */}
                 <div className="px-2.5 py-1.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
                   <span className="font-bold text-slate-800 dark:text-slate-200 font-mono">{po.po_no}</span>
-                  <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">฿{baht(poPay.totalPayable)}</span>
+                  <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">฿{baht(poPayable)}</span>
                 </div>
 
                 {/* Section 1: Documents & Print */}
@@ -3023,23 +2922,6 @@ export default function PurchasingHub() {
 
                 {/* Section 2: Actions */}
                 <div className="border-t border-slate-100 dark:border-slate-800 pt-1">
-                  {po.status !== 'cancelled' && !isPaid && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setActiveDropdown(null)
-                        setPaymentTargetPo(po)
-                      }}
-                      className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-sky-800 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/40 hover:bg-sky-100 dark:hover:bg-sky-900/60 font-semibold transition cursor-pointer text-left"
-                    >
-                      <div className="flex items-center gap-2">
-                        <DollarSign className="h-3.5 w-3.5 text-sky-600 dark:text-sky-400" />
-                        <span>{poPay.hasPartialPaid ? 'จ่ายงวดถัดไป' : 'จ่ายชำระเงิน'}</span>
-                      </div>
-                      <span className="font-mono text-[10px]">฿{baht(poPay.remainingAmount)}</span>
-                    </button>
-                  )}
-
                   {canCreate && (
                     <button
                       type="button"
@@ -3065,7 +2947,7 @@ export default function PurchasingHub() {
                     </Link>
                   )}
 
-                  {canCreate && po.status !== 'cancelled' && !isPaid && po.status !== 'received' && (
+                  {canCreate && po.status !== 'cancelled' && po.status !== 'received' && (
                     <button
                       type="button"
                       onClick={() => {

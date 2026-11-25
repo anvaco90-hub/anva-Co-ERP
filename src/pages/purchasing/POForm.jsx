@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams, useSearchParams, Link } from 'react-router-dom'
-import { Upload, Image as ImageIcon, FileText, CheckCircle2, X, Eye } from 'lucide-react'
+import { Upload, FileText, CheckCircle2, Eye, Truck, Building2, Store, Receipt, Package, ArrowLeft, ExternalLink } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import {
   fetchUnifiedCustomers,
@@ -850,841 +850,438 @@ export default function POForm() {
         </div>
       )}
 
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-          <span></span>
-          <span>{id ? `แก้ไขใบสั่งซื้อ ${po?.po_no ?? ''}` : params.get('duplicate_from') ? 'สร้างซ้ำใบสั่งซื้อ (Duplicate PO)' : 'ออกใบสั่งซื้อ (Purchase Order - PO)'}</span>
-        </h2>
-        <Link to="/purchasing?tab=po" className="text-xs font-semibold text-sky-700 dark:text-sky-400 hover:underline">
-          ← กลับไปรายการใบสั่งซื้อ
-        </Link>
+      {/* แถบนำทางและหัวเรื่องหน้าฟอร์ม */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <Link
+            to="/purchasing?tab=po"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 shadow-2xs transition"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            <span>กลับรายการ PO</span>
+          </Link>
+          <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
+            {id
+              ? `แก้ไขใบสั่งซื้อ ${po?.po_no ?? ''}`
+              : params.get('duplicate_from')
+              ? 'สร้างซ้ำใบสั่งซื้อ (Duplicate PO)'
+              : 'ออกใบสั่งซื้อ (Purchase Order)'}
+          </h2>
+        </div>
       </div>
 
-      {/* ========================================================================= */}
-      {/* กล่องเอกสารใบสั่งซื้อรูปแบบกระดาษ (Paper Receipt / Invoice Sheet Layout) */}
-      {/* ========================================================================= */}
-      <div className="space-y-6 rounded-2xl border border-steel-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 sm:p-8 shadow-md">
-        
-        {/* 1. ส่วนหัวกระดาษเอกสาร (Company Brand & Document Title) */}
-        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 border-b-2 border-steel-200 dark:border-slate-800 pb-5">
-          <div>
+      {/* กรอบเอกสาร PO รูปแบบเป็นขั้นตอนชัดเจน */}
+      <div className="space-y-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 sm:p-7 shadow-sm">
+        {/* ส่วนหัวเอกสาร (Masthead) */}
+        <div className="rounded-xl bg-[#0f172a] text-white px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <span className="text-lg font-black tracking-tight text-slate-900 dark:text-white">
-                ANVA & CO., LTD.
-              </span>
-              <span className="rounded bg-sky-100 dark:bg-sky-950 text-sky-800 dark:text-sky-300 px-1.5 py-0.5 text-[10px] font-bold">
+              <span className="text-base font-black tracking-tight text-white">ANVA &amp; CO., LTD.</span>
+              <span className="rounded bg-sky-500/20 border border-sky-400/30 text-sky-300 px-2 py-0.5 text-[10px] font-bold">
                 สำนักงานใหญ่
               </span>
             </div>
-            <p className="text-xs text-steel-600 dark:text-slate-400 font-medium mt-0.5">
-              บริษัท อันวาแอนด์โค จำกัด (ระบบบริหารงานวิศวกรรมและโครงการก่อสร้าง)
-            </p>
-            <p className="text-[11px] text-steel-500 dark:text-slate-400 mt-1">
-              ผู้สั่งซื้อ: <b className="text-slate-800 dark:text-slate-200">{buyerName || profile?.full_name || 'ฝ่ายจัดซื้อ'}</b>
+            <p className="text-xs text-slate-300">
+              บริษัท อันวาแอนด์โค จำกัด · ผู้ดำเนินการสั่งซื้อ:{' '}
+              <b className="text-white">{buyerName || profile?.full_name || 'ฝ่ายจัดซื้อ'}</b>
             </p>
           </div>
 
-          <div className="sm:text-right bg-slate-50 dark:bg-slate-800/80 p-3 rounded-xl border border-slate-200 dark:border-slate-700 min-w-[240px]">
-            <div className="text-xs font-bold uppercase tracking-wider text-sky-800 dark:text-sky-300">
-              ใบสั่งซื้อ / PURCHASE ORDER
+          <div className="sm:text-right border-t sm:border-t-0 sm:border-l border-slate-700/80 pt-3 sm:pt-0 sm:pl-5">
+            <div className="text-[11px] font-semibold text-sky-300">ใบสั่งซื้อ / Purchase Order</div>
+            <div className="font-mono text-lg font-black text-white mt-0.5">
+              {po?.po_no || 'PO2026-XXXX (สร้างอัตโนมัติ)'}
             </div>
-            <div className="font-mono text-base font-black text-slate-900 dark:text-white mt-0.5">
-              {po?.po_no || 'PO2026-XXXX (สร้างใหม่อัตโนมัติ)'}
-            </div>
-            <div className="text-[11px] text-steel-500 dark:text-slate-400 mt-1">
-              วันที่: <span className="font-mono font-medium text-slate-800 dark:text-slate-200">{new Date().toLocaleDateString('th-TH')}</span>
+            <div className="text-[11px] text-slate-400">
+              วันที่เอกสาร: <span className="font-mono text-slate-200">{new Date().toLocaleDateString('th-TH')}</span>
             </div>
           </div>
         </div>
-        {/* เลือกรหัส PR อ้างอิง (กรณีสร้าง PO ใหม่) - ใช้ SearchableSelect พิมพ์ค้นหาได้ทันที */}
-        {!id && (
-          <div>
-            <div className="flex flex-wrap items-center justify-between gap-1 mb-1">
-              <label className="block text-sm font-medium text-ink">
-                เลือกใบขอซื้อ (PR) หรือ สั่งซื้อตรง (Direct PO)
-              </label>
-              <button
-                type="button"
-                onClick={() => {
+
+        {/* ========================================================================= */}
+        {/* ขั้นที่ 1: แหล่งที่มาเอกสาร (PR) และคู่ค้า (โครงการ / ผู้ขาย)               */}
+        {/* ========================================================================= */}
+        <section className="space-y-4">
+          <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2">
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-900 dark:bg-sky-600 text-white text-xs font-bold">
+              1
+            </span>
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+              แหล่งที่มาใบขอซื้อ (PR) และข้อมูลคู่ค้า
+            </h3>
+          </div>
+
+          {/* เลือกรหัส PR อ้างอิง */}
+          {!id ? (
+            <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 p-4 space-y-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <label className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                  เลือกใบขอซื้อ (PR) หรือ สั่งซื้อตรง (Direct PO)
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedPrId('DIRECT_PO')
+                    if (errors.selectedPrId) setErrors((prev) => ({ ...prev, selectedPrId: '' }))
+                  }}
+                  className="text-xs font-bold text-sky-700 dark:text-sky-400 hover:underline cursor-pointer"
+                >
+                  สั่งซื้อตรง (ไม่ผ่าน PR)
+                </button>
+              </div>
+              <SearchableSelect
+                options={prOptions}
+                value={selectedPrId}
+                onChange={(val) => {
+                  setSelectedPrId(val)
+                  if (errors.selectedPrId) setErrors((prev) => ({ ...prev, selectedPrId: '' }))
+                }}
+                placeholder="พิมพ์เลขที่ PR, รหัสโครงการ หรือเลือก 'สั่งซื้อตรง'..."
+                error={errors.selectedPrId}
+                emptyActionLabel="สั่งซื้อตรงทันที (Direct PO ไม่ต้องอ้างอิง PR)"
+                onEmptyAction={() => {
                   setSelectedPrId('DIRECT_PO')
                   if (errors.selectedPrId) setErrors((prev) => ({ ...prev, selectedPrId: '' }))
                 }}
-                className="text-xs font-bold text-sky-700 hover:text-sky-900 hover:underline cursor-pointer flex items-center gap-1"
-              >
-                <span></span>
-                <span>คลิกเพื่อสั่งซื้อตรง (ไม่ต้องอ้างอิง PR)</span>
-              </button>
-            </div>
-            <SearchableSelect
-              options={prOptions}
-              value={selectedPrId}
-              onChange={(val) => {
-                setSelectedPrId(val)
-                if (errors.selectedPrId) setErrors((prev) => ({ ...prev, selectedPrId: '' }))
-              }}
-              placeholder="พิมพ์เลขที่ PR, รหัสโครงการ หรือเลือก 'สั่งซื้อตรง'..."
-              error={errors.selectedPrId}
-              emptyActionLabel="สั่งซื้อตรงทันที (Direct PO ไม่ต้องอ้างอิง PR)"
-              onEmptyAction={() => {
-                setSelectedPrId('DIRECT_PO')
-                if (errors.selectedPrId) setErrors((prev) => ({ ...prev, selectedPrId: '' }))
-              }}
-            />
-            {selectedPrId === 'DIRECT_PO' ? (
-              <div className="mt-2 rounded-lg bg-sky-50 border border-sky-200 p-2.5 text-xs text-sky-900 font-medium flex items-center justify-between">
-                <span>โหมดสั่งซื้อตรง (Direct PO): คุณสามารถกรอกโครงการ ผู้ขาย และรายการวัสดุเพื่อออกใบสั่งซื้อได้ทันที</span>
-                <button
-                  type="button"
-                  onClick={() => setSelectedPrId('')}
-                  className="text-sky-700 font-bold hover:underline ml-2"
-                >
-                  ยกเลิก
-                </button>
-              </div>
-            ) : (
-              <p className="mt-1 text-[11px] text-steel-500">
-                สามารถเลือกใบขอซื้อ (PR) ในระบบ หรือเลือก <b>"สั่งซื้อตรง"</b> เพื่อออกใบสั่งซื้อโดยไม่ต้องผ่าน PR ได้ทันที
-              </p>
-            )}
-          </div>
-        )}
-
-        {id && (
-          <div className="border-b border-steel-100 pb-3">
-            <div className="text-xs text-steel-500">อ้างอิงใบขอซื้อ (PR):</div>
-            <div className="font-semibold text-sky-700">{po?.pr?.pr_no || 'สั่งตรง'}</div>
-          </div>
-        )}
-
-        {/* ข้อมูล 2 ฝั่งเหมือนใบสั่งซื้อกระดาษ: ผู้จำหน่าย / ร้านค้า (ซ้าย) vs โครงการ & ผู้สั่งซื้อ (ขวา) */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* 1. โครงการ และ ลูกค้า/ผู้ว่าจ้าง (สามารถพิมพ์ค้นหาหรือพิมพ์สร้างใหม่ได้ในช่องเดียวกัน) */}
-        <div className="rounded-xl border border-steel-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 p-4 space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-steel-200/80 pb-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-steel-700 flex items-center gap-1.5">
-              <span></span>
-              <span>โครงการ และ ลูกค้า / ผู้ว่าจ้าง (Project & Customer)</span>
-            </span>
-            <div className="flex items-center gap-1 bg-white p-0.5 rounded-lg border border-steel-200 text-xs">
-              <button
-                type="button"
-                onClick={() => setProjectMode('select')}
-                className={`px-2.5 py-1 rounded-md font-medium transition cursor-pointer ${
-                  projectMode === 'select' ? 'bg-sky-700 text-white shadow-2xs font-bold' : 'text-steel-600 hover:text-steel-900'
-                }`}
-              >
-                เลือกโครงการในระบบ
-              </button>
-              <button
-                type="button"
-                onClick={() => setProjectMode('custom')}
-                className={`px-2.5 py-1 rounded-md font-medium transition cursor-pointer ${
-                  projectMode === 'custom' ? 'bg-sky-700 text-white shadow-2xs font-bold' : 'text-steel-600 hover:text-steel-900'
-                }`}
-              >
-                ️ พิมพ์ชื่อโครงการเอง
-              </button>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {/* ฟิลด์โครงการ (Searchable & Typeable) */}
-            <div>
-              <label className="block text-xs font-semibold text-steel-700 mb-1">
-                โครงการที่ตัดต้นทุน (Project Cost Center) *
-              </label>
-              {projectMode === 'select' ? (
-                <SearchableSelect
-                  options={projectOptions}
-                  value={projectId}
-                  onChange={(val, opt) => {
-                    if (opt?.isCustom) {
-                      setProjectMode('custom')
-                      setCustomProjectName(val)
-                      setProjectId('')
-                    } else {
-                      setProjectId(val)
-                      setCustomProjectName(opt?.label || '')
-                    }
-                  }}
-                  allowCustom={true}
-                  placeholder="พิมพ์รหัส หรือชื่อโครงการเพื่อค้นหา..."
-                  customPlaceholder="กด Enter เพื่อใช้ชื่อโครงการนี้"
-                />
+              />
+              {selectedPrId === 'DIRECT_PO' ? (
+                <div className="rounded-lg bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800 px-3 py-2 text-xs text-sky-900 dark:text-sky-200 flex items-center justify-between">
+                  <span>โหมดสั่งซื้อตรง (Direct PO): ระบุโครงการ ผู้ขาย และรายการสินค้าด้านล่างได้ทันที</span>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedPrId('')}
+                    className="text-sky-700 dark:text-sky-300 font-bold hover:underline ml-2 cursor-pointer"
+                  >
+                    เปลี่ยนกลับ
+                  </button>
+                </div>
               ) : (
-                <input
-                  type="text"
-                  className="input text-xs"
-                  placeholder="พิมพ์ระบุชื่อโครงการ เช่น โครงการติดตั้งโซลาร์สระบุรี หรือ งานซ่อมท่อไซต์ B"
-                  value={customProjectName}
-                  onChange={(e) => setCustomProjectName(e.target.value)}
-                />
+                <p className="text-[11px] text-slate-500">
+                  เลือก PR เดิม (รองรับออกแยกหลาย PO สำหรับต่างร้านค้า ระบบจะคำนวณเฉพาะยอดคงเหลือให้อัตโนมัติ)
+                </p>
               )}
-              <span className="text-[11px] text-steel-500 mt-1 block">
-                {projectMode === 'select' ? 'พิมพ์รหัสหรือชื่อเพื่อค้นหาทันที หรือพิมพ์ชื่อใหม่แล้วกด Enter' : 'สามารถคีย์ชื่อโครงการ ไซต์งาน หรือชื่องานซ่อมได้อิสระ'}
-              </span>
-            </div>
-
-            {/* ฟิลด์ชื่อลูกค้า / ผู้ว่าจ้าง (Searchable & Typeable) */}
-            <div>
-              <label className="block text-xs font-semibold text-steel-700 mb-1">
-                ลูกค้า / ผู้ว่าจ้าง (Customer / Client)
-              </label>
-              <SearchableSelect
-                options={customerOptions}
-                value={customerName}
-                onChange={(val) => setCustomerName(val)}
-                onCustomChange={(val) => setCustomerName(val)}
-                allowCustom={true}
-                placeholder="พิมพ์เพื่อค้นหาลูกค้าในระบบ หรือพิมพ์ชื่อลูกค้าใหม่เอง..."
-                customPlaceholder="กด Enter เพื่อใช้ชื่อลูกค้านี้"
-              />
-              <span className="text-[11px] text-steel-500 mt-1 block">
-                พิมพ์เพื่อค้นหาลูกค้าเดิม หรือพิมพ์ชื่อลูกค้าใหม่ได้อิสระ
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* 2. ข้อมูลร้านค้า / ผู้ขาย (Searchable & Typeable) */}
-        <div className="rounded-xl border border-steel-200 bg-steel-50/60 p-4 space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-steel-200/80 pb-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-steel-700 flex items-center gap-1.5">
-              <span></span>
-              <span>ผู้ขาย / ร้านค้า (Vendor / Supplier)</span>
-            </span>
-            <div className="flex items-center gap-1 bg-white p-0.5 rounded-lg border border-steel-200 text-xs">
-              <button
-                type="button"
-                onClick={() => setVendorMode('select')}
-                className={`px-2.5 py-1 rounded-md font-medium transition cursor-pointer ${
-                  vendorMode === 'select' ? 'bg-sky-700 text-white shadow-2xs font-bold' : 'text-steel-600 hover:text-steel-900'
-                }`}
-              >
-                 เลือกร้านค้าในระบบ
-              </button>
-              <button
-                type="button"
-                onClick={() => setVendorMode('custom')}
-                className={`px-2.5 py-1 rounded-md font-medium transition cursor-pointer ${
-                  vendorMode === 'custom' ? 'bg-sky-700 text-white shadow-2xs font-bold' : 'text-steel-600 hover:text-steel-900'
-                }`}
-              >
-                ️ พิมพ์ชื่อร้านค้าใหม่เอง
-              </button>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <label className="block text-sm font-medium text-ink mb-1">
-                ชื่อผู้ขาย / ร้านค้า *
-              </label>
-              {vendorMode === 'select' ? (
-                <SearchableSelect
-                  options={vendorOptions}
-                  value={vendorId}
-                  onChange={(val, opt) => {
-                    if (opt?.isCustom) {
-                      setVendorMode('custom')
-                      setCustomVendorName(val)
-                      setVendorId('')
-                    } else {
-                      setVendorId(val)
-                      setCustomVendorName(opt?.label || '')
-                    }
-                    if (errors.vendorId) setErrors((prev) => ({ ...prev, vendorId: '' }))
-                  }}
-                  allowCustom={true}
-                  placeholder="พิมพ์ชื่อร้านค้า รหัส หรือเลขภาษีเพื่อค้นหา..."
-                  customPlaceholder="กด Enter เพื่อพิมพ์ใช้เป็นร้านค้าใหม่"
-                  error={errors.vendorId}
-                />
-              ) : (
-                <input
-                  type="text"
-                  className={fieldErrorClass(errors.vendorId, 'input')}
-                  placeholder="พิมพ์ชื่อร้านค้า/ผู้ขาย เช่น ไทวัสดุ สาขาสระบุรี, ร้านโฮมฮาร์ดแวร์"
-                  value={customVendorName}
-                  onChange={(e) => {
-                    setCustomVendorName(e.target.value)
-                    if (errors.vendorId) setErrors((prev) => ({ ...prev, vendorId: '' }))
-                  }}
-                />
-              )}
-              {vendorMode === 'custom' && (
-                <div className="mt-1 text-[11px] text-emerald-700 bg-emerald-50 px-2 py-1 rounded border border-emerald-200">
-                  ระบบจะบันทึกร้านค้านี้เข้าระบบให้อัตโนมัติ เพื่อให้เรียกใช้งานได้ในครั้งถัดไป
-                </div>
-              )}
-            </div>
-
-            <label className="block text-sm font-medium text-ink">
-              ผู้สั่งซื้อ (จัดซื้อ)
-              <input
-                type="text"
-                className="input mt-1"
-                placeholder="ระบุชื่อผู้ดำเนินการสั่งซื้อ"
-                value={buyerName}
-                onChange={(e) => setBuyerName(e.target.value)}
-              />
-            </label>
-          </div>
-
-          {/* รายละเอียดเพิ่มเติมของร้านค้ากรณีพิมพ์เอง */}
-          {vendorMode === 'custom' && (
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 pt-2 border-t border-steel-200/70 text-xs">
-              <label className="block font-medium text-steel-700">
-                เบอร์โทรศัพท์ร้านค้า (ถ้ามี)
-                <input
-                  type="text"
-                  className="input mt-1 text-xs"
-                  placeholder="02-xxx-xxxx หรือ 08x-xxx-xxxx"
-                  value={customVendorPhone}
-                  onChange={(e) => setCustomVendorPhone(e.target.value)}
-                />
-              </label>
-              <label className="block font-medium text-steel-700">
-                เลขประจำตัวผู้เสียภาษี (ถ้ามี)
-                <input
-                  type="text"
-                  className="input mt-1 text-xs font-mono"
-                  placeholder="เลข 13 หลัก"
-                  value={customVendorTaxId}
-                  onChange={(e) => setCustomVendorTaxId(e.target.value)}
-                />
-              </label>
-              <label className="block font-medium text-steel-700">
-                ที่อยู่ร้านค้า (ถ้ามี)
-                <input
-                  type="text"
-                  className="input mt-1 text-xs"
-                  placeholder="ที่อยู่/สาขา"
-                  value={customVendorAddress}
-                  onChange={(e) => setCustomVendorAddress(e.target.value)}
-                />
-              </label>
-            </div>
-          )}
-
-          {/* แถบแนะนำร้านค้าเดิม */}
-          {vendorSuggestions.length > 0 && (
-            <div className="rounded-md border border-emerald-200 bg-emerald-50/70 p-3 text-xs text-emerald-900">
-              <div className="font-bold flex items-center gap-1.5">
-                <span> ร้านค้าเดิมที่เคยสั่งซื้อวัสดุนี้มาก่อน (คลิกเพื่อเลือกใช้):</span>
-              </div>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {vendorSuggestions.map((vs) => {
-                  const isSelected = vendorMode === 'select' && vendorId === vs.vendorId
-                  return (
-                    <button
-                      key={vs.vendorId}
-                      type="button"
-                      onClick={() => {
-                        setVendorMode('select')
-                        setVendorId(vs.vendorId)
-                        if (errors.vendorId) setErrors((prev) => ({ ...prev, vendorId: '' }))
-                      }}
-                      className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-xs transition border shadow-sm cursor-pointer ${
-                        isSelected
-                          ? 'bg-emerald-700 text-white border-emerald-800 ring-2 ring-emerald-400 font-bold'
-                          : 'bg-white text-emerald-900 border-emerald-300 hover:bg-emerald-100'
-                      }`}
-                    >
-                      <span> {vs.vendorName}</span>
-                      <span className="font-semibold text-emerald-700 bg-emerald-100/60 px-1.5 py-0.5 rounded text-[11px]">
-                        ราคาเดิม {baht(vs.lastPrice)} บ.
-                      </span>
-                      {isSelected ? <span className="ml-1 text-white"> กำลังเลือก</span> : <span className="ml-1 underline font-semibold">เลือกร้านนี้</span>}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-          )}
-        </div>
-        </div>
-
-        {/* ข้อมูลการชำระเงิน เงื่อนไขมัดจำ และ ใบเสนอราคา */}
-        <div className="rounded-lg border border-steel-200 bg-steel-50/70 p-4 space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-steel-200/80 pb-2">
-            <h4 className="font-bold text-xs uppercase tracking-wider text-steel-700">
-               เงื่อนไขการชำระเงิน และ ใบเสนอราคา (Payment Terms & Quotation)
-            </h4>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-steel-600 font-medium">เงื่อนไขมัดจำ:</span>
-              <button
-                type="button"
-                onClick={() => setHasDeposit(false)}
-                className={`px-3 py-1 rounded-md text-xs font-bold transition border ${
-                  !hasDeposit
-                    ? 'bg-sky-700 text-white border-sky-800 shadow-sm'
-                    : 'bg-white text-steel-700 border-steel-300 hover:bg-steel-100'
-                }`}
-              >
-                ไม่มีมัดจำ (Full Payment)
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setHasDeposit(true)
-                  if (!depositAmount && netAmount > 0) {
-                    const amt = Math.round((netAmount * (Number(depositPercent || 30) / 100)) * 100) / 100
-                    setDepositAmount(String(amt))
-                  }
-                }}
-                className={`px-3 py-1 rounded-md text-xs font-bold transition border ${
-                  hasDeposit
-                    ? 'bg-amber-600 text-white border-amber-700 shadow-sm'
-                    : 'bg-white text-steel-700 border-steel-300 hover:bg-steel-100'
-                }`}
-              >
-                มีมัดจำ (Deposit / Installment)
-              </button>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <div>
-              <label className="block text-xs font-semibold text-steel-700 mb-1">
-                ประเภทการชำระเงิน *
-              </label>
-              <SearchableSelect
-                options={paymentOptions}
-                value={paymentType}
-                onChange={(val) => setPaymentType(val)}
-                placeholder="พิมพ์ค้นหาเงื่อนไขชำระเงิน เช่น เครดิต 30 วัน, เงินสด..."
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-steel-700 mb-1">
-                เลขที่ใบเสนอราคาจากผู้ขาย (Vendor Quotation No.)
-              </label>
-              <input
-                className="input text-xs"
-                placeholder="เช่น QTV-SCG-2026-089"
-                value={quotationNo}
-                onChange={(e) => setQuotationNo(e.target.value)}
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-steel-700 mb-1">
-                วันที่ใบเสนอราคาผู้ขาย
-              </label>
-              <input
-                type="date"
-                className="input text-xs"
-                value={quotationDate}
-                onChange={(e) => setQuotationDate(e.target.value)}
-              />
-            </div>
-
-            {/* แนบรูปภาพ / ไฟล์ใบเสนอราคาจากผู้ขาย */}
-            <div className="sm:col-span-2 md:col-span-3">
-              <label className="block text-xs font-semibold text-steel-700 dark:text-slate-300 mb-1">
-                แนบรูปภาพ / เอกสารใบเสนอราคาจากผู้ขาย (Quotation Attachment)
-              </label>
-              <div className="flex flex-wrap items-center gap-3">
-                <input
-                  type="file"
-                  id="quotation-upload"
-                  accept="image/*,application/pdf"
-                  className="hidden"
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0]
-                    if (file) {
-                      setQuotationFile(file)
-                      setUploadingQuotation(true)
-                      try {
-                        const previewUrl = await uploadQuotationFile(file)
-                        if (previewUrl) setQuotationUrl(previewUrl)
-                      } catch (err) {
-                        console.warn(err)
-                      } finally {
-                        setUploadingQuotation(false)
-                      }
-                    }
-                  }}
-                />
-                <label
-                  htmlFor="quotation-upload"
-                  className="inline-flex items-center gap-2 rounded-xl border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-steel-50 dark:hover:bg-slate-700 px-3.5 py-2 text-xs font-bold text-steel-700 dark:text-slate-200 transition shadow-2xs cursor-pointer"
-                >
-                  <Upload className="h-4 w-4 text-steel-500" />
-                  <span>{uploadingQuotation ? 'กำลังอัปโหลด...' : (quotationUrl ? 'เปลี่ยนรูป/ไฟล์ใบเสนอราคา' : ' คลิกเพื่อแนบรูปภาพ/ไฟล์ใบเสนอราคา')}</span>
-                </label>
-
-                {quotationUrl && (
-                  <div className="flex items-center gap-2 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-xl px-3 py-1.5 text-xs">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                    <span className="font-semibold text-emerald-900 dark:text-emerald-200 truncate max-w-xs">
-                      {quotationFile?.name || 'แนบใบเสนอราคาแล้ว'}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => openFile(quotationUrl)}
-                      className="inline-flex items-center gap-1 text-xs text-sky-700 dark:text-sky-400 font-bold hover:underline ml-2 cursor-pointer"
-                    >
-                      <Eye className="h-3.5 w-3.5" />
-                      <span>เปิดดูเอกสาร</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setQuotationUrl('')
-                        setQuotationFile(null)
-                      }}
-                      className="text-xs text-rose-600 hover:text-rose-800 font-bold ml-2 cursor-pointer"
-                      title="ลบไฟล์แนบ"
-                    >
-                       ลบ
-                    </button>
-                  </div>
-                )}
-              </div>
-              <p className="text-[11px] text-steel-400 dark:text-slate-500 mt-1">
-                แนบรูปถ่ายใบเสนอราคา หรือสเปกราคาที่ได้จากร้านค้า เพื่อความโปร่งใสและตรวจสอบย้อนหลังได้ 100%
-              </p>
-            </div>
-          </div>
-
-          {/* รายละเอียดมัดจำ vs จ่ายเต็มจำนวน */}
-          {!hasDeposit ? (
-            /* กรณีไม่มีมัดจำ (Full Payment) */
-            <div className="rounded-lg border border-sky-200 bg-sky-50/70 p-3.5 space-y-3">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <span className="text-xs font-bold text-sky-900 block"> เงื่อนไขชำระเต็มจำนวน (Full Payment)</span>
-                  <span className="text-[11px] text-sky-700">ชำระยอดรวมทั้งสิ้นหลังจากตรวจรับของหรือตามเครดิตเทอม</span>
-                </div>
-                <div className="text-right">
-                  <span className="text-[10px] text-sky-700 block uppercase font-semibold">ยอดสุทธิที่ต้องชำระ (Net Payable)</span>
-                  <span className="text-base font-extrabold text-sky-900 font-mono">{baht(netAmount)} บาท</span>
-                </div>
-              </div>
-
-              <div className="pt-2 border-t border-sky-200 flex flex-wrap items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-steel-700">ช่องทางที่ขอเบิกจ่าย:</span>
-                  <div className="flex gap-1.5">
-                    {[
-                      { id: 'transfer', label: ' เงินโอน', icon: '↗️' },
-                      { id: 'cheque', label: 'เช็คสั่งจ่าย', icon: '️' },
-                      { id: 'cash', label: ' เงินสด', icon: '' },
-                    ].map((ch) => (
-                      <button
-                        key={ch.id}
-                        type="button"
-                        onClick={() => setPaymentChannelRequested(ch.id)}
-                        className={`px-2.5 py-1 rounded text-xs font-semibold transition border ${
-                          paymentChannelRequested === ch.id
-                            ? 'bg-sky-700 text-white border-sky-800 shadow-sm'
-                            : 'bg-white text-steel-700 border-steel-200 hover:bg-sky-50'
-                        }`}
-                      >
-                        {ch.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <span className="text-[11px] text-sky-800 font-medium">
-                  สถานะเมื่อบันทึก: <b className="text-amber-800">รอชำระเงิน (ส่งเรื่องไปยังฝ่ายบัญชี)</b>
-                </span>
-              </div>
             </div>
           ) : (
-            /* กรณีมีมัดจำ (Deposit / Installment) - Bi-directional calculation */
-            <div className="rounded-lg border border-amber-300 bg-amber-50/60 p-3.5 space-y-3">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-amber-900">
-                    ระบุเงื่อนไขมัดจำ (Bi-directional Auto-Calculating)
-                  </span>
-                  <span className="text-[10px] bg-amber-200 text-amber-900 px-2 py-0.5 rounded font-bold">
-                    คำนวณอัตโนมัติ 2 ทิศทาง
-                  </span>
-                </div>
-                <span className="text-xs text-steel-600">
-                  ฐานยอดสุทธิ: <b className="font-mono text-ink">{baht(netAmount)}</b> บาท
-                </span>
-              </div>
-
-              {/* ช่องกรอกสองทิศทาง: % มัดจำ vs ยอดเงินบาท */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-2.5 bg-white rounded-lg border border-amber-200">
-                <div>
-                  <label className="block text-xs font-bold text-amber-950 mb-1">
-                    สัดส่วนมัดจำ (%)
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      step="any"
-                      min="0"
-                      max="100"
-                      placeholder="เช่น 30"
-                      value={depositPercent}
-                      onChange={(e) => handlePercentChange(e.target.value)}
-                      className="input text-xs font-bold font-mono pr-7 text-amber-950"
-                    />
-                    <span className="absolute right-2.5 top-2 text-xs font-bold text-steel-400">%</span>
-                  </div>
-                  <span className="text-[10px] text-amber-700 mt-0.5 block">
-                    กรอก % เพื่อแปลงเป็นยอดเงินบาทอัตโนมัติ
-                  </span>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-amber-950 mb-1">
-                    ยอดเงินมัดจำงวดแรก (บาท)
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      step="any"
-                      min="0"
-                      max={netAmount}
-                      placeholder="0.00"
-                      value={depositAmount}
-                      onChange={(e) => handleAmountChange(e.target.value)}
-                      className="input text-xs font-bold font-mono text-amber-950 pr-8"
-                    />
-                    <span className="absolute right-2.5 top-2 text-xs font-bold text-steel-400">บาท</span>
-                  </div>
-                  <span className="text-[10px] text-amber-700 mt-0.5 block">
-                    หรือกรอกยอดเงินบาท เพื่อแปลงกลับเป็น % อัตโนมัติ
-                  </span>
-                </div>
-              </div>
-
-              {/* การ์ดสรุปยอดมัดจำ vs ยอดคงเหลือ */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                {/* การ์ดที่ 1: ยอดมัดจำงวดแรก */}
-                <div className="rounded-lg bg-amber-100/70 border border-amber-300 p-3">
-                  <div className="flex justify-between items-start">
-                    <span className="text-xs font-bold text-amber-900 block">
-                      1. ยอดชำระมัดจำงวดแรก (First Deposit)
-                    </span>
-                    <span className="text-[10px] font-bold text-amber-800 bg-amber-200/80 px-1.5 py-0.5 rounded">
-                      {depositPercent || 0}%
-                    </span>
-                  </div>
-                  <div className="mt-1.5 text-lg font-black text-amber-950 font-mono">
-                    {baht(calcDepositAmount)} <span className="text-xs font-normal">บาท</span>
-                  </div>
-
-                  <div className="mt-2 pt-2 border-t border-amber-200/80">
-                    <label className="block text-[11px] font-semibold text-amber-900 mb-1">
-                      ช่องทางขอเบิกจ่ายงวดแรก:
-                    </label>
-                    <div className="flex gap-1">
-                      {[
-                        { id: 'transfer', label: 'เงินโอน' },
-                        { id: 'cheque', label: 'เช็ค' },
-                        { id: 'cash', label: 'เงินสด' },
-                      ].map((ch) => (
-                        <button
-                          key={ch.id}
-                          type="button"
-                          onClick={() => setPaymentChannelRequested(ch.id)}
-                          className={`px-2 py-0.5 rounded text-[11px] font-bold transition border ${
-                            paymentChannelRequested === ch.id
-                              ? 'bg-amber-700 text-white border-amber-800'
-                              : 'bg-white text-amber-900 border-amber-300 hover:bg-amber-100'
-                          }`}
-                        >
-                          {ch.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                {/* การ์ดที่ 2: ยอดชำระคงเหลือ */}
-                <div className="rounded-lg bg-white border border-steel-200 p-3 flex flex-col justify-between">
-                  <div>
-                    <div className="flex justify-between items-start">
-                      <span className="text-xs font-bold text-steel-700 block">
-                        2. ยอดชำระคงเหลือ (Remaining Amount)
-                      </span>
-                      <span className="text-[10px] font-semibold text-steel-500 bg-steel-100 px-1.5 py-0.5 rounded">
-                        {Math.max(0, 100 - Number(depositPercent || 0))}%
-                      </span>
-                    </div>
-                    <div className="mt-1.5 text-lg font-black text-sky-900 font-mono">
-                      {baht(calcRemainingAmount)} <span className="text-xs font-normal">บาท</span>
-                    </div>
-                  </div>
-                  <div className="mt-2 pt-2 border-t border-steel-100 text-[11px] text-steel-500">
-                    ชำระเมื่อส่งมอบสินค้าครบถ้วน หรือตามรอบวางบิล-จ่ายเงิน
-                  </div>
-                </div>
-              </div>
+            <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 px-4 py-2.5 flex items-center gap-2 text-xs">
+              <span className="text-slate-500">อ้างอิงใบขอซื้อ (PR):</span>
+              <span className="font-mono font-bold text-sky-700 dark:text-sky-400">{po?.pr?.pr_no || 'สั่งซื้อตรง (Direct PO)'}</span>
             </div>
           )}
-        </div>
 
-        {/* กำหนดส่งมอบและสถานที่ส่งมอบ (Due Date & Delivery Information) */}
-        <div className="rounded-xl border border-steel-200 bg-white p-4 shadow-xs space-y-3">
-          <div className="flex items-center justify-between border-b border-steel-100 pb-2">
-            <h4 className="font-bold text-xs uppercase tracking-wider text-steel-800 flex items-center gap-1.5">
-              <span></span>
-              <span>กำหนดส่งมอบและสถานที่จัดส่ง (Delivery & Due Date)</span>
-            </h4>
-            <span className="text-[11px] text-steel-500">สำหรับระบบติดตามวันครบกำหนด</span>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-steel-800 mb-1">
-                วันที่กำหนดส่งมอบ / ครบกำหนด (Due Date)
-              </label>
-              <input
-                type="date"
-                className="input text-xs"
-                value={expectedDeliveryDate}
-                onChange={(e) => setExpectedDeliveryDate(e.target.value)}
-              />
-              <div className="mt-1.5 flex flex-wrap gap-1">
-                <span className="text-[10px] text-steel-500 mr-1 self-center">ปุ่มลัด:</span>
-                {[
-                  { label: '+3 วัน', days: 3 },
-                  { label: '+7 วัน (1 สัปดาห์)', days: 7 },
-                  { label: '+15 วัน', days: 15 },
-                  { label: '+30 วัน (1 เดือน)', days: 30 },
-                ].map((s) => (
-                  <button
-                    key={s.days}
-                    type="button"
-                    onClick={() => {
-                      const d = new Date()
-                      d.setDate(d.getDate() + s.days)
-                      setExpectedDeliveryDate(d.toISOString().split('T')[0])
-                    }}
-                    className="rounded bg-steel-100 hover:bg-steel-200 px-2 py-0.5 text-[10px] font-semibold text-steel-700 transition cursor-pointer"
-                  >
-                    {s.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-steel-800 mb-1">
-                 สถานที่ส่งมอบสินค้า / ที่อยู่จัดส่งหน้างาน
-              </label>
-              <input
-                type="text"
-                placeholder="เช่น สโตร์หลักสำนักงานใหญ่ หรือ ไซต์งานโครงการตามที่ระบุ"
-                className="input text-xs"
-                value={deliveryAddress}
-                onChange={(e) => setDeliveryAddress(e.target.value)}
-              />
-              <span className="text-[10px] text-steel-500 mt-1 block">
-                จะนำไปแสดงในใบสั่งซื้อและป้ายจ่าหน้าซองพัสดุ
-              </span>
-            </div>
-
-            <div className="sm:col-span-2">
-              <label className="block text-xs font-bold text-steel-800 mb-1">
-                ข้อตกลงและหมายเหตุเพิ่มเติมสำหรับผู้ขาย
-              </label>
-              <textarea
-                rows={2}
-                placeholder="เช่น ส่งของช่วงเวลา 09:00 - 16:00 น., กรุณาติดต่อหัวหน้าช่างก่อนเข้าส่ง 1 วัน"
-                className="input text-xs leading-relaxed"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* แถบเชื่อมโยงใบเสนอราคาขายและเลือกโหมดต้นทุนซื้อจริง */}
-        {(salesQuotationNo || quotationPricingMeta) && (
-          <div className="rounded-xl border border-emerald-300 bg-emerald-50/70 p-4 space-y-2 text-xs">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-2 font-bold text-emerald-950">
-                <FileText className="h-4 w-4 text-emerald-700" />
-                <span>
-                  สั่งซื้ออ้างอิงจากใบเสนอราคาขาย:{' '}
-                  <b className="font-mono text-emerald-800">{salesQuotationNo}</b>
+          {/* โครงการ & ลูกค้า (ซ้าย) vs ร้านค้า / ผู้ขาย (ขวา) */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* ซ้าย: โครงการ และ ลูกค้า */}
+            <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 p-4 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/80 dark:border-slate-700 pb-2.5">
+                <span className="text-xs font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+                  <Building2 className="h-4 w-4 text-sky-600" />
+                  <span>โครงการที่ตัดต้นทุน &amp; ลูกค้า</span>
                 </span>
-                {salesQuotationId && (
-                  <Link
-                    to={`/quotations/${salesQuotationId}`}
-                    className="rounded bg-white border border-emerald-300 px-2 py-0.5 text-[11px] text-emerald-800 hover:bg-emerald-100"
+                <div className="flex items-center gap-1 bg-white dark:bg-slate-900 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700 text-[11px]">
+                  <button
+                    type="button"
+                    onClick={() => setProjectMode('select')}
+                    className={`px-2.5 py-1 rounded-md font-medium transition cursor-pointer ${
+                      projectMode === 'select' ? 'bg-sky-700 text-white font-bold' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'
+                    }`}
                   >
-                    เปิดดู QT
-                  </Link>
-                )}
+                    เลือกในระบบ
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setProjectMode('custom')}
+                    className={`px-2.5 py-1 rounded-md font-medium transition cursor-pointer ${
+                      projectMode === 'custom' ? 'bg-sky-700 text-white font-bold' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'
+                    }`}
+                  >
+                    พิมพ์ชื่อเอง
+                  </button>
+                </div>
               </div>
 
-              {quotationPricingMeta && (
-                <div className="flex items-center gap-1 rounded-lg border border-emerald-200 bg-white p-0.5">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    โครงการ (Cost Center) *
+                  </label>
+                  {projectMode === 'select' ? (
+                    <SearchableSelect
+                      options={projectOptions}
+                      value={projectId}
+                      onChange={(val, opt) => {
+                        if (opt?.isCustom) {
+                          setProjectMode('custom')
+                          setCustomProjectName(val)
+                          setProjectId('')
+                        } else {
+                          setProjectId(val)
+                          setCustomProjectName(opt?.label || '')
+                        }
+                      }}
+                      allowCustom={true}
+                      placeholder="พิมพ์รหัส หรือชื่อโครงการ..."
+                      customPlaceholder="กด Enter เพื่อใช้ชื่อโครงการนี้"
+                    />
+                  ) : (
+                    <input
+                      type="text"
+                      className="input text-xs"
+                      placeholder="เช่น โครงการติดตั้งโซลาร์สระบุรี"
+                      value={customProjectName}
+                      onChange={(e) => setCustomProjectName(e.target.value)}
+                    />
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    ลูกค้า / ผู้ว่าจ้าง (ถ้ามี)
+                  </label>
+                  <SearchableSelect
+                    options={customerOptions}
+                    value={customerName}
+                    onChange={(val) => setCustomerName(val)}
+                    onCustomChange={(val) => setCustomerName(val)}
+                    allowCustom={true}
+                    placeholder="ค้นหา หรือพิมพ์ชื่อลูกค้า..."
+                    customPlaceholder="กด Enter เพื่อใช้ชื่อลูกค้านี้"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* ขวา: ผู้ขาย / ร้านค้า */}
+            <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 p-4 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/80 dark:border-slate-700 pb-2.5">
+                <span className="text-xs font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+                  <Store className="h-4 w-4 text-emerald-600" />
+                  <span>ผู้ขาย / ร้านค้า (Vendor)</span>
+                </span>
+                <div className="flex items-center gap-1 bg-white dark:bg-slate-900 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700 text-[11px]">
                   <button
                     type="button"
-                    onClick={() => {
-                      setPoPriceMode('cost_baseline')
-                      setItems(
-                        buildPurchaseItemsFromQuotation({
-                          ...quotationPricingMeta,
-                          mode: 'cost_baseline',
-                        })
-                      )
-                    }}
-                    className={`rounded px-2.5 py-1 text-[11px] font-bold transition cursor-pointer ${
-                      poPriceMode === 'cost_baseline'
-                        ? 'bg-emerald-700 text-white'
-                        : 'text-emerald-800 hover:bg-emerald-50'
+                    onClick={() => setVendorMode('select')}
+                    className={`px-2.5 py-1 rounded-md font-medium transition cursor-pointer ${
+                      vendorMode === 'select' ? 'bg-sky-700 text-white font-bold' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'
                     }`}
                   >
-                    ต้นทุนซื้อจริง (BOQ/สต็อก)
+                    เลือกร้านค้า
                   </button>
                   <button
                     type="button"
-                    onClick={() => {
-                      setPoPriceMode('selling_ref')
-                      setItems(
-                        buildPurchaseItemsFromQuotation({
-                          ...quotationPricingMeta,
-                          mode: 'selling_ref',
-                        })
-                      )
-                    }}
-                    className={`rounded px-2.5 py-1 text-[11px] font-bold transition cursor-pointer ${
-                      poPriceMode === 'selling_ref'
-                        ? 'bg-sky-700 text-white'
-                        : 'text-sky-700 hover:bg-sky-50'
+                    onClick={() => setVendorMode('custom')}
+                    className={`px-2.5 py-1 rounded-md font-medium transition cursor-pointer ${
+                      vendorMode === 'custom' ? 'bg-sky-700 text-white font-bold' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'
                     }`}
                   >
-                    ดึงราคาขาย QT (ก่อน VAT)
+                    เพิ่มร้านค้าใหม่
                   </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    ชื่อผู้ขาย / ร้านค้า *
+                  </label>
+                  {vendorMode === 'select' ? (
+                    <SearchableSelect
+                      options={vendorOptions}
+                      value={vendorId}
+                      onChange={(val, opt) => {
+                        if (opt?.isCustom) {
+                          setVendorMode('custom')
+                          setCustomVendorName(val)
+                          setVendorId('')
+                        } else {
+                          setVendorId(val)
+                          setCustomVendorName(opt?.label || '')
+                        }
+                        if (errors.vendorId) setErrors((prev) => ({ ...prev, vendorId: '' }))
+                      }}
+                      allowCustom={true}
+                      placeholder="พิมพ์ชื่อร้านค้า รหัส หรือเลขภาษี..."
+                      customPlaceholder="กด Enter เพื่อพิมพ์เป็นร้านค้าใหม่"
+                      error={errors.vendorId}
+                    />
+                  ) : (
+                    <input
+                      type="text"
+                      className={fieldErrorClass(errors.vendorId, 'input text-xs')}
+                      placeholder="เช่น ไทวัสดุ สาขาสระบุรี"
+                      value={customVendorName}
+                      onChange={(e) => {
+                        setCustomVendorName(e.target.value)
+                        if (errors.vendorId) setErrors((prev) => ({ ...prev, vendorId: '' }))
+                      }}
+                    />
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    ผู้ดำเนินการสั่งซื้อ (Buyer)
+                  </label>
+                  <input
+                    type="text"
+                    className="input text-xs"
+                    placeholder="ระบุชื่อผู้สั่งซื้อ"
+                    value={buyerName}
+                    onChange={(e) => setBuyerName(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {vendorMode === 'custom' && (
+                <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3 pt-2 border-t border-slate-200/70 dark:border-slate-700 text-xs">
+                  <input
+                    type="text"
+                    className="input text-xs"
+                    placeholder="เบอร์โทรร้านค้า (ถ้ามี)"
+                    value={customVendorPhone}
+                    onChange={(e) => setCustomVendorPhone(e.target.value)}
+                  />
+                  <input
+                    type="text"
+                    className="input text-xs font-mono"
+                    placeholder="เลขภาษี 13 หลัก (ถ้ามี)"
+                    value={customVendorTaxId}
+                    onChange={(e) => setCustomVendorTaxId(e.target.value)}
+                  />
+                  <input
+                    type="text"
+                    className="input text-xs"
+                    placeholder="ที่อยู่/สาขา (ถ้ามี)"
+                    value={customVendorAddress}
+                    onChange={(e) => setCustomVendorAddress(e.target.value)}
+                  />
+                </div>
+              )}
+
+              {vendorSuggestions.length > 0 && (
+                <div className="rounded-lg border border-emerald-200 bg-emerald-50/70 p-2.5 text-xs text-emerald-900">
+                  <div className="font-bold text-[11px] mb-1.5">ร้านค้าที่เคยสั่งซื้อวัสดุนี้มาก่อน:</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {vendorSuggestions.map((vs) => {
+                      const isSelected = vendorMode === 'select' && vendorId === vs.vendorId
+                      return (
+                        <button
+                          key={vs.vendorId}
+                          type="button"
+                          onClick={() => {
+                            setVendorMode('select')
+                            setVendorId(vs.vendorId)
+                            if (errors.vendorId) setErrors((prev) => ({ ...prev, vendorId: '' }))
+                          }}
+                          className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] transition border cursor-pointer ${
+                            isSelected
+                              ? 'bg-emerald-700 text-white border-emerald-800 font-bold'
+                              : 'bg-white text-emerald-900 border-emerald-300 hover:bg-emerald-100'
+                          }`}
+                        >
+                          <span>{vs.vendorName}</span>
+                          <span className="font-mono font-semibold opacity-80">({baht(vs.lastPrice)})</span>
+                        </button>
+                      )
+                    })}
+                  </div>
                 </div>
               )}
             </div>
-            <p className="text-[11px] text-emerald-900/80">
-              * ใบเสนอราคาขายแยกจากช่อง "ใบเสนอราคาจากผู้ขาย (Vendor Quote)" ด้านบน — กรอกหรือตรวจแก้ราคาซื้อจริงจากร้านค้าก่อนกดบันทึก
-            </p>
           </div>
-        )}
+        </section>
 
-        {/* รายการสั่งซื้อ */}
-        <div className="text-sm font-medium text-ink pt-2">
-          <div className="flex items-center justify-between mb-1">
-            <span>รายการสั่งซื้อ *</span>
+        {/* ========================================================================= */}
+        {/* ขั้นที่ 2: รายการสั่งซื้อ & เชื่อมโยงต้นทุนใบเสนอราคาขาย (กรอกรายการก่อนคำนวณ) */}
+        {/* ========================================================================= */}
+        <section className="space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 dark:border-slate-800 pb-2">
+            <div className="flex items-center gap-2">
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-900 dark:bg-sky-600 text-white text-xs font-bold">
+                2
+              </span>
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                <Package className="h-4 w-4 text-sky-600" />
+                <span>รายการสินค้าและราคาสั่งซื้อ *</span>
+              </h3>
+            </div>
             {items.some((it) => it.item_name?.trim()) && (
               <button
                 type="button"
                 onClick={() => setSelectedUsageItem({ item_name: items[0].item_name })}
-                className="text-xs text-sky-600 hover:underline flex items-center gap-1"
+                className="text-xs font-semibold text-sky-700 dark:text-sky-400 hover:underline cursor-pointer"
               >
-                <span>ดูประวัติโครงการที่เคยใช้วัสดุนี้</span>
+                ดูประวัติโครงการที่เคยใช้วัสดุนี้
               </button>
             )}
           </div>
-          <div className="mt-1 font-normal">
+
+          {(salesQuotationNo || quotationPricingMeta) && (
+            <div className="rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50/70 dark:bg-emerald-950/30 px-4 py-3 text-xs space-y-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2 font-bold text-emerald-950 dark:text-emerald-200">
+                  <FileText className="h-4 w-4 text-emerald-700 dark:text-emerald-400 shrink-0" />
+                  <span>
+                    อ้างอิงใบเสนอราคาขาย:{' '}
+                    <b className="font-mono text-emerald-800 dark:text-emerald-300">{salesQuotationNo}</b>
+                  </span>
+                  {salesQuotationId && (
+                    <Link
+                      to={`/quotations/${salesQuotationId}`}
+                      className="inline-flex items-center gap-1 rounded bg-white dark:bg-slate-800 border border-emerald-300 dark:border-emerald-700 px-2 py-0.5 text-[11px] text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100"
+                    >
+                      <span>เปิดดู QT</span>
+                      <ExternalLink className="h-3 w-3" />
+                    </Link>
+                  )}
+                </div>
+
+                {quotationPricingMeta && (
+                  <div className="flex items-center gap-1 rounded-lg border border-emerald-200 bg-white p-0.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPoPriceMode('cost_baseline')
+                        setItems(
+                          buildPurchaseItemsFromQuotation({
+                            ...quotationPricingMeta,
+                            mode: 'cost_baseline',
+                          })
+                        )
+                      }}
+                      className={`rounded px-2.5 py-1 text-[11px] font-bold transition cursor-pointer ${
+                        poPriceMode === 'cost_baseline' ? 'bg-emerald-700 text-white' : 'text-emerald-800 hover:bg-emerald-50'
+                      }`}
+                    >
+                      ต้นทุนซื้อจริง (BOQ/สต็อก)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPoPriceMode('selling_ref')
+                        setItems(
+                          buildPurchaseItemsFromQuotation({
+                            ...quotationPricingMeta,
+                            mode: 'selling_ref',
+                          })
+                        )
+                      }}
+                      className={`rounded px-2.5 py-1 text-[11px] font-bold transition cursor-pointer ${
+                        poPriceMode === 'selling_ref' ? 'bg-sky-700 text-white' : 'text-sky-700 hover:bg-sky-50'
+                      }`}
+                    >
+                      ราคาขาย QT (ก่อน VAT)
+                    </button>
+                  </div>
+                )}
+              </div>
+              <p className="text-[11px] text-emerald-800/80 dark:text-emerald-300/80">
+                ระบุหรือปรับราคาซื้อจริงที่ตกลงกับร้านค้าในตารางด้านล่าง
+              </p>
+            </div>
+          )}
+
+          <div>
             <ItemsEditor
               items={items}
               onChange={(newItems) => {
@@ -1696,149 +1293,453 @@ export default function POForm() {
             />
             <FieldError error={errors.items} />
           </div>
-        </div>
+        </section>
 
-        {/* การระบุภาษีและเอกสารกำกับภาษี (Tax & Accounting Specification) */}
-        <div className="rounded-lg border border-steel-200 bg-white p-4 shadow-sm space-y-4">
-          <h4 className="font-bold text-xs uppercase tracking-wider text-steel-700">การระบุภาษีและเอกสารทางบัญชี</h4>
-
-          {/* ฟิลด์เลขที่ใบกำกับภาษีผู้ขาย (บังคับเมื่อมี VAT) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-amber-50/50 rounded-lg border border-amber-200">
-            <div>
-              <label className="block text-xs font-bold text-amber-900 mb-1">
-                เลขที่ใบกำกับภาษีอ้างอิงของผู้ขาย (Vendor Tax Invoice No.) {taxType !== 'vat_exempt' && <span className="text-red-600">*</span>}
-              </label>
-              <input
-                type="text"
-                placeholder="เช่น INV-SCG-889021"
-                className="input text-xs bg-white font-mono"
-                value={vendorTaxInvoiceNo}
-                onChange={(e) => setVendorTaxInvoiceNo(e.target.value)}
-              />
-              <span className="text-[10px] text-amber-700 mt-0.5 block">จำเป็นสำหรับลงบัญชีภาษีซื้อ (Input VAT) และ ภ.พ.30</span>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-amber-900 mb-1">
-                วันที่ใบกำกับภาษี {taxType !== 'vat_exempt' && <span className="text-red-600">*</span>}
-              </label>
-              <input
-                type="date"
-                className="input text-xs bg-white"
-                value={taxInvoiceDate}
-                onChange={(e) => setTaxInvoiceDate(e.target.value)}
-              />
-              <span className="text-[10px] text-amber-700 mt-0.5 block">งวดเดือนภาษีจะถูกตัดตามวันที่ระบุนี้</span>
-            </div>
+        {/* ========================================================================= */}
+        {/* ขั้นที่ 3: เงื่อนไขชำระ ส่งมอบ เอกสารผู้ขาย (ซ้าย 7 cols) + สรุปยอด (ขวา 5 cols) */}
+        {/* ========================================================================= */}
+        <section className="space-y-4">
+          <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2">
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-900 dark:bg-sky-600 text-white text-xs font-bold">
+              3
+            </span>
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+              รูปแบบการชำระ การส่งมอบ และสรุปยอดใบสั่งซื้อ
+            </h3>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
-            <div className="space-y-3">
-              <div>
-                <label className="block text-xs font-semibold text-steel-700 mb-1">
-                  ประเภทภาษีมูลค่าเพิ่ม (VAT) *
-                </label>
-                <select
-                  className="input text-xs"
-                  value={taxType}
-                  onChange={(e) => setTaxType(e.target.value)}
-                >
-                  <option value="vat_included">ราคารวมภาษีมูลค่าเพิ่ม 7% แล้ว (VAT Included)</option>
-                  <option value="vat_excluded">ราคาแยกภาษีมูลค่าเพิ่ม +7% (VAT Excluded)</option>
-                  <option value="vat_exempt">ไม่มีภาษี / ได้รับยกเว้นภาษี (VAT Exempt 0%)</option>
-                </select>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+            {/* ซ้าย (7 cols): รูปแบบชำระ + ส่งมอบ + เอกสารอ้างอิง */}
+            <div className="lg:col-span-7 space-y-4">
+              {/* รูปแบบและเงื่อนไขการชำระเงิน (จัดซื้อกำหนดวิธีจ่าย ไม่ใช่หน้าตัดจ่ายเงินจริง) */}
+              <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30 p-4 space-y-3.5">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/80 dark:border-slate-700 pb-2">
+                  <span className="text-xs font-bold text-slate-800 dark:text-slate-100">
+                    รูปแบบและเงื่อนไขการชำระเงิน (ว่าจะชำระอย่างไร)
+                  </span>
+                  <div className="flex items-center gap-1 bg-white dark:bg-slate-900 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700 text-[11px]">
+                    <button
+                      type="button"
+                      onClick={() => setHasDeposit(false)}
+                      className={`px-2.5 py-1 rounded-md font-bold transition cursor-pointer ${
+                        !hasDeposit ? 'bg-sky-700 text-white' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'
+                      }`}
+                    >
+                      ชำระเต็มจำนวน
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setHasDeposit(true)
+                        if (!depositAmount && netAmount > 0) {
+                          const amt = Math.round(netAmount * (Number(depositPercent || 30) / 100) * 100) / 100
+                          setDepositAmount(String(amt))
+                        }
+                      }}
+                      className={`px-2.5 py-1 rounded-md font-bold transition cursor-pointer ${
+                        hasDeposit ? 'bg-amber-600 text-white' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'
+                      }`}
+                    >
+                      มีมัดจำ / แบ่งงวด
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                      ประเภทการชำระเงิน *
+                    </label>
+                    <SearchableSelect
+                      options={paymentOptions}
+                      value={paymentType}
+                      onChange={(val) => setPaymentType(val)}
+                      placeholder="เลือกเครดิตเทอม / เงินสด..."
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                      ช่องทางชำระที่ตกลงกับร้าน
+                    </label>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {[
+                        { id: 'transfer', label: 'โอนเงิน' },
+                        { id: 'cheque', label: 'เช็ค' },
+                        { id: 'cash', label: 'เงินสด' },
+                      ].map((ch) => (
+                        <button
+                          key={ch.id}
+                          type="button"
+                          onClick={() => setPaymentChannelRequested(ch.id)}
+                          className={`py-2 rounded-lg text-xs font-semibold transition border cursor-pointer ${
+                            paymentChannelRequested === ch.id
+                              ? 'bg-sky-700 text-white border-sky-800 shadow-2xs'
+                              : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50'
+                          }`}
+                        >
+                          {ch.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {hasDeposit && (
+                  <div className="rounded-xl border border-amber-200 dark:border-amber-800/80 bg-amber-50/70 dark:bg-amber-950/20 p-3 space-y-2.5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-bold text-amber-950 dark:text-amber-200 mb-1">
+                          สัดส่วนมัดจำงวดแรก (%)
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="number"
+                            step="any"
+                            min="0"
+                            max="100"
+                            placeholder="เช่น 30"
+                            value={depositPercent}
+                            onChange={(e) => handlePercentChange(e.target.value)}
+                            className="input text-xs font-bold font-mono pr-7 bg-white dark:bg-slate-900"
+                          />
+                          <span className="absolute right-2.5 top-2 text-xs font-bold text-slate-400">%</span>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-amber-950 dark:text-amber-200 mb-1">
+                          มูลค่ามัดจำตามข้อตกลง (บาท)
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="number"
+                            step="any"
+                            min="0"
+                            max={netAmount}
+                            placeholder="0.00"
+                            value={depositAmount}
+                            onChange={(e) => handleAmountChange(e.target.value)}
+                            className="input text-xs font-bold font-mono pr-9 bg-white dark:bg-slate-900"
+                          />
+                          <span className="absolute right-2.5 top-2 text-xs font-bold text-slate-400">บาท</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-amber-900 dark:text-amber-300 pt-1 border-t border-amber-200/80 dark:border-amber-800/60">
+                      <span>มัดจำงวดแรก: <b className="font-mono">{baht(calcDepositAmount)} บ.</b> ({depositPercent || 0}%)</span>
+                      <span>ยอดงวดส่งมอบ/เครดิต: <b className="font-mono">{baht(calcRemainingAmount)} บ.</b></span>
+                    </div>
+                  </div>
+                )}
               </div>
 
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="block text-xs font-semibold text-steel-700">
-                    หักภาษี ณ ที่จ่าย (Withholding Tax - WHT)
+              {/* การส่งมอบ & หมายเหตุ */}
+              <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 space-y-3">
+                <div className="text-xs font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5 border-b border-slate-100 dark:border-slate-800 pb-2">
+                  <Truck className="h-4 w-4 text-sky-600" />
+                  <span>กำหนดส่งมอบและสถานที่จัดส่ง</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                      วันครบกำหนดส่งมอบ (Due Date)
+                    </label>
+                    <input
+                      type="date"
+                      className="input text-xs"
+                      value={expectedDeliveryDate}
+                      onChange={(e) => setExpectedDeliveryDate(e.target.value)}
+                    />
+                    <div className="mt-1.5 flex flex-wrap gap-1">
+                      {[
+                        { label: '+3 วัน', days: 3 },
+                        { label: '+7 วัน', days: 7 },
+                        { label: '+15 วัน', days: 15 },
+                        { label: '+30 วัน', days: 30 },
+                      ].map((s) => (
+                        <button
+                          key={s.days}
+                          type="button"
+                          onClick={() => {
+                            const d = new Date()
+                            d.setDate(d.getDate() + s.days)
+                            setExpectedDeliveryDate(d.toISOString().split('T')[0])
+                          }}
+                          className="rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 px-2 py-0.5 text-[10px] font-semibold text-slate-700 dark:text-slate-300 transition cursor-pointer"
+                        >
+                          {s.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                      สถานที่ส่งมอบ / หน้างาน
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="เช่น สโตร์หลักสำนักงานใหญ่ หรือ ไซต์งานโครงการ"
+                      className="input text-xs"
+                      value={deliveryAddress}
+                      onChange={(e) => setDeliveryAddress(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                      หมายเหตุและเงื่อนไขสำหรับร้านค้า
+                    </label>
+                    <textarea
+                      rows={2}
+                      placeholder="เช่น ส่งของช่วง 09:00 - 16:00 น., โทรแจ้งหัวหน้าช่างก่อนเข้าหน้างาน"
+                      className="input text-xs leading-relaxed"
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* เอกสารอ้างอิงจากผู้ขาย (ใบเสนอราคาร้านค้า & ใบกำกับภาษี) */}
+              <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 space-y-3">
+                <div className="text-xs font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5 border-b border-slate-100 dark:border-slate-800 pb-2">
+                  <Receipt className="h-4 w-4 text-amber-600" />
+                  <span>เอกสารอ้างอิงจากผู้ขาย (Vendor Quote &amp; Tax Invoice)</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                      เลขที่ใบเสนอราคาผู้ขาย
+                    </label>
+                    <input
+                      className="input text-xs font-mono"
+                      placeholder="เช่น QTV-SCG-2026-089"
+                      value={quotationNo}
+                      onChange={(e) => setQuotationNo(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                      วันที่ใบเสนอราคาผู้ขาย
+                    </label>
+                    <input
+                      type="date"
+                      className="input text-xs"
+                      value={quotationDate}
+                      onChange={(e) => setQuotationDate(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3 pt-1">
+                  <input
+                    type="file"
+                    id="quotation-upload"
+                    accept="image/*,application/pdf"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0]
+                      if (file) {
+                        setQuotationFile(file)
+                        setUploadingQuotation(true)
+                        try {
+                          const previewUrl = await uploadQuotationFile(file)
+                          if (previewUrl) setQuotationUrl(previewUrl)
+                        } catch (err) {
+                          console.warn(err)
+                        } finally {
+                          setUploadingQuotation(false)
+                        }
+                      }
+                    }}
+                  />
+                  <label
+                    htmlFor="quotation-upload"
+                    className="inline-flex items-center gap-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 transition cursor-pointer"
+                  >
+                    <Upload className="h-3.5 w-3.5 text-slate-500" />
+                    <span>{uploadingQuotation ? 'กำลังอัปโหลด...' : quotationUrl ? 'เปลี่ยนไฟล์ใบเสนอราคา' : 'แนบไฟล์ใบเสนอราคาผู้ขาย'}</span>
                   </label>
-                  {Number(whtRate) > 0 && (
-                    <span className="text-[11px] font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-200">
-                      แบบยื่น: {whtFormType}
-                    </span>
+
+                  {quotationUrl && (
+                    <div className="flex items-center gap-2 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-xl px-3 py-1.5 text-xs">
+                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                      <span className="font-semibold text-emerald-900 dark:text-emerald-200 truncate max-w-[180px]">
+                        {quotationFile?.name || 'แนบไฟล์แล้ว'}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => openFile(quotationUrl)}
+                        className="inline-flex items-center gap-1 text-sky-700 dark:text-sky-400 font-bold hover:underline cursor-pointer"
+                      >
+                        <Eye className="h-3.5 w-3.5" />
+                        <span>เปิดดู</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setQuotationUrl('')
+                          setQuotationFile(null)
+                        }}
+                        className="text-rose-600 hover:text-rose-800 font-bold cursor-pointer"
+                      >
+                        ลบ
+                      </button>
+                    </div>
                   )}
                 </div>
-                <select
-                  className="input text-xs"
-                  value={whtRate}
-                  onChange={(e) => setWhtRate(e.target.value)}
-                >
-                  {WHT_RATES.map((wr) => (
-                    <option key={wr.value} value={wr.value}>{wr.label}</option>
-                  ))}
-                </select>
-                <span className="text-[10px] text-steel-500 dark:text-slate-400 mt-1 block">
-                  ระบบจับคู่อัตโนมัติ: บุคคลธรรมดา  ภ.ง.ด.3 / นิติบุคคล  ภ.ง.ด.53
-                </span>
+
+                <div className="pt-2 border-t border-slate-100 dark:border-slate-800 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                      เลขที่ใบกำกับภาษีผู้ขาย (ถ้าได้รับแล้ว)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="กรอกภายหลังเมื่อได้รับบิล เช่น INV-889021"
+                      className="input text-xs font-mono"
+                      value={vendorTaxInvoiceNo}
+                      onChange={(e) => setVendorTaxInvoiceNo(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                      วันที่ใบกำกับภาษีผู้ขาย
+                    </label>
+                    <input
+                      type="date"
+                      className="input text-xs"
+                      value={taxInvoiceDate}
+                      onChange={(e) => setTaxInvoiceDate(e.target.value)}
+                    />
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* การ์ดสรุปยอดเงิน */}
-            <div className="rounded-md border border-steel-200 bg-steel-50 p-3 text-xs space-y-1.5">
-              <div className="flex justify-between text-steel-600">
-                <span>มูลค่าสินค้าก่อนภาษี:</span>
-                <span className="font-semibold">{baht(amountBeforeVat)} บาท</span>
+            {/* ขวา (5 cols): ภาษี & สรุปมูลค่าสุทธิของใบสั่งซื้อ */}
+            <div className="lg:col-span-5 lg:sticky lg:top-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/50 p-5 space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 pb-2">
+                <h4 className="font-bold text-xs text-slate-900 dark:text-white">
+                  คำนวณภาษี &amp; ยอดสุทธิใบสั่งซื้อ
+                </h4>
+                {Number(whtRate) > 0 && (
+                  <span className="text-[11px] font-bold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/50 px-2 py-0.5 rounded border border-purple-200 dark:border-purple-800">
+                    {whtFormType}
+                  </span>
+                )}
               </div>
-              <div className="flex justify-between text-steel-600">
-                <span>ภาษีมูลค่าเพิ่ม (VAT {taxType === 'vat_exempt' ? '0' : '7'}%{taxType === 'vat_included' ? ' รวมในยอด' : ''}):</span>
-                <span className="font-semibold">{baht(vatAmount)} บาท</span>
-              </div>
-              <div className="flex justify-between font-bold text-ink border-t border-steel-200 pt-1">
-                <span>ยอดรวมภาษีมูลค่าเพิ่ม:</span>
-                <span>{baht(totalWithVat)} บาท</span>
-              </div>
-              {Number(whtRate) > 0 && (
-                <div className="flex justify-between text-purple-700 font-medium">
-                  <span>หัก ณ ที่จ่าย ({whtRate}% - {whtFormType.split(' ')[0]}):</span>
-                  <span>- {baht(whtAmount)} บาท</span>
+
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    ประเภทภาษีมูลค่าเพิ่ม (VAT) *
+                  </label>
+                  <select
+                    className="input text-xs bg-white dark:bg-slate-900"
+                    value={taxType}
+                    onChange={(e) => setTaxType(e.target.value)}
+                  >
+                    <option value="vat_excluded">ราคาแยกภาษีมูลค่าเพิ่ม +7% (VAT Excluded)</option>
+                    <option value="vat_included">ราคารวมภาษีมูลค่าเพิ่ม 7% แล้ว (VAT Included)</option>
+                    <option value="vat_exempt">ไม่มีภาษี / ยกเว้นภาษี (VAT Exempt 0%)</option>
+                  </select>
                 </div>
-              )}
-              <div className="flex justify-between font-extrabold text-sm text-emerald-900 border-t-2 border-emerald-300 pt-1.5">
-                <span>ยอดสุทธิที่ต้องชำระจริง (Net Payable):</span>
-                <span>{baht(netAmount)} บาท</span>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    หักภาษี ณ ที่จ่าย (WHT)
+                  </label>
+                  <select
+                    className="input text-xs bg-white dark:bg-slate-900"
+                    value={whtRate}
+                    onChange={(e) => setWhtRate(e.target.value)}
+                  >
+                    {WHT_RATES.map((wr) => (
+                      <option key={wr.value} value={wr.value}>{wr.label}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 text-xs space-y-2">
+                <div className="flex justify-between text-slate-600 dark:text-slate-400">
+                  <span>มูลค่าสินค้าก่อนภาษี:</span>
+                  <span className="font-mono font-semibold text-slate-900 dark:text-slate-100">{baht(amountBeforeVat)} บาท</span>
+                </div>
+                <div className="flex justify-between text-slate-600 dark:text-slate-400">
+                  <span>ภาษีมูลค่าเพิ่ม (VAT {taxType === 'vat_exempt' ? '0' : '7'}%{taxType === 'vat_included' ? ' รวมในยอด' : ''}):</span>
+                  <span className="font-mono font-semibold text-slate-900 dark:text-slate-100">{baht(vatAmount)} บาท</span>
+                </div>
+                <div className="flex justify-between font-bold text-slate-800 dark:text-slate-200 border-t border-slate-100 dark:border-slate-800 pt-2">
+                  <span>ยอดรวมภาษีมูลค่าเพิ่ม:</span>
+                  <span className="font-mono">{baht(totalWithVat)} บาท</span>
+                </div>
+                {Number(whtRate) > 0 && (
+                  <div className="flex justify-between text-purple-700 dark:text-purple-300 font-medium">
+                    <span>หัก ณ ที่จ่าย ({whtRate}% - {whtFormType.split(' ')[0]}):</span>
+                    <span className="font-mono">- {baht(whtAmount)} บาท</span>
+                  </div>
+                )}
+                <div className="flex justify-between items-baseline font-black text-sm text-emerald-800 dark:text-emerald-400 border-t-2 border-emerald-300 dark:border-emerald-700 pt-2.5">
+                  <span>ยอดสุทธิใบสั่งซื้อ:</span>
+                  <span className="font-mono text-lg">{baht(netAmount)} บาท</span>
+                </div>
+
+                {hasDeposit && (
+                  <div className="pt-2 border-t border-dashed border-amber-300 dark:border-amber-700 text-[11px] space-y-1 text-amber-900 dark:text-amber-300">
+                    <div className="flex justify-between">
+                      <span>มัดจำงวดแรก ({depositPercent || 0}%):</span>
+                      <span className="font-mono font-bold">{baht(calcDepositAmount)} บาท</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>คงเหลือชำระตามเงื่อนไข:</span>
+                      <span className="font-mono font-bold">{baht(calcRemainingAmount)} บาท</span>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
-        </div>
+        </section>
 
         {hasReceived && (
-          <p className="text-xs text-steel-500">
-            * รายการที่รับของแล้ว แก้ได้เฉพาะจำนวน (ห้ามต่ำกว่าที่รับแล้ว) เพื่อให้สต็อกและบัญชีตรงกัน
+          <p className="text-xs text-slate-500">
+            * รายการที่ตรวจรับของเข้าสโตร์แล้ว แก้ได้เฉพาะจำนวน (ห้ามต่ำกว่าที่รับแล้ว) เพื่อให้สต็อกถูกต้อง
           </p>
         )}
       </div>
 
       {error && (
-        <div className="mt-3 rounded-xl bg-rose-50 border border-rose-200 p-3 text-xs sm:text-sm font-semibold text-rose-800 flex items-center gap-2">
-          <span></span>
-          <span>{error}</span>
+        <div className="rounded-xl bg-rose-50 border border-rose-200 p-3 text-xs sm:text-sm font-semibold text-rose-800">
+          {error}
         </div>
       )}
 
-      <div className="mt-4 flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          className="inline-flex items-center gap-2 rounded-lg bg-sky-700 px-5 py-2.5 text-sm font-bold text-white shadow hover:bg-sky-800 transition disabled:opacity-50"
-          onClick={() => save(true)}
-          disabled={busy}
-        >
-          <span></span>
-          <span>{busy ? 'กำลังบันทึก...' : 'บันทึกและส่งเรื่องไปยังฝ่ายบัญชี (รอชำระเงิน)'}</span>
-        </button>
+      <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+        <Link to="/purchasing?tab=po" className="btn-ghost">ยกเลิก</Link>
+        <div className="flex flex-wrap items-center gap-2.5">
+          <button
+            type="button"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-200 transition disabled:opacity-50 cursor-pointer"
+            onClick={() => save(false)}
+            disabled={busy}
+          >
+            <span>บันทึกฉบับร่าง</span>
+          </button>
 
-        <button
-          type="button"
-          className="inline-flex items-center gap-1.5 rounded-lg bg-steel-100 border border-steel-300 px-4 py-2.5 text-sm font-semibold text-steel-700 hover:bg-steel-200 transition disabled:opacity-50"
-          onClick={() => save(false)}
-          disabled={busy}
-        >
-          <span></span>
-          <span>บันทึกฉบับร่าง</span>
-        </button>
-
-        <Link to="/purchasing" className="btn-ghost">ยกเลิก</Link>
+          <button
+            type="button"
+            className="inline-flex items-center gap-2 rounded-xl bg-sky-700 px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-sky-800 transition disabled:opacity-50 cursor-pointer"
+            onClick={() => save(true)}
+            disabled={busy}
+          >
+            <span>{busy ? 'กำลังบันทึก...' : id ? 'บันทึกการแก้ไขใบสั่งซื้อ' : 'บันทึกใบสั่งซื้อ (PO)'}</span>
+          </button>
+        </div>
       </div>
 
       {/* Modal ประวัติโครงการที่ใช้วัสดุ */}

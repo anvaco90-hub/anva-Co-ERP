@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import {
   buildCustomerQuotationSummary,
   buildQuotationTaxUpdatePayload,
+  getCustomerPrintItems,
 } from '../src/lib/quotationPrintUtils.js'
 
 describe('Customer Quotation Print Summary & VAT Switch Helpers (src/lib/quotationPrintUtils.js)', () => {
@@ -105,5 +106,27 @@ describe('Customer Quotation Print Summary & VAT Switch Helpers (src/lib/quotati
     assert.equal(incl.vat_amount, 6542.06)
     assert.equal(incl.grand_total, 100000)
     assert.equal(incl.total_amount, 100000)
+  })
+
+  it('filters out labor/installation/service lines from customer print PDF while keeping physical products (Option 1A)', () => {
+    const rawItems = [
+      { id: 'qi-1', item_name: 'ค่าแรงติดตั้งและทดสอบระบบ (Installation & Commissioning)', quantity: 5000, unit: 'Watt', unit_price: 2.16 },
+      { id: 'qi-2', item_name: 'แผงโซลาร์เซลล์ Tier-1 Mono Half-cell 550W', quantity: 4, unit: 'แผง', unit_price: 4320 },
+      { id: 'qi-3', item_name: 'ชุดจับยึดแผง', quantity: 4, unit: 'ชุด', unit_price: 2160 },
+      { id: 'qi-4', item_name: 'Inverter 600w', quantity: 1, unit: 'ชุด', unit_price: 5400 },
+      { id: 'qi-5', item_name: 'ค่าขนส่งอุปกรณ์หน้างาน', quantity: 1, unit: 'เหมา', unit_price: 1500 },
+    ]
+
+    const printable = getCustomerPrintItems(rawItems)
+    assert.equal(printable.length, 3)
+    assert.deepEqual(
+      printable.map((i) => i.item_name),
+      [
+        'แผงโซลาร์เซลล์ Tier-1 Mono Half-cell 550W',
+        'ชุดจับยึดแผง',
+        'Inverter 600w',
+      ]
+    )
+    assert.deepEqual(getCustomerPrintItems([]), [])
   })
 })
