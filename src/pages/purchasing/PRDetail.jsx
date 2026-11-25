@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
 import { PR_STATUS, canCreatePurchasing, formatDateTimeParts } from '../../lib/purchasing'
@@ -9,6 +9,7 @@ import { thaiBahtText } from './PODetail'
 import StatusBadge from '../../components/common/StatusBadge'
 import AuditPanel from './AuditPanel'
 import PRDocumentModal from '../../components/reports/PRDocumentModal'
+import ProcurementWorkflowStepper from '../../components/purchasing/ProcurementWorkflowStepper'
 import {
   ArrowLeft,
   Printer,
@@ -27,11 +28,14 @@ import {
   ExternalLink,
   Sun,
   ShieldCheck,
+  FolderGit2,
+  MoreVertical,
 } from 'lucide-react'
 
 export default function PRDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { profile } = useAuth()
   const canEdit = canCreatePurchasing(profile?.role)
 
@@ -39,9 +43,21 @@ export default function PRDetail() {
   const [items, setItems] = useState([])
   const [pos, setPos] = useState([])
   const [showPrPdf, setShowPrPdf] = useState(false)
-  const [viewStyle, setViewStyle] = useState('portal') // 'portal' | 'paper'
+  const [showMoreMenu, setShowMoreMenu] = useState(false)
+  const moreMenuRef = useRef(null)
+  const [viewStyle, setViewStyle] = useState(() => (searchParams.get('mode') === 'paper' ? 'paper' : 'portal')) // 'portal' | 'paper'
   const [error, setError] = useState('')
   const [deleting, setDeleting] = useState(false)
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (moreMenuRef.current && !moreMenuRef.current.contains(e.target)) {
+        setShowMoreMenu(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   useEffect(() => {
     Promise.all([
@@ -57,7 +73,9 @@ export default function PRDetail() {
         .order('item_name'),
       supabase
         .from('purchase_orders')
-        .select('id, po_no, order_date, status, total_amount, custom_vendor_name, vendors(vendor_name)')
+        .select(
+          'id, po_no, order_date, expected_delivery_date, status, total_amount, grand_total, net_amount, payment_status, deposit_paid_amount, remaining_amount, payment_type, custom_vendor_name, vendors(vendor_name), purchase_order_items(quantity, qty_received)'
+        )
         .eq('pr_id', id),
     ]).then(async ([a, b, c]) => {
       if (a.error) {
@@ -121,139 +139,221 @@ export default function PRDetail() {
 
   const projectName =
     pr.custom_project_name ||
-    (pr.projects ? `${pr.projects.project_code} · ${pr.projects.project_name}` : 'ของกลางบริษัท / สต็อกส่วนกลาง')
+    (pr.projects ? `[${pr.projects.project_code}] ${pr.projects.project_name}` : 'ของกลางบริษัท / สต็อกส่วนกลาง')
+  const activePos = pos.filter((p) => p.status !== 'cancelled')
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0B0F19] pb-20 pt-2 font-sans space-y-5">
-      <div className="max-w-5xl mx-auto px-4 space-y-4">
+      <div className="max-w-6xl mx-auto px-4 space-y-5">
 
-        {/* 1. Action Bar & Breadcrumbs */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3 sm:p-4 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs">
-          {/* ซ้าย: Breadcrumb & เอกสาร */}
-          <div className="flex items-center gap-2.5">
-            <Link
-              to="/purchasing?tab=pr"
-              className="inline-flex items-center gap-1 text-xs font-bold text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition"
-              title="กลับไปรายการใบขอซื้อ"
-            >
-              <ArrowLeft className="h-3.5 w-3.5" />
-              <span>รายการ PR</span>
-            </Link>
-            <span className="text-slate-300 dark:text-slate-700">/</span>
-            <span className="font-mono font-black text-sm text-slate-950 dark:text-white">{pr.pr_no}</span>
-            <StatusBadge status={pr.status} />
-          </div>
+        {/* 0. แถบนำทางด้านบน & สลับมุมมอง */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <Link
+            to="/purchasing?tab=pr"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 px-3 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 shadow-2xs transition"
+            title="กลับไปรายการใบขอซื้อ"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            <span>กลับรายการใบขอซื้อ (PR)</span>
+          </Link>
 
-          {/* ขวา: สลับมุมมอง + ปุ่มพิมพ์ PDF + สั่งซื้อ + แก้ไข */}
-          <div className="flex flex-wrap items-center gap-2">
-            {/* View Segment Switcher */}
-            <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-xl border border-slate-200 dark:border-slate-700">
-              <button
-                type="button"
-                onClick={() => setViewStyle('portal')}
-                className={`px-2.5 py-1 text-xs font-bold rounded-lg transition cursor-pointer flex items-center gap-1 ${viewStyle === 'portal'
-                  ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-2xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
-                  }`}
-              >
-                <span> เว็บ</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewStyle('paper')}
-                className={`px-2.5 py-1 text-xs font-bold rounded-lg transition cursor-pointer flex items-center gap-1 ${viewStyle === 'paper'
-                  ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-2xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
-                  }`}
-              >
-                <span>รายงาน A4</span>
-              </button>
-            </div>
-
-            {/* Print PDF Button */}
+          <div className="flex items-center bg-slate-200/70 dark:bg-slate-800 p-0.5 rounded-xl border border-slate-300/70 dark:border-slate-700 text-xs">
             <button
               type="button"
-              onClick={() => setShowPrPdf(true)}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 text-white px-3 py-1.5 text-xs font-bold shadow-2xs transition cursor-pointer"
+              onClick={() => setViewStyle('portal')}
+              className={`px-3 py-1 rounded-lg font-bold transition cursor-pointer ${
+                viewStyle === 'portal'
+                  ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-2xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
             >
-              <Printer className="h-3.5 w-3.5" />
-              <span>พิมพ์ใบขอซื้อ (PDF)</span>
+              มุมมองระบบ &amp; Workflow
             </button>
+            <button
+              type="button"
+              onClick={() => setViewStyle('paper')}
+              className={`px-3 py-1 rounded-lg font-bold transition cursor-pointer ${
+                viewStyle === 'paper'
+                  ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-2xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              รายงาน A4
+            </button>
+          </div>
+        </div>
 
-            {/* Convert to PO Button (ถ้ายังไม่ได้ออก PO) */}
-            {canEdit && pr.status === 'pending' && (
-              <Link
-                to={`/purchasing/po/new?pr=${pr.id}`}
-                className="inline-flex items-center gap-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-1.5 text-xs font-bold shadow-sm transition"
-              >
-                <Plus className="h-3.5 w-3.5" />
-                <span> สร้างใบสั่งซื้อ (PO)</span>
-              </Link>
-            )}
+        {/* 1. แบนเนอร์หัวเอกสารระดับบริหาร (#0f172a สไตล์เดียวกับ QuotationDetail & PODetail) */}
+        <div className="rounded-2xl border border-slate-800 bg-[#0f172a] p-5 text-white shadow-sm space-y-4">
+          <div className="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-4">
+            {/* ซ้าย: ไอคอน + ป้ายสถานะ + เลขที่เอกสาร */}
+            <div className="flex items-start gap-3.5 min-w-0">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-sky-500/15 border border-sky-400/20 text-sky-400 shrink-0 mt-0.5">
+                <FileText className="h-5 w-5" />
+              </div>
 
-            {/* Edit / Delete */}
-            {canEdit && pr.status !== 'cancelled' && (
-              <Link
-                to={`/purchasing/pr/${pr.id}/edit`}
-                className="inline-flex items-center gap-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 px-2.5 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 transition shadow-2xs"
-              >
-                <Edit3 className="h-3.5 w-3.5 text-amber-600" />
-                <span>แก้ไข</span>
-              </Link>
-            )}
+              <div className="min-w-0 space-y-1.5">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[10px] font-mono uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-sky-500/15 text-sky-300 border border-sky-400/25 font-bold whitespace-nowrap">
+                    PURCHASE REQUISITION
+                  </span>
+                  <StatusBadge status={pr.status} />
+                  {activePos.map((p) => (
+                    <Link
+                      key={p.id}
+                      to={`/purchasing/po/${p.id}`}
+                      className="inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-bold rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-400/30 hover:underline whitespace-nowrap"
+                    >
+                      <ShoppingCart className="h-3 w-3" />
+                      <span>PO: {p.po_no}</span>
+                    </Link>
+                  ))}
+                </div>
 
-            {canEdit && (
+                <div className="flex flex-wrap items-baseline gap-3">
+                  <h1 className="text-2xl font-black tracking-tight text-white font-mono whitespace-nowrap">
+                    {pr.pr_no}
+                  </h1>
+                  <span className="font-mono text-sm font-bold text-emerald-300">
+                    ฿{baht(totalEstimatedAmount)} บาท
+                  </span>
+                </div>
+
+                <p className="text-xs text-slate-400 truncate">
+                  ใบขอซื้อพัสดุและอุปกรณ์โครงการวิศวกรรม · {items.length} รายการ ({thaiBahtText(totalEstimatedAmount)})
+                </p>
+              </div>
+            </div>
+
+            {/* ขวา: ปุ่มคำสั่ง (Option A - แก้ไขข้างนอก ลบใน ⋮) */}
+            <div className="flex items-center gap-2 flex-wrap xl:justify-end shrink-0">
+              {activePos.length > 0 ? (
+                <Link
+                  to={`/purchasing/po/${activePos[0].id}`}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-400/40 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 h-9 px-3.5 text-xs font-bold transition shadow-xs"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  <span>ดูใบสั่งซื้อ ({activePos[0].po_no})</span>
+                </Link>
+              ) : canEdit && pr.status === 'pending' ? (
+                <Link
+                  to={`/purchasing/po/new?pr=${pr.id}`}
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 h-9 px-3.5 text-xs font-black shadow-xs transition"
+                >
+                  <ShoppingCart className="h-3.5 w-3.5" />
+                  <span>สร้างใบสั่งซื้อ (เปิด PO)</span>
+                </Link>
+              ) : null}
+
               <button
                 type="button"
-                onClick={remove}
-                disabled={deleting}
-                className="inline-flex items-center gap-1 rounded-xl border border-rose-200 dark:border-rose-900/60 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 text-rose-700 dark:text-rose-400 px-2.5 py-1.5 text-xs font-bold transition shadow-2xs cursor-pointer disabled:opacity-50"
+                onClick={() => setShowPrPdf(true)}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-sky-400/30 bg-sky-500/15 hover:bg-sky-500/25 text-sky-200 h-9 px-3.5 text-xs font-bold shadow-xs transition cursor-pointer"
               >
-                <Trash2 className="h-3.5 w-3.5" />
-                <span>{deleting ? 'กำลังลบ...' : 'ลบ'}</span>
+                <Printer className="h-3.5 w-3.5" />
+                <span>พิมพ์ใบขอซื้อ (PDF)</span>
               </button>
+
+              {canEdit && pr.status !== 'cancelled' && (
+                <Link
+                  to={`/purchasing/pr/${pr.id}/edit`}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800/90 hover:bg-slate-700 h-9 px-3 text-xs font-bold text-slate-200 hover:text-white transition shadow-xs"
+                >
+                  <Edit3 className="h-3.5 w-3.5" />
+                  <span>แก้ไข</span>
+                </Link>
+              )}
+
+              {canEdit && (
+                <div className="relative" ref={moreMenuRef}>
+                  <button
+                    type="button"
+                    onClick={() => setShowMoreMenu((prev) => !prev)}
+                    className={`inline-flex items-center justify-center rounded-xl border h-9 w-9 text-xs transition cursor-pointer shadow-xs ${
+                      showMoreMenu
+                        ? 'border-sky-400 bg-sky-500/20 text-sky-300'
+                        : 'border-slate-700 bg-slate-800/90 hover:bg-slate-700 text-slate-300'
+                    }`}
+                    title="ตัวเลือกเพิ่มเติม"
+                  >
+                    <MoreVertical className="h-4 w-4" />
+                  </button>
+
+                  {showMoreMenu && (
+                    <div className="absolute right-0 mt-2 w-48 rounded-xl border border-slate-700 bg-slate-800 py-1.5 text-xs shadow-xl z-50 animate-in fade-in zoom-in-95">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowMoreMenu(false)
+                          setViewStyle((v) => (v === 'portal' ? 'paper' : 'portal'))
+                        }}
+                        className="w-full flex items-center gap-2 px-3.5 py-2 text-left text-slate-200 hover:bg-slate-700/80 transition cursor-pointer"
+                      >
+                        <FileText className="h-3.5 w-3.5 text-sky-400" />
+                        <span>{viewStyle === 'portal' ? 'สลับเป็นรายงาน A4' : 'สลับเป็นมุมมองระบบ'}</span>
+                      </button>
+                      <div className="my-1 border-t border-slate-700/70" />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowMoreMenu(false)
+                          remove()
+                        }}
+                        disabled={deleting}
+                        className="w-full flex items-center gap-2 px-3.5 py-2 text-left text-rose-400 hover:bg-rose-500/15 transition cursor-pointer font-bold"
+                      >
+                        <Trash2 className="h-3.5 w-3.5 text-rose-400" />
+                        <span>{deleting ? 'กำลังลบ...' : 'ลบใบขอซื้อ'}</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* ชั้นที่ 2: แถบข้อมูลสรุปอ้างอิงเต็มความกว้าง */}
+          <div className="pt-3 border-t border-slate-800/80 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-slate-300">
+            <span className="flex items-center gap-1.5 shrink-0 whitespace-nowrap">
+              <Calendar className="h-3.5 w-3.5 text-sky-400 shrink-0" />
+              <span>วันที่ขอซื้อ: <strong className="text-white font-mono">{formatThaiDate(pr.request_date)}</strong></span>
+            </span>
+
+            <span className="flex items-center gap-1.5 shrink-0 whitespace-nowrap">
+              <Store className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+              <span>ผู้ขายแนะนำ: <strong className="text-white">{pr.suggested_vendor || 'ฝ่ายจัดซื้อเทียบราคา'}</strong></span>
+            </span>
+
+            {pr.customer_name && (
+              <span className="flex items-center gap-1.5 shrink-0 whitespace-nowrap">
+                <Building2 className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+                <span>ลูกค้า: <strong className="text-white">{pr.customer_name}</strong></span>
+              </span>
             )}
+
+            <span className="flex items-center gap-1.5 shrink-0 whitespace-nowrap">
+              <FolderGit2 className="h-3.5 w-3.5 text-purple-400 shrink-0" />
+              <span>โครงการ: <strong className="text-sky-300">{projectName}</strong></span>
+            </span>
           </div>
         </div>
 
         {/* ------------------------------------------------------------------ */}
-        {/* VIEW 1: Portal Mode (มุมมองเว็บมาตรฐาน หรูหรา ชัดเจน)                */}
+        {/* VIEW 1: Portal Mode (ผัง Workflow 5 ขั้นตอน + รายละเอียด)               */}
         {/* ------------------------------------------------------------------ */}
         {viewStyle === 'portal' && (
           <div className="space-y-4">
-            {/* 1. Brand Hero Header Card */}
-            <div className="rounded-2xl bg-gradient-to-r from-slate-900 via-steel-900 to-slate-800 p-6 text-white shadow-md border border-steel-700">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div className="space-y-1.5">
-                  <div className="flex items-center gap-2">
-                    <span className="rounded-md bg-sky-500 text-white font-black px-2 py-0.5 text-[11px] uppercase tracking-wider">
-                      PURCHASE REQUISITION
-                    </span>
-                    <span className="text-xs text-steel-300">
-                      บริษัท อันวาแอนด์โค จำกัด (ANVA & CO., LTD.)
-                    </span>
-                  </div>
-                  <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center gap-2">
-                    <span>{pr.pr_no}</span>
-                  </h1>
-                  <p className="text-xs sm:text-sm text-steel-300">
-                    โครงการเป้าหมาย: <strong className="text-white">{projectName}</strong>
-                  </p>
-                </div>
+            {/* 2. ผังลำดับขั้นตอนการทำงาน (PR -> PO Procurement Workflow) */}
+            <ProcurementWorkflowStepper
+              mode="pr"
+              pr={pr}
+              linkedPos={pos}
+              items={items}
+              canCreate={canEdit}
+              onPrintPdf={() => setShowPrPdf(true)}
+            />
 
-                <div className="rounded-xl bg-steel-800/80 p-4 border border-steel-700 text-right sm:min-w-[200px]">
-                  <div className="text-[11px] font-medium text-steel-400">มูลค่าประมาณการรวม</div>
-                  <div className="mt-0.5 text-2xl font-black font-mono text-emerald-400">
-                    ฿{baht(totalEstimatedAmount)}
-                  </div>
-                  <div className="text-[10px] text-steel-400">
-                    {items.length} รายการพัสดุ
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* 2. Metadata 4-Grid Cards */}
+            {/* 3. Metadata 4-Grid Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3.5 space-y-1">
                 <div className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center gap-1.5">

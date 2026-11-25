@@ -18,6 +18,10 @@ import StatusBadge from '../../components/common/StatusBadge'
 import ListToolbar from '../../components/common/ListToolbar'
 import SkeletonTable from '../../components/common/SkeletonTable'
 import {
+  computeProcurementFlow,
+  CompactProcurementSteps,
+} from '../../components/purchasing/ProcurementWorkflowStepper'
+import {
   Printer,
   Mail,
   Share2,
@@ -491,10 +495,18 @@ export default function PurchasingHub() {
     }
   }
 
-  // คำนวณสรุปยอด (KPIs)
+  // คำนวณสรุปยอด (KPIs) ตามขั้นตอนวงจรจัดซื้อ 5 ขั้นตอน
   const pendingPrs = prs.filter((p) => p.status === 'pending')
   const openPos = pos.filter((p) => p.status === 'open')
   const partialPos = pos.filter((p) => p.status === 'partial')
+  const receivedUnpaidPos = pos.filter((p) => {
+    const isPaid = p.payment_status === 'ชำระครบแล้ว' || (Number(p.remaining_amount) <= 0.05 && Number(p.deposit_paid_amount) > 0)
+    return p.status === 'received' && !isPaid
+  })
+  const fullyClosedPos = pos.filter((p) => {
+    const isPaid = p.payment_status === 'ชำระครบแล้ว' || (Number(p.remaining_amount) <= 0.05 && Number(p.deposit_paid_amount) > 0)
+    return p.status === 'received' && isPaid
+  })
   const totalSpend = pos.filter((p) => p.status !== 'cancelled').reduce((s, p) => s + Number(p.total_amount || 0), 0)
 
   // คำนวณสถิติสถานะวันครบกำหนดส่งมอบ (Due Date Status Tracking)
@@ -714,20 +726,52 @@ export default function PurchasingHub() {
     return filteredReceivedMaterials.reduce((acc, m) => acc + (Number(m.quantity) || 0), 0)
   }, [filteredReceivedMaterials])
 
-  const filteredPipelinePrs = prs.filter((r) => {
-    if (!filterRow(r, [r.pr_no, r.projects?.project_name, r.projects?.project_code, r.notes])) return false
-    if (dateType === 'order_date') {
-      const linked = poByPrId[r.id] || []
-      if (dateFrom || dateTo) {
-        if (linked.length === 0) return false
-        const matches = linked.some((p) => checkDateRange(p.order_date))
-        if (!matches) return false
-      }
-    } else {
-      if (!checkDateRange(r.request_date)) return false
-    }
-    return true
-  })
+  const filteredPipelineItems = useMemo(() => {
+    const prEntries = prs
+      .filter((r) => {
+        if (!filterRow(r, [r.pr_no, r.projects?.project_name, r.projects?.project_code, r.custom_project_name, r.notes])) return false
+        if (dateType === 'order_date') {
+          const linked = poByPrId[r.id] || []
+          if (dateFrom || dateTo) {
+            if (linked.length === 0) return false
+            if (!linked.some((p) => checkDateRange(p.order_date))) return false
+          }
+        } else {
+          if (!checkDateRange(r.request_date)) return false
+        }
+        return true
+      })
+      .map((r) => ({
+        type: 'pr',
+        id: r.id,
+        sortDate: r.request_date || r.created_at || '',
+        pr: r,
+        linkedPos: poByPrId[r.id] || [],
+      }))
+
+    const directPoEntries = pos
+      .filter((p) => {
+        if (p.pr_id) return false
+        if (!filterRow(p, [p.po_no, p.vendors?.vendor_name, p.custom_vendor_name, p.projects?.project_name, p.projects?.project_code, p.custom_project_name, p.customer_name, p.notes])) {
+          return false
+        }
+        if (!checkDateRange(p.order_date)) return false
+        return true
+      })
+      .map((p) => ({
+        type: 'direct_po',
+        id: `po-${p.id}`,
+        sortDate: p.order_date || p.created_at || '',
+        pr: null,
+        linkedPos: [p],
+      }))
+
+    return [...prEntries, ...directPoEntries].sort((a, b) =>
+      String(b.sortDate).localeCompare(String(a.sortDate))
+    )
+  }, [prs, pos, poByPrId, search, filterProject, filterStatus, dateFrom, dateTo, dateType])
+
+  const filteredPipelinePrs = filteredPipelineItems
 
   // รีเซ็ตหน้ากลับไปหน้าที่ 1 เมื่อแท็บ หรือ ตัวกรองเปลี่ยน
   useEffect(() => {

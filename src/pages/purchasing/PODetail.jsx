@@ -1600,17 +1600,54 @@ export default function PODetail() {
 
               {/* Sub-tab 4: วงจรเอกสาร */}
               {activeTab === 'lifecycle' && (
-                <div className="space-y-3 text-xs">
-                  {pr ? (
-                    <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
-                      <div className="font-bold text-slate-900">ใบขอซื้อต้นทาง: {pr.pr_no}</div>
-                      <div className="text-slate-600">ผู้ขอซื้อ: {pr.requester_name || '-'} · วันที่: {pr.request_date}</div>
+                <div className="space-y-4 text-xs">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                    <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-1">
+                      <div className="text-[10px] font-bold uppercase text-slate-400">1. ใบขอซื้อ (PR)</div>
+                      {pr ? (
+                        <>
+                          <Link to={`/purchasing/pr/${pr.id}`} className="font-mono font-bold text-sky-700 dark:text-sky-400 hover:underline block">
+                            {pr.pr_no}
+                          </Link>
+                          <div className="text-[11px] text-slate-500">วันที่ขอ: {formatThaiDate(pr.request_date)}</div>
+                        </>
+                      ) : (
+                        <div className="font-semibold text-slate-500">สั่งซื้อตรง (Direct PO)</div>
+                      )}
                     </div>
-                  ) : (
-                    <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-slate-500">
-                      สั่งซื้อตรง (Direct PO) ไม่ผ่านใบขอซื้อ PR
+
+                    <div className="p-3.5 rounded-xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 space-y-1">
+                      <div className="text-[10px] font-bold uppercase text-emerald-700 dark:text-emerald-400">2. ใบสั่งซื้อ (PO)</div>
+                      <div className="font-mono font-bold text-slate-900 dark:text-white">{po.po_no}</div>
+                      <div className="text-[11px] text-slate-500">สั่งซื้อ: {formatThaiDate(po.order_date)}</div>
                     </div>
-                  )}
+
+                    <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-1">
+                      <div className="text-[10px] font-bold uppercase text-slate-400">3. ใบรับของ (GR / RI)</div>
+                      {grns.length > 0 ? (
+                        <>
+                          <div className="font-mono font-bold text-sky-700 dark:text-sky-400">{grns.map((g) => g.grn_no).join(', ')}</div>
+                          <div className="text-[11px] text-slate-500">{isFullyReceived ? 'ตรวจรับครบ 100%' : 'รับแล้วบางส่วน'}</div>
+                        </>
+                      ) : (
+                        <div className="text-slate-400">ยังไม่มีรายการรับเข้าสโตร์</div>
+                      )}
+                    </div>
+
+                    <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-1">
+                      <div className="text-[10px] font-bold uppercase text-slate-400">4. การชำระเงิน (PV)</div>
+                      {payments.length > 0 ? (
+                        <>
+                          <div className="font-mono font-bold text-emerald-700 dark:text-emerald-400">
+                            {payments.map((p) => p.transaction_no || `PV-${p.id.slice(0, 6)}`).join(', ')}
+                          </div>
+                          <div className="text-[11px] text-slate-500">{isPaidInFull ? 'ชำระครบถ้วนแล้ว' : 'มัดจำบางส่วน'}</div>
+                        </>
+                      ) : (
+                        <div className="text-slate-400">{isPaidInFull ? 'บันทึกชำระครบแล้ว' : 'รอชำระเงิน'}</div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -1809,7 +1846,8 @@ export default function PODetail() {
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4 animate-in fade-in duration-150">
             <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
               <div className="flex items-center gap-3 border-b border-slate-200 dark:border-slate-800 pb-3">
-                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-400 font-bold text-xl shrink-0">
+                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-400 font-bold shrink-0">
+                  <AlertTriangle className="h-5 w-5" />
                 </span>
                 <div>
                   <h3 className="text-base font-bold text-slate-900 dark:text-white">
