@@ -389,7 +389,7 @@ export default function Dashboard() {
       rank: idx + 1,
       percent: ((item.totalAmount / grandTotal) * 100).toFixed(1),
     }))
-  }, [filteredInvoices])
+  }, [filteredInvoices, isDemoMode])
 
   // Filtered & Limited Sales by Product (ค้นหาและเลือกจำนวนบรรทัด)
   const filteredSalesByProduct = useMemo(() => {
@@ -428,11 +428,11 @@ export default function Dashboard() {
   // (2) สรุปยอดเก็บเงิน (Collected Revenue / Receipts Summary)
   const totalInvoiced = useMemo(() => {
     return filteredInvoices.reduce((sum, inv) => sum + Number(inv.total_amount || 0), 0)
-  }, [filteredInvoices])
+  }, [filteredInvoices, isDemoMode])
 
   const totalCollected = useMemo(() => {
     return filteredInvoices.reduce((sum, inv) => sum + Number(inv.paid_amount || 0), 0)
-  }, [filteredInvoices])
+  }, [filteredInvoices, isDemoMode])
 
   const collectionRate = totalInvoiced > 0 ? ((totalCollected / totalInvoiced) * 100).toFixed(1) : '0.0'
 
@@ -442,7 +442,7 @@ export default function Dashboard() {
   // (3) ยอดค้างรับ (Outstanding Receivables / AR Outstanding)
   const totalArRemaining = useMemo(() => {
     return filteredInvoices.reduce((sum, inv) => sum + Number(inv.remaining_amount || 0), 0)
-  }, [filteredInvoices])
+  }, [filteredInvoices, isDemoMode])
 
   const arInvoicesCount = filteredInvoices.filter((inv) => Number(inv.remaining_amount || 0) > 0).length
 
@@ -476,7 +476,7 @@ export default function Dashboard() {
     })
 
     return buckets
-  }, [filteredInvoices])
+  }, [filteredInvoices, isDemoMode])
 
   // (4) ยอดค้างจ่าย (Outstanding Payables / AP Outstanding)
   const totalApRemaining = useMemo(() => {
@@ -492,50 +492,25 @@ export default function Dashboard() {
   const apWarningCount = filteredApList.filter((ap) => ap.alert_level === 'warning' && Number(ap.remaining_amount || 0) > 0).length
 
   // (5) สรุปยอดชำระเงิน (Payments Executed / Outflow)
-  const apPaidAmount = useMemo(() => {
-    return filteredApList.reduce((sum, ap) => sum + Number(ap.paid_amount || 0), 0)
-  }, [filteredApList])
+  const paymentMetrics = useMemo(
+    () =>
+      computeDashboardPaymentMetrics({
+        apList: filteredApList,
+        expenses: filteredExpenses,
+        paymentTx: filteredPaymentTx,
+      }),
+    [filteredApList, filteredExpenses, filteredPaymentTx]
+  )
 
-  const expensesPaidAmount = useMemo(() => {
-    return filteredExpenses
-      .filter((exp) => exp.status === 'จ่ายเงินแล้ว' || exp.accounting_status === 'อนุมัติแล้ว')
-      .reduce((sum, exp) => sum + Number(exp.total_amount || 0), 0)
-  }, [filteredExpenses])
-
-  const totalPaymentsExecuted = apPaidAmount + expensesPaidAmount
-
-  // Payment channel distribution
-  const paymentChannelStats = useMemo(() => {
-    let transfer = 0
-    let cash = 0
-    let cheque = 0
-
-    // From expenses
-    filteredExpenses.forEach((exp) => {
-      const amt = Number(exp.total_amount || 0)
-      if (exp.payment_method === 'เงินสด') cash += amt
-      else if (exp.payment_method === 'เช็ค') cheque += amt
-      else transfer += amt
-    })
-
-    // From AP paid
-    transfer += apPaidAmount // Default AP vendor payments via bank transfer
-
-    const total = transfer + cash + cheque || 1
-    return {
-      transfer,
-      cash,
-      cheque,
-      transferPct: ((transfer / total) * 100).toFixed(0),
-      cashPct: ((cash / total) * 100).toFixed(0),
-      chequePct: ((cheque / total) * 100).toFixed(0),
-    }
-  }, [filteredExpenses, apPaidAmount])
+  const apPaidAmount = paymentMetrics.apPaidAmount
+  const expensesPaidAmount = paymentMetrics.expensesPaidAmount
+  const totalPaymentsExecuted = paymentMetrics.totalPaymentsExecuted
+  const paymentChannelStats = paymentMetrics
 
   // (1) & (6) ยอดขายและรายได้ตามเอกสาร (Total Sales & Revenue by Document)
   const totalSalesAmount = useMemo(() => {
     return filteredInvoices.reduce((sum, inv) => sum + Number(inv.subtotal || inv.total_amount || 0), 0)
-  }, [filteredInvoices])
+  }, [filteredInvoices, isDemoMode])
 
   const totalRevenueDoc = totalSalesAmount
 
