@@ -580,6 +580,7 @@ export default function PurchasingHub() {
             const itName = gri.purchase_order_items?.item_name || 'วัสดุ'
             const unit = gri.purchase_order_items?.unit || 'หน่วย'
             const qtyNum = Number(gri.qty_received) || 0
+            const ordQty = Number(gri.purchase_order_items?.quantity || qtyNum)
             let uCost = Number(gri.unit_cost || gri.purchase_order_items?.unit_price || 0)
 
             // กู้คืนราคาหากบันทึกเป็น 0 ไว้ในระบบเดิม (Price Self-Healing จาก PO Total)
@@ -597,6 +598,7 @@ export default function PurchasingHub() {
               po_no: poObj?.po_no || '-',
               item_name: itName,
               quantity: qtyNum,
+              ordered_qty: ordQty,
               unit: unit,
               unit_cost: uCost,
               total_value: qtyNum * uCost,
@@ -615,6 +617,7 @@ export default function PurchasingHub() {
 
           ; (p.purchase_order_items || []).forEach((pi) => {
             const recQty = Number(pi.qty_received) || 0
+            const ordQty = Number(pi.quantity || recQty)
             if (recQty > 0) {
               const alreadyInGr = list.some((x) => x.po_id === p.id && x.item_name === pi.item_name)
               if (!alreadyInGr) {
@@ -630,6 +633,7 @@ export default function PurchasingHub() {
                   po_no: p.po_no,
                   item_name: pi.item_name,
                   quantity: recQty,
+                  ordered_qty: ordQty,
                   unit: pi.unit || 'หน่วย',
                   unit_cost: uCost,
                   total_value: recQty * uCost,
@@ -651,6 +655,7 @@ export default function PurchasingHub() {
         if (!groupMap.has(key)) {
           groupMap.set(key, {
             ...it,
+            ordered_qty: it.ordered_qty || it.quantity,
             grn_list: [it.grn_no],
             receipt_history: [{ grn_no: it.grn_no, date: it.received_date, quantity: it.quantity, unit_cost: it.unit_cost }],
             receipt_count: 1,
@@ -658,6 +663,7 @@ export default function PurchasingHub() {
         } else {
           const existing = groupMap.get(key)
           existing.quantity += it.quantity
+          existing.ordered_qty = Math.max(existing.ordered_qty || 0, it.ordered_qty || existing.quantity)
           existing.total_value += it.total_value
           if (!existing.grn_list.includes(it.grn_no)) {
             existing.grn_list.push(it.grn_no)

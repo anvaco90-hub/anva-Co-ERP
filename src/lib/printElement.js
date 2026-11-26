@@ -9,7 +9,7 @@
  *    CSS @media print { body * { visibility: hidden } } จากหน้าหลักแทรกซึมเข้ามา
  * 3. รอให้รูปภาพและเอกสารแนบ (เช่น ภาพสแกน PO) โหลดเสร็จสมบูรณ์ก่อนเปิด Print Dialog
  */
-export function printElement(elementOrId, title = 'พิมพ์เอกสาร') {
+export function printElement(elementOrId, title = 'พิมพ์เอกสาร', options = {}) {
   const element = typeof elementOrId === 'string'
     ? document.getElementById(elementOrId)
     : elementOrId
@@ -20,13 +20,16 @@ export function printElement(elementOrId, title = 'พิมพ์เอกส�
     return
   }
 
+  const orientation = options?.orientation === 'landscape' ? 'landscape' : 'portrait'
+  const isLandscape = orientation === 'landscape'
+
   // 1. สร้าง iframe ซ่อนไว้นอกหน้าจอ (มีขนาดจริงระดับ A4 ป้องกัน Chrome ตีความเป็นหน้า 0x0)
   const iframe = document.createElement('iframe')
   iframe.style.position = 'fixed'
   iframe.style.top = '-10000px'
   iframe.style.left = '-10000px'
-  iframe.style.width = '210mm'
-  iframe.style.height = '297mm'
+  iframe.style.width = isLandscape ? '297mm' : '210mm'
+  iframe.style.height = isLandscape ? '210mm' : '297mm'
   iframe.style.border = '0'
   iframe.style.opacity = '0'
   iframe.style.zIndex = '-9999'
@@ -57,8 +60,8 @@ export function printElement(elementOrId, title = 'พิมพ์เอกส�
       ${headStyles}
       <style>
         @page {
-          size: A4 portrait;
-          margin: 8mm 10mm;
+          size: A4 ${orientation};
+          margin: ${isLandscape ? '6mm 8mm' : '8mm 10mm'};
         }
         *, *::before, *::after {
           box-sizing: border-box !important;
