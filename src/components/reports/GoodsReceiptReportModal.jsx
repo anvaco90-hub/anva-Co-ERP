@@ -316,10 +316,10 @@ export default function GoodsReceiptReportModal({
           </div>
         </div>
 
-        {/* แผงควบคุมตัวกรอง (Control Panel - ซ่อนเวลาพิมพ์) */}
-        <div className="no-print border-b border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/70 p-4 space-y-3 text-xs">
+        {/* แผงควบคุมตัวกรอง (Control Panel จัดเลย์เอาต์ใหม่ สบายตา ไม่บีบอัด ไม่ขึ้นบรรทัดใหม่) */}
+        <div className="no-print border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/80 p-4 space-y-3 text-xs">
           {/* แถวที่ 1: เลือกประเภทช่วงเวลา */}
-          <div className="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800">
+          <div className="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs">
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1 mr-1">
                 <Calendar className="h-3.5 w-3.5 text-slate-700" />
@@ -374,7 +374,7 @@ export default function GoodsReceiptReportModal({
                   <select
                     value={selectedMonth}
                     onChange={(e) => setSelectedMonth(Number(e.target.value))}
-                    className="rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 py-1 text-xs shadow-xs"
+                    className="rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 py-1 text-xs shadow-xs font-semibold"
                   >
                     {THAI_MONTHS.map((m, idx) => (
                       <option key={m} value={idx}>
@@ -385,7 +385,7 @@ export default function GoodsReceiptReportModal({
                   <select
                     value={selectedYear}
                     onChange={(e) => setSelectedYear(Number(e.target.value))}
-                    className="rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 py-1 font-mono text-xs shadow-xs"
+                    className="rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 py-1 font-mono text-xs shadow-xs font-bold"
                   >
                     {[currentCEYear - 2, currentCEYear - 1, currentCEYear, currentCEYear + 1].map((y) => (
                       <option key={y} value={y}>
@@ -434,9 +434,9 @@ export default function GoodsReceiptReportModal({
             </div>
           </div>
 
-          {/* แถวที่ 2: ตัวเลือกการพิมพ์, โหมดภาษี (ราคาสด vs + ภาษี), และค้นหา */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-2.5">
-            {/* พิมพ์โครงการ */}
+          {/* แถวที่ 2: ฟิลเตอร์ข้อมูล 3 คอลัมน์กว้าง สบายตา (โครงการ, ผู้จำหน่าย, ค้นหา) */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {/* พิมพ์หรือเลือกโครงการ */}
             <div>
               <div className="flex items-center justify-between mb-1">
                 <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
@@ -446,7 +446,7 @@ export default function GoodsReceiptReportModal({
                   <button
                     type="button"
                     onClick={() => setFilterProject('')}
-                    className="text-[10px] text-rose-600 hover:underline"
+                    className="text-[10px] text-rose-600 hover:underline cursor-pointer"
                   >
                     ล้าง
                   </button>
@@ -458,7 +458,7 @@ export default function GoodsReceiptReportModal({
                 placeholder="พิมพ์ชื่อหรือรหัสโครงการ..."
                 value={filterProject}
                 onChange={(e) => setFilterProject(e.target.value)}
-                className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 py-1 text-xs"
+                className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs shadow-xs focus:ring-1 focus:ring-slate-900"
               />
               <datalist id="report-project-datalist">
                 {projectSuggestions.map((p) => (
@@ -467,7 +467,7 @@ export default function GoodsReceiptReportModal({
               </datalist>
             </div>
 
-            {/* พิมพ์ผู้จำหน่าย */}
+            {/* พิมพ์หรือเลือกผู้จำหน่าย */}
             <div>
               <div className="flex items-center justify-between mb-1">
                 <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
@@ -477,7 +477,7 @@ export default function GoodsReceiptReportModal({
                   <button
                     type="button"
                     onClick={() => setFilterVendor('')}
-                    className="text-[10px] text-rose-600 hover:underline"
+                    className="text-[10px] text-rose-600 hover:underline cursor-pointer"
                   >
                     ล้าง
                   </button>
@@ -489,29 +489,13 @@ export default function GoodsReceiptReportModal({
                 placeholder="พิมพ์ชื่อผู้จำหน่าย / ร้านค้า..."
                 value={filterVendor}
                 onChange={(e) => setFilterVendor(e.target.value)}
-                className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 py-1 text-xs"
+                className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs shadow-xs focus:ring-1 focus:ring-slate-900"
               />
               <datalist id="report-vendor-datalist">
                 {vendorSuggestions.map((v) => (
                   <option key={v} value={v} />
                 ))}
               </datalist>
-            </div>
-
-            {/* ฟีเจอร์ราคา: ราคาสด vs ราคาที่ + ภาษี */}
-            <div>
-              <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
-                ราคา / ภาษี (VAT):
-              </label>
-              <select
-                value={taxMode}
-                onChange={(e) => setTaxMode(e.target.value)}
-                className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-2 py-1 text-xs font-semibold text-slate-800 dark:text-slate-200"
-              >
-                <option value="net">ราคาสด (ไม่รวมภาษี)</option>
-                <option value="gross">ราคาที่ + ภาษี (รวม VAT 7%)</option>
-                <option value="both">แสดงทั้งราคาสด และ + ภาษี</option>
-              </select>
             </div>
 
             {/* ค้นหาคำในรายงาน */}
@@ -525,36 +509,62 @@ export default function GoodsReceiptReportModal({
                   placeholder="ชื่อวัสดุ, เลข PO, GRN..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 pl-8 pr-2.5 py-1 text-xs"
+                  className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 pl-8 pr-2.5 py-1.5 text-xs shadow-xs focus:ring-1 focus:ring-slate-900"
                 />
-                <Search className="absolute left-2.5 top-1.5 h-3.5 w-3.5 text-slate-400" />
+                <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-slate-400" />
               </div>
             </div>
+          </div>
 
-            {/* รูปแบบกระดาษ */}
-            <div>
-              <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
-                การจัดหน้ากระดาษ:
-              </label>
-              <div className="flex items-center gap-2 pt-0.5">
+          {/* แถวที่ 3: แถบตั้งค่าการพิมพ์และราคา (สะอาด ไม่เบียดกัน ตัวอักษรไม่ขึ้นบรรทัดใหม่) */}
+          <div className="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-slate-900 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs">
+            <div className="flex flex-wrap items-center gap-4">
+              {/* โหมดราคา */}
+              <div className="flex items-center gap-1.5">
+                <span className="font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                  ราคา / ภาษี (VAT):
+                </span>
+                <select
+                  value={taxMode}
+                  onChange={(e) => setTaxMode(e.target.value)}
+                  className="rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 py-1 text-xs font-semibold text-slate-800 dark:text-slate-200 shadow-xs"
+                >
+                  <option value="net">ราคาสด (ไม่รวมภาษี)</option>
+                  <option value="gross">ราคาที่ + ภาษี (รวม VAT 7%)</option>
+                  <option value="both">แสดงทั้งราคาสด และ + ภาษี</option>
+                </select>
+              </div>
+
+              {/* การจัดหน้ากระดาษ */}
+              <div className="flex items-center gap-1.5">
+                <span className="font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                  การจัดหน้ากระดาษ:
+                </span>
                 <select
                   value={paperOrientation}
                   onChange={(e) => setPaperOrientation(e.target.value)}
-                  className="rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-2 py-1 text-xs"
+                  className="rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 py-1 text-xs font-semibold shadow-xs"
                 >
                   <option value="landscape">แนวนอน (Landscape)</option>
                   <option value="portrait">แนวตั้ง (Portrait)</option>
                 </select>
-                <label className="flex items-center gap-1 text-[11px] text-slate-700 dark:text-slate-300 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={showValuation}
-                    onChange={(e) => setShowValuation(e.target.checked)}
-                    className="rounded"
-                  />
-                  <span>แสดงมูลค่า</span>
-                </label>
               </div>
+
+              {/* เช็คบ็อกซ์แสดงมูลค่า */}
+              <label className="flex items-center gap-1.5 font-bold text-slate-700 dark:text-slate-300 cursor-pointer whitespace-nowrap hover:text-black dark:hover:text-white select-none">
+                <input
+                  type="checkbox"
+                  checked={showValuation}
+                  onChange={(e) => setShowValuation(e.target.checked)}
+                  className="rounded text-slate-900 h-4 w-4"
+                />
+                <span className="whitespace-nowrap">แสดงมูลค่า</span>
+              </label>
+            </div>
+
+            {/* จำนวนรายการที่พบ */}
+            <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 whitespace-nowrap">
+              พบในรายงาน <span className="font-mono font-bold text-slate-900 dark:text-white">{filteredRows.length}</span> รายการ
             </div>
           </div>
         </div>
@@ -624,8 +634,8 @@ export default function GoodsReceiptReportModal({
                 <thead>
                   <tr className="border-t-2 border-b-2 border-black bg-white text-black font-bold">
                     <th className="py-2 px-1 text-center align-middle w-7 border border-black">#</th>
-                    <th className="py-2 px-2 text-center align-middle w-36 border border-black">วันที่ตรวจรับ & รอบรับ</th>
-                    <th className="py-2 px-2 text-center align-middle w-24 border border-black">เลขที่ PO / รับ</th>
+                    <th className="py-2 px-2 text-center align-middle w-44 border border-black">วันที่ตรวจรับ & รอบรับ</th>
+                    <th className="py-2 px-2 text-center align-middle w-32 border border-black">เลขที่ PO / รับ</th>
                     <th className="py-2 px-2 text-center align-middle w-28 border border-black">โครงการ</th>
                     <th className="py-2 px-2 text-center align-middle w-28 border border-black">ผู้จำหน่าย</th>
                     <th className="py-2 px-2 text-center align-middle max-w-[200px] border border-black">รายการวัสดุ / อุปกรณ์</th>
@@ -687,26 +697,29 @@ export default function GoodsReceiptReportModal({
                             {idx + 1}
                           </td>
 
-                          {/* วันที่ตรวจรับ & ประวัติรอบรับแบบข้อความต่อเนื่อง ไม่เทอะทะ */}
-                          <td className="py-1.5 px-2 text-center align-middle font-mono text-black border border-black leading-tight">
+                          {/* วันที่ตรวจรับ & ประวัติรอบรับ (รับกี่รอบขึ้นบรรทัดใหม่ตามด้วยวันที่ล่าสุด) */}
+                          <td className="py-2 px-2 text-center align-middle font-mono text-black border border-black leading-tight">
                             {!hasMultiRounds ? (
-                              <div className="font-semibold">
+                              <div className="font-semibold text-xs">
                                 {row.date ? new Date(row.date).toLocaleDateString('th-TH', { year: '2-digit', month: 'short', day: 'numeric' }) : '-'}
                               </div>
                             ) : (
                               <div>
-                                <div className="font-bold text-black">
-                                  {row.date ? new Date(row.date).toLocaleDateString('th-TH', { year: '2-digit', month: 'short', day: 'numeric' }) : '-'}
-                                  <span className="text-[9px] font-sans font-normal text-neutral-600 ml-1">({row.receiptHistory.length} รอบ)</span>
+                                <div className="inline-block border border-neutral-300 bg-neutral-100 rounded px-2 py-0.5 text-center leading-tight">
+                                  <div className="font-bold text-black text-[10px]">
+                                    รับ {row.receiptHistory.length} รอบ
+                                  </div>
+                                  <div className="text-[9px] text-neutral-600 font-sans font-normal">
+                                    (ล่าสุด: {row.date ? new Date(row.date).toLocaleDateString('th-TH', { year: '2-digit', month: 'short', day: 'numeric' }) : '-'})
+                                  </div>
                                 </div>
-                                <div className="text-[10px] text-neutral-600 mt-0.5 leading-snug">
+                                <div className="text-[10px] text-neutral-800 font-mono space-y-1 mt-1">
                                   {row.receiptHistory.map((h, hIdx) => {
                                     const hDateStr = h.date ? new Date(h.date).toLocaleDateString('th-TH', { year: '2-digit', month: 'short', day: 'numeric' }) : '-'
                                     return (
-                                      <span key={hIdx} className="inline-block mr-1.5 whitespace-nowrap">
-                                        ครั้ง {hIdx + 1} ({hDateStr}): {Number(h.quantity || 0).toLocaleString()} {row.unit}
-                                        {hIdx < row.receiptHistory.length - 1 ? ' · ' : ''}
-                                      </span>
+                                      <div key={hIdx} className="whitespace-nowrap h-5 flex items-center justify-center text-neutral-700">
+                                        ครั้งที่ {hIdx + 1} ({hDateStr}): <span className="font-bold text-black ml-1">{Number(h.quantity || 0).toLocaleString()}</span>&nbsp;{row.unit}
+                                      </div>
                                     )
                                   })}
                                 </div>
@@ -714,14 +727,50 @@ export default function GoodsReceiptReportModal({
                             )}
                           </td>
 
-                          {/* เลขที่ PO / รับ (กระชับ) */}
-                          <td className="py-1.5 px-1.5 text-center align-middle font-mono border border-black leading-tight">
-                            {row.poNo && (
-                              <div className="font-bold text-black">{row.poNo}</div>
+                          {/* เลขที่ PO / รับ (PO ให้ตัวหนาชัดเจน ส่วน RI ให้เป็นตัวปกติ) */}
+                          <td className="py-2 px-2 text-center align-middle font-mono border border-black leading-tight">
+                            {!hasMultiRounds ? (
+                              <div className="space-y-0.5">
+                                {row.poNo && (
+                                  <div className="font-black text-black text-xs">
+                                    {row.poNo}
+                                  </div>
+                                )}
+                                {row.grnNo && row.grnNo !== row.poNo && (
+                                  <div className={`text-[10px] ${/^po/i.test(row.grnNo) ? 'font-black text-black text-xs' : 'font-normal text-neutral-700'}`}>
+                                    {row.grnNo}
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <div>
+                                <div className="min-h-[30px] flex items-center justify-center">
+                                  {row.poNo ? (
+                                    <div className="font-black text-black text-xs tracking-tight">
+                                      {row.poNo}
+                                    </div>
+                                  ) : (
+                                    <div className="text-neutral-400 text-xs">-</div>
+                                  )}
+                                </div>
+                                <div className="text-[10px] font-mono space-y-1 mt-1">
+                                  {row.receiptHistory.map((h, hIdx) => {
+                                    const grnText = h.grn_no || (row.grnList && row.grnList[hIdx]) || `รอบที่ ${hIdx + 1}`
+                                    const isPO = /^po/i.test(grnText)
+                                    return (
+                                      <div
+                                        key={hIdx}
+                                        className={`whitespace-nowrap h-5 flex items-center justify-center ${
+                                          isPO ? 'font-black text-black' : 'font-normal text-neutral-700'
+                                        }`}
+                                      >
+                                        {grnText}
+                                      </div>
+                                    )
+                                  })}
+                                </div>
+                              </div>
                             )}
-                            <div className="text-[10px] text-neutral-600">
-                              {row.grnNo}
-                            </div>
                           </td>
 
                           {/* โครงการ (กว้างพอดีข้อความ) */}
