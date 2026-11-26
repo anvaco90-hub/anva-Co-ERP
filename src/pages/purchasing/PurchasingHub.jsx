@@ -652,6 +652,7 @@ export default function PurchasingHub() {
           groupMap.set(key, {
             ...it,
             grn_list: [it.grn_no],
+            receipt_history: [{ grn_no: it.grn_no, date: it.received_date, quantity: it.quantity, unit_cost: it.unit_cost }],
             receipt_count: 1,
           })
         } else {
@@ -661,6 +662,10 @@ export default function PurchasingHub() {
           if (!existing.grn_list.includes(it.grn_no)) {
             existing.grn_list.push(it.grn_no)
           }
+          if (!existing.receipt_history) {
+            existing.receipt_history = [{ grn_no: existing.grn_no, date: existing.received_date, quantity: existing.quantity - it.quantity, unit_cost: existing.unit_cost }]
+          }
+          existing.receipt_history.push({ grn_no: it.grn_no, date: it.received_date, quantity: it.quantity, unit_cost: it.unit_cost })
           existing.receipt_count += 1
           if (existing.quantity > 0) {
             existing.unit_cost = Math.round((existing.total_value / existing.quantity) * 100) / 100
