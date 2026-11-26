@@ -14,11 +14,13 @@ import {
   PackageCheck,
   ExternalLink,
   Package,
+  Printer,
 } from 'lucide-react'
 import SearchableItemSelect from '../../components/SearchableItemSelect'
 import SearchableProjectSelect from '../../components/SearchableProjectSelect'
 import Pagination from '../../components/Pagination'
 import TableSortFilter from '../../components/TableSortFilter'
+import GoodsReceiptReportModal from '../../components/reports/GoodsReceiptReportModal'
 
 const TYPE = { receipt: 'รับเข้าสโตร์', adjustment: 'ปรับปรุงสต็อก', migration: 'ยกมา' }
 
@@ -47,6 +49,7 @@ export default function ReceiptsList() {
   const [receiveQuantities, setReceiveQuantities] = useState({})
   const [receivingSubmitting, setReceivingSubmitting] = useState(false)
   const [receiveModalError, setReceiveModalError] = useState('')
+  const [showReportModal, setShowReportModal] = useState(false)
 
   // State สำหรับการขยาย/ย่อแถวรายละเอียดของใบสั่งซื้อรอตรวจรับ (Expandable Accordion Rows)
   const [expandedPendingPoIds, setExpandedPendingPoIds] = useState(new Set())
@@ -1141,6 +1144,17 @@ export default function ReceiptsList() {
                   ️ เอกสารบัญชีสต็อก (RI / GL)
                 </button>
               </div>
+
+              {/* ปุ่มพิมพ์รายงานประวัตินำเข้า (เลือกวัน/เดือน/ปี/โครงการ ได้) */}
+              <button
+                type="button"
+                onClick={() => setShowReportModal(true)}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-sky-700 hover:bg-sky-800 text-white text-xs font-bold shadow-sm transition cursor-pointer"
+                title="ออกรายงานและพิมพ์ประวัติการรับเข้าสโตร์ (เลือกวัน/เดือน/ปี ได้)"
+              >
+                <Printer className="h-4 w-4" />
+                <span>พิมพ์รายงานประวัตินำเข้า</span>
+              </button>
             </div>
 
         {/* ตัวกรองช่วงเวลาดูประวัติย้อนหลัง */}
@@ -1580,6 +1594,17 @@ export default function ReceiptsList() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Modal พิมพ์รายงานประวัตินำเข้าสโตร์ (เลือกวัน/เดือน/ปี/โครงการ ได้) */}
+      {showReportModal && (
+        <GoodsReceiptReportModal
+          rows={rows || []}
+          projects={projects || []}
+          userProfile={profile}
+          sourceModule="store"
+          onClose={() => setShowReportModal(false)}
+        />
       )}
     </div>
   )

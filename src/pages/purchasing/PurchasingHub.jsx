@@ -13,6 +13,7 @@ import PODocumentModal from '../../components/reports/PODocumentModal'
 import EnvelopePrintModal from '../../components/reports/EnvelopePrintModal'
 import POShareModal from '../../components/purchasing/POShareModal'
 import ItemProjectUsageModal from '../../components/ItemProjectUsageModal'
+import GoodsReceiptReportModal from '../../components/reports/GoodsReceiptReportModal'
 import SearchableSelect from '../../components/SearchableSelect'
 import Pagination from '../../components/Pagination'
 import TableSortFilter from '../../components/TableSortFilter'
@@ -99,6 +100,7 @@ export default function PurchasingHub() {
   const [receiptSubTab, setReceiptSubTab] = useState('received_items') // 'received_items' | 'pending'
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [showReceiptReportModal, setShowReceiptReportModal] = useState(false)
 
   // ตัวกรอง
   const [search, setSearch] = useState('')
@@ -1932,6 +1934,17 @@ export default function PurchasingHub() {
                     <div className="text-xs text-steel-600 dark:text-slate-300 flex items-center gap-2 pl-1">
                       <span>มูลค่ารับเข้ารวม: <b className="text-emerald-950 dark:text-emerald-400 font-mono font-black text-sm">{baht(totalReceivedValue)}</b> บาท</span>
                     </div>
+
+                    {/* ปุ่มพิมพ์รายงานประวัตินำเข้า (วัน/เดือน/ปี/โครงการ) */}
+                    <button
+                      type="button"
+                      onClick={() => setShowReceiptReportModal(true)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold shadow-xs transition cursor-pointer"
+                      title="ออกรายงานและพิมพ์ประวัติการตรวจรับพัสดุ (เลือกวัน/เดือน/ปี ได้)"
+                    >
+                      <Printer className="h-4 w-4" />
+                      <span>พิมพ์รายงานประวัตินำเข้า</span>
+                    </button>
                   </div>
                 )}
               </div>
@@ -2843,6 +2856,18 @@ export default function PurchasingHub() {
         <ItemProjectUsageModal
           item={selectedUsageItem}
           onClose={() => setSelectedUsageItem(null)}
+        />
+      )}
+
+      {/* โมดัล 6: พิมพ์รายงานประวัตินำเข้าและตรวจรับพัสดุ (เลือกวัน/เดือน/ปี/โครงการ ได้) */}
+      {showReceiptReportModal && (
+        <GoodsReceiptReportModal
+          rows={receivedMaterialsList || []}
+          projects={projects || []}
+          vendors={vendors || []}
+          userProfile={profile}
+          sourceModule="purchasing"
+          onClose={() => setShowReceiptReportModal(false)}
         />
       )}
 
