@@ -16,7 +16,7 @@ const purchasingNavGroups = [
   {
     groupLabel: 'สายงานจัดซื้อ',
     items: [
-      { to: '/purchasing?tab=pipeline', tabKey: 'pipeline', label: 'PR  PO (สายงานจัดซื้อ)', icon: Workflow },
+      { to: '/purchasing?tab=pipeline', tabKey: 'pipeline', label: 'ศูนย์งานจัดซื้อ (PR / PO)', icon: Workflow },
       { to: '/purchasing?tab=pr', tabKey: 'pr', label: 'ใบขอซื้อ (PR)', icon: ClipboardList, badgeKey: 'pr' },
       { to: '/purchasing?tab=po', tabKey: 'po', label: 'ใบสั่งซื้อ (PO)', icon: ShoppingCart, badgeKey: 'po' },
     ],

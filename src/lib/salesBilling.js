@@ -230,7 +230,7 @@ export async function fetchQuotationLinkedDocs(quotation, client = defaultSupaba
     try {
       const prItemsRes = await client
         .from('purchase_requisition_items')
-        .select('id, pr_id, item_id, item_name, quantity, unit, estimated_price')
+        .select('id, pr_id, item_name, quantity, unit, estimated_price')
         .in('pr_id', matchedPrIds)
       if (!prItemsRes.error && Array.isArray(prItemsRes.data)) {
         const itemsByPr = new Map()

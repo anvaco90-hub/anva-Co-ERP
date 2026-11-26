@@ -4,6 +4,14 @@ import { supabase } from '../../lib/supabase'
 import { baht } from '../../lib/projects'
 import { ensureSalesInvoiceForQuotation } from '../../lib/salesBilling'
 import { getCustomerApprovalDisplay } from '../../lib/salesFlowUtils'
+import {
+  buildQuotationPurchasingMap,
+  computeQuotationKpis,
+  filterQuotations,
+  getQuotationRowAmountMeta,
+  isQuotationApproved,
+  resolveInitialStatusFilter,
+} from '../../lib/quotationListUtils'
 import QuotationPrintModal from '../../components/reports/QuotationPrintModal'
 import EnvelopePrintModal from '../../components/reports/EnvelopePrintModal'
 import QuotationShareModal from '../../components/quotations/QuotationShareModal'
@@ -19,7 +27,6 @@ import {
   Edit3,
   Trash2,
   MoreVertical,
-  Eye,
   FileText,
   DollarSign,
   Search,
@@ -27,22 +34,42 @@ import {
   RefreshCw,
   ShoppingCart,
   Calendar,
-  X,
   FileSpreadsheet,
   CheckCircle2,
-  Clock,
-  ArrowRight,
-  TrendingUp,
 } from 'lucide-react'
 
-// สถานะการขายแบบเข้าใจง่าย ไม่ซับซ้อน
 const STATUS_CONFIG = {
-  draft: { label: 'ฉบับร่าง', cls: 'bg-slate-100 text-slate-700 border-slate-200' },
-  sent: { label: 'ส่งลูกค้าแล้ว', cls: 'bg-sky-50 text-sky-700 border-sky-200' },
-  approved: { label: 'ลูกค้าอนุมัติแล้ว', cls: 'bg-emerald-50 text-emerald-800 border-emerald-300 font-bold' },
-  rejected: { label: 'ปฏิเสธ / ยกเลิก', cls: 'bg-rose-50 text-rose-700 border-rose-200' },
-  expired: { label: 'หมดอายุยืนราคา', cls: 'bg-amber-50 text-amber-800 border-amber-200' },
-  partial: { label: 'รับชำระบางส่วน', cls: 'bg-blue-50 text-blue-800 border-blue-200' },
+  draft: {
+    label: 'ฉบับร่าง',
+    cls: 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700',
+  },
+  sent: {
+    label: 'ส่งลูกค้าแล้ว',
+    cls: 'bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border-sky-200 dark:border-sky-800',
+  },
+  approved: {
+    label: 'ลูกค้าอนุมัติแล้ว',
+    cls: 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800 font-bold',
+  },
+  rejected: {
+    label: 'ปฏิเสธ / ยกเลิก',
+    cls: 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800',
+  },
+  expired: {
+    label: 'หมดอายุยืนราคา',
+    cls: 'bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800',
+  },
+  partial: {
+    label: 'รับชำระบางส่วน',
+    cls: 'bg-blue-50 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 border-blue-200 dark:border-blue-800',
+  },
+}
+
+const PURCHASING_BADGE_TONES = {
+  emerald: 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
+  sky: 'bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border-sky-200 dark:border-sky-800',
+  amber: 'bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800',
+  slate: 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700',
 }
 
 // คำนวณวันสิ้นสุดยืนราคา
@@ -57,39 +84,44 @@ function getExpiryInfo(q) {
   const diffDays = Math.round((expDate - today) / (1000 * 60 * 60 * 24))
 
   if (diffDays < 0) {
-    return { text: `หมดอายุ (${Math.abs(diffDays)} วัน)`, cls: 'text-rose-600', dot: 'bg-rose-500' }
+    return { text: `หมดอายุ (${Math.abs(diffDays)} วัน)`, cls: 'text-rose-600 dark:text-rose-400', dot: 'bg-rose-500' }
   }
   if (diffDays <= 7) {
-    return { text: diffDays === 0 ? 'ครบกำหนดวันนี้' : `เหลือ ${diffDays} วัน`, cls: 'text-amber-700 font-semibold', dot: 'bg-amber-500' }
+    return {
+      text: diffDays === 0 ? 'ครบกำหนดวันนี้' : `เหลือ ${diffDays} วัน`,
+      cls: 'text-amber-700 dark:text-amber-400 font-semibold',
+      dot: 'bg-amber-500',
+    }
   }
-  return { text: `เหลือ ${diffDays} วัน`, cls: 'text-emerald-700', dot: 'bg-emerald-500' }
+  return { text: `เหลือ ${diffDays} วัน`, cls: 'text-emerald-700 dark:text-emerald-400', dot: 'bg-emerald-500' }
 }
 
 export default function QuotationList() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
-  const activeTab = searchParams.get('tab') || 'all' // 'all' | 'signed' | 'pipeline'
 
   const [quotations, setQuotations] = useState([])
   const [projects, setProjects] = useState([])
+  const [linkedPrs, setLinkedPrs] = useState([])
+  const [linkedPos, setLinkedPos] = useState([])
   const [loading, setLoading] = useState(true)
 
   // ตัวกรองแบบกระชับ (Clean Filters)
   const [search, setSearch] = useState('')
   const [sortBy, setSortBy] = useState('date_desc')
   const [filterProject, setFilterProject] = useState('')
-  const [filterStatus, setFilterStatus] = useState('all')
+  const [filterStatus, setFilterStatus] = useState(() => resolveInitialStatusFilter(searchParams.get('tab')))
 
   // ตัวเลือกการเรียงลำดับมาตรฐานสำหรับงานขายและเสนอราคา
   const QUOTATION_SORT_OPTIONS = [
-    { value: 'date_desc', label: ' วันที่สร้างล่าสุด (ใหม่  เก่า)' },
-    { value: 'date_asc', label: ' วันที่สร้าง (เก่า  ใหม่)' },
-    { value: 'code_desc', label: 'เลขที่ QT (มาก  น้อย)' },
-    { value: 'code_asc', label: 'เลขที่ QT (น้อย  มาก)' },
-    { value: 'name_asc', label: 'ชื่อลูกค้า/โครงการ ก  ฮ (A  Z)' },
-    { value: 'name_desc', label: 'ชื่อลูกค้า/โครงการ ฮ  ก (Z  A)' },
-    { value: 'amount_desc', label: 'มูลค่าเสนอราคา (มาก  น้อย)' },
-    { value: 'amount_asc', label: 'มูลค่าเสนอราคา (น้อย  มาก)' },
+    { value: 'date_desc', label: 'วันที่สร้างล่าสุด (ใหม่ → เก่า)' },
+    { value: 'date_asc', label: 'วันที่สร้าง (เก่า → ใหม่)' },
+    { value: 'code_desc', label: 'เลขที่ QT (มาก → น้อย)' },
+    { value: 'code_asc', label: 'เลขที่ QT (น้อย → มาก)' },
+    { value: 'name_asc', label: 'ชื่อลูกค้า/โครงการ (ก → ฮ)' },
+    { value: 'name_desc', label: 'ชื่อลูกค้า/โครงการ (ฮ → ก)' },
+    { value: 'amount_desc', label: 'มูลค่าเสนอราคา (มาก → น้อย)' },
+    { value: 'amount_asc', label: 'มูลค่าเสนอราคา (น้อย → มาก)' },
   ]
 
   // ตัวกรองวันที่แบบ Smart Preset (ไม่รกตา)
@@ -109,6 +141,15 @@ export default function QuotationList() {
   const [customerPoTarget, setCustomerPoTarget] = useState(null)
   const [paymentTarget, setPaymentTarget] = useState(null)
 
+  // รองรับลิงก์เก่า ?tab=signed / ?tab=pipeline โดยแปลงเป็น filter แล้วล้าง URL ให้สะอาด
+  useEffect(() => {
+    const legacyTab = searchParams.get('tab')
+    if (legacyTab) {
+      setFilterStatus(resolveInitialStatusFilter(legacyTab))
+      setSearchParams({}, { replace: true })
+    }
+  }, [searchParams, setSearchParams])
+
   // ปิดเมนู action เมื่อคลิกที่อื่น
   useEffect(() => {
     const handleOutsideClick = () => setActionMenuId(null)
@@ -116,8 +157,12 @@ export default function QuotationList() {
     return () => window.removeEventListener('click', handleOutsideClick)
   }, [])
 
-  const changeTab = (tab) => {
-    setSearchParams({ tab })
+  const toggleKpiStatus = (targetStatus) => {
+    if (targetStatus === 'all') {
+      setFilterStatus('all')
+    } else {
+      setFilterStatus((prev) => (prev === targetStatus ? 'all' : targetStatus))
+    }
     setActionMenuId(null)
   }
 
@@ -171,12 +216,14 @@ export default function QuotationList() {
   const fetchQuotations = async () => {
     setLoading(true)
     try {
-      const [qRes, projRes] = await Promise.all([
+      const [qRes, projRes, prRes, poRes] = await Promise.all([
         supabase
           .from('quotations')
           .select('*, projects(id, project_code, project_name)')
           .order('created_at', { ascending: false }),
         supabase.from('projects').select('id, project_code, project_name').order('project_code'),
+        supabase.from('purchase_requisitions').select('id, pr_no, status, notes, quotation_id, sales_quotation_no'),
+        supabase.from('purchase_orders').select('id, po_no, pr_id, status, notes, quotation_id, sales_quotation_no'),
       ])
 
       if (qRes.error) {
@@ -186,6 +233,20 @@ export default function QuotationList() {
         setQuotations(qRes.data || [])
       }
       setProjects(projRes.data || [])
+
+      if (!prRes.error) {
+        setLinkedPrs(prRes.data || [])
+      } else {
+        const prFb = await supabase.from('purchase_requisitions').select('id, pr_no, status, notes')
+        setLinkedPrs(prFb.error ? [] : prFb.data || [])
+      }
+
+      if (!poRes.error) {
+        setLinkedPos(poRes.data || [])
+      } else {
+        const poFb = await supabase.from('purchase_orders').select('id, po_no, pr_id, status, notes')
+        setLinkedPos(poFb.error ? [] : poFb.data || [])
+      }
     } catch (err) {
       console.error(err)
       setQuotations([])
@@ -250,64 +311,30 @@ export default function QuotationList() {
     }
   }
 
-  // คำนวณสรุปสถิติ (KPIs)
-  const stats = useMemo(() => {
-    const totalCount = quotations.length
-    const signedCount = quotations.filter((q) => q.status === 'approved' || q.customer_po_no).length
-    const sentCount = quotations.filter((q) => q.status === 'sent').length
-    const draftCount = quotations.filter((q) => q.status === 'draft').length
-    const totalAmount = quotations
-      .filter((q) => q.status !== 'rejected')
-      .reduce((sum, q) => sum + Number(q.grand_total || q.total_amount || 0), 0)
-    const signedAmount = quotations
-      .filter((q) => q.status === 'approved' || q.customer_po_no)
-      .reduce((sum, q) => sum + Number(q.grand_total || q.total_amount || 0), 0)
-
-    return { totalCount, signedCount, sentCount, draftCount, totalAmount, signedAmount }
-  }, [quotations])
+  // คำนวณสรุปสถิติ (KPIs) และสถานะเชื่อมโยงจัดซื้อ
+  const stats = useMemo(() => computeQuotationKpis(quotations), [quotations])
+  const purchasingMap = useMemo(
+    () => buildQuotationPurchasingMap(quotations, linkedPrs, linkedPos),
+    [quotations, linkedPrs, linkedPos]
+  )
 
   // รายการที่ผ่านการกรอง (Filtered Data)
-  const filtered = useMemo(() => {
-    return quotations.filter((q) => {
-      // 1. กรองตามแท็บ
-      if (activeTab === 'signed') {
-        const isSigned = q.status === 'approved' || q.customer_po_no
-        if (!isSigned) return false
-      }
-
-      // 2. กรองตามสถานะ
-      if (filterStatus !== 'all' && q.status !== filterStatus) return false
-
-      // 3. กรองตามโครงการ
-      if (filterProject && q.project_id !== filterProject) return false
-
-      // 4. กรองข้อความค้นหา
-      const term = search.toLowerCase().trim()
-      if (term) {
-        const match =
-          q.quotation_no?.toLowerCase().includes(term) ||
-          q.customer_name?.toLowerCase().includes(term) ||
-          q.sales_person?.toLowerCase().includes(term) ||
-          q.projects?.project_name?.toLowerCase().includes(term) ||
-          q.projects?.project_code?.toLowerCase().includes(term) ||
-          q.customer_po_no?.toLowerCase().includes(term) ||
-          q.customer_signer_name?.toLowerCase().includes(term)
-        if (!match) return false
-      }
-
-      // 5. กรองช่วงวันที่ (ดูจากวันที่เสนอราคา)
-      const targetDate = q.quotation_date || q.issue_date
-      if (dateFrom && targetDate && String(targetDate).split('T')[0] < dateFrom) return false
-      if (dateTo && targetDate && String(targetDate).split('T')[0] > dateTo) return false
-
-      return true
-    })
-  }, [quotations, activeTab, filterStatus, filterProject, search, dateFrom, dateTo])
+  const filtered = useMemo(
+    () =>
+      filterQuotations(quotations, {
+        filterStatus,
+        filterProject,
+        search,
+        dateFrom,
+        dateTo,
+      }),
+    [quotations, filterStatus, filterProject, search, dateFrom, dateTo]
+  )
 
   // รีเซ็ตหน้ากลับไปหน้าที่ 1 เมื่อตัวกรองเปลี่ยน
   useEffect(() => {
     setCurrentPage(1)
-  }, [activeTab, filterStatus, filterProject, search, dateFrom, dateTo])
+  }, [filterStatus, filterProject, search, dateFrom, dateTo])
 
   // จัดเรียงรายการตามมาตรฐานที่เลือก (A-Z / ตัวเลข / วันที่ / ยอดเงิน)
   const sortedQuotations = useMemo(() => {
@@ -341,128 +368,121 @@ export default function QuotationList() {
   return (
     <div className="space-y-4">
 
-      {/* 1. Header & Actions (เรียบหรู สบายตา) */}
+      {/* 1. Header & Actions */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold text-slate-900 tracking-tight">
-            งานขายและใบเสนอราคา (Sales & Quotations)
+          <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+            งานขายและใบเสนอราคา (Sales &amp; Quotations)
           </h1>
-          <p className="text-xs text-slate-500">
-            ระบบจัดการใบเสนอราคา บันทึกการเซ็น PO ของลูกค้า และส่งต่องานเข้าสู่ฝ่ายจัดซื้อ
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            จัดการใบเสนอราคา บันทึกการอนุมัติของลูกค้า และติดตามความคืบหน้าการส่งต่อฝ่ายจัดซื้อ &amp; สโตร์
           </p>
         </div>
 
         <div className="flex items-center gap-2">
           <Link
             to="/boq"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition"
           >
-            <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-600" />
+            <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
             <span>ระบบ BOQ</span>
           </Link>
 
           <Link
             to="/quotations/new"
-            className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 px-3.5 py-1.5 text-xs font-semibold text-white shadow-xs transition"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 dark:bg-amber-500 dark:hover:bg-amber-400 px-3.5 py-1.5 text-xs font-semibold text-white dark:text-slate-950 shadow-xs transition"
           >
-            <Plus className="h-3.5 w-3.5 text-amber-400" />
-            <span> สร้างใบเสนอราคา</span>
+            <Plus className="h-3.5 w-3.5" />
+            <span>สร้างใบเสนอราคา</span>
           </Link>
         </div>
       </div>
 
-      {/* 2. Sleek Metric Strip (แถบสรุปตัวเลขแบบมินิมอล ไม่กินพื้นที่หน้าจอ) */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-slate-200 rounded-xl border border-slate-200 bg-white p-1 shadow-2xs">
-        <div className="p-3 text-center sm:text-left">
-          <div className="text-[11px] font-medium text-slate-500">ยอดเสนอราคารวม</div>
-          <div className="mt-0.5 text-lg font-bold text-slate-900 font-mono">
-            {baht(stats.totalAmount)} <span className="text-[10px] font-normal text-slate-500">฿</span>
+      {/* 2. Interactive Metric Strip (คลิกเพื่อกรองรายการได้ทันที แทนแท็บซ้ำซ้อน) */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+        <button
+          type="button"
+          onClick={() => toggleKpiStatus('all')}
+          className={`rounded-xl border p-3.5 text-left transition cursor-pointer ${
+            filterStatus === 'all'
+              ? 'border-slate-800 dark:border-emerald-400 bg-white dark:bg-slate-900 ring-1 ring-slate-800/15 dark:ring-emerald-400/20 shadow-xs'
+              : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 hover:border-slate-300 dark:hover:border-slate-700'
+          }`}
+        >
+          <div className="flex items-center justify-between text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+            <span>ยอดเสนอราคาทั้งหมด</span>
+            <span className="text-[10px] text-slate-400 dark:text-slate-500">{stats.totalCount} ใบ</span>
           </div>
-          <div className="text-[10px] text-slate-400">{stats.totalCount} ใบเสนอราคา</div>
-        </div>
+          <div className="mt-1 text-lg font-bold text-slate-900 dark:text-slate-100 tabular-nums">
+            {baht(stats.totalAmount)} <span className="text-xs font-medium text-slate-500 dark:text-slate-400">บาท</span>
+          </div>
+          <div className="mt-0.5 text-[10px] text-slate-400 dark:text-slate-500">คลิกเพื่อแสดงทั้งหมด</div>
+        </button>
 
-        <div className="p-3 text-center sm:text-left">
-          <div className="text-[11px] font-medium text-emerald-700 flex items-center justify-center sm:justify-start gap-1">
-            <span className="h-2 w-2 rounded-full bg-emerald-500"></span>
-            <span>ลูกค้าเซ็น PO แล้ว</span>
+        <button
+          type="button"
+          onClick={() => toggleKpiStatus('approved')}
+          className={`rounded-xl border p-3.5 text-left transition cursor-pointer ${
+            filterStatus === 'approved'
+              ? 'border-emerald-600 dark:border-emerald-400 bg-emerald-50/70 dark:bg-emerald-950/40 ring-1 ring-emerald-500/20 shadow-xs'
+              : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 hover:border-emerald-300 dark:hover:border-emerald-800'
+          }`}
+        >
+          <div className="flex items-center justify-between text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">
+            <span className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-emerald-500"></span>
+              <span>ลูกค้าอนุมัติแล้ว</span>
+            </span>
+            <span className="text-[10px] font-bold">{stats.signedCount} ใบ</span>
           </div>
-          <div className="mt-0.5 text-lg font-bold text-emerald-800 font-mono">
-            {baht(stats.signedAmount)} <span className="text-[10px] font-normal text-emerald-600">฿</span>
+          <div className="mt-1 text-lg font-bold text-emerald-800 dark:text-emerald-300 tabular-nums">
+            {baht(stats.signedAmount)} <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">บาท</span>
           </div>
-          <div className="text-[10px] text-emerald-600 font-medium">{stats.signedCount} ใบ (พร้อมส่งต่อจัดซื้อ)</div>
-        </div>
+          <div className="mt-0.5 text-[10px] text-emerald-700/80 dark:text-emerald-400/80">พร้อมส่งต่อจัดซื้อ / เช็กสต็อก</div>
+        </button>
 
-        <div className="p-3 text-center sm:text-left">
-          <div className="text-[11px] font-medium text-sky-700 flex items-center justify-center sm:justify-start gap-1">
+        <button
+          type="button"
+          onClick={() => toggleKpiStatus('sent')}
+          className={`rounded-xl border p-3.5 text-left transition cursor-pointer ${
+            filterStatus === 'sent'
+              ? 'border-sky-600 dark:border-sky-400 bg-sky-50/70 dark:bg-sky-950/40 ring-1 ring-sky-500/20 shadow-xs'
+              : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 hover:border-sky-300 dark:hover:border-sky-800'
+          }`}
+        >
+          <div className="flex items-center gap-1.5 text-[11px] font-semibold text-sky-700 dark:text-sky-400">
             <span className="h-2 w-2 rounded-full bg-sky-500"></span>
             <span>ส่งลูกค้าพิจารณา</span>
           </div>
-          <div className="mt-0.5 text-lg font-bold text-sky-900 font-mono">
-            {stats.sentCount} <span className="text-xs font-normal text-slate-500">ใบ</span>
+          <div className="mt-1 text-lg font-bold text-sky-900 dark:text-sky-300 tabular-nums">
+            {stats.sentCount} <span className="text-xs font-medium text-slate-500 dark:text-slate-400">ใบ</span>
           </div>
-          <div className="text-[10px] text-slate-400">อยู่ระหว่างรอบอร์ดอนุมัติ</div>
-        </div>
+          <div className="mt-0.5 text-[10px] text-slate-400 dark:text-slate-500">อยู่ระหว่างรอลูกค้าตัดสินใจ</div>
+        </button>
 
-        <div className="p-3 text-center sm:text-left">
-          <div className="text-[11px] font-medium text-slate-500 flex items-center justify-center sm:justify-start gap-1">
+        <button
+          type="button"
+          onClick={() => toggleKpiStatus('draft')}
+          className={`rounded-xl border p-3.5 text-left transition cursor-pointer ${
+            filterStatus === 'draft'
+              ? 'border-slate-700 dark:border-slate-400 bg-slate-100/80 dark:bg-slate-800 ring-1 ring-slate-500/20 shadow-xs'
+              : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 hover:border-slate-300 dark:hover:border-slate-700'
+          }`}
+        >
+          <div className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 dark:text-slate-300">
             <span className="h-2 w-2 rounded-full bg-slate-400"></span>
             <span>ฉบับร่าง</span>
           </div>
-          <div className="mt-0.5 text-lg font-bold text-slate-800 font-mono">
-            {stats.draftCount} <span className="text-xs font-normal text-slate-500">ใบ</span>
+          <div className="mt-1 text-lg font-bold text-slate-800 dark:text-slate-200 tabular-nums">
+            {stats.draftCount} <span className="text-xs font-medium text-slate-500 dark:text-slate-400">ใบ</span>
           </div>
-          <div className="text-[10px] text-slate-400">กำลังจัดเตรียมสเปกและราคา</div>
-        </div>
+          <div className="mt-0.5 text-[10px] text-slate-400 dark:text-slate-500">กำลังจัดเตรียมสเปกและราคา</div>
+        </button>
       </div>
 
-      {/* 3. Unified Clean Toolbar (แถบตัวกรองรวม แถวเดียว สะอาดตา) */}
-      <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-2xs space-y-2.5">
-
-        {/* Navigation Tabs (แท็บเรียบหรู คมชัด) */}
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
-          <div className="flex gap-1">
-            <button
-              onClick={() => changeTab('all')}
-              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition cursor-pointer ${activeTab === 'all'
-                ? 'bg-slate-900 text-white shadow-xs'
-                : 'text-slate-600 hover:bg-slate-100'
-                }`}
-            >
-              ทั้งหมด ({stats.totalCount})
-            </button>
-
-            <button
-              onClick={() => changeTab('signed')}
-              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 ${activeTab === 'signed'
-                ? 'bg-emerald-800 text-white shadow-xs'
-                : 'text-emerald-800 hover:bg-emerald-50'
-                }`}
-            >
-              <span>️ ลูกค้าเซ็น PO</span>
-              <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${activeTab === 'signed' ? 'bg-emerald-950 text-white' : 'bg-emerald-100 text-emerald-900 font-bold'}`}>
-                {stats.signedCount}
-              </span>
-            </button>
-
-            <button
-              onClick={() => changeTab('pipeline')}
-              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition cursor-pointer ${activeTab === 'pipeline'
-                ? 'bg-slate-900 text-white shadow-xs'
-                : 'text-slate-600 hover:bg-slate-100'
-                }`}
-            >
-              ไปป์ไลน์วงจรขาย (Pipeline)
-            </button>
-          </div>
-
-          <div className="text-xs text-slate-400">
-            แสดง <strong className="text-slate-800">{filtered.length}</strong> จาก {quotations.length} รายการ
-          </div>
-        </div>
-
-        {/* Filter Controls Row (ค้นหา, โครงการ, สถานะ, วันที่ อยู่ในแถวเดียว) */}
+      {/* 3. Unified Clean Toolbar */}
+      <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 shadow-2xs space-y-2">
         <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-
           <div className="flex flex-wrap items-center gap-2 flex-1">
             {/* Search Box */}
             <div className="relative min-w-[200px] max-w-xs flex-1">
@@ -472,7 +492,7 @@ export default function QuotationList() {
                 placeholder="ค้นหาเลขที่, ลูกค้า, โครงการ..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full rounded-lg border border-slate-300 bg-slate-50/50 pl-8 pr-3 py-1.5 text-xs text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:border-slate-800"
+                className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800 pl-8 pr-3 py-1.5 text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:border-emerald-600 dark:focus:border-emerald-400"
               />
             </div>
 
@@ -487,7 +507,7 @@ export default function QuotationList() {
             <select
               value={filterProject}
               onChange={(e) => setFilterProject(e.target.value)}
-              className="rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs text-slate-700 focus:outline-none focus:border-slate-800"
+              className="rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 py-1.5 text-xs text-slate-700 dark:text-slate-200 focus:outline-none focus:border-emerald-600 dark:focus:border-emerald-400"
             >
               <option value="">ทุกโครงการ</option>
               {projects.map((p) => (
@@ -501,23 +521,24 @@ export default function QuotationList() {
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs text-slate-700 focus:outline-none focus:border-slate-800"
+              className="rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 py-1.5 text-xs text-slate-700 dark:text-slate-200 focus:outline-none focus:border-emerald-600 dark:focus:border-emerald-400"
             >
               <option value="all">ทุกสถานะ</option>
               <option value="draft">ฉบับร่าง</option>
               <option value="sent">ส่งลูกค้าแล้ว</option>
-              <option value="approved">ลูกค้าอนุมัติ (PO Signed)</option>
+              <option value="approved">ลูกค้าอนุมัติแล้ว</option>
+              <option value="partial">รับชำระบางส่วน</option>
               <option value="rejected">ปฏิเสธ / ยกเลิก</option>
               <option value="expired">หมดอายุยืนราคา</option>
             </select>
 
             {/* Compact Date Preset Dropdown */}
-            <div className="flex items-center gap-1 bg-slate-50 border border-slate-300 rounded-lg px-2 py-1">
-              <Calendar className="h-3.5 w-3.5 text-slate-500" />
+            <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1">
+              <Calendar className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
               <select
                 value={datePreset}
                 onChange={(e) => handleDatePresetChange(e.target.value)}
-                className="bg-transparent text-xs text-slate-700 font-medium focus:outline-none cursor-pointer"
+                className="bg-transparent text-xs text-slate-700 dark:text-slate-200 font-medium focus:outline-none cursor-pointer"
               >
                 <option value="all">ทุกช่วงเวลา</option>
                 <option value="today">วันนี้</option>
@@ -528,164 +549,57 @@ export default function QuotationList() {
               </select>
             </div>
 
-            {/* Custom Date Inputs (แสดงเฉพาะเมื่อเลือก custom) */}
             {datePreset === 'custom' && (
-              <div className="flex items-center gap-1 bg-white border border-slate-300 rounded-lg px-2 py-0.5 animate-in fade-in">
+              <div className="flex items-center gap-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-0.5">
                 <input
                   type="date"
                   value={dateFrom}
                   onChange={(e) => setDateFrom(e.target.value)}
-                  className="text-xs border-0 p-0 text-slate-800 focus:outline-none"
+                  className="text-xs border-0 p-0 bg-transparent text-slate-800 dark:text-slate-100 focus:outline-none"
                 />
-                <span className="text-slate-400">―</span>
+                <span className="text-slate-400">–</span>
                 <input
                   type="date"
                   value={dateTo}
                   onChange={(e) => setDateTo(e.target.value)}
-                  className="text-xs border-0 p-0 text-slate-800 focus:outline-none"
+                  className="text-xs border-0 p-0 bg-transparent text-slate-800 dark:text-slate-100 focus:outline-none"
                 />
               </div>
             )}
           </div>
 
-          {/* Clear Filters Button */}
-          {hasFilter && (
-            <button
-              type="button"
-              onClick={clearAllFilters}
-              className="text-xs text-rose-600 hover:underline font-semibold cursor-pointer whitespace-nowrap"
-            >
-              ล้างตัวกรอง
-            </button>
-          )}
+          <div className="flex items-center gap-3">
+            {hasFilter && (
+              <button
+                type="button"
+                onClick={clearAllFilters}
+                className="text-xs text-rose-600 dark:text-rose-400 hover:underline font-semibold cursor-pointer whitespace-nowrap"
+              >
+                ล้างตัวกรอง
+              </button>
+            )}
+            <span className="text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">
+              แสดง <strong className="text-slate-800 dark:text-slate-100 tabular-nums">{filtered.length}</strong> จาก {quotations.length} รายการ
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* 4. Table Views (สะอาดตา โปร่ง สบายตา อ่านง่าย) */}
+      {/* 4. Main High-Legibility Table */}
       {loading ? (
-        <div className="rounded-xl border border-slate-200 bg-white p-12 text-center text-slate-400">
+        <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-12 text-center text-slate-400 dark:text-slate-500">
           <RefreshCw className="mx-auto h-5 w-5 animate-spin mb-2" />
           <p className="text-xs">กำลังโหลดรายการใบเสนอราคา...</p>
         </div>
-      ) : activeTab === 'pipeline' ? (
-
-        /* TAB 3: ไปป์ไลน์วงจรขาย ➔ จัดซื้อ (Pipeline Step View) */
-        <div className="space-y-3">
-          {/* Step Banner */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
-            <div className="rounded-xl border border-slate-200 bg-white p-3">
-              <div className="text-[11px] font-semibold text-slate-500">ขั้นที่ 1: เสนอราคา (Draft)</div>
-              <div className="text-lg font-bold text-slate-800 mt-0.5">{stats.draftCount} ใบ</div>
-              <div className="text-[10px] text-slate-400">จัดทำสเปกและต้นทุน</div>
-            </div>
-            <div className="rounded-xl border border-slate-200 bg-white p-3">
-              <div className="text-[11px] font-semibold text-sky-700">ขั้นที่ 2: ส่งลูกค้า (Sent)</div>
-              <div className="text-lg font-bold text-sky-900 mt-0.5">{stats.sentCount} ใบ</div>
-              <div className="text-[10px] text-slate-400">อยู่ระหว่างรอบอร์ดอนุมัติ</div>
-            </div>
-            <div className="rounded-xl border border-emerald-300 bg-emerald-50/50 p-3">
-              <div className="text-[11px] font-bold text-emerald-800">ขั้นที่ 3: ลูกค้าเซ็น PO</div>
-              <div className="text-lg font-bold text-emerald-900 mt-0.5">{stats.signedCount} ใบ</div>
-              <div className="text-[10px] text-emerald-700">อนุมัติเป็นทางการแล้ว</div>
-            </div>
-            <div className="rounded-xl border border-slate-200 bg-white p-3">
-              <div className="text-[11px] font-semibold text-slate-500">ขั้นที่ 4: ส่งต่อจัดซื้อ (PO)</div>
-              <div className="text-lg font-bold text-slate-900 mt-0.5 font-mono">{baht(stats.signedAmount)} ฿</div>
-              <div className="text-[10px] text-slate-400">มูลค่าพร้อมสั่งของ</div>
-            </div>
-          </div>
-
-          {/* Pipeline Linkage Table (จัดระเบียบตารางทางการ สลับสี มีเส้นตารางชัดเจน) */}
-          <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs">
-            <table className="table-auto w-full text-left text-xs divide-y divide-slate-200 dark:divide-slate-800 border-collapse">
-              <thead className="bg-slate-100/90 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 font-bold uppercase tracking-wider text-[11px] border-b-2 border-slate-300 dark:border-slate-700">
-                <tr>
-                  <th className="py-3.5 px-3.5 text-center w-40 border-r border-slate-200/70 dark:border-slate-700/60 whitespace-nowrap">เลขที่เอกสาร (QT)</th>
-                  <th className="py-3.5 px-4 min-w-[220px] border-r border-slate-200/70 dark:border-slate-700/60">ชื่อลูกค้า / โครงการ</th>
-                  <th className="py-3.5 px-3 text-center w-48 border-r border-slate-200/70 dark:border-slate-700/60 whitespace-nowrap">สถานะใบสั่งซื้อลูกค้า (PO)</th>
-                  <th className="py-3.5 px-3.5 text-right w-36 border-r border-slate-200/70 dark:border-slate-700/60 whitespace-nowrap">ยอดรวมสุทธิ (บาท)</th>
-                  <th className="py-3.5 px-3.5 text-center w-36 whitespace-nowrap">ส่งต่อฝ่ายจัดซื้อ</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200 dark:divide-slate-800 bg-white dark:bg-slate-900">
-                {quotations.map((q, rowIdx) => {
-                  const approval = getCustomerApprovalDisplay(q)
-                  const hasPo = Boolean(q.customer_po_no)
-                  return (
-                    <tr
-                      key={q.id}
-                      className={`transition-colors border-b border-slate-200 dark:border-slate-800 ${
-                        rowIdx % 2 === 0
-                          ? 'bg-white dark:bg-slate-900'
-                          : 'bg-slate-50/70 dark:bg-slate-800/40'
-                      } hover:!bg-amber-50/70 dark:hover:!bg-slate-750`}
-                    >
-                      <td className="py-3 px-3.5 text-center whitespace-nowrap align-middle border-r border-slate-200/60 dark:border-slate-800/60">
-                        <Link to={`/quotations/${q.id}`} className="font-bold text-sky-800 dark:text-sky-400 hover:underline font-mono text-xs block">
-                          {q.quotation_no}
-                        </Link>
-                        <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                          วันที่: {q.quotation_date || q.issue_date}
-                        </div>
-                      </td>
-                      <td className="py-3 px-4 align-middle border-r border-slate-200/60 dark:border-slate-800/60">
-                        <div className="font-bold text-slate-900 dark:text-slate-100 truncate max-w-[240px]" title={q.customer_name}>
-                          {q.customer_name || '-'}
-                        </div>
-                        <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-[240px] mt-0.5" title={q.projects?.project_name || 'ทั่วไป'}>
-                          {q.projects ? `${q.projects.project_code} • ${q.projects.project_name}` : 'ทั่วไป'}
-                        </div>
-                      </td>
-                      <td className="py-3 px-3 text-center align-middle whitespace-nowrap border-r border-slate-200/60 dark:border-slate-800/60">
-                        {hasPo ? (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                            <span>{approval.shortLabel}</span>
-                          </span>
-                        ) : (
-                          <span className="text-slate-400 dark:text-slate-500 text-[11px] font-medium">รอลูกค้าอนุมัติ</span>
-                        )}
-                      </td>
-                      <td className="py-3 px-3.5 text-right font-black text-slate-900 dark:text-slate-100 font-mono align-middle whitespace-nowrap border-r border-slate-200/60 dark:border-slate-800/60 tabular-nums">
-                        ฿{baht(q.grand_total || q.total_amount)}
-                      </td>
-                      <td className="py-3 px-3.5 text-center align-middle whitespace-nowrap">
-                        {hasPo ? (
-                          <Link
-                            to={`/purchasing/po/new?quotation_id=${q.id}`}
-                            className="inline-flex items-center gap-1 rounded-lg bg-slate-900 hover:bg-slate-800 dark:bg-amber-500 dark:hover:bg-amber-400 px-2.5 py-1 text-xs font-bold text-white dark:text-slate-950 shadow-2xs transition"
-                          >
-                            <ShoppingCart className="h-3 w-3 text-amber-400 dark:text-slate-950" />
-                            <span>เปิด PO จัดซื้อ</span>
-                          </Link>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => setCustomerPoTarget(q)}
-                            className="text-xs text-sky-700 dark:text-sky-400 hover:underline font-semibold cursor-pointer"
-                          >
-                            + บันทึกการอนุมัติก่อน
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
       ) : (
-
-        /* TAB 1 & 2: ตารางหลัก (High-Legibility Table - สบายตา ไม่ซับซ้อน) */
         <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs min-h-[380px] pb-16">
           <table className="table-auto w-full text-left text-xs divide-y divide-slate-200 dark:divide-slate-800 border-collapse">
             <thead className="bg-slate-100/90 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 font-bold uppercase tracking-wider text-[11px] border-b-2 border-slate-300 dark:border-slate-700">
               <tr>
                 <th className="py-3.5 px-3.5 text-center w-40 border-r border-slate-200/70 dark:border-slate-700/60 whitespace-nowrap">เลขที่เอกสาร (QT)</th>
-                <th className="py-3.5 px-4 min-w-[220px] border-r border-slate-200/70 dark:border-slate-700/60">ชื่อลูกค้า / โครงการ</th>
+                <th className="py-3.5 px-4 min-w-[230px] border-r border-slate-200/70 dark:border-slate-700/60">ชื่อลูกค้า / โครงการ</th>
                 <th className="py-3.5 px-3 text-center w-36 border-r border-slate-200/70 dark:border-slate-700/60 whitespace-nowrap">กำหนดยืนราคา</th>
-                <th className="py-3.5 px-3.5 text-right w-36 border-r border-slate-200/70 dark:border-slate-700/60 whitespace-nowrap">ยอดรวมสุทธิ (บาท)</th>
+                <th className="py-3.5 px-3.5 text-right w-40 border-r border-slate-200/70 dark:border-slate-700/60 whitespace-nowrap">ยอดรวมสุทธิ (บาท)</th>
                 <th className="py-3.5 px-3 text-center w-36 border-r border-slate-200/70 dark:border-slate-700/60 whitespace-nowrap">สถานะเอกสาร</th>
                 <th className="py-3.5 px-3.5 text-center w-28 whitespace-nowrap">การจัดการ</th>
               </tr>
@@ -694,9 +608,9 @@ export default function QuotationList() {
               {filtered.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="py-12 text-center text-slate-400 dark:text-slate-500">
-                    <div className="text-2xl mb-1"></div>
+                    <FileText className="mx-auto h-7 w-7 text-slate-300 dark:text-slate-600 mb-2" />
                     <div className="font-medium text-slate-600 dark:text-slate-300">ไม่พบใบเสนอราคาตามเงื่อนไขที่เลือก</div>
-                    <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">ลองเปลี่ยนคำค้นหา หรือกด "ล้างตัวกรอง"</p>
+                    <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">ลองเปลี่ยนคำค้นหา หรือกด &quot;ล้างตัวกรอง&quot;</p>
                   </td>
                 </tr>
               ) : (
@@ -705,7 +619,9 @@ export default function QuotationList() {
                   const expInfo = getExpiryInfo(q)
                   const isMenuOpen = actionMenuId === q.id
                   const approval = getCustomerApprovalDisplay(q)
-                  const hasCustomerPo = Boolean(q.customer_po_no)
+                  const isApproved = isQuotationApproved(q)
+                  const amountMeta = getQuotationRowAmountMeta(q)
+                  const pSummary = purchasingMap[q.id]
 
                   return (
                     <tr
@@ -714,9 +630,9 @@ export default function QuotationList() {
                         rowIdx % 2 === 0
                           ? 'bg-white dark:bg-slate-900'
                           : 'bg-slate-50/70 dark:bg-slate-800/40'
-                      } ${isMenuOpen ? 'relative z-30' : ''} hover:!bg-amber-50/70 dark:hover:!bg-slate-750`}
+                      } ${isMenuOpen ? 'relative z-30' : ''} hover:bg-emerald-50/50 dark:hover:bg-slate-800/80`}
                     >
-                      {/* 1. เลขที่ QT + วันที่ (จัดกึ่งกลาง บน-ล่าง ซ้าย-ขวา) */}
+                      {/* 1. เลขที่ QT + วันที่ */}
                       <td className="py-3 px-3.5 text-center align-middle whitespace-nowrap border-r border-slate-200/60 dark:border-slate-800/60">
                         <Link
                           to={`/quotations/${q.id}`}
@@ -724,31 +640,43 @@ export default function QuotationList() {
                         >
                           {q.quotation_no}
                         </Link>
-                        <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums">
                           {q.quotation_date || q.issue_date}
                         </div>
-                        {hasCustomerPo && (
+                        {isApproved && (
                           <div className="mt-1 flex justify-center">
-                            <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-semibold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                               <span>{approval.isDirectQt ? 'เซ็นอนุมัติตาม QT' : approval.shortLabel}</span>
                             </span>
                           </div>
                         )}
                       </td>
 
-                      {/* 2. ลูกค้า / โครงการ (กึ่งกลางบน-ล่าง ชิดซ้าย ย่อข้อความแต่ hover อ่านได้) */}
+                      {/* 2. ลูกค้า / โครงการ + สถานะส่งต่อจัดซื้อ */}
                       <td className="py-3 px-4 align-middle border-r border-slate-200/60 dark:border-slate-800/60">
-                        <div className="font-bold text-slate-900 dark:text-slate-100 truncate max-w-[240px]" title={q.customer_name}>
+                        <div className="font-bold text-slate-900 dark:text-slate-100 truncate max-w-[260px]" title={q.customer_name}>
                           {q.customer_name || '-'}
                         </div>
-                        <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-[240px] mt-0.5" title={q.projects ? `${q.projects.project_code} • ${q.projects.project_name}` : (q.ref_no || 'โครงการทั่วไป')}>
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-[260px] mt-0.5" title={q.projects ? `${q.projects.project_code} • ${q.projects.project_name}` : (q.ref_no || 'โครงการทั่วไป')}>
                           {q.projects ? `${q.projects.project_code} • ${q.projects.project_name}` : (q.ref_no || 'โครงการทั่วไป')}
                         </div>
+                        {pSummary?.stageLabel && (
+                          <div className="mt-1">
+                            <Link
+                              to={`/quotations/${q.id}`}
+                              className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold hover:opacity-85 transition ${
+                                PURCHASING_BADGE_TONES[pSummary.stageTone] || PURCHASING_BADGE_TONES.slate
+                              }`}
+                            >
+                              <span>{pSummary.stageLabel}</span>
+                            </Link>
+                          </div>
+                        )}
                       </td>
 
-                      {/* 3. วันสิ้นสุดยืนราคา (จัดกึ่งกลาง บน-ล่าง ซ้าย-ขวา) */}
+                      {/* 3. วันสิ้นสุดยืนราคา */}
                       <td className="py-3 px-3 text-center align-middle whitespace-nowrap border-r border-slate-200/60 dark:border-slate-800/60">
-                        <div className="text-slate-700 dark:text-slate-300 font-mono text-xs font-semibold">
+                        <div className="text-slate-700 dark:text-slate-300 text-xs font-semibold tabular-nums">
                           {q.valid_until || q.expiry_date || '-'}
                         </div>
                         {expInfo && (
@@ -759,26 +687,26 @@ export default function QuotationList() {
                         )}
                       </td>
 
-                      {/* 4. ยอดสุทธิ (กึ่งกลางบน-ล่าง ชิดขวาตามแบบการเงิน) */}
-                      <td className="py-3 px-3.5 align-middle text-right whitespace-nowrap font-mono border-r border-slate-200/60 dark:border-slate-800/60 tabular-nums">
-                        <div className="font-black text-slate-900 dark:text-slate-100 text-xs">
-                          ฿{baht(q.grand_total || q.total_amount || q.net_amount)}
+                      {/* 4. ยอดรวมสุทธิ (ใช้ font-sans + tabular-nums เพื่อไม่ให้ ฿ เพี้ยนเป็น $ และแสดง VAT จริง) */}
+                      <td className="py-3 px-3.5 align-middle text-right whitespace-nowrap border-r border-slate-200/60 dark:border-slate-800/60">
+                        <div className="font-bold text-slate-900 dark:text-slate-100 text-xs tabular-nums">
+                          ฿{baht(amountMeta.amount)}
                         </div>
-                        <div className="text-[10px] text-slate-400 font-sans">รวม VAT 7%</div>
+                        <div className="text-[10px] text-slate-500 dark:text-slate-400">
+                          {amountMeta.vatShortTag}
+                        </div>
                       </td>
 
-                      {/* 5. สถานะ (Single Status Badge สะอาดตา จัดกึ่งกลาง) */}
+                      {/* 5. สถานะเอกสาร */}
                       <td className="py-3 px-3 align-middle text-center whitespace-nowrap border-r border-slate-200/60 dark:border-slate-800/60">
                         <span className={`inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${status.cls}`}>
                           {status.label}
                         </span>
                       </td>
 
-                      {/* 6. การจัดการ (Action Menu กะทัดรัด จัดกึ่งกลาง) */}
+                      {/* 6. การจัดการ */}
                       <td className="py-3 px-3.5 align-middle text-center whitespace-nowrap">
                         <div className="flex items-center justify-center gap-1">
-
-                          {/* Quick Link to Details */}
                           <Link
                             to={`/quotations/${q.id}`}
                             className="rounded px-2 py-1 text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition"
@@ -786,7 +714,6 @@ export default function QuotationList() {
                             ดูเอกสาร
                           </Link>
 
-                          {/* Action Popover Menu (⋯) */}
                           <div className="relative inline-block text-left" onClick={(e) => e.stopPropagation()}>
                             <button
                               type="button"
@@ -802,7 +729,6 @@ export default function QuotationList() {
 
                             {isMenuOpen && (
                               <div className="absolute right-0 top-full mt-1.5 w-60 min-w-[220px] rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-1.5 shadow-2xl z-50 text-left text-xs ring-1 ring-black/5 dark:ring-white/10 animate-in fade-in zoom-in-95 duration-100 space-y-0.5">
-
                                 <Link
                                   to={`/quotations/${q.id}/edit`}
                                   className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium transition"
@@ -820,16 +746,16 @@ export default function QuotationList() {
                                   className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-emerald-800 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 font-semibold cursor-pointer transition"
                                 >
                                   <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-                                  <span>{hasCustomerPo ? 'แก้ไขข้อมูลการอนุมัติ' : 'บันทึกการอนุมัติใบเสนอราคา'}</span>
+                                  <span>{isApproved ? 'แก้ไขข้อมูลการอนุมัติ' : 'บันทึกการอนุมัติใบเสนอราคา'}</span>
                                 </button>
 
-                                {hasCustomerPo && (
+                                {isApproved && (
                                   <Link
-                                    to={`/purchasing/po/new?quotation_id=${q.id}`}
+                                    to={`/quotations/${q.id}`}
                                     className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-amber-900 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/50 font-semibold transition"
                                   >
                                     <ShoppingCart className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
-                                    <span>ส่งต่อฝ่ายจัดซื้อ (เปิด PO)</span>
+                                    <span>ส่งต่อจัดซื้อ / เช็กสต็อก</span>
                                   </Link>
                                 )}
 
@@ -868,7 +794,7 @@ export default function QuotationList() {
                                   className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium cursor-pointer transition"
                                 >
                                   <Share2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-                                  <span>แชร์ลิงก์ & LINE</span>
+                                  <span>แชร์ลิงก์ &amp; LINE</span>
                                 </button>
 
                                 <Link
@@ -879,7 +805,7 @@ export default function QuotationList() {
                                   <span>ทำซ้ำใบเสนอราคา (Duplicate)</span>
                                 </Link>
 
-                                {(q.status === 'approved' || q.status === 'partial') && (
+                                {isApproved && (
                                   <button
                                     type="button"
                                     onClick={() => handleOpenReceivePayment(q)}
@@ -900,11 +826,9 @@ export default function QuotationList() {
                                   <Trash2 className="h-3.5 w-3.5 text-rose-500 dark:text-rose-400" />
                                   <span>ลบใบเสนอราคานี้</span>
                                 </button>
-
                               </div>
                             )}
                           </div>
-
                         </div>
                       </td>
                     </tr>
@@ -916,9 +840,9 @@ export default function QuotationList() {
         </div>
       )}
 
-      {/* แถบเปลี่ยนหน้า (Pagination < 1 2 3 4 5 6 >) */}
+      {/* แถบเปลี่ยนหน้า */}
       {filtered.length > 0 && (
-        <div className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 shadow-2xs">
+        <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-2.5 shadow-2xs">
           <Pagination
             currentPage={currentPage}
             totalItems={filtered.length}

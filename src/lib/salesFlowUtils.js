@@ -1,7 +1,7 @@
 import { calculateTaxBreakdown, inferQuotationTaxType, round2 } from './tax.js'
 import { isCancelledStatus } from './projectFinancials.js'
 
-function isPoReceivedStatus(status) {
+export function isPoReceivedStatus(status) {
   const s = String(status || '').trim().toLowerCase()
   return s === 'received' || s === 'รับของครบ'
 }

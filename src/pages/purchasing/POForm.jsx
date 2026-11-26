@@ -245,6 +245,8 @@ export default function POForm() {
       setNotes(a.data.notes || '')
       setItems((b.data ?? []).map((i) => ({
         id: i.id,
+        item_id: i.item_id || null,
+        pr_item_id: i.pr_item_id || null,
         item_name: i.item_name,
         quantity: String(i.quantity),
         unit: i.unit ?? '',
@@ -642,7 +644,7 @@ export default function POForm() {
           }).eq('id', id)
 
           await supabase.from('purchase_order_items').delete().eq('po_id', id)
-          const itemsPayload = p_items.map((it) => ({
+          const baseItems = p_items.map((it) => ({
             po_id: id,
             item_id: it.item_id || null,
             item_name: it.item_name,
@@ -651,8 +653,18 @@ export default function POForm() {
             unit_price: Number(it.unit_price) || 0,
             total_amount: (Number(it.quantity) || 1) * (Number(it.unit_price) || 0),
           }))
-          const { error: itErr } = await supabase.from('purchase_order_items').insert(itemsPayload)
-          if (itErr) console.warn('Direct items update warning:', itErr)
+          try {
+            const itemsWithPr = baseItems.map((it, idx) => ({
+              ...it,
+              pr_item_id: p_items[idx]?.pr_item_id || null,
+            }))
+            const { error: itErr1 } = await supabase.from('purchase_order_items').insert(itemsWithPr)
+            if (itErr1) throw itErr1
+          } catch (itErr) {
+            console.warn('Retrying update purchase_order_items without pr_item_id:', itErr)
+            const { error: itErr2 } = await supabase.from('purchase_order_items').insert(baseItems)
+            if (itErr2) console.warn('Could not re-insert items directly:', itErr2)
+          }
         }
         await applyExtraFields(id)
         navigate(`/purchasing/po/${id}`)
