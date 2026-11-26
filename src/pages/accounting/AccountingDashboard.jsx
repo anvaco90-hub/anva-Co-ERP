@@ -101,15 +101,15 @@ export default function AccountingDashboard() {
   const getBusinessStatusBadge = (status) => {
     switch (status) {
       case 'รอดำเนินการ':
-        return <span className="bg-amber-100 text-amber-800 text-[10px] px-2 py-0.5 rounded-full font-bold">⏳ รอดำเนินการ</span>
+        return <span className="bg-amber-100 text-amber-800 text-[10px] px-2.5 py-0.5 rounded-full font-bold whitespace-nowrap">รอดำเนินการ</span>
       case 'อนุมัติแล้ว':
-        return <span className="bg-sky-100 text-sky-800 text-[10px] px-2 py-0.5 rounded-full font-bold">อนุมัติแล้ว</span>
+        return <span className="bg-sky-100 text-sky-800 text-[10px] px-2.5 py-0.5 rounded-full font-bold whitespace-nowrap">อนุมัติแล้ว</span>
       case 'จ่ายเงินแล้ว':
-        return <span className="bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded-full font-bold"> จ่ายเงินแล้ว</span>
+        return <span className="bg-emerald-100 text-emerald-800 text-[10px] px-2.5 py-0.5 rounded-full font-bold whitespace-nowrap">จ่ายเงินแล้ว</span>
       case 'ยกเลิก':
-        return <span className="bg-rose-100 text-rose-800 text-[10px] px-2 py-0.5 rounded-full font-bold">ยกเลิก</span>
+        return <span className="bg-rose-100 text-rose-800 text-[10px] px-2.5 py-0.5 rounded-full font-bold whitespace-nowrap">ยกเลิก</span>
       default:
-        return <span className="bg-steel-100 text-steel-700 text-[10px] px-2 py-0.5 rounded-full font-medium">{status || 'ฉบับร่าง'}</span>
+        return <span className="bg-steel-100 text-steel-700 text-[10px] px-2.5 py-0.5 rounded-full font-medium whitespace-nowrap">{status || 'ฉบับร่าง'}</span>
     }
   }
 

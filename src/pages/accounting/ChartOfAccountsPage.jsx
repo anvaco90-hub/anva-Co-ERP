@@ -208,15 +208,15 @@ export default function ChartOfAccountsPage() {
                 {/* Account Rows Table */}
                 {!isCollapsed && (
                   <div className="overflow-x-auto">
-                    <table className="w-full text-left text-xs text-steel-600">
-                      <thead className="bg-steel-50/50 text-steel-700 border-b border-steel-200 font-semibold text-[11px]">
+                    <table className="table-auto w-full text-left text-xs text-steel-600">
+                      <thead className="bg-steel-50/80 text-steel-700 border-b border-steel-200 font-bold text-[11px]">
                         <tr>
-                          <th className="w-28 px-4 py-2.5">รหัสบัญชี</th>
-                          <th className="px-4 py-2.5">ชื่อบัญชีภาษาไทย</th>
-                          <th className="px-4 py-2.5">ชื่อภาษาอังกฤษ (English)</th>
-                          <th className="px-4 py-2.5 text-center">ประเภทระบบ</th>
-                          <th className="px-4 py-2.5 text-center">สถานะ</th>
-                          <th className="px-4 py-2.5 text-center">จัดการ</th>
+                          <th className="w-28 px-4 py-2.5 whitespace-nowrap">รหัสบัญชี</th>
+                          <th className="px-4 py-2.5 min-w-[180px]">ชื่อบัญชีภาษาไทย</th>
+                          <th className="px-4 py-2.5 min-w-[180px]">ชื่อภาษาอังกฤษ (English)</th>
+                          <th className="px-4 py-2.5 text-center whitespace-nowrap">ประเภทระบบ</th>
+                          <th className="px-4 py-2.5 text-center whitespace-nowrap">สถานะ</th>
+                          <th className="px-4 py-2.5 text-center whitespace-nowrap">จัดการ</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-steel-100">
@@ -229,41 +229,42 @@ export default function ChartOfAccountsPage() {
                         ) : (
                           list.map((acc) => (
                             <tr key={acc.id} className="hover:bg-steel-50/50 transition">
-                              <td className="px-4 py-2.5 font-mono font-bold text-sky-800">
+                              <td className="px-4 py-2.5 font-mono font-bold text-sky-800 whitespace-nowrap">
                                 {acc.account_code}
                               </td>
-                              <td className="px-4 py-2.5 font-semibold text-ink">
+                              <td className="px-4 py-2.5 font-semibold text-ink min-w-[180px]">
                                 {acc.account_name_th}
                               </td>
-                              <td className="px-4 py-2.5 font-mono text-steel-500 text-[11px]">
+                              <td className="px-4 py-2.5 font-mono text-steel-500 text-[11px] min-w-[180px]">
                                 {acc.account_name_en || '-'}
                               </td>
-                              <td className="px-4 py-2.5 text-center">
+                              <td className="px-4 py-2.5 text-center whitespace-nowrap">
                                 {acc.is_system_default ? (
-                                  <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-steel-100 text-steel-700 px-2 py-0.5 rounded-full">
-                                    <Lock className="h-2.5 w-2.5 text-steel-500" /> ค่าเริ่มต้นระบบ
+                                  <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-steel-100 text-steel-700 px-2.5 py-0.5 rounded-full">
+                                    <Lock className="h-3 w-3 text-steel-500" /> ค่าเริ่มต้นระบบ
                                   </span>
                                 ) : (
                                   <span className="text-[10px] text-sky-700 font-medium">บัญชีทั่วไป</span>
                                 )}
                               </td>
-                              <td className="px-4 py-2.5 text-center">
+                              <td className="px-4 py-2.5 text-center whitespace-nowrap">
                                 {acc.is_active ? (
-                                  <span className="bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded-full font-bold">
+                                  <span className="bg-emerald-100 text-emerald-800 text-[10px] px-2.5 py-0.5 rounded-full font-bold">
                                     ใช้งานปกติ
                                   </span>
                                 ) : (
-                                  <span className="bg-steel-100 text-steel-500 text-[10px] px-2 py-0.5 rounded-full font-medium">
+                                  <span className="bg-steel-100 text-steel-500 text-[10px] px-2.5 py-0.5 rounded-full font-medium">
                                     ปิดการใช้งาน
                                   </span>
                                 )}
                               </td>
-                              <td className="px-4 py-2.5 text-center">
+                              <td className="px-4 py-2.5 text-center whitespace-nowrap">
                                 <button
                                   onClick={() => setModalAccount(acc)}
-                                  className="inline-flex items-center gap-1 text-sky-700 hover:text-sky-900 font-semibold text-[11px] p-1 rounded hover:bg-sky-50 transition"
+                                  className="inline-flex items-center gap-1 text-sky-700 hover:text-sky-900 font-semibold text-[11px] px-2 py-1 rounded hover:bg-sky-50 transition cursor-pointer"
                                 >
-                                  <Edit2 className="h-3 w-3" /> แก้ไข
+                                  <Edit2 className="h-3.5 w-3.5" />
+                                  <span>แก้ไข</span>
                                 </button>
                               </td>
                             </tr>

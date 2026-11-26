@@ -375,18 +375,18 @@ export default function TaxReportsPage() {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs text-steel-600">
-              <thead className="bg-steel-50/75 text-steel-700 border-b border-steel-200 font-semibold">
+            <table className="table-auto w-full text-left text-xs text-steel-600">
+              <thead className="bg-steel-50/80 text-steel-700 border-b border-steel-200 font-bold text-[11px]">
                 <tr>
-                  <th className="w-10 px-3 py-2.5 text-center">ลำดับ</th>
-                  <th className="px-3 py-2.5">วัน เดือน ปี</th>
-                  <th className="px-3 py-2.5">เลขที่ใบกำกับภาษี</th>
-                  <th className="px-3 py-2.5">ชื่อผู้ซื้อสินค้า / บริการ (ลูกค้า)</th>
-                  <th className="px-3 py-2.5">โครงการ</th>
-                  <th className="px-3 py-2.5">เลขผู้เสียภาษี</th>
-                  <th className="px-3 py-2.5 text-center">สาขา</th>
-                  <th className="px-3 py-2.5 text-right font-bold text-steel-700">มูลค่าสินค้า (บาท)</th>
-                  <th className="px-3 py-2.5 text-right font-bold text-sky-800">ภาษีมูลค่าเพิ่ม 7%</th>
+                  <th className="w-10 px-3 py-2.5 text-center whitespace-nowrap">ลำดับ</th>
+                  <th className="px-3 py-2.5 whitespace-nowrap">วัน เดือน ปี</th>
+                  <th className="px-3 py-2.5 whitespace-nowrap">เลขที่ใบกำกับภาษี</th>
+                  <th className="px-3 py-2.5 min-w-[180px]">ชื่อผู้ซื้อสินค้า / บริการ (ลูกค้า)</th>
+                  <th className="px-3 py-2.5 whitespace-nowrap">โครงการ</th>
+                  <th className="px-3 py-2.5 whitespace-nowrap">เลขผู้เสียภาษี</th>
+                  <th className="px-3 py-2.5 text-center whitespace-nowrap">สาขา</th>
+                  <th className="px-3 py-2.5 text-right font-bold text-steel-700 whitespace-nowrap">มูลค่าสินค้า (บาท)</th>
+                  <th className="px-3 py-2.5 text-right font-bold text-sky-800 whitespace-nowrap">ภาษีมูลค่าเพิ่ม 7%</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-steel-100">
@@ -398,16 +398,16 @@ export default function TaxReportsPage() {
                   </tr>
                 ) : (
                   outputVatRows.map((row, idx) => (
-                    <tr key={row.id} className="hover:bg-steel-50/50">
-                      <td className="px-3 py-2 text-center text-steel-400 font-mono">{idx + 1}</td>
-                      <td className="px-3 py-2 whitespace-nowrap">{formatThaiDate(row.document_date, false)}</td>
-                      <td className="px-3 py-2 font-mono font-bold text-sky-800">{row.document_no}</td>
-                      <td className="px-3 py-2 font-semibold text-ink">{row.contacts?.company_name || 'ลูกค้าทั่วไป'}</td>
-                      <td className="px-3 py-2 text-steel-600">{row.projects?.project_code || '-'}</td>
-                      <td className="px-3 py-2 font-mono text-[11px] text-steel-500">{row.contacts?.tax_id || '-'}</td>
-                      <td className="px-3 py-2 text-center font-mono text-[11px]">{row.contacts?.branch_code || '00000'}</td>
-                      <td className="px-3 py-2 text-right font-mono font-bold text-ink">{formatBaht(row.base_amount)}</td>
-                      <td className="px-3 py-2 text-right font-mono font-bold text-sky-800">{formatBaht(row.vat_amount)}</td>
+                    <tr key={row.id} className="hover:bg-steel-50/50 transition">
+                      <td className="px-3 py-2.5 text-center text-steel-400 font-mono whitespace-nowrap">{idx + 1}</td>
+                      <td className="px-3 py-2.5 whitespace-nowrap">{formatThaiDate(row.document_date, false)}</td>
+                      <td className="px-3 py-2.5 font-mono font-bold text-sky-800 whitespace-nowrap">{row.document_no}</td>
+                      <td className="px-3 py-2.5 font-semibold text-ink min-w-[180px]">{row.contacts?.company_name || 'ลูกค้าทั่วไป'}</td>
+                      <td className="px-3 py-2.5 text-steel-600 whitespace-nowrap">{row.projects?.project_code || '-'}</td>
+                      <td className="px-3 py-2.5 font-mono text-[11px] text-steel-500 whitespace-nowrap">{row.contacts?.tax_id || '-'}</td>
+                      <td className="px-3 py-2.5 text-center font-mono text-[11px] whitespace-nowrap">{row.contacts?.branch_code || '00000'}</td>
+                      <td className="px-3 py-2.5 text-right font-mono font-bold text-ink whitespace-nowrap tabular-nums">{formatBaht(row.base_amount)}</td>
+                      <td className="px-3 py-2.5 text-right font-mono font-bold text-sky-800 whitespace-nowrap tabular-nums">{formatBaht(row.vat_amount)}</td>
                     </tr>
                   ))
                 )}
@@ -415,13 +415,13 @@ export default function TaxReportsPage() {
               {outputVatRows.length > 0 && (
                 <tfoot className="bg-steel-100/75 font-bold text-xs border-t-2 border-steel-300">
                   <tr>
-                    <td colSpan="7" className="px-3 py-2.5 text-right text-steel-700">
+                    <td colSpan="7" className="px-3 py-2.5 text-right text-steel-700 whitespace-nowrap">
                       ยอดรวมภาษีขายทั้งสิ้น (Total Output VAT):
                     </td>
-                    <td className="px-3 py-2.5 text-right font-mono text-ink">
+                    <td className="px-3 py-2.5 text-right font-mono text-ink whitespace-nowrap tabular-nums">
                       {formatBaht(totalOutputBase)}
                     </td>
-                    <td className="px-3 py-2.5 text-right font-mono text-sky-900 text-sm">
+                    <td className="px-3 py-2.5 text-right font-mono text-sky-900 text-sm whitespace-nowrap tabular-nums">
                       {formatBaht(totalOutputVat)}
                     </td>
                   </tr>
@@ -441,18 +441,18 @@ export default function TaxReportsPage() {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs text-steel-600">
-              <thead className="bg-steel-50/75 text-steel-700 border-b border-steel-200 font-semibold">
+            <table className="table-auto w-full text-left text-xs text-steel-600">
+              <thead className="bg-steel-50/80 text-steel-700 border-b border-steel-200 font-bold text-[11px]">
                 <tr>
-                  <th className="w-10 px-3 py-2.5 text-center">ลำดับ</th>
-                  <th className="px-3 py-2.5">วัน เดือน ปี</th>
-                  <th className="px-3 py-2.5">ใบกำกับภาษีผู้ขาย</th>
-                  <th className="px-3 py-2.5">เลขที่เอกสารภายใน</th>
-                  <th className="px-3 py-2.5">ชื่อผู้ขาย / ผู้ให้บริการ (คู่ค้า)</th>
-                  <th className="px-3 py-2.5">โครงการ</th>
-                  <th className="px-3 py-2.5">เลขผู้เสียภาษี</th>
-                  <th className="px-3 py-2.5 text-right font-bold text-steel-700">มูลค่าสินค้า (บาท)</th>
-                  <th className="px-3 py-2.5 text-right font-bold text-emerald-800">ภาษีมูลค่าเพิ่ม 7%</th>
+                  <th className="w-10 px-3 py-2.5 text-center whitespace-nowrap">ลำดับ</th>
+                  <th className="px-3 py-2.5 whitespace-nowrap">วัน เดือน ปี</th>
+                  <th className="px-3 py-2.5 whitespace-nowrap">ใบกำกับภาษีผู้ขาย</th>
+                  <th className="px-3 py-2.5 whitespace-nowrap">เลขที่เอกสารภายใน</th>
+                  <th className="px-3 py-2.5 min-w-[180px]">ชื่อผู้ขาย / ผู้ให้บริการ (คู่ค้า)</th>
+                  <th className="px-3 py-2.5 whitespace-nowrap">โครงการ</th>
+                  <th className="px-3 py-2.5 whitespace-nowrap">เลขผู้เสียภาษี</th>
+                  <th className="px-3 py-2.5 text-right font-bold text-steel-700 whitespace-nowrap">มูลค่าสินค้า (บาท)</th>
+                  <th className="px-3 py-2.5 text-right font-bold text-emerald-800 whitespace-nowrap">ภาษีมูลค่าเพิ่ม 7%</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-steel-100">
@@ -464,18 +464,18 @@ export default function TaxReportsPage() {
                   </tr>
                 ) : (
                   inputVatRows.map((row, idx) => (
-                    <tr key={row.id} className="hover:bg-steel-50/50">
-                      <td className="px-3 py-2 text-center text-steel-400 font-mono">{idx + 1}</td>
-                      <td className="px-3 py-2 whitespace-nowrap">{formatThaiDate(row.document_date, false)}</td>
-                      <td className="px-3 py-2 font-mono font-bold text-emerald-800">
+                    <tr key={row.id} className="hover:bg-steel-50/50 transition">
+                      <td className="px-3 py-2.5 text-center text-steel-400 font-mono whitespace-nowrap">{idx + 1}</td>
+                      <td className="px-3 py-2.5 whitespace-nowrap">{formatThaiDate(row.document_date, false)}</td>
+                      <td className="px-3 py-2.5 font-mono font-bold text-emerald-800 whitespace-nowrap">
                         {row.vendor_tax_invoice_no || row.document_no}
                       </td>
-                      <td className="px-3 py-2 font-mono text-[11px] text-steel-500">{row.document_no}</td>
-                      <td className="px-3 py-2 font-semibold text-ink">{row.contacts?.company_name || 'ผู้จำหน่าย/คู่ค้า'}</td>
-                      <td className="px-3 py-2 text-steel-600">{row.projects?.project_code || '-'}</td>
-                      <td className="px-3 py-2 font-mono text-[11px] text-steel-500">{row.contacts?.tax_id || '-'}</td>
-                      <td className="px-3 py-2 text-right font-mono font-bold text-ink">{formatBaht(row.base_amount)}</td>
-                      <td className="px-3 py-2 text-right font-mono font-bold text-emerald-800">{formatBaht(row.vat_amount)}</td>
+                      <td className="px-3 py-2.5 font-mono text-[11px] text-steel-500 whitespace-nowrap">{row.document_no}</td>
+                      <td className="px-3 py-2.5 font-semibold text-ink min-w-[180px]">{row.contacts?.company_name || 'ผู้จำหน่าย/คู่ค้า'}</td>
+                      <td className="px-3 py-2.5 text-steel-600 whitespace-nowrap">{row.projects?.project_code || '-'}</td>
+                      <td className="px-3 py-2.5 font-mono text-[11px] text-steel-500 whitespace-nowrap">{row.contacts?.tax_id || '-'}</td>
+                      <td className="px-3 py-2.5 text-right font-mono font-bold text-ink whitespace-nowrap tabular-nums">{formatBaht(row.base_amount)}</td>
+                      <td className="px-3 py-2.5 text-right font-mono font-bold text-emerald-800 whitespace-nowrap tabular-nums">{formatBaht(row.vat_amount)}</td>
                     </tr>
                   ))
                 )}
@@ -483,13 +483,13 @@ export default function TaxReportsPage() {
               {inputVatRows.length > 0 && (
                 <tfoot className="bg-steel-100/75 font-bold text-xs border-t-2 border-steel-300">
                   <tr>
-                    <td colSpan="7" className="px-3 py-2.5 text-right text-steel-700">
+                    <td colSpan="7" className="px-3 py-2.5 text-right text-steel-700 whitespace-nowrap">
                       ยอดรวมภาษีซื้อทั้งสิ้น (Total Input VAT):
                     </td>
-                    <td className="px-3 py-2.5 text-right font-mono text-ink">
+                    <td className="px-3 py-2.5 text-right font-mono text-ink whitespace-nowrap tabular-nums">
                       {formatBaht(totalInputBase)}
                     </td>
-                    <td className="px-3 py-2.5 text-right font-mono text-emerald-900 text-sm">
+                    <td className="px-3 py-2.5 text-right font-mono text-emerald-900 text-sm whitespace-nowrap tabular-nums">
                       {formatBaht(totalInputVat)}
                     </td>
                   </tr>
@@ -541,18 +541,18 @@ export default function TaxReportsPage() {
 
           <div className="rounded-xl border border-steel-200 bg-white shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs text-steel-600">
-                <thead className="bg-steel-50/75 text-steel-700 border-b border-steel-200 font-semibold">
+              <table className="table-auto w-full text-left text-xs text-steel-600">
+                <thead className="bg-steel-50/80 text-steel-700 border-b border-steel-200 font-bold text-[11px]">
                   <tr>
-                    <th className="w-10 px-3 py-2.5 text-center">ลำดับ</th>
-                    <th className="px-3 py-2.5">วัน เดือน ปี</th>
-                    <th className="px-3 py-2.5">แบบฟอร์ม</th>
-                    <th className="px-3 py-2.5">เลขที่เอกสาร</th>
-                    <th className="px-3 py-2.5">ผู้ถูกหักภาษี ณ ที่จ่าย</th>
-                    <th className="px-3 py-2.5">เลขประจำตัวผู้เสียภาษี</th>
-                    <th className="px-3 py-2.5 text-center">อัตราภาษี (%)</th>
-                    <th className="px-3 py-2.5 text-right font-bold text-steel-700">ยอดเงินได้ที่จ่าย (บาท)</th>
-                    <th className="px-3 py-2.5 text-right font-bold text-purple-800">ภาษีที่หักและนำส่ง</th>
+                    <th className="w-10 px-3 py-2.5 text-center whitespace-nowrap">ลำดับ</th>
+                    <th className="px-3 py-2.5 whitespace-nowrap">วัน เดือน ปี</th>
+                    <th className="px-3 py-2.5 text-center whitespace-nowrap">แบบฟอร์ม</th>
+                    <th className="px-3 py-2.5 whitespace-nowrap">เลขที่เอกสาร</th>
+                    <th className="px-3 py-2.5 min-w-[180px]">ผู้ถูกหักภาษี ณ ที่จ่าย</th>
+                    <th className="px-3 py-2.5 whitespace-nowrap">เลขประจำตัวผู้เสียภาษี</th>
+                    <th className="px-3 py-2.5 text-center whitespace-nowrap">อัตราภาษี (%)</th>
+                    <th className="px-3 py-2.5 text-right font-bold text-steel-700 whitespace-nowrap">ยอดเงินได้ที่จ่าย (บาท)</th>
+                    <th className="px-3 py-2.5 text-right font-bold text-purple-800 whitespace-nowrap">ภาษีที่หักและนำส่ง</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-steel-100">
@@ -564,22 +564,22 @@ export default function TaxReportsPage() {
                     </tr>
                   ) : (
                     whtRows.map((row, idx) => (
-                      <tr key={row.id} className="hover:bg-steel-50/50">
-                        <td className="px-3 py-2 text-center text-steel-400 font-mono">{idx + 1}</td>
-                        <td className="px-3 py-2 whitespace-nowrap">{formatThaiDate(row.document_date, false)}</td>
-                        <td className="px-3 py-2">
+                      <tr key={row.id} className="hover:bg-steel-50/50 transition">
+                        <td className="px-3 py-2.5 text-center text-steel-400 font-mono whitespace-nowrap">{idx + 1}</td>
+                        <td className="px-3 py-2.5 whitespace-nowrap">{formatThaiDate(row.document_date, false)}</td>
+                        <td className="px-3 py-2.5 text-center whitespace-nowrap">
                           <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                             row.tax_type === 'WHT_3' ? 'bg-amber-100 text-amber-800' : 'bg-purple-100 text-purple-800'
                           }`}>
                             {row.tax_type === 'WHT_3' ? 'ภ.ง.ด.3' : 'ภ.ง.ด.53'}
                           </span>
                         </td>
-                        <td className="px-3 py-2 font-mono font-bold text-ink">{row.document_no}</td>
-                        <td className="px-3 py-2 font-semibold text-ink">{row.contacts?.company_name || 'คู่ค้า'}</td>
-                        <td className="px-3 py-2 font-mono text-[11px] text-steel-500">{row.contacts?.tax_id || '-'}</td>
-                        <td className="px-3 py-2 text-center font-mono font-bold text-amber-700">{row.wht_rate || 3}%</td>
-                        <td className="px-3 py-2 text-right font-mono font-bold text-ink">{formatBaht(row.base_amount)}</td>
-                        <td className="px-3 py-2 text-right font-mono font-bold text-purple-800">{formatBaht(row.wht_amount)}</td>
+                        <td className="px-3 py-2.5 font-mono font-bold text-ink whitespace-nowrap">{row.document_no}</td>
+                        <td className="px-3 py-2.5 font-semibold text-ink min-w-[180px]">{row.contacts?.company_name || 'คู่ค้า'}</td>
+                        <td className="px-3 py-2.5 font-mono text-[11px] text-steel-500 whitespace-nowrap">{row.contacts?.tax_id || '-'}</td>
+                        <td className="px-3 py-2.5 text-center font-mono font-bold text-amber-700 whitespace-nowrap">{row.wht_rate || 3}%</td>
+                        <td className="px-3 py-2.5 text-right font-mono font-bold text-ink whitespace-nowrap tabular-nums">{formatBaht(row.base_amount)}</td>
+                        <td className="px-3 py-2.5 text-right font-mono font-bold text-purple-800 whitespace-nowrap tabular-nums">{formatBaht(row.wht_amount)}</td>
                       </tr>
                     ))
                   )}
@@ -587,13 +587,13 @@ export default function TaxReportsPage() {
                 {whtRows.length > 0 && (
                   <tfoot className="bg-steel-100/75 font-bold text-xs border-t-2 border-steel-300">
                     <tr>
-                      <td colSpan="7" className="px-3 py-2.5 text-right text-steel-700">
+                      <td colSpan="7" className="px-3 py-2.5 text-right text-steel-700 whitespace-nowrap">
                         ยอดรวมภาษีหัก ณ ที่จ่ายทั้งสิ้น:
                       </td>
-                      <td className="px-3 py-2.5 text-right font-mono text-ink">
+                      <td className="px-3 py-2.5 text-right font-mono text-ink whitespace-nowrap tabular-nums">
                         {formatBaht(totalWhtBase)}
                       </td>
-                      <td className="px-3 py-2.5 text-right font-mono text-purple-900 text-sm">
+                      <td className="px-3 py-2.5 text-right font-mono text-purple-900 text-sm whitespace-nowrap tabular-nums">
                         {formatBaht(totalWhtAmount)}
                       </td>
                     </tr>

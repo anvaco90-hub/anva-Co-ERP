@@ -268,24 +268,24 @@ export default function ExpensesPage() {
             <button
               type="button"
               onClick={() => setDocViewMode('business')}
-              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition border ${
+              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition border cursor-pointer ${
                 docViewMode === 'business'
-                  ? 'bg-sky-700 text-white border-sky-800 shadow-sm'
+                  ? 'bg-sky-700 text-white border-sky-800 shadow-xs'
                   : 'bg-white text-steel-600 border-steel-200 hover:bg-steel-50'
               }`}
             >
-               เอกสารธุรกิจ (Business EXP)
+              เอกสารธุรกิจ (Business EXP)
             </button>
             <button
               type="button"
               onClick={() => setDocViewMode('accounting')}
-              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition border ${
+              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition border cursor-pointer ${
                 docViewMode === 'accounting'
-                  ? 'bg-emerald-700 text-white border-emerald-800 shadow-sm'
+                  ? 'bg-emerald-700 text-white border-emerald-800 shadow-xs'
                   : 'bg-white text-steel-600 border-steel-200 hover:bg-steel-50'
               }`}
             >
-              ️ เอกสารบัญชี (GL Audit)
+              เอกสารบัญชี (GL Audit)
             </button>
           </div>
 
@@ -346,18 +346,18 @@ export default function ExpensesPage() {
 
       {/* Expenses Table */}
       <div className="overflow-x-auto rounded-xl border border-steel-200 bg-white shadow-sm">
-        <table className="w-full text-xs">
+        <table className="table-auto w-full text-left text-xs text-steel-600">
           <thead>
-            <tr className="border-b border-steel-200 bg-steel-50 text-left text-steel-600 font-bold">
-              <th className="py-2.5 px-3">เลขที่เอกสาร</th>
-              <th>วันที่</th>
-              <th>รายละเอียด / คู่ค้า</th>
-              <th>โครงการ</th>
-              <th>แหล่งที่มาของเงิน</th>
-              <th className="text-right">มูลค่ารวมสุทธิ</th>
-              <th className="text-center">สถานะธุรกิจ</th>
-              <th className="text-center">สถานะบัญชี (GL)</th>
-              <th className="text-right px-3">การจัดการ</th>
+            <tr className="border-b border-steel-200 bg-steel-50/80 text-left text-steel-700 font-bold text-[11px]">
+              <th className="py-2.5 px-3.5 whitespace-nowrap">เลขที่เอกสาร</th>
+              <th className="py-2.5 px-3 whitespace-nowrap">วันที่</th>
+              <th className="py-2.5 px-3 min-w-[180px]">รายละเอียด / คู่ค้า</th>
+              <th className="py-2.5 px-3 whitespace-nowrap">โครงการ</th>
+              <th className="py-2.5 px-3 whitespace-nowrap">แหล่งที่มาของเงิน</th>
+              <th className="py-2.5 px-3 text-right whitespace-nowrap">มูลค่ารวมสุทธิ</th>
+              <th className="py-2.5 px-3 text-center whitespace-nowrap">สถานะธุรกิจ</th>
+              <th className="py-2.5 px-3 text-center whitespace-nowrap">สถานะบัญชี (GL)</th>
+              <th className="py-2.5 px-3.5 text-right whitespace-nowrap">การจัดการ</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-steel-100">
@@ -376,8 +376,8 @@ export default function ExpensesPage() {
                 const netAmount = Number(row.total_amount) - Number(row.wht_amount || 0)
 
                 return (
-                  <tr key={row.id} className="hover:bg-steel-50/60 transition">
-                    <td className="py-2.5 px-3 font-mono font-bold text-sky-800">
+                  <tr key={row.id} className="hover:bg-steel-50/50 transition">
+                    <td className="py-2.5 px-3.5 font-mono font-bold text-sky-800 whitespace-nowrap">
                       <div>{row.expense_no}</div>
                       {row.vendor_tax_invoice_no && (
                         <div className="text-[10px] text-emerald-700 font-mono">
@@ -385,8 +385,8 @@ export default function ExpensesPage() {
                         </div>
                       )}
                     </td>
-                    <td className="text-steel-600">{row.expense_date}</td>
-                    <td>
+                    <td className="py-2.5 px-3 whitespace-nowrap text-steel-700 font-mono">{row.expense_date}</td>
+                    <td className="py-2.5 px-3 min-w-[180px]">
                       <div className="font-semibold text-ink line-clamp-1">{row.description}</div>
                       <div className="text-[11px] text-steel-500">
                         {row.vendors?.vendor_name || 'คู่ค้าทั่วไป'}
@@ -397,7 +397,7 @@ export default function ExpensesPage() {
                         )}
                       </div>
                     </td>
-                    <td>
+                    <td className="py-2.5 px-3 whitespace-nowrap">
                       {row.projects ? (
                         <div className="text-xs">
                           <span className="font-semibold text-ink">{row.projects.project_code}</span>
@@ -407,22 +407,22 @@ export default function ExpensesPage() {
                         <span className="text-steel-400">ส่วนกลาง / Overhead</span>
                       )}
                     </td>
-                    <td>
+                    <td className="py-2.5 px-3 whitespace-nowrap">
                       {isAdvance ? (
                         <div className="text-[11px]">
                           <span className="font-bold text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 inline-block">
-                             สำรองจ่าย: {row.advance_payer_name || 'หัวหน้างาน'}
+                            สำรองจ่าย: {row.advance_payer_name || 'หัวหน้างาน'}
                           </span>
                         </div>
                       ) : (
                         <div className="text-[11px]">
                           <span className="font-semibold text-sky-800 bg-sky-50 px-1.5 py-0.5 rounded border border-sky-200 inline-block">
-                             โอน: {row.company_bank_account === '1110-03' ? 'SCB' : 'KBANK'}
+                            โอน: {row.company_bank_account === '1110-03' ? 'SCB' : 'KBANK'}
                           </span>
                         </div>
                       )}
                     </td>
-                    <td className="text-right font-mono font-extrabold text-ink">
+                    <td className="py-2.5 px-3 text-right font-mono font-bold text-ink whitespace-nowrap tabular-nums">
                       {baht(row.total_amount)}
                       {Number(row.wht_amount) > 0 && (
                         <div className="text-[10px] text-purple-700 font-normal">
@@ -432,14 +432,14 @@ export default function ExpensesPage() {
                     </td>
 
                     {/* Badge 1: Business Status */}
-                    <td className="text-center">
+                    <td className="py-2.5 px-3 text-center whitespace-nowrap">
                       {row.status === 'จ่ายเงินแล้ว' ? (
                         <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                           จ่ายเงินแล้ว
+                          จ่ายเงินแล้ว
                         </span>
                       ) : row.status === 'รอคืนเงินสำรองจ่าย' ? (
                         <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300 animate-pulse">
-                          ⏳ รอคืนเงินสำรองจ่าย
+                          รอคืนเงินสำรองจ่าย
                         </span>
                       ) : (
                         <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-steel-100 text-steel-700 border border-steel-200">
@@ -449,7 +449,7 @@ export default function ExpensesPage() {
                     </td>
 
                     {/* Badge 2: Accounting Status */}
-                    <td className="text-center">
+                    <td className="py-2.5 px-3 text-center whitespace-nowrap">
                       {row.accounting_status === 'อนุมัติแล้ว' ? (
                         <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
                           อนุมัติแล้ว
@@ -460,13 +460,13 @@ export default function ExpensesPage() {
                         </span>
                       ) : (
                         <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
-                          ⏳ รอดำเนินการ
+                          รอดำเนินการ
                         </span>
                       )}
                     </td>
 
                     {/* Actions */}
-                    <td className="text-right px-3">
+                    <td className="py-2.5 px-3.5 text-right whitespace-nowrap">
                       {isReimbursable ? (
                         <button
                           type="button"

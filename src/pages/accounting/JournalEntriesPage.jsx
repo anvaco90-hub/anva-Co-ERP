@@ -106,7 +106,7 @@ export default function JournalEntriesPage() {
       const matchNo = (e.entry_no || '').toLowerCase().includes(q)
       const matchDesc = (e.description || '').toLowerCase().includes(q)
       const matchPrj = (e.projects?.project_code || '').toLowerCase().includes(q) ||
-                       (e.projects?.project_name || '').toLowerCase().includes(q)
+        (e.projects?.project_name || '').toLowerCase().includes(q)
       const matchLines = (e.journal_entry_lines || []).some((l) =>
         (l.chart_of_accounts?.account_name_th || '').toLowerCase().includes(q) ||
         (l.chart_of_accounts?.account_code || '').toLowerCase().includes(q)
@@ -165,11 +165,10 @@ export default function JournalEntriesPage() {
 
       {toastMsg.text && (
         <div
-          className={`p-3 rounded-lg text-xs font-semibold flex items-center justify-between animate-in fade-in ${
-            toastMsg.type === 'success'
-              ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-              : 'bg-rose-50 text-rose-800 border border-rose-200'
-          }`}
+          className={`p-3 rounded-lg text-xs font-semibold flex items-center justify-between animate-in fade-in ${toastMsg.type === 'success'
+            ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+            : 'bg-rose-50 text-rose-800 border border-rose-200'
+            }`}
         >
           <span>{toastMsg.text}</span>
           <button onClick={() => setToastMsg({ text: '', type: '' })} className="text-xs"></button>
@@ -264,20 +263,20 @@ export default function JournalEntriesPage() {
       {/* Main Journal Table */}
       <div className="rounded-xl border border-steel-200 bg-white shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-steel-600">
-            <thead className="bg-steel-50/75 text-steel-700 border-b border-steel-200 font-semibold">
+          <table className="table-auto w-full text-left text-xs text-steel-600">
+            <thead className="bg-steel-50/80 text-steel-700 border-b border-steel-200 font-bold text-[11px]">
               <tr>
-                <th className="w-8 px-3 py-2.5"></th>
-                <th className="px-3 py-2.5">เลขที่ JV</th>
-                <th className="px-3 py-2.5">วันที่เอกสาร</th>
-                <th className="px-3 py-2.5">ประเภท</th>
-                <th className="px-3 py-2.5">เอกสารอ้างอิง</th>
-                <th className="px-3 py-2.5">โครงการ (Cost Center)</th>
-                <th className="px-3 py-2.5">คำอธิบายรายการ</th>
-                <th className="px-3 py-2.5 text-right">เดบิต (Dr.)</th>
-                <th className="px-3 py-2.5 text-right">เครดิต (Cr.)</th>
-                <th className="px-3 py-2.5 text-center">สถานะบัญชี</th>
-                <th className="px-3 py-2.5 text-center">จัดการ</th>
+                <th className="w-8 px-3 py-2.5 text-center"></th>
+                <th className="px-3 py-2.5 whitespace-nowrap">เลขที่ JV</th>
+                <th className="px-3 py-2.5 whitespace-nowrap">วันที่เอกสาร</th>
+                <th className="px-3 py-2.5 text-center whitespace-nowrap">ประเภท</th>
+                <th className="px-3 py-2.5 whitespace-nowrap">เอกสารอ้างอิง</th>
+                <th className="px-3 py-2.5 whitespace-nowrap">โครงการ (Cost Center)</th>
+                <th className="px-3 py-2.5 min-w-[180px]">คำอธิบายรายการ</th>
+                <th className="px-3 py-2.5 text-right whitespace-nowrap">เดบิต (Dr.)</th>
+                <th className="px-3 py-2.5 text-right whitespace-nowrap">เครดิต (Cr.)</th>
+                <th className="px-3 py-2.5 text-center whitespace-nowrap">สถานะบัญชี</th>
+                <th className="px-3 py-2.5 text-center whitespace-nowrap">จัดการ</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-steel-100">
@@ -309,30 +308,30 @@ export default function JournalEntriesPage() {
 
                   return (
                     <Fragment key={entry.id}>
-                      <tr className={`hover:bg-steel-50/30 transition ${isExpanded ? 'bg-steel-50/60' : ''}`}>
-                        <td className="px-3 py-2.5 text-center">
+                      <tr className={`hover:bg-steel-50/40 transition ${isExpanded ? 'bg-steel-50/70' : ''}`}>
+                        <td className="px-3 py-2.5 text-center whitespace-nowrap">
                           <button
                             onClick={() => setExpandedId(isExpanded ? null : entry.id)}
-                            className="p-1 text-steel-400 hover:text-sky-700 transition"
+                            className="p-1 text-steel-400 hover:text-sky-700 transition cursor-pointer"
                           >
                             {isExpanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
                           </button>
                         </td>
-                        <td className="px-3 py-2.5 font-mono font-bold text-sky-800">
+                        <td className="px-3 py-2.5 font-mono font-bold text-sky-800 whitespace-nowrap">
                           {entry.entry_no}
                         </td>
                         <td className="px-3 py-2.5 text-steel-700 whitespace-nowrap">
                           {formatThaiDate(entry.entry_date)}
                         </td>
-                        <td className="px-3 py-2.5">
+                        <td className="px-3 py-2.5 text-center whitespace-nowrap">
                           <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-steel-100 text-steel-700">
                             {entry.reference_type}
                           </span>
                         </td>
-                        <td className="px-3 py-2.5 font-mono text-[11px] text-steel-600">
+                        <td className="px-3 py-2.5 font-mono text-[11px] text-steel-600 whitespace-nowrap">
                           {refDocDisplay}
                         </td>
-                        <td className="px-3 py-2.5">
+                        <td className="px-3 py-2.5 whitespace-nowrap">
                           {entry.projects?.project_code ? (
                             <span className="text-sky-700 font-semibold">
                               {entry.projects.project_code}
@@ -341,22 +340,22 @@ export default function JournalEntriesPage() {
                             <span className="text-steel-400">ส่วนกลางบริษัท</span>
                           )}
                         </td>
-                        <td className="px-3 py-2.5 text-ink max-w-xs truncate" title={entry.description}>
+                        <td className="px-3 py-2.5 text-ink min-w-[180px] max-w-xs truncate" title={entry.description}>
                           {entry.description}
                         </td>
-                        <td className="px-3 py-2.5 text-right font-mono font-bold text-ink whitespace-nowrap">
+                        <td className="px-3 py-2.5 text-right font-mono font-bold text-ink whitespace-nowrap tabular-nums">
                           {formatBaht(totalDr)}
                         </td>
-                        <td className="px-3 py-2.5 text-right font-mono font-bold text-ink whitespace-nowrap">
+                        <td className="px-3 py-2.5 text-right font-mono font-bold text-ink whitespace-nowrap tabular-nums">
                           {formatBaht(totalCr)}
                         </td>
                         <td className="px-3 py-2.5 text-center whitespace-nowrap">
                           {isApproved ? (
-                            <span className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded-full font-bold">
+                            <span className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 text-[10px] px-2.5 py-0.5 rounded-full font-bold">
                               <Lock className="h-3 w-3" /> อนุมัติแล้ว
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 bg-amber-100 text-amber-800 text-[10px] px-2 py-0.5 rounded-full font-bold">
+                            <span className="inline-flex items-center gap-1 bg-amber-100 text-amber-800 text-[10px] px-2.5 py-0.5 rounded-full font-bold">
                               <AlertCircle className="h-3 w-3" /> รอดำเนินการ
                             </span>
                           )}
@@ -365,7 +364,7 @@ export default function JournalEntriesPage() {
                           <div className="flex items-center justify-center gap-1.5">
                             <button
                               onClick={() => setExpandedId(isExpanded ? null : entry.id)}
-                              className="text-sky-700 hover:text-sky-900 font-semibold text-[11px] underline"
+                              className="text-sky-700 hover:text-sky-900 font-semibold text-[11px] underline cursor-pointer"
                             >
                               {isExpanded ? 'ซ่อน' : 'ผัง Dr/Cr'}
                             </button>
@@ -374,7 +373,7 @@ export default function JournalEntriesPage() {
                                 onClick={() => handleApproveEntry(entry)}
                                 disabled={actionLoading === entry.id || !isBalanced}
                                 title={isBalanced ? 'อนุมัติลงบัญชีและล็อกรายการ' : 'ยอดเดบิตและเครดิตไม่สมดุล'}
-                                className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-600 text-white rounded text-[11px] font-bold hover:bg-emerald-700 disabled:opacity-40 transition shadow-sm"
+                                className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-600 text-white rounded text-[11px] font-bold hover:bg-emerald-700 disabled:opacity-40 transition shadow-xs cursor-pointer"
                               >
                                 <Check className="h-3 w-3" />
                                 {actionLoading === entry.id ? 'กำลังบันทึก...' : 'อนุมัติลงบัญชี'}
@@ -406,48 +405,48 @@ export default function JournalEntriesPage() {
                                 </span>
                               </div>
 
-                              <table className="w-full text-left text-xs">
+                              <table className="table-auto w-full text-left text-xs">
                                 <thead>
-                                  <tr className="text-steel-500 border-b border-steel-100 text-[10px]">
-                                    <th className="py-1.5">รหัสบัญชี</th>
-                                    <th className="py-1.5">ชื่อบัญชี (Account Name)</th>
-                                    <th className="py-1.5">คู่ค้า / ลูกค้า</th>
-                                    <th className="py-1.5">คำอธิบายบรรทัด</th>
-                                    <th className="py-1.5 text-right">เดบิต (Dr.)</th>
-                                    <th className="py-1.5 text-right">เครดิต (Cr.)</th>
+                                  <tr className="text-steel-600 border-b border-steel-200 text-[11px] font-bold">
+                                    <th className="py-2 px-2 whitespace-nowrap">รหัสบัญชี</th>
+                                    <th className="py-2 px-2 min-w-[160px]">ชื่อบัญชี (Account Name)</th>
+                                    <th className="py-2 px-2 whitespace-nowrap">คู่ค้า / ลูกค้า</th>
+                                    <th className="py-2 px-2 min-w-[140px]">คำอธิบายบรรทัด</th>
+                                    <th className="py-2 px-2 text-right whitespace-nowrap">เดบิต (Dr.)</th>
+                                    <th className="py-2 px-2 text-right whitespace-nowrap">เครดิต (Cr.)</th>
                                   </tr>
                                 </thead>
-                                <tbody className="divide-y divide-steel-50">
+                                <tbody className="divide-y divide-steel-100">
                                   {lines.map((l) => (
-                                    <tr key={l.id} className="hover:bg-steel-50/50">
-                                      <td className="py-1.5 font-mono font-bold text-sky-800">
+                                    <tr key={l.id} className="hover:bg-steel-50/60 transition">
+                                      <td className="py-2 px-2 font-mono font-bold text-sky-800 whitespace-nowrap">
                                         {l.chart_of_accounts?.account_code}
                                       </td>
-                                      <td className="py-1.5 text-steel-800 font-semibold">
+                                      <td className="py-2 px-2 text-steel-800 font-semibold">
                                         {l.chart_of_accounts?.account_name_th}
                                       </td>
-                                      <td className="py-1.5 text-steel-600 text-[11px]">
+                                      <td className="py-2 px-2 text-steel-600 text-[11px] whitespace-nowrap">
                                         {l.contacts?.company_name || '-'}
                                       </td>
-                                      <td className="py-1.5 text-steel-500 text-[11px]">
+                                      <td className="py-2 px-2 text-steel-500 text-[11px]">
                                         {l.line_description || '-'}
                                       </td>
-                                      <td className="py-1.5 text-right font-mono font-bold text-ink">
+                                      <td className="py-2 px-2 text-right font-mono font-bold text-ink whitespace-nowrap tabular-nums">
                                         {Number(l.debit) > 0 ? formatBaht(l.debit) : '-'}
                                       </td>
-                                      <td className="py-1.5 text-right font-mono font-bold text-ink">
+                                      <td className="py-2 px-2 text-right font-mono font-bold text-ink whitespace-nowrap tabular-nums">
                                         {Number(l.credit) > 0 ? formatBaht(l.credit) : '-'}
                                       </td>
                                     </tr>
                                   ))}
-                                  <tr className="font-bold border-t border-steel-200 bg-steel-50/50">
-                                    <td colSpan="4" className="py-2 text-right text-steel-700">
+                                  <tr className="font-bold border-t-2 border-steel-200 bg-steel-50/60">
+                                    <td colSpan="4" className="py-2.5 px-2 text-right text-steel-700">
                                       ยอดรวมทั้งสิ้น (Total):
                                     </td>
-                                    <td className="py-2 text-right font-mono text-ink">
+                                    <td className="py-2.5 px-2 text-right font-mono text-ink whitespace-nowrap tabular-nums">
                                       {formatBaht(totalDr)}
                                     </td>
-                                    <td className="py-2 text-right font-mono text-ink">
+                                    <td className="py-2.5 px-2 text-right font-mono text-ink whitespace-nowrap tabular-nums">
                                       {formatBaht(totalCr)}
                                     </td>
                                   </tr>

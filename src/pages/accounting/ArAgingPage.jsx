@@ -9,7 +9,7 @@ import {
 import { formatBaht, formatThaiDate, calculateAging, exportToCSV } from '../../lib/accounting'
 import {
   Users, Calendar, Filter, Search, Download, Plus, RefreshCw, FileText,
-  AlertCircle, CheckCircle2, ChevronRight, Check
+  AlertCircle, CheckCircle2, ChevronRight, Check, X
 } from 'lucide-react'
 
 export default function ArAgingPage() {
@@ -336,20 +336,20 @@ export default function ArAgingPage() {
       {/* AR Aging Table */}
       <div className="rounded-xl border border-steel-200 bg-white shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-steel-600">
-            <thead className="bg-steel-50/75 text-steel-700 border-b border-steel-200 font-semibold">
+          <table className="table-auto w-full text-left text-xs text-steel-600">
+            <thead className="bg-steel-50/80 text-steel-700 border-b border-steel-200 font-bold text-[11px]">
               <tr>
-                <th className="px-3 py-2.5">เลขที่เอกสาร</th>
-                <th className="px-3 py-2.5">วันที่เอกสาร</th>
-                <th className="px-3 py-2.5">ครบกำหนด</th>
-                <th className="px-3 py-2.5">ชื่อลูกค้า / โครงการ</th>
-                <th className="px-3 py-2.5 text-center">เกิน (วัน)</th>
-                <th className="px-3 py-2.5 text-right text-emerald-800">ยังไม่ครบกำหนด</th>
-                <th className="px-3 py-2.5 text-right text-sky-800">1-30 วัน</th>
-                <th className="px-3 py-2.5 text-right text-amber-800">31-60 วัน</th>
-                <th className="px-3 py-2.5 text-right text-orange-800">61-90 วัน</th>
-                <th className="px-3 py-2.5 text-right text-rose-800">&gt; 90 วัน</th>
-                <th className="px-3 py-2.5 text-right font-bold text-ink">ค้างรับสุทธิ</th>
+                <th className="px-3.5 py-2.5 whitespace-nowrap">เลขที่เอกสาร</th>
+                <th className="px-3 py-2.5 whitespace-nowrap">วันที่เอกสาร</th>
+                <th className="px-3 py-2.5 whitespace-nowrap">ครบกำหนด</th>
+                <th className="px-3.5 py-2.5 min-w-[180px]">ชื่อลูกค้า / โครงการ</th>
+                <th className="px-3 py-2.5 text-center whitespace-nowrap">เกิน (วัน)</th>
+                <th className="px-3 py-2.5 text-right whitespace-nowrap text-emerald-800">ยังไม่ครบกำหนด</th>
+                <th className="px-3 py-2.5 text-right whitespace-nowrap text-sky-800">1-30 วัน</th>
+                <th className="px-3 py-2.5 text-right whitespace-nowrap text-amber-800">31-60 วัน</th>
+                <th className="px-3 py-2.5 text-right whitespace-nowrap text-orange-800">61-90 วัน</th>
+                <th className="px-3 py-2.5 text-right whitespace-nowrap text-rose-800">&gt; 90 วัน</th>
+                <th className="px-3.5 py-2.5 text-right whitespace-nowrap font-bold text-ink">ค้างรับสุทธิ</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-steel-100">
@@ -367,8 +367,8 @@ export default function ArAgingPage() {
                 </tr>
               ) : (
                 agingRows.map((row) => (
-                  <tr key={row.id} className="hover:bg-steel-50/40 transition">
-                    <td className="px-3 py-2.5">
+                  <tr key={row.id} className="hover:bg-steel-50/50 transition">
+                    <td className="px-3.5 py-2.5 whitespace-nowrap">
                       <span className="font-mono font-bold text-sky-800 block">{row.invoice_no}</span>
                       {row.is_opening_balance ? (
                         <span className="inline-block text-[9px] bg-purple-100 text-purple-800 px-1.5 py-0.2 rounded font-bold">
@@ -382,33 +382,33 @@ export default function ArAgingPage() {
                     </td>
                     <td className="px-3 py-2.5 whitespace-nowrap">{formatThaiDate(row.issue_date, false)}</td>
                     <td className="px-3 py-2.5 whitespace-nowrap font-mono">{row.due_date || '-'}</td>
-                    <td className="px-3 py-2.5">
+                    <td className="px-3.5 py-2.5 min-w-[180px]">
                       <span className="font-semibold text-ink block">{row.customer_name}</span>
                       <span className="text-[10px] text-sky-700">{row.project_code}</span>
                     </td>
-                    <td className="px-3 py-2.5 text-center font-mono font-bold">
+                    <td className="px-3 py-2.5 text-center font-mono font-bold whitespace-nowrap">
                       {row.diffDays > 0 ? (
                         <span className="text-rose-600">+{row.diffDays}</span>
                       ) : (
                         <span className="text-emerald-600">0</span>
                       )}
                     </td>
-                    <td className="px-3 py-2.5 text-right font-mono font-semibold text-emerald-700">
+                    <td className="px-3 py-2.5 text-right font-mono font-semibold text-emerald-700 whitespace-nowrap tabular-nums">
                       {row.current > 0 ? formatBaht(row.current) : '-'}
                     </td>
-                    <td className="px-3 py-2.5 text-right font-mono font-semibold text-sky-700">
+                    <td className="px-3 py-2.5 text-right font-mono font-semibold text-sky-700 whitespace-nowrap tabular-nums">
                       {row.d1_30 > 0 ? formatBaht(row.d1_30) : '-'}
                     </td>
-                    <td className="px-3 py-2.5 text-right font-mono font-semibold text-amber-700">
+                    <td className="px-3 py-2.5 text-right font-mono font-semibold text-amber-700 whitespace-nowrap tabular-nums">
                       {row.d31_60 > 0 ? formatBaht(row.d31_60) : '-'}
                     </td>
-                    <td className="px-3 py-2.5 text-right font-mono font-semibold text-orange-700">
+                    <td className="px-3 py-2.5 text-right font-mono font-semibold text-orange-700 whitespace-nowrap tabular-nums">
                       {row.d61_90 > 0 ? formatBaht(row.d61_90) : '-'}
                     </td>
-                    <td className="px-3 py-2.5 text-right font-mono font-semibold text-rose-700">
+                    <td className="px-3 py-2.5 text-right font-mono font-semibold text-rose-700 whitespace-nowrap tabular-nums">
                       {row.over90 > 0 ? formatBaht(row.over90) : '-'}
                     </td>
-                    <td className="px-3 py-2.5 text-right font-mono font-bold text-ink bg-steel-50/50">
+                    <td className="px-3.5 py-2.5 text-right font-mono font-bold text-ink bg-steel-50/50 whitespace-nowrap tabular-nums">
                       {formatBaht(row.outstanding)}
                     </td>
                   </tr>
@@ -419,25 +419,25 @@ export default function ArAgingPage() {
             {agingRows.length > 0 && (
               <tfoot className="bg-steel-100/75 font-bold text-xs border-t-2 border-steel-300">
                 <tr>
-                  <td colSpan="5" className="px-3 py-2.5 text-right text-steel-700">
+                  <td colSpan="5" className="px-3.5 py-2.5 text-right text-steel-700 whitespace-nowrap">
                     ยอดรวมลูกหนี้ทุกช่วงอายุ (Grand Total):
                   </td>
-                  <td className="px-3 py-2.5 text-right font-mono text-emerald-800">
+                  <td className="px-3 py-2.5 text-right font-mono text-emerald-800 whitespace-nowrap tabular-nums">
                     {formatBaht(totals.current)}
                   </td>
-                  <td className="px-3 py-2.5 text-right font-mono text-sky-800">
+                  <td className="px-3 py-2.5 text-right font-mono text-sky-800 whitespace-nowrap tabular-nums">
                     {formatBaht(totals.d1_30)}
                   </td>
-                  <td className="px-3 py-2.5 text-right font-mono text-amber-800">
+                  <td className="px-3 py-2.5 text-right font-mono text-amber-800 whitespace-nowrap tabular-nums">
                     {formatBaht(totals.d31_60)}
                   </td>
-                  <td className="px-3 py-2.5 text-right font-mono text-orange-800">
+                  <td className="px-3 py-2.5 text-right font-mono text-orange-800 whitespace-nowrap tabular-nums">
                     {formatBaht(totals.d61_90)}
                   </td>
-                  <td className="px-3 py-2.5 text-right font-mono text-rose-800">
+                  <td className="px-3 py-2.5 text-right font-mono text-rose-800 whitespace-nowrap tabular-nums">
                     {formatBaht(totals.over90)}
                   </td>
-                  <td className="px-3 py-2.5 text-right font-mono text-ink text-sm bg-steel-200/50">
+                  <td className="px-3.5 py-2.5 text-right font-mono text-ink text-sm bg-steel-200/50 whitespace-nowrap tabular-nums">
                     {formatBaht(totals.outstanding)}
                   </td>
                 </tr>
@@ -758,7 +758,9 @@ function ArCreateInvoiceModal({ isOpen, onClose, onSuccess, customers = [], proj
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="text-steel-400 hover:text-steel-600 text-sm">✕</button>
+          <button onClick={onClose} className="p-1 rounded-lg text-steel-400 hover:text-steel-700 hover:bg-steel-100 transition cursor-pointer">
+            <X className="h-4 w-4" />
+          </button>
         </div>
 
         {error && (
