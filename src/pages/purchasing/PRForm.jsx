@@ -190,7 +190,7 @@ export default function PRForm() {
               if (existingPrIds.length > 0) {
                 const piRes = await supabase
                   .from('purchase_requisition_items')
-                  .select('id, pr_id, item_id, item_name, quantity, unit, estimated_price')
+                  .select('*')
                   .in('pr_id', existingPrIds)
                 if (!piRes.error && Array.isArray(piRes.data)) {
                   const prNoById = new Map(activeExistingPrs.map((p) => [p.id, p.pr_no]))
