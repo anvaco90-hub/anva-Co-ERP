@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
 import { baht } from '../../lib/projects'
+import { printElement } from '../../lib/printElement'
 import {
   Printer,
   X,
@@ -46,7 +47,11 @@ export default function GoodsReceiptReportModal({
     'รายงานสรุปประวัติการนำเข้าและตรวจรับพัสดุวิศวกรรม บริษัท แอนวา แอนด์ โค จำกัด'
   )
 
-  // 3. ตัวเลือกการพิมพ์ (Print Display Options)
+  // 3. ฟีเจอร์ราคา: ราคาสด (ไม่รวมภาษี) vs ราคาที่ + ภาษี (รวม VAT 7%) vs แสดงทั้งสอง
+  // 'net' (ราคาสด) | 'gross' (ราคาที่ + ภาษี) | 'both' (แสดงทั้งคู่)
+  const [taxMode, setTaxMode] = useState('net')
+
+  // 4. ตัวเลือกการพิมพ์ (Print Display Options)
   const [paperOrientation, setPaperOrientation] = useState('landscape') // 'landscape' | 'portrait'
   const [showValuation, setShowValuation] = useState(true)
 
@@ -87,7 +92,7 @@ export default function GoodsReceiptReportModal({
 
       const lotType = r.lot_type || (poNo ? 'po_receive' : 'direct_in')
 
-      // ประวัติการรับของแต่ละรอบ (ถ้ามีรับหลายรอบ เช่น รับรอบ 1 วันที่ 11/11 จำนวน 2 และ รอบ 2 วันที่ 21/11 จำนวน 3)
+      // ประวัติการรับของแต่ละรอบ (เช่น รับรอบ 1 วันที่ 11/11 จำนวน 2 และ รอบ 2 วันที่ 21/11 จำนวน 3)
       const receiptHistory = r.receipt_history || []
 
       return {
@@ -218,12 +223,26 @@ export default function GoodsReceiptReportModal({
     return filteredRows.reduce((sum, r) => sum + r.qtyReceived, 0)
   }, [filteredRows])
 
-  const totalAmount = useMemo(() => {
+  // ราคาสด (ไม่รวมภาษี)
+  const totalNetCost = useMemo(() => {
     return filteredRows.reduce((sum, r) => sum + r.totalCost, 0)
   }, [filteredRows])
 
+  // ภาษี VAT 7%
+  const totalVat = useMemo(() => {
+    return Math.round(totalNetCost * 0.07 * 100) / 100
+  }, [totalNetCost])
+
+  // ราคาที่ + ภาษี (รวม VAT 7%)
+  const totalGrossCost = useMemo(() => {
+    return Math.round((totalNetCost + totalVat) * 100) / 100
+  }, [totalNetCost, totalVat])
+
+  // ฟังก์ชันสั่งพิมพ์ผ่าน Isolated iframe ไม่เกิดหน้ากระดาษเปล่า 100%
   const handlePrint = () => {
-    window.print()
+    printElement('printable-receipts-report', 'รายงานประวัติการนำเข้าและตรวจรับพัสดุ', {
+      orientation: paperOrientation,
+    })
   }
 
   const printDateStr = now.toLocaleDateString('th-TH', {
@@ -236,89 +255,6 @@ export default function GoodsReceiptReportModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-2 sm:p-4 overflow-y-auto">
-      {/* Stylesheet พิเศษสำหรับการพิมพ์ A4 ขาวบริสุทธิ์ จัดกึ่งกลางพอดีหน้ากระดาษ */}
-      <style>{`
-        @media print {
-          @page {
-            size: A4 ${paperOrientation};
-            margin: ${paperOrientation === 'landscape' ? '8mm 6mm' : '10mm 8mm'};
-          }
-          html, body {
-            background: #ffffff !important;
-            color: #000000 !important;
-            height: auto !important;
-            overflow: visible !important;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-          }
-          .no-print {
-            display: none !important;
-          }
-          .modal-container {
-            position: static !important;
-            max-height: none !important;
-            height: auto !important;
-            overflow: visible !important;
-            border: none !important;
-            box-shadow: none !important;
-            padding: 0 !important;
-            margin: 0 !important;
-            background: #ffffff !important;
-          }
-          #printable-receipts-report {
-            box-shadow: none !important;
-            border: none !important;
-            padding: 0 !important;
-            margin: 0 !important;
-            width: 100% !important;
-            background: #ffffff !important;
-            color: #000000 !important;
-          }
-          #printable-receipts-report * {
-            background-color: transparent !important;
-            color: #000000 !important;
-            box-shadow: none !important;
-          }
-          #printable-receipts-report table {
-            border-collapse: collapse !important;
-            width: 100% !important;
-            table-layout: auto !important;
-          }
-          #printable-receipts-report th,
-          #printable-receipts-report td {
-            border: 1px solid #222222 !important;
-            color: #000000 !important;
-            background: #ffffff !important;
-            text-align: center !important;
-            vertical-align: middle !important;
-            padding: 4px 5px !important;
-          }
-          #printable-receipts-report thead th {
-            border-top: 1.5px solid #000000 !important;
-            border-bottom: 1.5px solid #000000 !important;
-            font-weight: bold !important;
-          }
-          #printable-receipts-report tfoot td {
-            border-top: 1.5px solid #000000 !important;
-            border-bottom: 2px solid #000000 !important;
-            font-weight: bold !important;
-          }
-          table {
-            page-break-inside: auto;
-          }
-          tr {
-            page-break-inside: avoid;
-            page-break-after: auto;
-          }
-          thead {
-            display: table-header-group;
-          }
-          tfoot {
-            display: table-footer-group;
-          }
-        }
-      `}</style>
-
       <div className="modal-container relative flex max-h-[96vh] w-full max-w-6xl flex-col rounded-2xl bg-white dark:bg-slate-900 shadow-2xl border border-slate-200 dark:border-slate-800">
         {/* แถบหัว Modal (ซ่อนเวลาพิมพ์) */}
         <div className="no-print flex items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-5 py-3.5 rounded-t-2xl">
@@ -331,7 +267,7 @@ export default function GoodsReceiptReportModal({
                 พิมพ์รายงานประวัติการนำเข้าและตรวจรับพัสดุ (Inbound & Goods Receipts)
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                แสดงประวัติการสั่งซื้อและการรับของจริง (หากมีรับบางส่วนหลายรอบ จะแสดงวันที่และจำนวนของทุกรอบชัดเจน)
+                กระดาษพิมพ์คมชัด ไม่ขาวว่างเปล่า · เลือกระหว่างราคาสด หรือ ราคาที่ + ภาษี (VAT 7%) ได้
               </p>
             </div>
           </div>
@@ -471,8 +407,8 @@ export default function GoodsReceiptReportModal({
             </div>
           </div>
 
-          {/* แถวที่ 2: พิมพ์โครงการ/ผู้จำหน่าย/ค้นหา */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5">
+          {/* แถวที่ 2: ตัวเลือกการพิมพ์, โหมดภาษี (ราคาสด vs + ภาษี), และค้นหา */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-2.5">
             {/* พิมพ์โครงการ */}
             <div>
               <div className="flex items-center justify-between mb-1">
@@ -535,6 +471,22 @@ export default function GoodsReceiptReportModal({
               </datalist>
             </div>
 
+            {/* ฟีเจอร์ราคา: ราคาสด vs ราคาที่ + ภาษี */}
+            <div>
+              <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                ราคา / ภาษี (VAT):
+              </label>
+              <select
+                value={taxMode}
+                onChange={(e) => setTaxMode(e.target.value)}
+                className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-2 py-1 text-xs font-semibold text-slate-800 dark:text-slate-200"
+              >
+                <option value="net">ราคาสด (ไม่รวมภาษี)</option>
+                <option value="gross">ราคาที่ + ภาษี (รวม VAT 7%)</option>
+                <option value="both">แสดงทั้งราคาสด และ + ภาษี</option>
+              </select>
+            </div>
+
             {/* ค้นหาคำในรายงาน */}
             <div>
               <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
@@ -552,7 +504,7 @@ export default function GoodsReceiptReportModal({
               </div>
             </div>
 
-            {/* รูปแบบกระดาษ & แสดงมูลค่า */}
+            {/* รูปแบบกระดาษ */}
             <div>
               <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
                 การจัดหน้ากระดาษ:
@@ -573,14 +525,14 @@ export default function GoodsReceiptReportModal({
                     onChange={(e) => setShowValuation(e.target.checked)}
                     className="rounded"
                   />
-                  <span>แสดงมูลค่าเงิน</span>
+                  <span>แสดงมูลค่า</span>
                 </label>
               </div>
             </div>
           </div>
         </div>
 
-        {/* ตัวกระดาษรายงานตัวอย่าง (Printable Document Body - กระดาษขาวล้วน จัดกึ่งกลางพอดีช่อง) */}
+        {/* ตัวกระดาษรายงานตัวอย่าง (Printable Document Body - กระดาษขาว กระชับ พอดีข้อความ) */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-slate-200/60 dark:bg-slate-900/50">
           <div
             id="printable-receipts-report"
@@ -588,7 +540,7 @@ export default function GoodsReceiptReportModal({
             style={{ width: '100%', maxWidth: '1080px', backgroundColor: '#ffffff' }}
           >
             {/* 1. ส่วนหัวเอกสาร (Header ขาวสะอาด กึ่งกลางสมดุล) */}
-            <div className="border-b-2 border-black pb-4 mb-4 text-center">
+            <div className="border-b-2 border-black pb-3 mb-3 text-center">
               <div className="flex justify-between items-start gap-4">
                 <div className="text-left">
                   <div className="flex items-center gap-2">
@@ -617,7 +569,7 @@ export default function GoodsReceiptReportModal({
                 </div>
               </div>
 
-              <div className="mt-3 text-center border-t border-b border-black py-2">
+              <div className="mt-2 text-center border-t border-b border-black py-1.5">
                 <h2 className="text-base font-black text-black tracking-wide">
                   รายงานประวัติการนำเข้าและตรวจรับพัสดุ (Goods Receipts & Inbound History Report)
                 </h2>
@@ -625,29 +577,56 @@ export default function GoodsReceiptReportModal({
                   <span>ช่วงเวลา: <b>{dateRangeInfo.label}</b></span>
                   <span>โครงการ: <b>{filterProject.trim() ? filterProject : 'ทุกโครงการ'}</b></span>
                   <span>ผู้จำหน่าย: <b>{filterVendor.trim() ? filterVendor : 'ทุกราย'}</b></span>
-                  <span>พบข้อมูล: <b className="font-mono text-black">{filteredRows.length}</b> รายการ</span>
+                  <span>
+                    การคิดราคา:{' '}
+                    <b>
+                      {taxMode === 'net'
+                        ? 'ราคาสด (ไม่รวมภาษี)'
+                        : taxMode === 'gross'
+                        ? 'ราคาที่ + ภาษี (รวม VAT 7%)'
+                        : 'แสดงทั้งราคาสด และ + ภาษี 7%'}
+                    </b>
+                  </span>
                 </div>
               </div>
             </div>
 
-            {/* 2. ตารางรายการรับเข้าพัสดุ (จัดกึ่งกลางทุกช่อง จัดเลเอาต์กระชับพอดีข้อความ) */}
+            {/* 2. ตารางรายการรับเข้าพัสดุ (ช่องกระชับ พอดีชื่อข้อความ ข้อความต่อเนื่อง ไม่เว้นกว้างเกินไป) */}
             <div className="overflow-x-auto">
               <table className="w-full text-xs border-collapse text-center" style={{ tableLayout: 'auto' }}>
                 <thead>
                   <tr className="border-t-2 border-b-2 border-black bg-white text-black font-bold">
-                    <th className="py-2 px-1 text-center align-middle w-8 border border-black">#</th>
-                    <th className="py-2 px-2 text-center align-middle w-32 border border-black">วันที่ตรวจรับ & ประวัติรอบรับ</th>
-                    <th className="py-2 px-2 text-center align-middle w-24 whitespace-nowrap border border-black">เลขที่ PO / รับ</th>
+                    <th className="py-2 px-1 text-center align-middle w-7 border border-black">#</th>
+                    <th className="py-2 px-2 text-center align-middle w-36 border border-black">วันที่ตรวจรับ & รอบรับ</th>
+                    <th className="py-2 px-2 text-center align-middle w-24 border border-black">เลขที่ PO / รับ</th>
                     <th className="py-2 px-2 text-center align-middle w-28 border border-black">โครงการ</th>
                     <th className="py-2 px-2 text-center align-middle w-28 border border-black">ผู้จำหน่าย</th>
-                    <th className="py-2 px-2 text-center align-middle border border-black">รายการวัสดุ / อุปกรณ์</th>
-                    <th className="py-2 px-1.5 text-center align-middle w-16 whitespace-nowrap border border-black">สั่งซื้อ</th>
-                    <th className="py-2 px-1.5 text-center align-middle w-24 whitespace-nowrap border border-black">รับเข้าแล้ว (สรุป)</th>
+                    <th className="py-2 px-2 text-center align-middle max-w-[200px] border border-black">รายการวัสดุ / อุปกรณ์</th>
+                    <th className="py-2 px-1 text-center align-middle w-14 whitespace-nowrap border border-black">สั่งซื้อ</th>
+                    <th className="py-2 px-1 text-center align-middle w-18 whitespace-nowrap border border-black">รับแล้ว</th>
                     <th className="py-2 px-1 text-center align-middle w-12 whitespace-nowrap border border-black">หน่วย</th>
                     {showValuation && (
                       <>
-                        <th className="py-2 px-2 text-center align-middle w-20 whitespace-nowrap border border-black">ราคา/หน่วย</th>
-                        <th className="py-2 px-2 text-center align-middle w-24 whitespace-nowrap border border-black">รวมมูลค่า (บาท)</th>
+                        {taxMode === 'net' && (
+                          <>
+                            <th className="py-2 px-2 text-center align-middle w-20 whitespace-nowrap border border-black">ราคา/หน่วย (สด)</th>
+                            <th className="py-2 px-2 text-center align-middle w-24 whitespace-nowrap border border-black">รวมเงินสด (บาท)</th>
+                          </>
+                        )}
+                        {taxMode === 'gross' && (
+                          <>
+                            <th className="py-2 px-2 text-center align-middle w-20 whitespace-nowrap border border-black">ราคา/หน่วย (+ภาษี)</th>
+                            <th className="py-2 px-2 text-center align-middle w-24 whitespace-nowrap border border-black">รวมเงิน (+ภาษี 7%)</th>
+                          </>
+                        )}
+                        {taxMode === 'both' && (
+                          <>
+                            <th className="py-2 px-1.5 text-center align-middle w-18 whitespace-nowrap border border-black">ราคาสด/หน่วย</th>
+                            <th className="py-2 px-1.5 text-center align-middle w-20 whitespace-nowrap border border-black">รวมราคาสด</th>
+                            <th className="py-2 px-1.5 text-center align-middle w-16 whitespace-nowrap border border-black">VAT 7%</th>
+                            <th className="py-2 px-2 text-center align-middle w-22 whitespace-nowrap border border-black">รวมสุทธิ (+ภาษี)</th>
+                          </>
+                        )}
                       </>
                     )}
                   </tr>
@@ -656,8 +635,8 @@ export default function GoodsReceiptReportModal({
                   {filteredRows.length === 0 ? (
                     <tr>
                       <td
-                        colSpan={showValuation ? 11 : 9}
-                        className="py-12 text-center align-middle text-neutral-500 italic text-xs border border-black"
+                        colSpan={showValuation ? (taxMode === 'both' ? 13 : 11) : 9}
+                        className="py-10 text-center align-middle text-neutral-500 italic text-xs border border-black"
                       >
                         ไม่พบข้อมูลประวัตินำเข้าพัสดุตามเงื่อนไขที่เลือก
                       </td>
@@ -667,31 +646,40 @@ export default function GoodsReceiptReportModal({
                       const hasMultiRounds = row.receiptHistory && row.receiptHistory.length > 1
                       const isComplete = row.qtyReceived >= row.qtyOrdered && row.qtyOrdered > 0
 
+                      // การคิดคำนวณราคาสด และราคาที่ + ภาษี
+                      const netUnitPrice = row.unitCost
+                      const netTotal = row.totalCost
+                      const vatItemTotal = Math.round(netTotal * 0.07 * 100) / 100
+                      const grossItemTotal = Math.round((netTotal + vatItemTotal) * 100) / 100
+                      const grossUnitPrice = row.qtyReceived > 0 ? Math.round((grossItemTotal / row.qtyReceived) * 100) / 100 : Math.round(netUnitPrice * 1.07 * 100) / 100
+
                       return (
                         <tr key={row.id || idx} className="text-[11px] bg-white hover:bg-slate-50">
                           {/* ลำดับ */}
-                          <td className="py-2 px-1 text-center align-middle font-mono text-neutral-600 border border-black">
+                          <td className="py-1.5 px-1 text-center align-middle font-mono text-neutral-600 border border-black">
                             {idx + 1}
                           </td>
 
-                          {/* วันที่ตรวจรับ และแจกแจงรอบรับ (ถ้ารับครั้งเดียวแสดงแค่วันที่ / ถ้ารับหลายรอบแสดงแจกแจงชัดเจน เช่น รับ 11/11 จำนวน 2, รับ 21/11 จำนวน 3) */}
-                          <td className="py-2 px-2 text-center align-middle font-mono text-black border border-black">
+                          {/* วันที่ตรวจรับ & ประวัติรอบรับแบบข้อความต่อเนื่อง ไม่เทอะทะ */}
+                          <td className="py-1.5 px-2 text-center align-middle font-mono text-black border border-black leading-tight">
                             {!hasMultiRounds ? (
                               <div className="font-semibold">
                                 {row.date ? new Date(row.date).toLocaleDateString('th-TH', { year: '2-digit', month: 'short', day: 'numeric' }) : '-'}
                               </div>
                             ) : (
-                              <div className="space-y-1">
-                                <div className="font-bold text-[10px] text-neutral-700 bg-neutral-100 py-0.5 px-1 rounded inline-block">
-                                  รับ {row.receiptHistory.length} รอบ (ล่าสุด: {new Date(row.date).toLocaleDateString('th-TH', { year: '2-digit', month: 'short', day: 'numeric' })})
+                              <div>
+                                <div className="font-bold text-black">
+                                  {row.date ? new Date(row.date).toLocaleDateString('th-TH', { year: '2-digit', month: 'short', day: 'numeric' }) : '-'}
+                                  <span className="text-[9px] font-sans font-normal text-neutral-600 ml-1">({row.receiptHistory.length} รอบ)</span>
                                 </div>
-                                <div className="text-[10px] space-y-0.5 text-neutral-800">
+                                <div className="text-[10px] text-neutral-600 mt-0.5 leading-snug">
                                   {row.receiptHistory.map((h, hIdx) => {
                                     const hDateStr = h.date ? new Date(h.date).toLocaleDateString('th-TH', { year: '2-digit', month: 'short', day: 'numeric' }) : '-'
                                     return (
-                                      <div key={hIdx} className="whitespace-nowrap">
-                                        ครั้งที่ {hIdx + 1} ({hDateStr}): <b>{Number(h.quantity || 0).toLocaleString()}</b> {row.unit}
-                                      </div>
+                                      <span key={hIdx} className="inline-block mr-1.5 whitespace-nowrap">
+                                        ครั้ง {hIdx + 1} ({hDateStr}): {Number(h.quantity || 0).toLocaleString()} {row.unit}
+                                        {hIdx < row.receiptHistory.length - 1 ? ' · ' : ''}
+                                      </span>
                                     )
                                   })}
                                 </div>
@@ -699,8 +687,8 @@ export default function GoodsReceiptReportModal({
                             )}
                           </td>
 
-                          {/* เลขที่ PO / เอกสารตรวจรับ */}
-                          <td className="py-2 px-2 text-center align-middle font-mono border border-black">
+                          {/* เลขที่ PO / รับ (กระชับ) */}
+                          <td className="py-1.5 px-1.5 text-center align-middle font-mono border border-black leading-tight">
                             {row.poNo && (
                               <div className="font-bold text-black">{row.poNo}</div>
                             )}
@@ -709,55 +697,85 @@ export default function GoodsReceiptReportModal({
                             </div>
                           </td>
 
-                          {/* โครงการ */}
-                          <td className="py-2 px-2 text-center align-middle text-black border border-black">
+                          {/* โครงการ (กว้างพอดีข้อความ) */}
+                          <td className="py-1.5 px-2 text-center align-middle text-black border border-black leading-tight">
                             {row.projectName}
                           </td>
 
-                          {/* ผู้จำหน่าย */}
-                          <td className="py-2 px-2 text-center align-middle text-black border border-black">
+                          {/* ผู้จำหน่าย (กว้างพอดีข้อความ) */}
+                          <td className="py-1.5 px-2 text-center align-middle text-black border border-black leading-tight">
                             {row.vendorName}
                           </td>
 
-                          {/* รายการวัสดุ / อุปกรณ์ */}
-                          <td className="py-2 px-2 text-center align-middle border border-black">
+                          {/* รายการพัสดุ / อุปกรณ์ (กว้างพอดีชื่อข้อความ) */}
+                          <td className="py-1.5 px-2.5 text-center align-middle border border-black leading-tight">
                             <div className="font-bold text-black">{row.itemName}</div>
                             {row.itemCode && row.itemCode !== '-' && (
                               <div className="text-[10px] font-mono text-neutral-500">{row.itemCode}</div>
                             )}
                           </td>
 
-                          {/* จำนวนสั่งซื้อ (Ordered) */}
-                          <td className="py-2 px-1.5 text-center align-middle font-mono font-bold text-neutral-800 border border-black">
+                          {/* สั่งซื้อ */}
+                          <td className="py-1.5 px-1 text-center align-middle font-mono font-bold text-neutral-800 border border-black">
                             {Number(row.qtyOrdered).toLocaleString()}
                           </td>
 
-                          {/* จำนวนรับเข้าแล้วจริง (Received) พร้อมสถานะครบถ้วน */}
-                          <td className="py-2 px-1.5 text-center align-middle font-mono font-bold text-black border border-black">
+                          {/* รับแล้วจริง */}
+                          <td className="py-1.5 px-1 text-center align-middle font-mono font-bold text-black border border-black leading-tight">
                             <div>{Number(row.qtyReceived).toLocaleString()}</div>
-                            <div className="text-[9px] font-sans mt-0.5">
+                            <div className="text-[9px] font-sans font-normal">
                               {isComplete ? (
-                                <span className="text-black font-semibold">(ครบ {Number(row.qtyOrdered).toLocaleString()})</span>
+                                <span className="text-black">(ครบ)</span>
                               ) : (
-                                <span className="text-neutral-700 font-semibold">(ค้าง {Math.max(0, row.qtyOrdered - row.qtyReceived).toLocaleString()})</span>
+                                <span className="text-neutral-700">(ค้าง {Math.max(0, row.qtyOrdered - row.qtyReceived)})</span>
                               )}
                             </div>
                           </td>
 
                           {/* หน่วย */}
-                          <td className="py-2 px-1 text-center align-middle text-black border border-black">
+                          <td className="py-1.5 px-1 text-center align-middle text-black border border-black">
                             {row.unit}
                           </td>
 
-                          {/* ราคาและมูลค่าเงิน */}
+                          {/* ราคาและมูลค่าเงิน (ราคาสด vs + ภาษี 7%) */}
                           {showValuation && (
                             <>
-                              <td className="py-2 px-2 text-center align-middle font-mono text-black border border-black">
-                                {baht(row.unitCost)}
-                              </td>
-                              <td className="py-2 px-2 text-center align-middle font-mono font-bold text-black border border-black">
-                                {baht(row.totalCost)}
-                              </td>
+                              {taxMode === 'net' && (
+                                <>
+                                  <td className="py-1.5 px-2 text-center align-middle font-mono text-black border border-black">
+                                    {baht(netUnitPrice)}
+                                  </td>
+                                  <td className="py-1.5 px-2 text-center align-middle font-mono font-bold text-black border border-black">
+                                    {baht(netTotal)}
+                                  </td>
+                                </>
+                              )}
+                              {taxMode === 'gross' && (
+                                <>
+                                  <td className="py-1.5 px-2 text-center align-middle font-mono text-black border border-black">
+                                    {baht(grossUnitPrice)}
+                                  </td>
+                                  <td className="py-1.5 px-2 text-center align-middle font-mono font-bold text-black border border-black">
+                                    {baht(grossItemTotal)}
+                                  </td>
+                                </>
+                              )}
+                              {taxMode === 'both' && (
+                                <>
+                                  <td className="py-1.5 px-1.5 text-center align-middle font-mono text-black border border-black">
+                                    {baht(netUnitPrice)}
+                                  </td>
+                                  <td className="py-1.5 px-1.5 text-center align-middle font-mono font-semibold text-black border border-black">
+                                    {baht(netTotal)}
+                                  </td>
+                                  <td className="py-1.5 px-1.5 text-center align-middle font-mono text-neutral-600 border border-black">
+                                    {baht(vatItemTotal)}
+                                  </td>
+                                  <td className="py-1.5 px-2 text-center align-middle font-mono font-bold text-black border border-black">
+                                    {baht(grossItemTotal)}
+                                  </td>
+                                </>
+                              )}
                             </>
                           )}
                         </tr>
@@ -766,26 +784,52 @@ export default function GoodsReceiptReportModal({
                   )}
                 </tbody>
 
-                {/* แถวสรุปผลรวมท้ายตาราง (Summary Row) จัดกึ่งกลางพอดีช่อง */}
+                {/* แถวสรุปผลรวมท้ายตาราง (Summary Row) */}
                 {filteredRows.length > 0 && (
                   <tfoot>
                     <tr className="border-t-2 border-b-2 border-black bg-white font-bold text-xs text-black">
-                      <td colSpan={6} className="py-2.5 px-2 text-center align-middle border border-black">
+                      <td colSpan={6} className="py-2 px-2 text-center align-middle border border-black">
                         รวมทั้งสิ้น ({filteredRows.length} รายการ):
                       </td>
-                      <td className="py-2.5 px-1.5 text-center align-middle font-mono font-black text-black border border-black">
+                      <td className="py-2 px-1 text-center align-middle font-mono font-black text-black border border-black">
                         {totalQtyOrdered.toLocaleString()}
                       </td>
-                      <td className="py-2.5 px-1.5 text-center align-middle font-mono font-black text-black border border-black">
+                      <td className="py-2 px-1 text-center align-middle font-mono font-black text-black border border-black">
                         {totalQtyReceived.toLocaleString()}
                       </td>
-                      <td className="py-2.5 px-1 text-center align-middle text-black border border-black">ชิ้น/ชุด</td>
+                      <td className="py-2 px-1 text-center align-middle text-black border border-black">ชิ้น/ชุด</td>
                       {showValuation && (
                         <>
-                          <td className="py-2.5 px-2 text-center align-middle text-neutral-500 font-normal text-[11px] border border-black">-</td>
-                          <td className="py-2.5 px-2 text-center align-middle font-mono font-black text-black text-sm border border-black">
-                            {baht(totalAmount)}
-                          </td>
+                          {taxMode === 'net' && (
+                            <>
+                              <td className="py-2 px-2 text-center align-middle text-neutral-500 font-normal text-[11px] border border-black">-</td>
+                              <td className="py-2 px-2 text-center align-middle font-mono font-black text-black text-sm border border-black">
+                                {baht(totalNetCost)}
+                              </td>
+                            </>
+                          )}
+                          {taxMode === 'gross' && (
+                            <>
+                              <td className="py-2 px-2 text-center align-middle text-neutral-500 font-normal text-[11px] border border-black">-</td>
+                              <td className="py-2 px-2 text-center align-middle font-mono font-black text-black text-sm border border-black">
+                                {baht(totalGrossCost)}
+                              </td>
+                            </>
+                          )}
+                          {taxMode === 'both' && (
+                            <>
+                              <td className="py-2 px-1.5 text-center align-middle text-neutral-500 font-normal text-[11px] border border-black">-</td>
+                              <td className="py-2 px-1.5 text-center align-middle font-mono font-black text-black border border-black">
+                                {baht(totalNetCost)}
+                              </td>
+                              <td className="py-2 px-1.5 text-center align-middle font-mono font-black text-neutral-700 border border-black">
+                                {baht(totalVat)}
+                              </td>
+                              <td className="py-2 px-2 text-center align-middle font-mono font-black text-black text-sm border border-black">
+                                {baht(totalGrossCost)}
+                              </td>
+                            </>
+                          )}
                         </>
                       )}
                     </tr>
@@ -794,8 +838,28 @@ export default function GoodsReceiptReportModal({
               </table>
             </div>
 
+            {/* แถบสรุปมูลค่าชัดเจน (ราคาสด, VAT 7%, ราคารวมภาษี) */}
+            {showValuation && filteredRows.length > 0 && (
+              <div className="mt-3 p-2.5 border border-black bg-white flex flex-wrap items-center justify-between text-xs">
+                <div className="flex items-center gap-4 flex-wrap">
+                  <span>
+                    ยอดรวมราคาสด (ไม่รวมภาษี): <b className="font-mono text-black text-sm">{baht(totalNetCost)}</b> บาท
+                  </span>
+                  <span>
+                    ภาษีมูลค่าเพิ่ม (VAT 7%): <b className="font-mono text-neutral-700 text-sm">{baht(totalVat)}</b> บาท
+                  </span>
+                  <span>
+                    รวมมูลค่าสุทธิ (+ ภาษี): <b className="font-mono text-black text-base font-black">{baht(totalGrossCost)}</b> บาท
+                  </span>
+                </div>
+                <div className="text-[11px] text-neutral-600">
+                  คำนวณตามอัตราภาษีมูลค่าเพิ่ม 7%
+                </div>
+              </div>
+            )}
+
             {/* 3. หมายเหตุท้ายรายงาน */}
-            <div className="mt-4 pt-3 border-t border-black flex justify-between items-start text-[11px] text-neutral-600">
+            <div className="mt-3 pt-2 border-t border-black flex justify-between items-start text-[11px] text-neutral-600">
               <div className="max-w-xl text-left">
                 <span className="font-bold text-black">หมายเหตุ: </span>
                 <span>{reportNotes}</span>
@@ -810,8 +874,8 @@ export default function GoodsReceiptReportModal({
         {/* แถบล่าง Modal (ซ่อนเวลาพิมพ์) */}
         <div className="no-print flex items-center justify-between border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-5 py-3 rounded-b-2xl text-xs">
           <div className="text-slate-600 dark:text-slate-400">
-            แสดงข้อมูล <b>{filteredRows.length}</b> รายการ · สั่งซื้อรวม <b>{totalQtyOrdered.toLocaleString()}</b> ชิ้น · รับจริงแล้ว <b>{totalQtyReceived.toLocaleString()}</b> ชิ้น · รวมมูลค่า{' '}
-            <b className="text-black dark:text-white font-mono font-bold">{baht(totalAmount)}</b> บาท
+            แสดงข้อมูล <b>{filteredRows.length}</b> รายการ · ราคาสด <b>{baht(totalNetCost)}</b> บ. · รวม + ภาษี (VAT 7%){' '}
+            <b className="text-black dark:text-white font-mono font-bold">{baht(totalGrossCost)}</b> บาท
           </div>
           <div className="flex items-center gap-2">
             <button
