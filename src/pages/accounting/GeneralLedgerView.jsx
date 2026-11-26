@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Fragment } from 'react'
 import { supabase } from '../../lib/supabase'
 import { baht } from '../../lib/projects'
 
@@ -197,8 +197,8 @@ export default function GeneralLedgerView() {
                     const isExpanded = expandedId === entry.id
 
                     return (
-                      <tbody key={entry.id} className="hover:bg-steel-50/40">
-                        <tr>
+                      <Fragment key={entry.id}>
+                        <tr className="hover:bg-steel-50/40">
                           <td className="px-3 py-2.5 font-mono font-bold text-sky-800">
                             {entry.entry_no}
                           </td>
@@ -311,7 +311,7 @@ export default function GeneralLedgerView() {
                             </td>
                           </tr>
                         )}
-                      </tbody>
+                      </Fragment>
                     )
                   })
                 )}

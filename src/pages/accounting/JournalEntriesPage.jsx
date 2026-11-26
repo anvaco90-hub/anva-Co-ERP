@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, Fragment } from 'react'
 import { supabase } from '../../lib/supabase'
 import { formatBaht, formatThaiDate } from '../../lib/accounting'
 import Pagination from '../../components/Pagination'
@@ -308,8 +308,8 @@ export default function JournalEntriesPage() {
                     : entry.reference_type
 
                   return (
-                    <tbody key={entry.id} className="hover:bg-steel-50/30 transition">
-                      <tr className={isExpanded ? 'bg-steel-50/60' : ''}>
+                    <Fragment key={entry.id}>
+                      <tr className={`hover:bg-steel-50/30 transition ${isExpanded ? 'bg-steel-50/60' : ''}`}>
                         <td className="px-3 py-2.5 text-center">
                           <button
                             onClick={() => setExpandedId(isExpanded ? null : entry.id)}
@@ -457,7 +457,7 @@ export default function JournalEntriesPage() {
                           </td>
                         </tr>
                       )}
-                    </tbody>
+                    </Fragment>
                   )
                 })
               )}
