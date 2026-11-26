@@ -93,7 +93,33 @@ export default function GoodsReceiptReportModal({
       const lotType = r.lot_type || (poNo ? 'po_receive' : 'direct_in')
 
       // ประวัติการรับของแต่ละรอบ (เช่น รับรอบ 1 วันที่ 11/11 จำนวน 2 และ รอบ 2 วันที่ 21/11 จำนวน 3)
-      const receiptHistory = r.receipt_history || []
+      let receiptHistory = Array.isArray(r.receipt_history) ? [...r.receipt_history] : []
+      let grnList = Array.isArray(r.grn_list)
+        ? [...r.grn_list]
+        : (receiptHistory.length > 0 ? receiptHistory.map((h) => h.grn_no).filter(Boolean) : [])
+
+      // ถ้าไม่มี receiptHistory แต่ grnNo มีหลายเลขคั่นด้วยจุลภาค ให้แยกออกมา
+      if (receiptHistory.length <= 1 && grnNo.includes(',')) {
+        const parts = grnNo.split(',').map((s) => s.replace(/\s*\(\d+\s*รอบ\)/g, '').trim()).filter(Boolean)
+        if (parts.length > 1) {
+          grnList = parts
+          if (receiptHistory.length === 0) {
+            receiptHistory = parts.map((g) => ({
+              grn_no: g,
+              date: dateStr,
+              quantity: qtyReceived / parts.length,
+            }))
+          }
+        }
+      }
+
+      // ตรวจสอบให้แน่ใจว่าแต่ละรอบใน receiptHistory มีเลข grn_no กำกับ
+      if (receiptHistory.length > 0) {
+        receiptHistory = receiptHistory.map((h, hIdx) => ({
+          ...h,
+          grn_no: h.grn_no || grnList[hIdx] || grnNo,
+        }))
+      }
 
       return {
         id: r.id || `${idx}`,
@@ -108,6 +134,7 @@ export default function GoodsReceiptReportModal({
         projectName: fullProject,
         poNo,
         grnNo,
+        grnList,
         vendorName,
         lotType,
         receiptHistory,
