@@ -1,6 +1,19 @@
 import { normalizeName } from './contactsUtils.js'
+import { isCancelledStatus } from './projectFinancials.js'
 import { buildPurchaseItemsFromQuotation } from './purchasingPricing.js'
+import { getCustomerApprovalDisplay } from './salesFlowUtils.js'
 import { round2 } from './tax.js'
+
+/**
+ * Determine whether purchasing can open PRs / withdraw Store stock for a quotation.
+ * Strictly gated behind customer approval (draft/sent/rejected/expired return false).
+ */
+export function canCreatePrFromQuotation(quotation) {
+  if (!quotation || isCancelledStatus(quotation.status) || quotation.status === 'expired') {
+    return false
+  }
+  return getCustomerApprovalDisplay(quotation).isApproved
+}
 
 const SERVICE_UNITS = new Set([
   'งาน',
@@ -69,8 +82,9 @@ export function checkQuotationStock(quotationItems = [], inventoryItems = []) {
     const itemName = String(qItem?.item_name || '').trim()
     const unit = String(qItem?.unit || '').trim()
     const needed = Math.max(0, round2(Number(qItem?.quantity) || 0))
+    const trackedInvById = qItem?.item_id ? invById.get(qItem.item_id) || null : null
 
-    if (isServiceOrLaborItem(qItem)) {
+    if (!trackedInvById && isServiceOrLaborItem(qItem)) {
       return {
         quotationItemId: qItem?.id || null,
         itemName,
@@ -86,10 +100,7 @@ export function checkQuotationStock(quotationItems = [], inventoryItems = []) {
       }
     }
 
-    const inv =
-      (qItem?.item_id && invById.get(qItem.item_id)) ||
-      invByName.get(normalizeName(itemName)) ||
-      null
+    const inv = trackedInvById || invByName.get(normalizeName(itemName)) || null
 
     if (!inv) {
       return {

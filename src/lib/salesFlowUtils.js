@@ -298,6 +298,7 @@ export function computeQuotationWorkflow({
 
   return {
     isApproved,
+    canOpenPr: isApproved,
     activePRs,
     activePOs,
     activeInvoices,

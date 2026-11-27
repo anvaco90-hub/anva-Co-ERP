@@ -5,6 +5,150 @@
 
 export const round2 = (value) => Math.round((Number(value) || 0) * 100) / 100
 
+export const QUOTATION_TYPES = Object.freeze({
+  PROJECT: 'project',
+  PRODUCT: 'product',
+})
+
+/**
+ * Generate separated quotation document numbers by type:
+ *  - 'project' (รับงาน / BOQ) -> QT-P-YYYYMM-NNNN
+ *  - 'product' (ขายสินค้า / Store) -> QT-S-YYYYMM-NNNN
+ */
+export function generateTypedQuotationNo(
+  type = QUOTATION_TYPES.PROJECT,
+  date = new Date(),
+  randomDigits = null
+) {
+  const safeDate = date instanceof Date && !isNaN(date.getTime()) ? date : new Date()
+  const ym = `${safeDate.getFullYear()}${String(safeDate.getMonth() + 1).padStart(2, '0')}`
+  const rand =
+    randomDigits != null
+      ? String(randomDigits)
+      : String(Math.floor(1000 + Math.random() * 9000))
+  const prefix = type === QUOTATION_TYPES.PRODUCT ? 'QT-S' : 'QT-P'
+  return `${prefix}-${ym}-${rand}`
+}
+
+/**
+ * Shared markup helper used by BOQ and Quotations.
+ * Markup is percentage-only and clamped to non-negative; selling unit price is rounded to 2 decimals.
+ */
+export function applyMarkup(baseUnitCost, markupPercent = 0) {
+  const cost = Math.max(0, Number(baseUnitCost) || 0)
+  const pct = Math.max(0, Number(markupPercent) || 0)
+  return round2(cost * (1 + pct / 100))
+}
+
+/**
+ * Unified pricing pipeline shared across BOQ, Project Quotations, and Product Quotations:
+ *   base_cost -> markup % (unit rounded 2dp) -> line sums -> discount -> VAT/WHT -> below-cost check.
+ */
+export function calculateDocumentPricing({
+  items = [],
+  markupPercent = 0,
+  pricingFromCost = true,
+  discountMode = 'none',
+  headerDiscountType = 'amount',
+  headerDiscountValue = 0,
+  taxType = 'vat_excluded',
+  vatRate = 7,
+  whtRate = 0,
+} = {}) {
+  const safeMarkupPct = Math.max(0, Number(markupPercent) || 0)
+  const effectiveDiscountMode = ['whole_bill', 'per_item'].includes(discountMode)
+    ? discountMode
+    : 'none'
+
+  const lineRows = (items || []).map((item) => {
+    const qty = Math.max(0, Number(item?.quantity) || 0)
+    const baseUnitCost = Math.max(0, round2(item?.base_cost ?? item?.unit_cost ?? 0))
+    const lineBaseCost = round2(baseUnitCost * qty)
+
+    const unitSellingPrice = pricingFromCost
+      ? applyMarkup(baseUnitCost, safeMarkupPct)
+      : round2(Math.max(0, Number(item?.unit_price) || 0))
+
+    const lineGross = round2(unitSellingPrice * qty)
+    const itemDiscountPercent =
+      effectiveDiscountMode === 'per_item'
+        ? Math.min(100, Math.max(0, Number(item?.discount_percent) || 0))
+        : 0
+    const lineDiscount =
+      effectiveDiscountMode === 'per_item' && itemDiscountPercent > 0
+        ? round2((lineGross * itemDiscountPercent) / 100)
+        : 0
+    const lineTotal = round2(Math.max(0, lineGross - lineDiscount))
+
+    return {
+      qty,
+      baseUnitCost,
+      lineBaseCost,
+      unitSellingPrice,
+      lineGross,
+      itemDiscountPercent,
+      lineDiscount,
+      lineTotal,
+    }
+  })
+
+  const totalCost = round2(lineRows.reduce((sum, row) => sum + row.lineBaseCost, 0))
+  const grossSubtotal = round2(lineRows.reduce((sum, row) => sum + row.lineGross, 0))
+  const linesNetTotal = round2(lineRows.reduce((sum, row) => sum + row.lineTotal, 0))
+
+  let subtotal = linesNetTotal
+  let discountAmount = 0
+  let afterDiscount = linesNetTotal
+
+  if (effectiveDiscountMode === 'per_item') {
+    subtotal = grossSubtotal
+    discountAmount = round2(lineRows.reduce((sum, row) => sum + row.lineDiscount, 0))
+    afterDiscount = linesNetTotal
+  } else if (effectiveDiscountMode === 'whole_bill') {
+    subtotal = linesNetTotal
+    const rawHeaderVal = Math.max(0, Number(headerDiscountValue) || 0)
+    const rawDiscount =
+      headerDiscountType === 'percent'
+        ? round2((subtotal * Math.min(100, rawHeaderVal)) / 100)
+        : round2(rawHeaderVal)
+    discountAmount = Math.min(subtotal, Math.max(0, rawDiscount))
+    afterDiscount = round2(Math.max(0, subtotal - discountAmount))
+  }
+
+  const markupAmount = round2(grossSubtotal - totalCost)
+  const taxBreakdown = calculateTaxBreakdown({
+    rawTotal: afterDiscount,
+    taxType,
+    whtRate,
+    vatRate,
+  })
+
+  const isBelowCost = totalCost > 0 && afterDiscount < totalCost
+  const belowCostAmount = isBelowCost ? round2(totalCost - afterDiscount) : 0
+  const profitAmount = round2(afterDiscount - totalCost)
+
+  return {
+    markupPercent: safeMarkupPct,
+    discountMode: effectiveDiscountMode,
+    lineRows,
+    totalCost,
+    markupAmount,
+    grossSubtotal,
+    subtotal,
+    discountAmount,
+    afterDiscount,
+    amountBeforeVat: taxBreakdown.amountBeforeVat,
+    vatAmount: taxBreakdown.vatAmount,
+    totalWithVat: taxBreakdown.totalWithVat,
+    whtAmount: taxBreakdown.whtAmount,
+    netPayable: taxBreakdown.netPayable,
+    grandTotal: taxBreakdown.netPayable,
+    isBelowCost,
+    belowCostAmount,
+    profitAmount,
+  }
+}
+
 /**
  * Infer a quotation's VAT mode ('vat_excluded' | 'vat_included' | 'vat_exempt').
  * Works whether or not `tax_type` exists as a column in `quotations`.

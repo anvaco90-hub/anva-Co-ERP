@@ -11,6 +11,7 @@ import {
   syncLaborItemsWithKwp,
   LABOR_RATE_PER_WATT,
 } from '../../lib/boqLabor'
+import { calculateDocumentPricing } from '../../lib/tax'
 import {
   FileSpreadsheet,
   Plus,
@@ -438,10 +439,30 @@ export default function BOQForm() {
     return Math.round(laborCalculations.reduce((s, l) => s + l.totalLab, 0) * 100) / 100
   }, [laborCalculations])
 
-  const totalCost = totalMaterialCost + totalLaborCost
-  const markupRate = Number(markupPercent) || 0
-  const markupAmount = (totalCost * markupRate) / 100
-  const grandTotal = totalCost + markupAmount
+  const boqPricing = useMemo(() => {
+    const matLines = categories.flatMap((cat) =>
+      cat.items.map((it) => ({
+        quantity: parseInt(it.quantity, 10) || 0,
+        base_cost: Number(it.material_unit_cost) || 0,
+      }))
+    )
+    const labLines = laborItems.map((l) => ({
+      quantity: Number(l.quantity) || 0,
+      base_cost: Number(l.labor_unit_cost) || 0,
+    }))
+    return calculateDocumentPricing({
+      items: [...matLines, ...labLines],
+      markupPercent,
+      pricingFromCost: true,
+      discountMode: 'none',
+      taxType: 'vat_exempt',
+    })
+  }, [categories, laborItems, markupPercent])
+
+  const totalCost = boqPricing.totalCost
+  const markupRate = boqPricing.markupPercent
+  const markupAmount = boqPricing.markupAmount
+  const grandTotal = boqPricing.grandTotal
 
   // ── บันทึก BOQ ─────────────────────────────────────────────────────────────
   async function save() {

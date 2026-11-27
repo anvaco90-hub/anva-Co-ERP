@@ -4,6 +4,8 @@ import {
   buildCustomerQuotationSummary,
   buildQuotationTaxUpdatePayload,
   getCustomerPrintItems,
+  getCustomerPrintMode,
+  resolveQuotationType,
 } from '../src/lib/quotationPrintUtils.js'
 
 describe('Customer Quotation Print Summary & VAT Switch Helpers (src/lib/quotationPrintUtils.js)', () => {
@@ -128,5 +130,87 @@ describe('Customer Quotation Print Summary & VAT Switch Helpers (src/lib/quotati
       ]
     )
     assert.deepEqual(getCustomerPrintItems([]), [])
+  })
+
+  it('enforces project vs product print modes and never exposes base_cost, markup_percent, or stock fields', () => {
+    assert.equal(resolveQuotationType({ type: 'product' }), 'product')
+    assert.equal(resolveQuotationType({ quotation_no: 'QT-S-202611-1234' }), 'product')
+    assert.equal(resolveQuotationType({ quotation_no: 'QT-P-202611-1234' }), 'project')
+
+    const projectMode = getCustomerPrintMode({ type: 'project', discount_amount: 50 })
+    assert.deepEqual(projectMode, {
+      type: 'project',
+      showUnitPrice: false,
+      showLineTotal: false,
+      showPerItemDiscount: false,
+      showDiscountSummary: false,
+    })
+
+    const productModeWhole = getCustomerPrintMode({
+      type: 'product',
+      discount_mode: 'whole_bill',
+      discount_amount: 500,
+    })
+    assert.deepEqual(productModeWhole, {
+      type: 'product',
+      showUnitPrice: true,
+      showLineTotal: true,
+      showPerItemDiscount: false,
+      showDiscountSummary: true,
+    })
+
+    const rawItems = [
+      {
+        id: 'qi-1',
+        item_name: 'Inverter 10kW',
+        quantity: 2,
+        unit: 'เครื่อง',
+        base_cost: 30000,
+        unit_price: 36000,
+        discount_percent: 5,
+        total_amount: 68400,
+        inStock: 10,
+        qty_on_hand: 10,
+      },
+      {
+        id: 'qi-2',
+        item_name: 'ค่าแรงติดตั้งระบบ',
+        quantity: 5000,
+        unit: 'Watt',
+        base_cost: 3,
+        unit_price: 3.45,
+        total_amount: 17250,
+      },
+    ]
+
+    const projectRows = getCustomerPrintItems(rawItems, { type: 'project' })
+    assert.equal(projectRows.length, 1)
+    assert.equal('unit_price' in projectRows[0], false)
+    assert.equal('total_amount' in projectRows[0], false)
+    assert.equal('base_cost' in projectRows[0], false)
+    assert.equal('inStock' in projectRows[0], false)
+
+    const productRows = getCustomerPrintItems([rawItems[0]], {
+      type: 'product',
+      discount_mode: 'per_item',
+    })
+    assert.equal(productRows[0].unit_price, 36000)
+    assert.equal(productRows[0].total_amount, 68400)
+    assert.equal(productRows[0].discount_percent, 5)
+    assert.equal('base_cost' in productRows[0], false)
+    assert.equal('qty_on_hand' in productRows[0], false)
+
+    const projSummary = buildCustomerQuotationSummary({
+      type: 'project',
+      subtotal: 100000,
+      discount_amount: 1000,
+      after_discount: 100000,
+      tax_type: 'vat_exempt',
+      total_cost: 80000,
+      markup_percent: 25,
+    })
+    assert.equal(projSummary.discountAmount, 0)
+    assert.equal('totalCost' in projSummary, false)
+    assert.equal('markupPercent' in projSummary, false)
   })
 })

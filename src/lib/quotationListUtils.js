@@ -1,10 +1,33 @@
 import { isCancelledStatus } from './projectFinancials.js'
-import { buildCustomerQuotationSummary } from './quotationPrintUtils.js'
+import { buildCustomerQuotationSummary, resolveQuotationType } from './quotationPrintUtils.js'
 import {
   extractPrSourceQuotation,
   getCustomerApprovalDisplay,
   isPoReceivedStatus,
 } from './salesFlowUtils.js'
+
+/**
+ * Return UI badge metadata for quotation type ('project' vs 'product').
+ */
+export function getQuotationTypeMeta(quotation) {
+  const type = resolveQuotationType(quotation)
+  if (type === 'product') {
+    return {
+      type: 'product',
+      label: 'ขายสินค้า (Store)',
+      shortLabel: 'ขายสินค้า',
+      badgeCls:
+        'bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border-sky-200 dark:border-sky-800',
+    }
+  }
+  return {
+    type: 'project',
+    label: 'รับงาน (BOQ)',
+    shortLabel: 'รับงาน',
+    badgeCls:
+      'bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800',
+  }
+}
 
 const getQuotationAmount = (q) =>
   Number(q?.grand_total ?? q?.total_amount ?? q?.net_amount ?? 0)
@@ -69,7 +92,7 @@ export function computeQuotationKpis(quotations = []) {
  */
 export function filterQuotations(
   quotations = [],
-  { filterStatus = 'all', filterProject = '', search = '', dateFrom = '', dateTo = '' } = {}
+  { filterStatus = 'all', filterType = 'all', filterProject = '', search = '', dateFrom = '', dateTo = '' } = {}
 ) {
   const term = String(search || '').toLowerCase().trim()
 
@@ -80,6 +103,10 @@ export function filterQuotations(
       if (!isQuotationApproved(q)) return false
     } else if (filterStatus && filterStatus !== 'all') {
       if (q.status !== filterStatus) return false
+    }
+
+    if (filterType && filterType !== 'all') {
+      if (resolveQuotationType(q) !== filterType) return false
     }
 
     if (filterProject && q.project_id !== filterProject) return false

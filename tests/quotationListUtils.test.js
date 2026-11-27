@@ -5,6 +5,7 @@ import {
   computeQuotationKpis,
   filterQuotations,
   getQuotationRowAmountMeta,
+  getQuotationTypeMeta,
   isQuotationApproved,
   resolveInitialStatusFilter,
 } from '../src/lib/quotationListUtils.js'
@@ -151,5 +152,25 @@ describe('Quotation List KPIs, Approval Consistency & Filters (src/lib/quotation
     // qt-3 is approved with only a cancelled PR -> prompt awaiting purchasing
     assert.equal(map['qt-3'].prCount, 0)
     assert.equal(map['qt-3'].stageLabel, 'รอส่งต่อจัดซื้อ / เช็กสต็อก')
+  })
+
+  it('filters quotations by type (project vs product) and returns clear type badges', () => {
+    const typedRows = [
+      { ...SAMPLE_QUOTATIONS[0], type: 'project' },
+      { ...SAMPLE_QUOTATIONS[1], type: 'product', quotation_no: 'QT-S-202611-6945' },
+      { ...SAMPLE_QUOTATIONS[2] }, // legacy row without explicit type defaults to 'project'
+    ]
+
+    assert.equal(filterQuotations(typedRows, { filterType: 'all' }).length, 3)
+    assert.deepEqual(
+      filterQuotations(typedRows, { filterType: 'product' }).map((q) => q.id),
+      ['qt-2']
+    )
+    assert.deepEqual(
+      filterQuotations(typedRows, { filterType: 'project' }).map((q) => q.id),
+      ['qt-1', 'qt-3']
+    )
+    assert.equal(getQuotationTypeMeta(typedRows[1]).shortLabel, 'ขายสินค้า')
+    assert.equal(getQuotationTypeMeta(typedRows[0]).shortLabel, 'รับงาน')
   })
 })

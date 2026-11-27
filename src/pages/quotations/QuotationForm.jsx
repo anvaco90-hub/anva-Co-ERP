@@ -1,16 +1,33 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useMemo } from 'react'
 import { useNavigate, useParams, Link, useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
 import { baht } from '../../lib/projects'
-import { calculateTaxBreakdown, inferQuotationTaxType } from '../../lib/tax'
+import {
+  QUOTATION_TYPES,
+  calculateDocumentPricing,
+  generateTypedQuotationNo,
+  inferQuotationTaxType,
+  round2,
+} from '../../lib/tax'
 import { fetchUnifiedCustomers, ensureLegacyCustomerId } from '../../lib/contactsSync'
-import { buildQuotationItemsFromBoq, matchBoqCustomer, formatCustomerBranchLabel } from '../../lib/boqToQuotation'
+import {
+  buildQuotationItemsFromBoq,
+  matchBoqCustomer,
+  formatCustomerBranchLabel,
+  syncDraftItemsFromStore,
+  saveQuotationWithFallback,
+  saveQuotationItemsWithFallback,
+} from '../../lib/boqToQuotation'
+import { resolveQuotationType } from '../../lib/quotationPrintUtils'
+import { checkQuotationStock } from '../../lib/quotationStockCheck'
+import { formatIntQty } from '../../lib/store'
 import { uploadQuotationFile, openFile } from '../../lib/files'
 import R2Image from '../../components/R2Image'
 import { FieldError, fieldErrorClass } from '../../components/FieldError'
 import SearchableSelect from '../../components/SearchableSelect'
 import SearchableProjectSelect from '../../components/SearchableProjectSelect'
+import SearchableItemSelect from '../../components/SearchableItemSelect'
 import {
   FileText,
   Building2,
@@ -23,6 +40,7 @@ import {
   ArrowLeft,
   Check,
   AlertCircle,
+  AlertTriangle,
   Info,
   Paperclip,
   Package,
@@ -33,13 +51,17 @@ import {
   ReceiptText,
   X,
   FileSpreadsheet,
+  RefreshCw,
 } from 'lucide-react'
 
 const EMPTY_ITEM = {
+  item_id: '',
+  item_code: '',
   item_name: '',
   description: '',
   quantity: '1',
-  unit: 'ชุด',
+  unit: 'ชิ้น',
+  base_cost: '0',
   unit_price: '0',
   discount_percent: '0',
 }
@@ -61,8 +83,16 @@ export default function QuotationForm() {
   const [searchParams] = useSearchParams()
   const duplicateFromId = searchParams.get('duplicate_from')
   const boqIdParam = searchParams.get('boq_id')
+  const typeParam = searchParams.get('type')
+  const initialQuotationType = boqIdParam
+    ? QUOTATION_TYPES.PROJECT
+    : typeParam === QUOTATION_TYPES.PROJECT
+      ? QUOTATION_TYPES.PROJECT
+      : QUOTATION_TYPES.PRODUCT
+
   const [duplicatedFromNo, setDuplicatedFromNo] = useState('')
   const [existingStatus, setExistingStatus] = useState('draft')
+  const [quotationType, setQuotationType] = useState(initialQuotationType)
 
   // 1. ส่วนหัวเอกสารและข้อมูลอ้างอิง
   const [quotationNo, setQuotationNo] = useState('')
@@ -92,9 +122,18 @@ export default function QuotationForm() {
   const [catalog, setCatalog] = useState([])
   const [items, setItems] = useState([{ ...EMPTY_ITEM }])
 
-  // 5. การคำนวณเงินและภาษี
+  // 5. การคำนวณเงิน มาร์กอัป ส่วนลด และภาษี
+  const [markupPercent, setMarkupPercent] = useState('0')
+  const [discountMode, setDiscountMode] = useState(
+    initialQuotationType === QUOTATION_TYPES.PRODUCT ? 'whole_bill' : 'none'
+  ) // 'none' | 'whole_bill' | 'per_item'
+  const [headerDiscountType, setHeaderDiscountType] = useState('amount') // 'amount' | 'percent'
+  const [headerDiscountValue, setHeaderDiscountValue] = useState('0')
   const [taxType, setTaxType] = useState('vat_excluded') // 'vat_excluded' | 'vat_included' | 'vat_exempt'
   const [whtRate, setWhtRate] = useState('0') // '0' | '1' | '3'
+  const [issuedBy, setIssuedBy] = useState('')
+  const [issuedByName, setIssuedByName] = useState('')
+  const [issuedAt, setIssuedAt] = useState('')
 
   // 6. เงื่อนไขและหมายเหตุ
   const [customerNotes, setCustomerNotes] = useState(
@@ -121,13 +160,36 @@ export default function QuotationForm() {
     }
   }, [issueDate, validityDays])
 
-  // ฟังก์ชันดึงข้อมูลจาก BOQ มาใส่ในใบเสนอราคา
+  // สลับประเภทเอกสารในโหมดสร้างใหม่
+  const handleSwitchQuotationType = (nextType) => {
+    if (id || nextType === quotationType) return
+    setQuotationType(nextType)
+    setQuotationNo(generateTypedQuotationNo(nextType))
+    if (nextType === QUOTATION_TYPES.PROJECT) {
+      setDiscountMode('none')
+      setHeaderDiscountValue('0')
+    } else {
+      setBoqId('')
+      setDiscountMode('whole_bill')
+      setMarkupPercent('0')
+      setItems([{ ...EMPTY_ITEM }])
+    }
+  }
+
+  // ฟังก์ชันดึงข้อมูลจาก BOQ มาใส่ในใบเสนอราคา (รับงาน)
   const applyBoqData = async (targetBoqId, boqPool = boqsList, custPool = customers) => {
     setBoqId(targetBoqId)
     if (!targetBoqId) return
     const selectedBoq = boqPool.find((b) => b.id === targetBoqId)
     if (!selectedBoq) return
 
+    setQuotationType(QUOTATION_TYPES.PROJECT)
+    if (!id) {
+      setQuotationNo(generateTypedQuotationNo(QUOTATION_TYPES.PROJECT))
+    }
+    setDiscountMode('none')
+    setHeaderDiscountValue('0')
+    setMarkupPercent(String(Math.max(0, Number(selectedBoq.markup_percent) || 0)))
     setRefNo(selectedBoq.boq_no || '')
     if (selectedBoq.project_id) setProjectId(selectedBoq.project_id)
 
@@ -156,10 +218,13 @@ export default function QuotationForm() {
       const converted = buildQuotationItemsFromBoq(selectedBoq, bItems)
       setItems(
         converted.map((row) => ({
+          item_id: row.item_id || '',
+          item_code: row.item_code || '',
           item_name: row.item_name,
           description: row.description || '',
           quantity: String(row.quantity),
           unit: row.unit || 'ชุด',
+          base_cost: String(row.base_cost ?? 0),
           unit_price: String(row.unit_price),
           discount_percent: '0',
         }))
@@ -167,13 +232,13 @@ export default function QuotationForm() {
     }
   }
 
-  // โหลดโครงการ, ลูกค้า (จาก contacts + customers), BOQ, แคตตาล็อกสินค้า
+  // โหลดโครงการ, ลูกค้า (จาก contacts + customers), BOQ, แคตตาล็อกสินค้า Store
   useEffect(() => {
     Promise.all([
       supabase.from('projects').select('id, project_code, project_name, client_name').order('project_code'),
       fetchUnifiedCustomers().catch(() => []),
       supabase.from('boqs').select('*').order('created_at', { ascending: false }),
-      supabase.from('inventory_items').select('id, item_code, item_name, unit, avg_unit_cost').order('item_name'),
+      supabase.from('inventory_items').select('id, item_code, item_name, unit, qty_on_hand, avg_unit_cost').order('item_name'),
     ]).then(([projRes, unifiedCusts, boqRes, invRes]) => {
       const projList = projRes.data ?? []
       const custList = unifiedCusts ?? []
@@ -189,18 +254,18 @@ export default function QuotationForm() {
     })
 
     if (!id) {
-      // สร้างเลขที่เอกสารชั่วคราว Auto Code เช่น QT2026110012
-      const ym = new Date().toISOString().slice(0, 7).replace('-', '')
-      const rand = String(Math.floor(Math.random() * 9000) + 1000)
-      setQuotationNo(`QT${ym}${rand}`)
+      setQuotationNo(generateTypedQuotationNo(initialQuotationType))
 
       if (duplicateFromId) {
         Promise.all([
           supabase.from('quotations').select('*').eq('id', duplicateFromId).single(),
-          supabase.from('quotation_items').select('*').eq('quotation_id', duplicateFromId),
+          supabase.from('quotation_items').select('*').eq('quotation_id', duplicateFromId).order('id', { ascending: true }),
         ]).then(([qRes, itRes]) => {
           if (!qRes.error && qRes.data) {
             const q = qRes.data
+            const srcType = resolveQuotationType(q)
+            setQuotationType(srcType)
+            setQuotationNo(generateTypedQuotationNo(srcType))
             setDuplicatedFromNo(q.quotation_no)
             setCustomerName(q.customer_name || '')
             setCustomerAddress(q.customer_address || '')
@@ -209,37 +274,61 @@ export default function QuotationForm() {
             setCustomerBranch(q.customer_branch || 'สำนักงานใหญ่')
             setProjectId(q.project_id || '')
             setRefNo(q.ref_no || '')
-            setBoqId('')
+            setBoqId(srcType === QUOTATION_TYPES.PROJECT ? q.boq_id || '' : '')
             setExistingStatus('draft')
             setWarehouseName(q.warehouse_name || WAREHOUSES[0])
+            setMarkupPercent(String(Math.max(0, Number(q.markup_percent) || 0)))
+            setDiscountMode(
+              srcType === QUOTATION_TYPES.PROJECT
+                ? 'none'
+                : q.discount_mode && q.discount_mode !== 'none'
+                  ? q.discount_mode
+                  : 'whole_bill'
+            )
+            setHeaderDiscountType(q.header_discount_type || 'amount')
+            setHeaderDiscountValue(String(Math.max(0, Number(q.header_discount_value) || 0)))
             setCustomerNotes(q.customer_notes || '')
             setInternalNotes(q.internal_notes || '')
             setTaxType(inferQuotationTaxType(q))
             setWhtRate(String(q.wht_rate || '0'))
 
             if (itRes.data && itRes.data.length > 0) {
+              const mkPct = Math.max(0, Number(q.markup_percent) || 0)
               setItems(
-                itRes.data.map((i) => ({
-                  item_name: i.item_name,
-                  description: i.description || '',
-                  quantity: String(i.quantity),
-                  unit: i.unit || '',
-                  unit_price: String(i.unit_price),
-                  discount_percent: String(i.discount_percent || 0),
-                }))
+                itRes.data.map((i) => {
+                  const inferredCost =
+                    i.base_cost != null
+                      ? Number(i.base_cost)
+                      : mkPct > 0
+                        ? round2(Number(i.unit_price || 0) / (1 + mkPct / 100))
+                        : Number(i.unit_price || 0)
+                  return {
+                    item_id: i.item_id || '',
+                    item_code: i.item_code || '',
+                    item_name: i.item_name,
+                    description: i.description || '',
+                    quantity: String(i.quantity),
+                    unit: i.unit || '',
+                    base_cost: String(round2(inferredCost)),
+                    unit_price: String(i.unit_price),
+                    discount_percent: srcType === QUOTATION_TYPES.PRODUCT ? String(i.discount_percent || 0) : '0',
+                  }
+                })
               )
             }
           }
         })
       }
     } else {
-      // โหมดแก้ไข
+      // โหมดแก้ไข (รักษา Snapshot ราคาเดิม ไม่เปลี่ยนตาม Store/BOQ อัตโนมัติ)
       Promise.all([
         supabase.from('quotations').select('*').eq('id', id).single(),
-        supabase.from('quotation_items').select('*').eq('quotation_id', id),
+        supabase.from('quotation_items').select('*').eq('quotation_id', id).order('id', { ascending: true }),
       ]).then(([qRes, itRes]) => {
         if (qRes.error) return setError('ไม่พบใบเสนอราคา')
         const q = qRes.data
+        const loadedType = resolveQuotationType(q)
+        setQuotationType(loadedType)
         setQuotationNo(q.quotation_no)
         setIssueDate(q.issue_date)
         setValidityDays(String(q.validity_days || 30))
@@ -256,24 +345,59 @@ export default function QuotationForm() {
         setRefNo(q.ref_no || '')
         setExistingStatus(q.status || 'draft')
         setWarehouseName(q.warehouse_name || WAREHOUSES[0])
+        setMarkupPercent(String(Math.max(0, Number(q.markup_percent) || 0)))
+        setDiscountMode(
+          loadedType === QUOTATION_TYPES.PROJECT
+            ? 'none'
+            : q.discount_mode && q.discount_mode !== 'none'
+              ? q.discount_mode
+              : Number(q.discount_amount || 0) > 0 && !(itRes.data || []).some((x) => Number(x.discount_percent || 0) > 0)
+                ? 'whole_bill'
+                : (itRes.data || []).some((x) => Number(x.discount_percent || 0) > 0)
+                  ? 'per_item'
+                  : 'whole_bill'
+        )
+        setHeaderDiscountType(q.header_discount_type || 'amount')
+        setHeaderDiscountValue(
+          String(
+            q.header_discount_value != null
+              ? Number(q.header_discount_value)
+              : Number(q.discount_amount || 0)
+          )
+        )
         setCustomerNotes(q.customer_notes || '')
         setInternalNotes(q.internal_notes || '')
         setSignatureUrl(q.signature_url || '')
         setAttachmentUrl(q.attachment_url || '')
+        setIssuedBy(q.issued_by || '')
+        setIssuedByName(q.issued_by_name || '')
+        setIssuedAt(q.issued_at || '')
         setTaxType(inferQuotationTaxType(q))
         setWhtRate(String(q.wht_rate || '0'))
 
         if (itRes.data && itRes.data.length > 0) {
+          const mkPct = Math.max(0, Number(q.markup_percent) || 0)
           setItems(
-            itRes.data.map((i) => ({
-              id: i.id,
-              item_name: i.item_name,
-              description: i.description || '',
-              quantity: String(i.quantity),
-              unit: i.unit || '',
-              unit_price: String(i.unit_price),
-              discount_percent: String(i.discount_percent || 0),
-            }))
+            itRes.data.map((i) => {
+              const inferredCost =
+                i.base_cost != null
+                  ? Number(i.base_cost)
+                  : mkPct > 0
+                    ? round2(Number(i.unit_price || 0) / (1 + mkPct / 100))
+                    : Number(i.unit_price || 0)
+              return {
+                id: i.id,
+                item_id: i.item_id || '',
+                item_code: i.item_code || '',
+                item_name: i.item_name,
+                description: i.description || '',
+                quantity: String(i.quantity),
+                unit: i.unit || '',
+                base_cost: String(round2(inferredCost)),
+                unit_price: String(i.unit_price),
+                discount_percent: loadedType === QUOTATION_TYPES.PRODUCT ? String(i.discount_percent || 0) : '0',
+              }
+            })
           )
         }
       })
@@ -310,21 +434,61 @@ export default function QuotationForm() {
     }
   }
 
+  // เลือกสินค้าจาก Store เข้าแถวรายการ (สำหรับประเภทขายสินค้า)
+  const handleSelectCatalogItem = (index, invId) => {
+    const selectedInv = catalog.find((c) => c.id === invId) || null
+    setItems((prev) =>
+      prev.map((it, idx) => {
+        if (idx !== index) return it
+        if (!selectedInv) {
+          return {
+            ...it,
+            item_id: '',
+            item_code: '',
+            item_name: '',
+            base_cost: '0',
+          }
+        }
+        return {
+          ...it,
+          item_id: selectedInv.id,
+          item_code: selectedInv.item_code || '',
+          item_name: selectedInv.item_name || '',
+          unit: selectedInv.unit || it.unit || 'ชิ้น',
+          base_cost: String(round2(selectedInv.avg_unit_cost || 0)),
+        }
+      })
+    )
+  }
+
+  // ซิงค์ต้นทุนล่าสุดจาก Store เฉพาะตอนยังเป็นฉบับร่าง (Draft) เท่านั้น
+  const handleSyncStoreCosts = () => {
+    if (existingStatus !== 'draft') return
+    setItems((prev) => syncDraftItemsFromStore(prev, catalog, existingStatus))
+  }
+
   // อัปเดตรายการสินค้า
   const updItem = (index, key, val) => {
     const next = items.map((it, idx) => {
       if (idx !== index) return it
       const updated = { ...it, [key]: val }
-      // บังคับจำนวนวัสดุให้เป็นจำนวนเต็ม (int เท่านั้น)
-      if (key === 'quantity') {
+      // บังคับจำนวนวัสดุให้เป็นจำนวนเต็มเฉพาะโหมดขายสินค้า (โหมดรับงาน BOQ รองรับทศนิยม)
+      if (key === 'quantity' && isProductMode) {
         const cleanInt = val === '' ? '' : String(Math.max(1, parseInt(val, 10) || 1))
         updated.quantity = cleanInt
       }
       if (key === 'item_name') {
         const found = catalog.find((c) => c.item_name.toLowerCase() === String(val).trim().toLowerCase())
+        updated.item_id = found ? found.id : ''
+        updated.item_code = found?.item_code || ''
         if (found) {
           if (!updated.unit && found.unit) updated.unit = found.unit
-          if (!Number(updated.unit_price) && found.avg_unit_cost) updated.unit_price = String(found.avg_unit_cost)
+          if (!Number(updated.base_cost) && found.avg_unit_cost) {
+            updated.base_cost = String(round2(found.avg_unit_cost))
+          }
+          if (!Number(updated.unit_price) && found.avg_unit_cost) {
+            updated.unit_price = String(round2(found.avg_unit_cost))
+          }
         }
       }
       return updated
@@ -332,33 +496,49 @@ export default function QuotationForm() {
     setItems(next)
   }
 
-  // คำนวณยอดเงิน (Financial Calculations)
-  const lineTotals = items.map((it) => {
-    const qty = parseInt(it.quantity, 10) || 0
-    const price = Number(it.unit_price) || 0
-    const disc = Number(it.discount_percent) || 0
-    const raw = qty * price
-    const discountVal = (raw * disc) / 100
-    const lineTotal = Math.max(0, raw - discountVal)
-    return { raw, discountVal, lineTotal }
-  })
+  // คำนวณยอดเงินด้วย Unified Pricing Pipeline ชุดเดียวกับ BOQ
+  const isProductMode = quotationType === QUOTATION_TYPES.PRODUCT
+  const effectiveDiscountMode = isProductMode ? discountMode : 'none'
 
-  const subtotal = lineTotals.reduce((s, l) => s + l.raw, 0)
-  const totalDiscount = lineTotals.reduce((s, l) => s + l.discountVal, 0)
-  const afterDiscount = subtotal - totalDiscount
+  const pricing = useMemo(
+    () =>
+      calculateDocumentPricing({
+        items,
+        markupPercent,
+        pricingFromCost: isProductMode,
+        discountMode: effectiveDiscountMode,
+        headerDiscountType,
+        headerDiscountValue,
+        taxType,
+        vatRate: 7,
+        whtRate,
+      }),
+    [
+      items,
+      markupPercent,
+      isProductMode,
+      effectiveDiscountMode,
+      headerDiscountType,
+      headerDiscountValue,
+      taxType,
+      whtRate,
+    ]
+  )
 
-  const {
-    amountBeforeVat,
-    vatAmount,
-    totalWithVat,
-    whtAmount,
-    netPayable: grandTotal,
-  } = calculateTaxBreakdown({
-    rawTotal: afterDiscount,
-    taxType,
-    whtRate,
-    vatRate: 7,
-  })
+  const liveStockRows = useMemo(
+    () => checkQuotationStock(items, catalog),
+    [items, catalog]
+  )
+
+  const lineTotals = pricing.lineRows
+  const subtotal = pricing.subtotal
+  const totalDiscount = pricing.discountAmount
+  const afterDiscount = pricing.afterDiscount
+  const amountBeforeVat = pricing.amountBeforeVat
+  const vatAmount = pricing.vatAmount
+  const totalWithVat = pricing.totalWithVat
+  const whtAmount = pricing.whtAmount
+  const grandTotal = pricing.grandTotal
 
   // จัดการอัปโหลดไฟล์แนบและลายเซ็น
   const handleUploadFile = async (e, type) => {
@@ -406,6 +586,10 @@ export default function QuotationForm() {
       newErrors.issueDate = 'ช่องนี้ยังไม่กรอก ช่องว่างนะ (ระบุวันที่ออกเอกสาร)'
     }
 
+    if (Number(markupPercent) < 0 || isNaN(Number(markupPercent))) {
+      newErrors.markupPercent = 'อัตรามาร์กอัป % ห้ามติดลบ'
+    }
+
     // กรองเอาเฉพาะแถวที่มีการกรอกชื่อสินค้าจริง (ตัดแถวว่างทิ้งอัตโนมัติ)
     const validItems = (items || []).filter(
       (i) => i.item_name && i.item_name.trim()
@@ -415,12 +599,18 @@ export default function QuotationForm() {
       setShowItemErrors(true)
       newErrors.items = 'รายการสินค้า/บริการยังไม่ได้กรอก (กรุณาระบุอย่างน้อย 1 รายการ)'
     } else {
-      const hasInvalidItem = validItems.some(
-        (i) => !i.quantity || Number(i.quantity) <= 0 || isNaN(Number(i.quantity)) || i.unit_price === '' || isNaN(Number(i.unit_price))
-      )
+      const hasInvalidItem = validItems.some((i) => {
+        const invalidQty = !i.quantity || Number(i.quantity) <= 0 || isNaN(Number(i.quantity))
+        const invalidCostOrPrice = isProductMode
+          ? i.base_cost === '' || isNaN(Number(i.base_cost)) || Number(i.base_cost) < 0
+          : i.unit_price === '' || isNaN(Number(i.unit_price)) || Number(i.unit_price) < 0
+        return invalidQty || invalidCostOrPrice
+      })
       if (hasInvalidItem) {
         setShowItemErrors(true)
-        newErrors.items = 'รายการสินค้า/บริการมีช่องที่ยังไม่กรอกครบถ้วน (กรุณาระบุจำนวน > 0 และราคาต่อหน่วย)'
+        newErrors.items = isProductMode
+          ? 'รายการสินค้ามีช่องที่ยังไม่กรอกครบถ้วน (กรุณาระบุสินค้า จำนวน > 0 และต้นทุน >= 0)'
+          : 'รายการสินค้า/บริการมีช่องที่ยังไม่กรอกครบถ้วน (กรุณาระบุจำนวน > 0 และราคาต่อหน่วย)'
       }
     }
 
@@ -442,8 +632,37 @@ export default function QuotationForm() {
       ? await ensureLegacyCustomerId(matchedCust).catch(() => null)
       : null
 
+    const savePricing = calculateDocumentPricing({
+      items: validItems,
+      markupPercent,
+      pricingFromCost: isProductMode,
+      discountMode: effectiveDiscountMode,
+      headerDiscountType,
+      headerDiscountValue,
+      taxType,
+      vatRate: 7,
+      whtRate,
+    })
+
+    const targetStatus = id ? existingStatus : 'draft'
+    const isIssuedDoc = targetStatus !== 'draft'
+    const resolvedIssuerId = isIssuedDoc
+      ? isUUID(issuedBy)
+        ? issuedBy
+        : isUUID(profile?.id)
+        ? profile.id
+        : null
+      : isUUID(issuedBy)
+      ? issuedBy
+      : null
+    const resolvedIssuerName = isIssuedDoc
+      ? issuedByName || profile?.full_name || salesPerson.trim() || null
+      : issuedByName || null
+    const resolvedIssuedAt = isIssuedDoc ? issuedAt || new Date().toISOString() : issuedAt || null
+
     const payload = {
       quotation_no: quotationNo.trim(),
+      type: quotationType,
       issue_date: issueDate,
       quotation_date: issueDate, // รองรับ schema ทั้งสองเวอร์ชัน
       validity_days: parseInt(validityDays, 10) || 30,
@@ -458,25 +677,37 @@ export default function QuotationForm() {
       customer_tax_id: customerTaxId.trim() || null,
       customer_branch: customerBranch.trim() || 'สำนักงานใหญ่',
       project_id: isUUID(projectId) ? projectId : null,
-      boq_id: isUUID(boqId) ? boqId : null,
+      boq_id: quotationType === QUOTATION_TYPES.PROJECT && isUUID(boqId) ? boqId : null,
       ref_no: refNo.trim() || null,
       warehouse_name: warehouseName || 'สโตร์หลัก',
-      subtotal,
-      discount_amount: totalDiscount,
-      after_discount: afterDiscount,
+      markup_percent: savePricing.markupPercent,
+      discount_mode: savePricing.discountMode,
+      header_discount_type:
+        savePricing.discountMode === 'whole_bill' ? headerDiscountType : 'amount',
+      header_discount_value:
+        savePricing.discountMode === 'whole_bill'
+          ? Math.max(0, round2(headerDiscountValue))
+          : 0,
+      total_cost: savePricing.totalCost,
+      subtotal: savePricing.subtotal,
+      discount_amount: savePricing.discountAmount,
+      after_discount: savePricing.afterDiscount,
       tax_type: taxType,
       vat_rate: taxType === 'vat_exempt' ? 0 : 7,
-      vat_amount: vatAmount,
+      vat_amount: savePricing.vatAmount,
       wht_rate: Number(whtRate) || 0,
-      wht_amount: whtAmount,
-      grand_total: grandTotal,
-      total_amount: grandTotal, // รองรับ schema ทั้งสองเวอร์ชัน
+      wht_amount: savePricing.whtAmount,
+      grand_total: savePricing.grandTotal,
+      total_amount: savePricing.grandTotal, // รองรับ schema ทั้งสองเวอร์ชัน
       customer_notes: customerNotes.trim() || null,
       notes: customerNotes.trim() || null,
       internal_notes: internalNotes.trim() || null,
       signature_url: signatureUrl || null,
       attachment_url: attachmentUrl || null,
-      status: id ? existingStatus : 'draft',
+      issued_by: resolvedIssuerId,
+      issued_by_name: resolvedIssuerName,
+      issued_at: resolvedIssuedAt,
+      status: targetStatus,
       updated_at: new Date().toISOString(),
     }
 
@@ -485,117 +716,43 @@ export default function QuotationForm() {
     }
 
     try {
-      let currentId = isUUID(id) ? id : null
-
-      const saveRecord = async (currentPayload) => {
-        if (currentId) {
-          const { error: updErr } = await supabase.from('quotations').update(currentPayload).eq('id', currentId)
-          if (updErr) throw updErr
-          return currentId
-        } else if (id) {
-          const { error: updErr } = await supabase.from('quotations').update(currentPayload).eq('quotation_no', id)
-          if (updErr) throw updErr
-          return id
-        } else {
-          const { data: insData, error: insErr } = await supabase
-            .from('quotations')
-            .insert(currentPayload)
-            .select('id')
-          if (insErr) throw insErr
-          return insData?.[0]?.id || null
-        }
+      const currentId = isUUID(id) ? id : null
+      const savedHeader = await saveQuotationWithFallback(supabase, payload, currentId)
+      const savedId = savedHeader?.id || currentId || id || quotationNo.trim()
+      if (savedHeader?.quotation_no) {
+        setQuotationNo(savedHeader.quotation_no)
       }
 
-      // ระบบบันทึกแบบ Self-Healing: ปลด foreign key หรือ column ที่ไม่มีในฐานข้อมูลอัตโนมัติ
-      let savedId = null
-      let activePayload = { ...payload }
-
-      for (let attempt = 0; attempt < 6; attempt++) {
-        try {
-          savedId = await saveRecord(activePayload)
-          break
-        } catch (dbErr) {
-          console.warn(`Quotation save attempt ${attempt + 1} error:`, dbErr)
-          const errMsg = dbErr?.message || ''
-
-          // หากเลขที่ QT ซ้ำในโหมดสร้างใหม่ ให้สร้างเลขใหม่แล้วลองอีกครั้ง
-          if (!id && (errMsg.includes('duplicate key') || errMsg.includes('unique constraint') || errMsg.includes('quotation_no_key'))) {
-            const ym = new Date().toISOString().slice(0, 7).replace('-', '')
-            const rand = String(Math.floor(Math.random() * 90000) + 10000)
-            const nextNo = `QT${ym}${rand}`
-            activePayload.quotation_no = nextNo
-            setQuotationNo(nextNo)
-            continue
-          }
-
-          // Foreign key errors
-          if (errMsg.includes('created_by')) {
-            delete activePayload.created_by
-            continue
-          }
-          if (errMsg.includes('boq_id') || (errMsg.includes('foreign key') && errMsg.includes('boq'))) {
-            delete activePayload.boq_id
-            continue
-          }
-          if (errMsg.includes('project_id') || (errMsg.includes('foreign key') && errMsg.includes('project'))) {
-            delete activePayload.project_id
-            continue
-          }
-          if (errMsg.includes('customer_id') || (errMsg.includes('foreign key') && errMsg.includes('customer'))) {
-            delete activePayload.customer_id
-            continue
-          }
-          if (errMsg.includes('foreign key')) {
-            delete activePayload.created_by
-            delete activePayload.project_id
-            delete activePayload.customer_id
-            delete activePayload.boq_id
-            continue
-          }
-
-          // Column does not exist (รองรับทั้ง PostgreSQL และ PostgREST schema cache message)
-          const colMatch =
-            errMsg.match(/column "(.*?)" of relation "quotations" does not exist/) ||
-            errMsg.match(/Could not find the '(.*?)' column of 'quotations'/)
-          if (colMatch && colMatch[1]) {
-            delete activePayload[colMatch[1]]
-            continue
-          }
-
-          // Payload too large error (จาก base64 image)
-          if (errMsg.includes('413') || errMsg.includes('payload') || errMsg.includes('too large')) {
-            if (activePayload.attachment_url?.startsWith('data:')) delete activePayload.attachment_url
-            if (activePayload.signature_url?.startsWith('data:')) delete activePayload.signature_url
-            continue
-          }
-
-          if (attempt >= 4) throw dbErr
-        }
-      }
-
-      if (!savedId) {
-        savedId = currentId || id || quotationNo.trim()
-      }
-
-      if (!id && isUUID(boqId)) {
+      if (!id && quotationType === QUOTATION_TYPES.PROJECT && isUUID(boqId)) {
         await supabase.from('boqs').update({ status: 'converted_to_quotation' }).eq('id', boqId)
       }
 
-      // บันทึกรายการย่อย (บังคับ quantity เป็นจำนวนเต็ม int)
+      // บันทึกรายการย่อยพร้อม Snapshot ต้นทุน (`base_cost`) และราคาขายสุทธิ (`unit_price`, `total_amount`)
       if (savedId && isUUID(savedId)) {
         try {
           await supabase.from('quotation_items').delete().eq('quotation_id', savedId)
-          const itemRows = validItems.map((it, idx) => ({
-            quotation_id: savedId,
-            item_name: it.item_name.trim(),
-            description: it.description?.trim() || null,
-            quantity: Math.max(1, parseInt(it.quantity, 10) || 1),
-            unit: it.unit?.trim() || 'รายการ',
-            unit_price: Number(it.unit_price) || 0,
-            discount_percent: Number(it.discount_percent) || 0,
-            total_amount: lineTotals[idx]?.lineTotal || ((Math.max(1, parseInt(it.quantity, 10) || 1)) * (Number(it.unit_price) || 0)),
-          }))
-          const { error: itErr } = await supabase.from('quotation_items').insert(itemRows)
+          const itemRows = validItems.map((it, idx) => {
+            const lineCalc = savePricing.lineRows[idx]
+            const qty = isProductMode
+              ? Math.max(1, parseInt(it.quantity, 10) || 1)
+              : Number(it.quantity) > 0
+                ? Number(it.quantity)
+                : 1
+            return {
+              quotation_id: savedId,
+              item_id: isUUID(it.item_id) ? it.item_id : null,
+              item_code: it.item_code || null,
+              item_name: it.item_name.trim(),
+              description: it.description?.trim() || null,
+              quantity: qty,
+              unit: it.unit?.trim() || 'ชิ้น',
+              base_cost: lineCalc?.baseUnitCost ?? round2(it.base_cost || 0),
+              unit_price: lineCalc?.unitSellingPrice ?? round2(it.unit_price || 0),
+              discount_percent: lineCalc?.itemDiscountPercent ?? 0,
+              total_amount: lineCalc?.lineTotal ?? 0,
+            }
+          })
+          const { error: itErr } = await saveQuotationItemsWithFallback(supabase, itemRows)
           if (itErr) console.warn('Items insert warning:', itErr)
         } catch (itEx) {
           console.warn('Items insert exception:', itEx)
@@ -622,9 +779,17 @@ export default function QuotationForm() {
               <ReceiptText className="h-6 w-6" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-full bg-sky-400/20 text-sky-300 border border-sky-400/30 font-bold">
                   Quotation Management
+                </span>
+                <span
+                  className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${isProductMode
+                      ? 'bg-sky-500/20 text-sky-200 border-sky-400/40'
+                      : 'bg-amber-400/20 text-amber-200 border-amber-400/40'
+                    }`}
+                >
+                  {isProductMode ? 'ขายสินค้า (Store · QT-S)' : 'รับงาน (BOQ · QT-P)'}
                 </span>
                 <span className="text-[10px] text-slate-400 font-mono">
                   {id ? `ID: ${id}` : 'Draft Mode'}
@@ -672,14 +837,41 @@ export default function QuotationForm() {
         </div>
       )}
 
-      {/* การ์ดที่ 1: ส่วนหัวเอกสารและข้อมูลโครงการ */}
+      {/* การ์ดที่ 1: ส่วนหัวเอกสาร ประเภท และข้อมูลโครงการ */}
       <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm space-y-5">
-        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
           <h2 className="text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
             <FileText className="h-4 w-4 text-sky-600 dark:text-sky-400" />
-            <span>1. ข้อมูลหัวเอกสารและโครงการ (Header & Project Details)</span>
+            <span>1. ข้อมูลหัวเอกสาร ประเภท และโครงการ (Header &amp; Type)</span>
           </h2>
-          <span className="text-xs text-slate-400 font-mono">Quotation Header</span>
+          {!id ? (
+            <div className="inline-flex items-center rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-1 text-xs">
+              <button
+                type="button"
+                onClick={() => handleSwitchQuotationType(QUOTATION_TYPES.PRODUCT)}
+                className={`rounded-lg px-3 py-1 font-bold transition cursor-pointer ${isProductMode
+                    ? 'bg-sky-700 text-white shadow-2xs'
+                    : 'text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700'
+                  }`}
+              >
+                ขายสินค้า (Store · QT-S)
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSwitchQuotationType(QUOTATION_TYPES.PROJECT)}
+                className={`rounded-lg px-3 py-1 font-bold transition cursor-pointer ${!isProductMode
+                    ? 'bg-amber-500 text-slate-950 font-black shadow-2xs'
+                    : 'text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700'
+                  }`}
+              >
+                รับงาน (BOQ · QT-P)
+              </button>
+            </div>
+          ) : (
+            <span className="text-xs text-slate-400 font-mono">
+              Type: {isProductMode ? 'ขายสินค้า (product)' : 'รับงาน (project)'}
+            </span>
+          )}
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -789,17 +981,17 @@ export default function QuotationForm() {
             />
           </div>
 
-          {!id && boqsList.length > 0 && (
+          {!id && !isProductMode && boqsList.length > 0 && (
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                ดึงรายการจาก BOQ (ถ้ามี)
+                ดึงรายการขายสุทธิจาก BOQ *
               </label>
               <select
                 className="input text-xs"
                 value={boqId}
                 onChange={(e) => applyBoqData(e.target.value)}
               >
-                <option value="">-- สร้างใหม่ / ไม่ดึงจาก BOQ --</option>
+                <option value="">-- เลือกเอกสาร BOQ --</option>
                 {boqsList.map((b) => (
                   <option key={b.id} value={b.id}>
                     {b.boq_no} · {b.title || b.customer_name || 'BOQ'}
@@ -920,13 +1112,35 @@ export default function QuotationForm() {
           <div>
             <h2 className="text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
               <Package className="h-4 w-4 text-sky-600 dark:text-sky-400" />
-              <span>3. รายการสินค้าและบริการ (Itemized Table)</span>
+              <span>
+                {isProductMode
+                  ? '3. เลือกสินค้าจากสโตร์ & ต้นทุนตั้งต้น (Store Product Selection)'
+                  : '3. รายการงานและวัสดุจาก BOQ (Project Items)'}
+              </span>
             </h2>
             <p className="text-xs text-slate-400 mt-0.5">
-              ระบุรายการวัสดุ งานบริการ สเปกวิศวกรรม พร้อมคำนวณราคาและส่วนลด
+              {isProductMode
+                ? 'เลือกสินค้าจาก Store (ราคาตั้งต้น = ต้นทุนเฉลี่ย Store แก้ไขได้) ระบบเช็กสต็อกอัตโนมัติโดยยังไม่เปิด PR'
+                : 'ดึงราคาเสนอขายสุทธิจาก BOQ (ไม่มีส่วนลดและไม่มีต้นทุนต่อบรรทัดฝั่งลูกค้า)'}
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {isProductMode && (!id || existingStatus === 'draft') && (
+              <button
+                type="button"
+                onClick={handleSyncStoreCosts}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-sky-200 dark:border-sky-800 bg-sky-50 dark:bg-sky-950/40 px-3 py-1.5 text-xs font-bold text-sky-700 dark:text-sky-300 hover:bg-sky-100 dark:hover:bg-sky-900/60 transition cursor-pointer"
+                title="ดึงต้นทุนเฉลี่ยล่าสุดจาก Store เฉพาะขณะที่ใบเสนอราคายังเป็นฉบับร่าง (Draft)"
+              >
+                <RefreshCw className="h-3.5 w-3.5" />
+                <span>ซิงค์ต้นทุนล่าสุดจาก Store</span>
+              </button>
+            )}
+            {id && existingStatus !== 'draft' && (
+              <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                Snapshot ราคาถูกล็อกแล้ว ({existingStatus})
+              </span>
+            )}
             <span className="text-xs text-slate-500 dark:text-slate-400">
               คลังสินค้า: <b className="text-slate-800 dark:text-slate-200">{warehouseName}</b>
             </span>
@@ -946,57 +1160,97 @@ export default function QuotationForm() {
 
         <div className="space-y-4">
           {/* หัวคอลัมน์มาตรฐานสำหรับหน้าจอคอมพิวเตอร์ */}
-          <div className="hidden lg:grid lg:grid-cols-[auto_1fr_6rem_5rem_7.5rem_5.5rem_8rem_auto] gap-2.5 text-xs font-bold text-slate-600 dark:text-slate-400 px-3 pb-1.5 border-b border-slate-100 dark:border-slate-800">
+          <div
+            className={`hidden lg:grid gap-2.5 text-xs font-bold text-slate-600 dark:text-slate-400 px-3 pb-1.5 border-b border-slate-100 dark:border-slate-800 ${isProductMode
+                ? effectiveDiscountMode === 'per_item'
+                  ? 'lg:grid-cols-[auto_1fr_5.5rem_4.5rem_6.5rem_6.5rem_5rem_7.5rem_auto]'
+                  : 'lg:grid-cols-[auto_1fr_5.5rem_4.5rem_7rem_7rem_7.5rem_auto]'
+                : 'lg:grid-cols-[auto_1fr_6rem_5rem_7.5rem_8rem_auto]'
+              }`}
+          >
             <span className="w-8 text-center">#</span>
-            <span>ชื่อสินค้า / รายการงานวิศวกรรม *</span>
+            <span>{isProductMode ? 'เลือกสินค้าจาก Store *' : 'ชื่อสินค้า / รายการงานวิศวกรรม *'}</span>
             <span className="text-right">จำนวน</span>
             <span className="text-center">หน่วย</span>
-            <span className="text-right">ราคา/หน่วย</span>
-            <span className="text-right">ส่วนลด %</span>
+            {isProductMode && <span className="text-right">ต้นทุน/หน่วย</span>}
+            <span className="text-right">{isProductMode ? 'ราคาขาย/หน่วย' : 'ราคา/หน่วย'}</span>
+            {isProductMode && effectiveDiscountMode === 'per_item' && (
+              <span className="text-right">ส่วนลด %</span>
+            )}
             <span className="text-right">ราคารวม ({currency})</span>
             <span className="w-12 text-center font-bold text-rose-600 dark:text-rose-400">ลบ</span>
           </div>
 
           {items.map((it, idx) => {
             const calc = lineTotals[idx]
+            const stock = liveStockRows[idx]
             const nameEmpty = showItemErrors && !it.item_name?.trim()
             const qtyEmpty = showItemErrors && (!it.quantity || Number(it.quantity) <= 0)
-            const priceEmpty = showItemErrors && (it.unit_price === '' || isNaN(Number(it.unit_price)))
+            const costOrPriceEmpty =
+              showItemErrors &&
+              (isProductMode
+                ? it.base_cost === '' || isNaN(Number(it.base_cost)) || Number(it.base_cost) < 0
+                : it.unit_price === '' || isNaN(Number(it.unit_price)) || Number(it.unit_price) < 0)
 
             return (
               <div
                 key={idx}
-                className={`rounded-2xl border p-4 space-y-3 transition shadow-xs ${
-                  nameEmpty || qtyEmpty || priceEmpty
+                className={`rounded-2xl border p-4 space-y-3 transition shadow-xs ${nameEmpty || qtyEmpty || costOrPriceEmpty
                     ? 'border-rose-300 dark:border-rose-800 bg-rose-50/25 dark:bg-rose-950/20'
                     : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-700'
-                }`}
+                  }`}
               >
                 {/* แถวที่ 1: ข้อมูลสินค้าและตัวเลขราคา */}
-                <div className="grid grid-cols-2 lg:grid-cols-[auto_1fr_6rem_5rem_7.5rem_5.5rem_8rem_auto] gap-2.5 items-center">
+                <div
+                  className={`grid grid-cols-2 gap-2.5 items-center ${isProductMode
+                      ? effectiveDiscountMode === 'per_item'
+                        ? 'lg:grid-cols-[auto_1fr_5.5rem_4.5rem_6.5rem_6.5rem_5rem_7.5rem_auto]'
+                        : 'lg:grid-cols-[auto_1fr_5.5rem_4.5rem_7rem_7rem_7.5rem_auto]'
+                      : 'lg:grid-cols-[auto_1fr_6rem_5rem_7.5rem_8rem_auto]'
+                    }`}
+                >
                   <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 font-mono font-bold text-xs text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 shrink-0">
                     #{idx + 1}
                   </span>
 
-                  <div className="col-span-2 lg:col-span-1">
-                    <input
-                      list="catalog-quotation-items"
-                      className={fieldErrorClass(
-                        nameEmpty,
-                        'input text-xs w-full font-bold text-slate-900 dark:text-slate-100 placeholder:font-normal'
-                      )}
-                      placeholder="ระบุชื่อสินค้า / บริการ หรือเลือกจากคลังสินค้า..."
-                      value={it.item_name}
-                      onChange={(e) => updItem(idx, 'item_name', e.target.value)}
-                    />
-                    {nameEmpty && <FieldError error="กรุณาระบุชื่อสินค้า/บริการ" />}
+                  <div className="col-span-2 lg:col-span-1 space-y-1.5">
+                    {isProductMode ? (
+                      <>
+                        {it.item_name && !it.item_id && (
+                          <div className="text-[11px] font-semibold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 px-2 py-1 rounded-lg border border-amber-200 dark:border-amber-800">
+                            รายการเดิม: {it.item_name} (เลือกจาก Store ด้านล่างเพื่อผูกสต็อก)
+                          </div>
+                        )}
+                        <SearchableItemSelect
+                          items={catalog}
+                          value={it.item_id || ''}
+                          onChange={(invId) => handleSelectCatalogItem(idx, invId)}
+                          placeholder="พิมพ์รหัส หรือชื่อสินค้าจาก Store..."
+                          error={nameEmpty ? 'กรุณาเลือกสินค้าจาก Store' : ''}
+                        />
+                      </>
+                    ) : (
+                      <>
+                        <input
+                          list="catalog-quotation-items"
+                          className={fieldErrorClass(
+                            nameEmpty,
+                            'input text-xs w-full font-bold text-slate-900 dark:text-slate-100 placeholder:font-normal'
+                          )}
+                          placeholder="ระบุชื่อสินค้า / บริการ หรือเลือกจากคลังสินค้า..."
+                          value={it.item_name}
+                          onChange={(e) => updItem(idx, 'item_name', e.target.value)}
+                        />
+                        {nameEmpty && <FieldError error="กรุณาระบุชื่อสินค้า/บริการ" />}
+                      </>
+                    )}
                   </div>
 
                   <div>
                     <input
                       type="number"
                       min="1"
-                      step="1"
+                      step={isProductMode ? '1' : 'any'}
                       className={fieldErrorClass(
                         qtyEmpty,
                         'input text-xs text-right w-full font-mono font-bold'
@@ -1016,36 +1270,64 @@ export default function QuotationForm() {
                     />
                   </div>
 
-                  <div>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      className={fieldErrorClass(
-                        priceEmpty,
-                        'input text-xs text-right w-full font-mono'
-                      )}
-                      placeholder="ราคา/หน่วย"
-                      value={it.unit_price}
-                      onChange={(e) => updItem(idx, 'unit_price', e.target.value)}
-                    />
-                  </div>
+                  {isProductMode && (
+                    <div>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        className={fieldErrorClass(
+                          costOrPriceEmpty,
+                          'input text-xs text-right w-full font-mono font-semibold text-amber-800 dark:text-amber-300 bg-amber-50/40 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800'
+                        )}
+                        placeholder="ต้นทุน/หน่วย"
+                        value={it.base_cost}
+                        onChange={(e) => updItem(idx, 'base_cost', e.target.value)}
+                      />
+                    </div>
+                  )}
 
                   <div>
-                    <input
-                      type="number"
-                      min="0"
-                      max="100"
-                      step="0.1"
-                      className="input text-xs text-right w-full font-mono"
-                      placeholder="ลด %"
-                      value={it.discount_percent}
-                      onChange={(e) => updItem(idx, 'discount_percent', e.target.value)}
-                    />
+                    {isProductMode ? (
+                      <div
+                        className="text-right font-mono font-bold text-xs text-emerald-800 dark:text-emerald-300 bg-emerald-50/70 dark:bg-emerald-950/40 py-2 px-2.5 rounded-xl border border-emerald-200 dark:border-emerald-800"
+                        title="ราคาขายต่อหน่วย (ปัด 2 ตำแหน่งหลังบวก Markup %)"
+                      >
+                        {baht(calc?.unitSellingPrice ?? 0)}
+                      </div>
+                    ) : (
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        className={fieldErrorClass(
+                          costOrPriceEmpty,
+                          'input text-xs text-right w-full font-mono'
+                        )}
+                        placeholder="ราคา/หน่วย"
+                        value={it.unit_price}
+                        onChange={(e) => updItem(idx, 'unit_price', e.target.value)}
+                      />
+                    )}
                   </div>
+
+                  {isProductMode && effectiveDiscountMode === 'per_item' && (
+                    <div>
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="0.1"
+                        className="input text-xs text-right w-full font-mono"
+                        placeholder="ลด %"
+                        value={it.discount_percent}
+                        onChange={(e) => updItem(idx, 'discount_percent', e.target.value)}
+                      />
+                    </div>
+                  )}
 
                   <div className="col-span-2 lg:col-span-1 text-right font-mono font-black text-xs text-sky-900 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/40 py-2 px-3 rounded-xl border border-sky-100 dark:border-sky-800">
-                    {baht(calc.lineTotal)}
+                    {baht(calc?.lineTotal ?? 0)}
                   </div>
 
                   <div className="flex justify-end lg:justify-center">
@@ -1061,6 +1343,32 @@ export default function QuotationForm() {
                     </button>
                   </div>
                 </div>
+
+                {/* แถบสถานะเช็กสต็อกอัตโนมัติ (ภายในเท่านั้น — ไม่เปิด PR และไม่แสดงใน PDF) */}
+                {it.item_name?.trim() && stock && stock.status !== 'service' && (
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] bg-slate-50 dark:bg-slate-800/60 px-3 py-1.5 rounded-xl border border-slate-200/80 dark:border-slate-700/80">
+                    <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                      <Warehouse className="h-3.5 w-3.5 text-sky-600 dark:text-sky-400" />
+                      <span>สถานะสต็อกคงเหลือ (เช็กอัตโนมัติ ณ ตอนนี้ — ยังไม่เปิด PR):</span>
+                    </span>
+                    <span
+                      className={`font-bold px-2 py-0.5 rounded-full border ${stock.status === 'enough'
+                          ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+                          : stock.status === 'partial'
+                            ? 'bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800'
+                            : 'bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800'
+                        }`}
+                    >
+                      {stock.status === 'enough'
+                        ? `พร้อมเบิก (มี ${formatIntQty(stock.inStock)})`
+                        : stock.status === 'partial'
+                          ? `มีบางส่วน ${formatIntQty(stock.inStock)} / ขาด ${formatIntQty(stock.shortfall)}`
+                          : stock.status === 'not_in_inventory'
+                            ? `ไม่มีในคลัง (ขาด ${formatIntQty(stock.shortfall)})`
+                            : `ของหมด (ขาด ${formatIntQty(stock.shortfall)})`}
+                    </span>
+                  </div>
+                )}
 
                 {/* แถวที่ 2: Richbox / Textarea ขยายลงล่าง สำหรับสเปกและรายละเอียด */}
                 <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80">
@@ -1113,18 +1421,131 @@ export default function QuotationForm() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
           <div className="space-y-4">
+            {isProductMode ? (
+              <>
+                <div className="rounded-xl border border-emerald-200 dark:border-emerald-900/60 bg-emerald-50/40 dark:bg-emerald-950/20 p-4 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+                      <Percent className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                      <span>มาร์กอัปทั้งใบ (Markup %) *</span>
+                    </label>
+                    <span className="text-[11px] font-mono font-bold text-emerald-700 dark:text-emerald-400">
+                      +{baht(pricing.markupAmount)} {currency}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.5"
+                      className={fieldErrorClass(
+                        errors.markupPercent,
+                        'input text-xs font-mono font-bold text-right w-32'
+                      )}
+                      value={markupPercent}
+                      onChange={(e) => {
+                        const raw = e.target.value
+                        if (raw === '' || Number(raw) >= 0) {
+                          setMarkupPercent(raw)
+                        } else {
+                          setMarkupPercent('0')
+                        }
+                        if (errors.markupPercent) setErrors((prev) => ({ ...prev, markupPercent: '' }))
+                      }}
+                    />
+                    <span className="text-xs font-bold text-slate-600 dark:text-slate-300">% (บวกครั้งเดียวทั้งใบ · ห้ามติดลบ)</span>
+                  </div>
+                  <FieldError error={errors.markupPercent} />
+                </div>
+
+                <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/40 p-4 space-y-3">
+                  <label className="block text-xs font-bold text-slate-800 dark:text-slate-100">
+                    รูปแบบส่วนลด (Discount Mode)
+                  </label>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => setDiscountMode('whole_bill')}
+                      className={`rounded-xl border px-3 py-2 font-bold transition cursor-pointer ${discountMode === 'whole_bill'
+                          ? 'border-sky-600 bg-sky-700 text-white shadow-2xs'
+                          : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                        }`}
+                    >
+                      ส่วนลดทั้งใบ
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDiscountMode('per_item')}
+                      className={`rounded-xl border px-3 py-2 font-bold transition cursor-pointer ${discountMode === 'per_item'
+                          ? 'border-sky-600 bg-sky-700 text-white shadow-2xs'
+                          : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                        }`}
+                    >
+                      ส่วนลดต่อรายการ (% รายแถว)
+                    </button>
+                  </div>
+
+                  {discountMode === 'whole_bill' && (
+                    <div className="flex items-center gap-2 pt-1">
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        className="input text-xs font-mono font-bold text-right flex-1"
+                        placeholder="จำนวนส่วนลด"
+                        value={headerDiscountValue}
+                        onChange={(e) => {
+                          const raw = e.target.value
+                          setHeaderDiscountValue(raw === '' || Number(raw) >= 0 ? raw : '0')
+                        }}
+                      />
+                      <div className="inline-flex rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-0.5 text-xs">
+                        <button
+                          type="button"
+                          onClick={() => setHeaderDiscountType('amount')}
+                          className={`rounded-lg px-2.5 py-1 font-bold transition cursor-pointer ${headerDiscountType === 'amount'
+                              ? 'bg-sky-700 text-white'
+                              : 'text-slate-600 dark:text-slate-300'
+                            }`}
+                        >
+                          บาท
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setHeaderDiscountType('percent')}
+                          className={`rounded-lg px-2.5 py-1 font-bold transition cursor-pointer ${headerDiscountType === 'percent'
+                              ? 'bg-sky-700 text-white'
+                              : 'text-slate-600 dark:text-slate-300'
+                            }`}
+                        >
+                          %
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </>
+            ) : (
+              <div className="rounded-xl border border-amber-200 dark:border-amber-800/80 bg-amber-50/50 dark:bg-amber-950/20 p-4 text-xs text-amber-900 dark:text-amber-300">
+                <div className="font-bold">ใบเสนอราคารับงาน (BOQ · QT-P)</div>
+                <div className="text-[11px] mt-0.5">
+                  ใช้ราคาเสนอขายสุทธิจาก BOQ (Markup +{pricing.markupPercent}%) และไม่มีส่วนลดในเอกสาร
+                </div>
+              </div>
+            )}
+
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                การคิดภาษีมูลค่าเพิ่ม (VAT) *
+                การคิดภาษีมูลค่าเพิ่ม (สวิตช์ VAT) *
               </label>
               <select
                 className="input text-xs"
                 value={taxType}
                 onChange={(e) => setTaxType(e.target.value)}
               >
-                <option value="vat_excluded">ราคาแยกภาษีมูลค่าเพิ่ม +7% (VAT Excluded)</option>
-                <option value="vat_included">ราคารวมภาษีมูลค่าเพิ่ม 7% แล้ว (VAT Included)</option>
-                <option value="vat_exempt">ไม่มีภาษี / ได้รับการยกเว้น (VAT Exempt 0%)</option>
+                <option value="vat_excluded">เปิด VAT — ราคาแยกภาษีมูลค่าเพิ่ม +7% (VAT Excluded)</option>
+                <option value="vat_included">เปิด VAT — ราคารวมภาษีมูลค่าเพิ่ม 7% แล้ว (VAT Included)</option>
+                <option value="vat_exempt">ปิด VAT — ไม่มีภาษี / ยกเว้น (0%)</option>
               </select>
             </div>
 
@@ -1145,44 +1566,69 @@ export default function QuotationForm() {
           </div>
 
           {/* สรุปการเงินระดับบริหาร (Executive Financial Card) */}
-          <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 p-5 text-xs space-y-2.5 shadow-2xs">
-            <div className="flex justify-between text-slate-600 dark:text-slate-300">
-              <span>รวมเป็นเงิน (Subtotal):</span>
-              <span className="font-mono font-bold text-slate-800 dark:text-slate-100">
-                {baht(subtotal)} {currency}
-              </span>
-            </div>
-            <div className="flex justify-between text-rose-600 dark:text-rose-400">
-              <span>ส่วนลดรวม (Total Discount):</span>
-              <span className="font-mono font-bold">- {baht(totalDiscount)} {currency}</span>
-            </div>
-            <div className="flex justify-between font-bold text-slate-800 dark:text-slate-100 border-t border-slate-200 dark:border-slate-700 pt-2">
-              <span>{taxType === 'vat_included' ? 'ราคาหลังหักส่วนลด (รวม VAT):' : 'ราคาหลังหักส่วนลด:'}</span>
-              <span className="font-mono">{baht(afterDiscount)} {currency}</span>
-            </div>
-            {taxType === 'vat_included' && (
-              <div className="flex justify-between text-slate-600 dark:text-slate-300">
-                <span>มูลค่าสินค้าก่อนภาษี (Before VAT):</span>
-                <span className="font-mono font-semibold text-slate-800 dark:text-slate-100">
-                  {baht(amountBeforeVat)} {currency}
+          <div className="space-y-3">
+            {pricing.isBelowCost && (
+              <div className="rounded-2xl border-2 border-amber-400 dark:border-amber-600 bg-amber-50 dark:bg-amber-950/40 p-4 text-xs text-amber-950 dark:text-amber-200 flex items-start gap-2.5 shadow-xs">
+                <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <div className="font-black text-rose-700 dark:text-rose-300">
+                    คำเตือน: ราคาหลังหักส่วนลดต่ำกว่าต้นทุนรวม (-{baht(pricing.belowCostAmount)} {currency})
+                  </div>
+                  <div className="text-[11px] text-amber-900 dark:text-amber-300">
+                    ระบบอนุญาตให้ออกใบได้โดยไม่ต้องขออนุมัติ แต่จะบันทึกผู้ออกใบเสนอราคา:{' '}
+                    <strong className="underline">{profile?.full_name || salesPerson || 'ผู้ใช้งานปัจจุบัน'}</strong>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 p-5 text-xs space-y-2.5 shadow-2xs">
+              <div className="flex justify-between text-slate-500 dark:text-slate-400 pb-2 border-b border-slate-200 dark:border-slate-700">
+                <span>ต้นทุนรวมภายใน (ไม่แสดงใน PDF ลูกค้า):</span>
+                <span className="font-mono font-bold text-slate-700 dark:text-slate-200">
+                  {baht(pricing.totalCost)} {currency}
                 </span>
               </div>
-            )}
-            <div className="flex justify-between text-slate-600 dark:text-slate-300">
-              <span>ภาษีมูลค่าเพิ่ม (VAT {taxType === 'vat_exempt' ? '0' : '7'}%{taxType === 'vat_included' ? ' รวมในยอด' : ''}):</span>
-              <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">
-                {taxType === 'vat_included' ? '' : '+ '}{baht(vatAmount)} {currency}
-              </span>
-            </div>
-            {Number(whtRate) > 0 && (
-              <div className="flex justify-between text-amber-700 dark:text-amber-400 font-semibold">
-                <span>หักภาษี ณ ที่จ่าย ({whtRate}%):</span>
-                <span className="font-mono font-bold">- {baht(whtAmount)} {currency}</span>
+              <div className="flex justify-between text-slate-600 dark:text-slate-300">
+                <span>รวมเป็นเงินจากทุกบรรทัด (Subtotal):</span>
+                <span className="font-mono font-bold text-slate-800 dark:text-slate-100">
+                  {baht(subtotal)} {currency}
+                </span>
               </div>
-            )}
-            <div className="flex justify-between font-extrabold text-base text-sky-900 dark:text-sky-300 border-t-2 border-sky-400 dark:border-sky-600 pt-3">
-              <span>ยอดเงินรวมทั้งสิ้น (Grand Total):</span>
-              <span className="font-mono text-lg">{baht(grandTotal)} {currency}</span>
+              {totalDiscount > 0 && (
+                <div className="flex justify-between text-rose-600 dark:text-rose-400">
+                  <span>ส่วนลดรวม ({discountMode === 'whole_bill' ? 'ทั้งใบ' : 'ต่อรายการ'}):</span>
+                  <span className="font-mono font-bold">- {baht(totalDiscount)} {currency}</span>
+                </div>
+              )}
+              <div className="flex justify-between font-bold text-slate-800 dark:text-slate-100 border-t border-slate-200 dark:border-slate-700 pt-2">
+                <span>{taxType === 'vat_included' ? 'ราคาหลังหักส่วนลด (รวม VAT):' : 'ราคาหลังหักส่วนลด:'}</span>
+                <span className="font-mono">{baht(afterDiscount)} {currency}</span>
+              </div>
+              {taxType === 'vat_included' && (
+                <div className="flex justify-between text-slate-600 dark:text-slate-300">
+                  <span>มูลค่าสินค้าก่อนภาษี (Before VAT):</span>
+                  <span className="font-mono font-semibold text-slate-800 dark:text-slate-100">
+                    {baht(amountBeforeVat)} {currency}
+                  </span>
+                </div>
+              )}
+              <div className="flex justify-between text-slate-600 dark:text-slate-300">
+                <span>ภาษีมูลค่าเพิ่ม (VAT {taxType === 'vat_exempt' ? '0' : '7'}%{taxType === 'vat_included' ? ' รวมในยอด' : ''}):</span>
+                <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">
+                  {taxType === 'vat_included' ? '' : '+ '}{baht(vatAmount)} {currency}
+                </span>
+              </div>
+              {Number(whtRate) > 0 && (
+                <div className="flex justify-between text-amber-700 dark:text-amber-400 font-semibold">
+                  <span>หักภาษี ณ ที่จ่าย ({whtRate}%):</span>
+                  <span className="font-mono font-bold">- {baht(whtAmount)} {currency}</span>
+                </div>
+              )}
+              <div className="flex justify-between font-extrabold text-base text-sky-900 dark:text-sky-300 border-t-2 border-sky-400 dark:border-sky-600 pt-3">
+                <span>ยอดเงินรวมทั้งสิ้น (Grand Total):</span>
+                <span className="font-mono text-lg">{baht(grandTotal)} {currency}</span>
+              </div>
             </div>
           </div>
         </div>

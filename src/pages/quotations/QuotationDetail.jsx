@@ -10,18 +10,23 @@ import {
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
 import { baht } from '../../lib/projects'
-import { inferQuotationTaxType } from '../../lib/tax'
+import { QUOTATION_TYPES, inferQuotationTaxType, round2 } from '../../lib/tax'
 import { ensureSalesInvoiceForQuotation, fetchQuotationLinkedDocs } from '../../lib/salesBilling'
 import { computeQuotationWorkflow, getCustomerApprovalDisplay } from '../../lib/salesFlowUtils'
 import {
+  canCreatePrFromQuotation,
   checkQuotationStock,
   summarizeQuotationStock,
   summarizeItemLotSources,
   buildShortfallPrItems,
   summarizeQuotationPrCoverage,
 } from '../../lib/quotationStockCheck'
-import { buildQuotationTaxUpdatePayload } from '../../lib/quotationPrintUtils'
-import { saveQuotationWithFallback } from '../../lib/boqToQuotation'
+import { buildQuotationTaxUpdatePayload, resolveQuotationType } from '../../lib/quotationPrintUtils'
+import { getQuotationTypeMeta } from '../../lib/quotationListUtils'
+import {
+  buildQuotationStatusTransitionPayload,
+  saveQuotationWithFallback,
+} from '../../lib/boqToQuotation'
 import PaymentActionModal from '../../components/PaymentActionModal'
 import { canIssueStock, formatIntQty } from '../../lib/store'
 import { openFile } from '../../lib/files'
@@ -187,13 +192,13 @@ export default function QuotationDetail() {
     if (!quotation) return
     setUpdatingStatus(true)
     try {
-      const { error } = await supabase
-        .from('quotations')
-        .update({ status: newStatus, updated_at: new Date().toISOString() })
-        .eq('id', quotation.id)
-
-      if (error) throw error
-      setQuotation((prev) => ({ ...prev, status: newStatus }))
+      const updatePayload = buildQuotationStatusTransitionPayload({
+        quotation,
+        nextStatus: newStatus,
+        actor: profile,
+      })
+      await saveQuotationWithFallback(supabase, updatePayload, quotation.id)
+      setQuotation((prev) => ({ ...prev, ...updatePayload }))
     } catch (err) {
       alert('เปลี่ยนสถานะไม่สำเร็จ: ' + err.message)
     } finally {
@@ -325,6 +330,24 @@ export default function QuotationDetail() {
       : null
   const prIdByNo = new Map(flow.activePRs.map((p) => [p.pr_no, p.id]))
   const approval = getCustomerApprovalDisplay(quotation)
+  const qtType = resolveQuotationType(quotation)
+  const typeMeta = getQuotationTypeMeta(quotation)
+  const canOpenPr = canCreatePrFromQuotation(quotation)
+  const isProductMode = qtType === QUOTATION_TYPES.PRODUCT
+  const showPerItemDiscountCol =
+    isProductMode &&
+    (quotation.discount_mode === 'per_item' ||
+      items.some((it) => Number(it.discount_percent || 0) > 0))
+  const itemBaseCostSum = round2(
+    items.reduce((s, it) => s + Number(it.base_cost || 0) * (Number(it.quantity) || 0), 0)
+  )
+  const computedTotalCost =
+    itemBaseCostSum > 0 ? itemBaseCostSum : round2(quotation.total_cost || 0)
+  const effectiveAfterDiscount = round2(
+    quotation.after_discount ?? Math.max(0, Number(quotation.subtotal || 0) - Number(quotation.discount_amount || 0))
+  )
+  const isBelowCost = computedTotalCost > 0 && effectiveAfterDiscount < computedTotalCost
+  const belowCostAmount = isBelowCost ? round2(computedTotalCost - effectiveAfterDiscount) : 0
 
   const renderLotSourceChips = (itemId) => {
     const lots = itemId ? lotSourcesByItem[itemId] : null
@@ -366,6 +389,9 @@ export default function QuotationDetail() {
                 <span className="text-[10px] font-mono uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-sky-500/15 text-sky-300 border border-sky-400/25 font-bold whitespace-nowrap">
                   QUOTATION DOCUMENT
                 </span>
+                <span className={`inline-flex items-center px-2.5 py-0.5 text-xs font-bold rounded-full border whitespace-nowrap ${typeMeta.badgeCls}`}>
+                  {typeMeta.label}
+                </span>
                 <span className={`inline-flex items-center px-2.5 py-0.5 text-xs font-bold rounded-full border shadow-2xs whitespace-nowrap ${statusInfo.color}`}>
                   {statusInfo.label}
                 </span>
@@ -383,13 +409,27 @@ export default function QuotationDetail() {
               </h1>
 
               <p className="text-xs text-slate-400 truncate">
-                เอกสารเสนอราคาโครงการวิศวกรรมและติดตั้งระบบโซลาร์เซลล์
+                {isProductMode
+                  ? 'เอกสารเสนอราคาขายสินค้าและอุปกรณ์จากคลังสโตร์ (Product Sales)'
+                  : 'เอกสารเสนอราคาโครงการวิศวกรรมและติดตั้งระบบโซลาร์เซลล์ (BOQ Project)'}
               </p>
             </div>
           </div>
 
           {/* แถบปุ่ม Action ด้านขวา (จัดเรียงเป็นแถวสมดุล สัดส่วนคงที่ h-9 - Option A) */}
           <div className="flex items-center gap-2 flex-wrap xl:justify-end shrink-0">
+            {quotation.status === 'draft' && (
+              <button
+                type="button"
+                disabled={updatingStatus}
+                onClick={() => handleStatusChange('sent')}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white h-9 px-3.5 text-xs font-bold shadow-xs transition cursor-pointer disabled:opacity-50"
+                title="บันทึกผู้รับผิดชอบและล็อกราคา Snapshot จาก Store"
+              >
+                <Send className="h-3.5 w-3.5" />
+                <span>ออกใบเสนอราคา (ส่งลูกค้า)</span>
+              </button>
+            )}
             {/* ปุ่มตามลำดับขั้นตอนหลัก */}
             {quotation.customer_po_no ? (
               <>
@@ -535,8 +575,35 @@ export default function QuotationDetail() {
               <ExternalLink className="h-3 w-3 shrink-0" />
             </Link>
           )}
+
+          {(quotation.issued_by_name || quotation.sales_person) && (
+            <span className="flex items-center gap-1.5 shrink-0 whitespace-nowrap">
+              <User className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+              <span>ผู้ออกใบ: <strong className="text-white">{quotation.issued_by_name || quotation.sales_person}</strong></span>
+            </span>
+          )}
         </div>
       </div>
+
+      {/* แจ้งเตือนภายในเมื่อราคาหลังหักส่วนลดต่ำกว่าต้นทุนรวม */}
+      {isBelowCost && (
+        <div className="no-print rounded-2xl border-2 border-amber-400 dark:border-amber-600 bg-amber-50 dark:bg-amber-950/40 px-5 py-3.5 text-xs text-amber-950 dark:text-amber-200 flex flex-wrap items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-center gap-2.5">
+            <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0" />
+            <div>
+              <span className="font-black text-rose-700 dark:text-rose-300">
+                คำเตือน: ราคาหลังหักส่วนลด ({baht(effectiveAfterDiscount)} บ.) ต่ำกว่าต้นทุนรวม ({baht(computedTotalCost)} บ.) ขาดทุน -{baht(belowCostAmount)} บ.
+              </span>
+              <div className="text-[11px] text-amber-900 dark:text-amber-300 mt-0.5">
+                ออกเอกสารได้โดยไม่ต้องขออนุมัติ · บันทึกผู้ออกใบ: <b>{quotation.issued_by_name || quotation.sales_person || '-'}</b>
+              </div>
+            </div>
+          </div>
+          <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-amber-200/70 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200">
+            Internal Margin Alert (No Print)
+          </span>
+        </div>
+      )}
 
       {/* 2. Visual Sales & Execution Workflow Pipeline (ผังแสดงลำดับขั้นตอนการทำงาน 1 -> 2 -> 3 -> 4 -> 5) */}
       <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm space-y-4">
@@ -785,47 +852,56 @@ export default function QuotationDetail() {
               )}
             </div>
             <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-800 flex flex-wrap items-center gap-2">
-              {stockSummary.issuableCount > 0 && userCanIssueStock && (
+              {!canOpenPr ? (
+                <span className="text-[11px] font-semibold text-amber-800 dark:text-amber-300 flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  <span>เปิด PR / เบิกสโตร์ได้หลังลูกค้าอนุมัติ</span>
+                </span>
+              ) : (
                 <>
+                  {stockSummary.issuableCount > 0 && userCanIssueStock && (
+                    <>
+                      <Link
+                        to={`/store/issue/new?quotation_id=${quotation.id}${quotation.project_id ? `&project_id=${quotation.project_id}` : ''}`}
+                        className="text-emerald-700 dark:text-emerald-400 hover:underline text-[11px] font-bold flex items-center gap-1"
+                      >
+                        <ArrowUpFromLine className="h-3 w-3" />
+                        <span>เบิกสต็อก ({stockSummary.issuableCount})</span>
+                      </Link>
+                      <span className="text-slate-300">|</span>
+                    </>
+                  )}
                   <Link
-                    to={`/store/issue/new?quotation_id=${quotation.id}${quotation.project_id ? `&project_id=${quotation.project_id}` : ''}`}
-                    className="text-emerald-700 dark:text-emerald-400 hover:underline text-[11px] font-bold flex items-center gap-1"
+                    to={`/purchasing/po/new?quotation_id=${quotation.id}`}
+                    className="text-amber-900 dark:text-amber-300 hover:underline text-[11px] font-bold flex items-center gap-1"
                   >
-                    <ArrowUpFromLine className="h-3 w-3" />
-                    <span>เบิกสต็อก ({stockSummary.issuableCount})</span>
+                    <ShoppingCart className="h-3 w-3" />
+                    <span>เปิด PO ซื้อของ</span>
                   </Link>
                   <span className="text-slate-300">|</span>
+                  {flow.activePRs.length > 0 && prCoverage.uncoveredCount === 0 ? (
+                    <Link
+                      to={`/purchasing/pr/${flow.latestPR.id}`}
+                      className="text-sky-700 dark:text-sky-300 hover:underline text-[11px] font-bold flex items-center gap-1"
+                    >
+                      <FileText className="h-3 w-3" />
+                      <span>ดูใบขอซื้อ ({flow.latestPR.pr_no})</span>
+                    </Link>
+                  ) : (
+                    <Link
+                      to={`/purchasing/pr/new?quotation_id=${quotation.id}${stockSummary.shortageCount > 0 ? '&shortfall_only=1' : ''}`}
+                      className="text-slate-700 dark:text-slate-300 hover:underline text-[11px] font-bold flex items-center gap-1"
+                    >
+                      <span>
+                        {flow.activePRs.length > 0 && prCoverage.uncoveredCount > 0
+                          ? `เปิด PR ส่วนที่ยังไม่ขอ (${prCoverage.uncoveredCount})`
+                          : stockSummary.shortageCount > 0
+                          ? `เปิด PR ส่วนที่ขาด (${stockSummary.shortageCount})`
+                          : 'เปิด PR'}
+                      </span>
+                    </Link>
+                  )}
                 </>
-              )}
-              <Link
-                to={`/purchasing/po/new?quotation_id=${quotation.id}`}
-                className="text-amber-900 dark:text-amber-300 hover:underline text-[11px] font-bold flex items-center gap-1"
-              >
-                <ShoppingCart className="h-3 w-3" />
-                <span>เปิด PO ซื้อของ</span>
-              </Link>
-              <span className="text-slate-300">|</span>
-              {flow.activePRs.length > 0 && prCoverage.uncoveredCount === 0 ? (
-                <Link
-                  to={`/purchasing/pr/${flow.latestPR.id}`}
-                  className="text-sky-700 dark:text-sky-300 hover:underline text-[11px] font-bold flex items-center gap-1"
-                >
-                  <FileText className="h-3 w-3" />
-                  <span>ดูใบขอซื้อ ({flow.latestPR.pr_no})</span>
-                </Link>
-              ) : (
-                <Link
-                  to={`/purchasing/pr/new?quotation_id=${quotation.id}${stockSummary.shortageCount > 0 ? '&shortfall_only=1' : ''}`}
-                  className="text-slate-700 dark:text-slate-300 hover:underline text-[11px] font-bold flex items-center gap-1"
-                >
-                  <span>
-                    {flow.activePRs.length > 0 && prCoverage.uncoveredCount > 0
-                      ? `เปิด PR ส่วนที่ยังไม่ขอ (${prCoverage.uncoveredCount})`
-                      : stockSummary.shortageCount > 0
-                      ? `เปิด PR ส่วนที่ขาด (${stockSummary.shortageCount})`
-                      : 'เปิด PR'}
-                  </span>
-                </Link>
               )}
             </div>
           </div>
@@ -1219,7 +1295,7 @@ export default function QuotationDetail() {
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
-              {stockSummary.issuableCount > 0 && userCanIssueStock && (
+              {canOpenPr && stockSummary.issuableCount > 0 && userCanIssueStock && (
                 <Link
                   to={`/store/issue/new?quotation_id=${quotation.id}${quotation.project_id ? `&project_id=${quotation.project_id}` : ''}`}
                   className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white px-3.5 py-1.5 text-xs font-bold shadow-2xs transition"
@@ -1244,7 +1320,14 @@ export default function QuotationDetail() {
                 </div>
               )}
 
-              {stockSummary.shortageCount > 0 && (flow.activePRs.length === 0 || prCoverage.uncoveredCount > 0) && (
+              {!canOpenPr && (
+                <span className="inline-flex items-center gap-1.5 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 px-3 py-1.5 text-xs font-bold text-amber-800 dark:text-amber-300">
+                  <Clock className="h-3.5 w-3.5" />
+                  <span>ล็อกปุ่มเปิด PR — รอลูกค้าเซ็นอนุมัติก่อน</span>
+                </span>
+              )}
+
+              {canOpenPr && stockSummary.shortageCount > 0 && (flow.activePRs.length === 0 || prCoverage.uncoveredCount > 0) && (
                 <Link
                   to={`/purchasing/pr/new?quotation_id=${quotation.id}&shortfall_only=1`}
                   className="inline-flex items-center gap-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 px-3.5 py-1.5 text-xs font-black shadow-2xs transition"
@@ -1269,8 +1352,8 @@ export default function QuotationDetail() {
                 <th className="px-4 py-3">ชื่อสินค้า / สเปกวิศวกรรม</th>
                 <th className="px-4 py-3 text-right w-24">จำนวน</th>
                 <th className="px-4 py-3 text-center w-20">หน่วย</th>
-                <th className="px-4 py-3 text-right w-32">ราคา/หน่วย</th>
-                <th className="px-4 py-3 text-right w-24">ส่วนลด (%)</th>
+                <th className="px-4 py-3 text-right w-36">ราคาขาย/หน่วย</th>
+                {showPerItemDiscountCol && <th className="px-4 py-3 text-right w-24">ส่วนลด (%)</th>}
                 <th className="px-4 py-3 text-right w-36">ราคารวม ({quotation.currency || 'THB'})</th>
                 <th className="px-4 py-3 text-right w-56 no-print">เช็กสต็อกภายใน</th>
               </tr>
@@ -1302,15 +1385,22 @@ export default function QuotationDetail() {
                     {it.unit || 'หน่วย'}
                   </td>
                   <td className="px-4 py-3.5 text-right font-mono text-slate-700 dark:text-slate-300">
-                    {baht(it.unit_price || 0)}
-                  </td>
-                  <td className="px-4 py-3.5 text-right text-xs">
-                    {Number(it.discount_percent || 0) > 0 ? (
-                      <span className="text-rose-600 dark:text-rose-400 font-bold">{it.discount_percent}%</span>
-                    ) : (
-                      <span className="text-slate-400">-</span>
+                    <div>{baht(it.unit_price || 0)}</div>
+                    {Number(it.base_cost || 0) > 0 && (
+                      <div className="no-print text-[10px] text-amber-700 dark:text-amber-400 font-semibold">
+                        ทุน {baht(it.base_cost)}
+                      </div>
                     )}
                   </td>
+                  {showPerItemDiscountCol && (
+                    <td className="px-4 py-3.5 text-right text-xs">
+                      {Number(it.discount_percent || 0) > 0 ? (
+                        <span className="text-rose-600 dark:text-rose-400 font-bold">{it.discount_percent}%</span>
+                      ) : (
+                        <span className="text-slate-400">-</span>
+                      )}
+                    </td>
+                  )}
                   <td className="px-4 py-3.5 text-right font-mono font-bold text-slate-900 dark:text-white">
                     {baht(it.total_amount || 0)}
                   </td>
@@ -1325,7 +1415,7 @@ export default function QuotationDetail() {
                           <CheckCircle2 className="h-3 w-3" />
                           <span>พร้อมเบิก (มี {formatIntQty(stock.inStock)})</span>
                         </span>
-                        {userCanIssueStock && issueUrl && (
+                        {canOpenPr && userCanIssueStock && issueUrl && (
                           <Link
                             to={issueUrl}
                             className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 hover:underline inline-flex items-center gap-1"
@@ -1343,7 +1433,7 @@ export default function QuotationDetail() {
                           <span>มี {formatIntQty(stock.inStock)} / ขาด {formatIntQty(stock.shortfall)}</span>
                         </span>
                         <div className="flex items-center gap-2 text-[11px]">
-                          {userCanIssueStock && issueUrl && Math.floor(stock.issueQty) >= 1 && (
+                          {canOpenPr && userCanIssueStock && issueUrl && Math.floor(stock.issueQty) >= 1 && (
                             <Link
                               to={issueUrl}
                               className="font-bold text-emerald-700 dark:text-emerald-400 hover:underline"
@@ -1368,6 +1458,7 @@ export default function QuotationDetail() {
                                 </span>
                               )
                             }
+                            if (!canOpenPr) return null
                             return (
                               <Link
                                 to={prShortfallUrl}
@@ -1409,6 +1500,7 @@ export default function QuotationDetail() {
                               </span>
                             )
                           }
+                          if (!canOpenPr) return null
                           return (
                             <Link
                               to={prShortfallUrl}
@@ -1432,13 +1524,23 @@ export default function QuotationDetail() {
         {/* สรุปการเงินระดับบริหาร (Financial Summary Calculation Panel) */}
         <div className="border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 p-6">
           <div className="max-w-md ml-auto space-y-2.5 text-xs">
+            {computedTotalCost > 0 && (
+              <div className="no-print flex justify-between text-amber-800 dark:text-amber-300 pb-2 border-b border-slate-200 dark:border-slate-700">
+                <span>
+                  ต้นทุนรวมภายใน{Number(quotation.markup_percent || 0) > 0 ? ` (Markup +${quotation.markup_percent}%)` : ''}:
+                </span>
+                <span className="font-mono font-bold">
+                  {baht(computedTotalCost)} {quotation.currency || 'THB'}
+                </span>
+              </div>
+            )}
             <div className="flex justify-between text-slate-600 dark:text-slate-300">
               <span>รวมเป็นเงิน (Subtotal):</span>
               <span className="font-mono font-bold text-slate-800 dark:text-slate-100">
                 {baht(quotation.subtotal || 0)} {quotation.currency || 'THB'}
               </span>
             </div>
-            {Number(quotation.discount_amount || 0) > 0 && (
+            {Number(quotation.discount_amount || 0) > 0 && qtType !== QUOTATION_TYPES.PROJECT && (
               <div className="flex justify-between text-rose-600 dark:text-rose-400">
                 <span>ส่วนลดรวม (Total Discount):</span>
                 <span className="font-mono font-bold">-{baht(quotation.discount_amount || 0)} {quotation.currency || 'THB'}</span>
@@ -1451,7 +1553,7 @@ export default function QuotationDetail() {
                 <>
                   <div className="flex justify-between font-bold text-slate-800 dark:text-slate-100 border-t border-slate-200 dark:border-slate-700 pt-2">
                     <span>{qtTaxType === 'vat_included' ? 'ราคาหลังหักส่วนลด (รวม VAT):' : 'ราคาหลังหักส่วนลด:'}</span>
-                    <span className="font-mono">{baht(quotation.after_discount || quotation.subtotal || 0)} {quotation.currency || 'THB'}</span>
+                    <span className="font-mono">{baht(quotation.after_discount ?? quotation.subtotal ?? 0)} {quotation.currency || 'THB'}</span>
                   </div>
                   <div className="flex justify-between text-slate-600 dark:text-slate-300">
                     <span>ภาษีมูลค่าเพิ่ม (VAT {vatRateDisp}%{qtTaxType === 'vat_included' ? ' รวมในยอด' : ''}):</span>

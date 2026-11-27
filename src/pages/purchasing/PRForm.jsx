@@ -6,7 +6,11 @@ import { EMPTY_ITEM, itemsValid } from '../../lib/purchasing'
 import { baht } from '../../lib/projects'
 import { inferQuotationTaxType, round2 } from '../../lib/tax'
 import { buildPurchaseItemsFromQuotation } from '../../lib/purchasingPricing'
-import { buildShortfallPrItems, summarizeQuotationPrCoverage } from '../../lib/quotationStockCheck'
+import {
+  buildShortfallPrItems,
+  canCreatePrFromQuotation,
+  summarizeQuotationPrCoverage,
+} from '../../lib/quotationStockCheck'
 import { buildQuotationPrQuerySpecs } from '../../lib/salesFlowUtils'
 import ItemsEditor from './ItemsEditor'
 import { FieldError } from '../../components/FieldError'
@@ -136,12 +140,16 @@ export default function PRForm() {
         const vatRate = Number(qt?.vat_rate ?? 7)
         const hasVat = qTaxType !== 'vat_exempt' && vatRate > 0
 
-        const rawAfterDisc = qItems.reduce((s, i) => {
+        const fallbackItemsNet = qItems.reduce((s, i) => {
           const rawPrice = Number(i.unit_price) || 0
           const discPct = Number(i.discount_percent) || 0
           const eff = discPct > 0 ? rawPrice * (1 - discPct / 100) : (i.total_amount ? Number(i.total_amount) / (Number(i.quantity) || 1) : rawPrice)
           return s + eff * (Number(i.quantity) || 1)
         }, 0)
+        const rawAfterDisc =
+          qt?.after_discount != null
+            ? Number(qt.after_discount)
+            : fallbackItemsNet
 
         let subtotalNet = round2(rawAfterDisc)
         let vatAmt = 0
@@ -214,6 +222,7 @@ export default function PRForm() {
         const syncObj = {
           quotation: qt || {},
           quotation_no: qt?.quotation_no,
+          isApproved: canCreatePrFromQuotation(qt),
           qTaxType,
           subtotalNet,
           hasVat,
@@ -574,6 +583,11 @@ export default function PRForm() {
                 {quotationSync.shortfallOnly && (
                   <span className="rounded-full bg-amber-100 border border-amber-300 px-2.5 py-0.5 text-[10px] font-black text-amber-900">
                     เปิด PR เฉพาะส่วนที่ขาด ({quotationSync.shortfallCount} รายการ)
+                  </span>
+                )}
+                {quotationSync.isApproved === false && (
+                  <span className="rounded-full bg-rose-100 border border-rose-300 px-2.5 py-0.5 text-[10px] font-black text-rose-900">
+                    คำเตือน: ใบเสนอราคานี้ยังไม่มีบันทึกการอนุมัติจากลูกค้า
                   </span>
                 )}
               </div>

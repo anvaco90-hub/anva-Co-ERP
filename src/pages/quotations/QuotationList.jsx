@@ -9,9 +9,11 @@ import {
   computeQuotationKpis,
   filterQuotations,
   getQuotationRowAmountMeta,
+  getQuotationTypeMeta,
   isQuotationApproved,
   resolveInitialStatusFilter,
 } from '../../lib/quotationListUtils'
+import CreateQuotationModal from '../../components/quotations/CreateQuotationModal'
 import QuotationPrintModal from '../../components/reports/QuotationPrintModal'
 import EnvelopePrintModal from '../../components/reports/EnvelopePrintModal'
 import QuotationShareModal from '../../components/quotations/QuotationShareModal'
@@ -110,6 +112,7 @@ export default function QuotationList() {
   const [search, setSearch] = useState('')
   const [sortBy, setSortBy] = useState('date_desc')
   const [filterProject, setFilterProject] = useState('')
+  const [filterType, setFilterType] = useState('all') // 'all' | 'project' | 'product'
   const [filterStatus, setFilterStatus] = useState(() => resolveInitialStatusFilter(searchParams.get('tab')))
 
   // ตัวเลือกการเรียงลำดับมาตรฐานสำหรับงานขายและเสนอราคา
@@ -132,6 +135,7 @@ export default function QuotationList() {
   const [pageSize, setPageSize] = useState(15) // 10 | 15 | 30 | 50
 
   // โมดัลและเมนู Action
+  const [createModalOpen, setCreateModalOpen] = useState(false)
   const [actionMenuId, setActionMenuId] = useState(null)
   const [printTarget, setPrintTarget] = useState(null)
   const [printItems, setPrintItems] = useState([])
@@ -205,13 +209,14 @@ export default function QuotationList() {
   const clearAllFilters = () => {
     setSearch('')
     setFilterProject('')
+    setFilterType('all')
     setFilterStatus('all')
     setDatePreset('all')
     setDateFrom('')
     setDateTo('')
   }
 
-  const hasFilter = Boolean(search || filterProject || filterStatus !== 'all' || dateFrom || dateTo)
+  const hasFilter = Boolean(search || filterProject || filterType !== 'all' || filterStatus !== 'all' || dateFrom || dateTo)
 
   const fetchQuotations = async () => {
     setLoading(true)
@@ -323,18 +328,19 @@ export default function QuotationList() {
     () =>
       filterQuotations(quotations, {
         filterStatus,
+        filterType,
         filterProject,
         search,
         dateFrom,
         dateTo,
       }),
-    [quotations, filterStatus, filterProject, search, dateFrom, dateTo]
+    [quotations, filterStatus, filterType, filterProject, search, dateFrom, dateTo]
   )
 
   // รีเซ็ตหน้ากลับไปหน้าที่ 1 เมื่อตัวกรองเปลี่ยน
   useEffect(() => {
     setCurrentPage(1)
-  }, [filterStatus, filterProject, search, dateFrom, dateTo])
+  }, [filterStatus, filterType, filterProject, search, dateFrom, dateTo])
 
   // จัดเรียงรายการตามมาตรฐานที่เลือก (A-Z / ตัวเลข / วันที่ / ยอดเงิน)
   const sortedQuotations = useMemo(() => {
@@ -388,13 +394,14 @@ export default function QuotationList() {
             <span>ระบบ BOQ</span>
           </Link>
 
-          <Link
-            to="/quotations/new"
-            className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 dark:bg-amber-500 dark:hover:bg-amber-400 px-3.5 py-1.5 text-xs font-semibold text-white dark:text-slate-950 shadow-xs transition"
+          <button
+            type="button"
+            onClick={() => setCreateModalOpen(true)}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 dark:bg-amber-500 dark:hover:bg-amber-400 px-3.5 py-1.5 text-xs font-semibold text-white dark:text-slate-950 shadow-xs transition cursor-pointer"
           >
             <Plus className="h-3.5 w-3.5" />
             <span>สร้างใบเสนอราคา</span>
-          </Link>
+          </button>
         </div>
       </div>
 
@@ -502,6 +509,17 @@ export default function QuotationList() {
               onChange={setSortBy}
               options={QUOTATION_SORT_OPTIONS}
             />
+
+            {/* Type Filter */}
+            <select
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value)}
+              className="rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-200 focus:outline-none focus:border-emerald-600 dark:focus:border-emerald-400"
+            >
+              <option value="all">ทุกประเภท (รับงาน + ขายสินค้า)</option>
+              <option value="project">รับงาน (BOQ · QT-P)</option>
+              <option value="product">ขายสินค้า (Store · QT-S)</option>
+            </select>
 
             {/* Project Filter */}
             <select
@@ -622,6 +640,7 @@ export default function QuotationList() {
                   const isApproved = isQuotationApproved(q)
                   const amountMeta = getQuotationRowAmountMeta(q)
                   const pSummary = purchasingMap[q.id]
+                  const typeMeta = getQuotationTypeMeta(q)
 
                   return (
                     <tr
@@ -632,7 +651,7 @@ export default function QuotationList() {
                           : 'bg-slate-50/70 dark:bg-slate-800/40'
                       } ${isMenuOpen ? 'relative z-30' : ''} hover:bg-emerald-50/50 dark:hover:bg-slate-800/80`}
                     >
-                      {/* 1. เลขที่ QT + วันที่ */}
+                      {/* 1. เลขที่ QT + ประเภท + วันที่ */}
                       <td className="py-3 px-3.5 text-center align-middle whitespace-nowrap border-r border-slate-200/60 dark:border-slate-800/60">
                         <Link
                           to={`/quotations/${q.id}`}
@@ -640,6 +659,11 @@ export default function QuotationList() {
                         >
                           {q.quotation_no}
                         </Link>
+                        <div className="mt-1 flex justify-center">
+                          <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold border ${typeMeta.badgeCls}`}>
+                            {typeMeta.shortLabel}
+                          </span>
+                        </div>
                         <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums">
                           {q.quotation_date || q.issue_date}
                         </div>
@@ -856,6 +880,11 @@ export default function QuotationList() {
           />
         </div>
       )}
+
+      <CreateQuotationModal
+        isOpen={createModalOpen}
+        onClose={() => setCreateModalOpen(false)}
+      />
 
       {/* โมดัลพิมพ์ PDF A4 */}
       {printTarget && (

@@ -1,13 +1,82 @@
-import { calculateTaxBreakdown, inferQuotationTaxType, round2 } from './tax.js'
+import { QUOTATION_TYPES, calculateTaxBreakdown, inferQuotationTaxType, round2 } from './tax.js'
 import { isServiceOrLaborItem } from './quotationStockCheck.js'
 
 /**
- * คัดกรองเฉพาะรายการสินค้าสำหรับพิมพ์ใบเสนอราคาส่งลูกค้า (ซ่อนบรรทัดค่าแรง/บริการตามแนวทาง 1A)
- * โดยไม่เปลี่ยนแปลงยอดรวมสุทธิและ VAT ของแพ็กเกจ
- * @param {Array} items
+ * Determine quotation type ('project' | 'product') safely with QT-S prefix fallback for legacy rows.
+ * @param {object|null} quotation
  */
-export function getCustomerPrintItems(items = []) {
-  return (items || []).filter((item) => item && !isServiceOrLaborItem(item))
+export function resolveQuotationType(quotation) {
+  if (quotation?.type === QUOTATION_TYPES.PRODUCT) return QUOTATION_TYPES.PRODUCT
+  if (quotation?.type === QUOTATION_TYPES.PROJECT) return QUOTATION_TYPES.PROJECT
+  const qtNo = String(quotation?.quotation_no || '').trim().toUpperCase()
+  if (qtNo.startsWith('QT-S') || qtNo.startsWith('QTS-')) return QUOTATION_TYPES.PRODUCT
+  return QUOTATION_TYPES.PROJECT
+}
+
+/**
+ * Determine which pricing columns/discounts are shown on Customer PDF by quotation type.
+ * @param {object|null} quotation
+ */
+export function getCustomerPrintMode(quotation) {
+  const type = resolveQuotationType(quotation)
+  if (type === QUOTATION_TYPES.PRODUCT) {
+    return {
+      type: QUOTATION_TYPES.PRODUCT,
+      showUnitPrice: true,
+      showLineTotal: true,
+      showPerItemDiscount: quotation?.discount_mode === 'per_item',
+      showDiscountSummary: Number(quotation?.discount_amount || 0) > 0,
+    }
+  }
+  return {
+    type: QUOTATION_TYPES.PROJECT,
+    showUnitPrice: false,
+    showLineTotal: false,
+    showPerItemDiscount: false,
+    showDiscountSummary: false,
+  }
+}
+
+/**
+ * คัดกรองและทำความสะอาดรายการสินค้าสำหรับพิมพ์ใบเสนอราคาส่งลูกค้า:
+ *  - ห้ามเปิดเผยต้นทุน (base_cost / total_cost / markup_percent) และสถานะสต็อกในทุกกรณี
+ *  - แบบ 'project' (รับงาน): ซ่อนบรรทัดค่าแรง/บริการ และไม่ส่งราคาต่อหน่วย/ส่วนลด
+ *  - แบบ 'product' (ขายสินค้า): ส่งราคา/หน่วย (รวมกำไรแล้ว) และยอดรวมบรรทัด
+ * @param {Array} items
+ * @param {object|null} quotation
+ */
+export function getCustomerPrintItems(items = [], quotation = null) {
+  const mode = getCustomerPrintMode(quotation)
+
+  return (items || [])
+    .filter((item) => {
+      if (!item) return false
+      if (mode.type === QUOTATION_TYPES.PROJECT && isServiceOrLaborItem(item)) {
+        return false
+      }
+      return true
+    })
+    .map((item) => {
+      const sanitized = {
+        id: item.id,
+        item_code: item.item_code || null,
+        item_name: item.item_name,
+        description: item.description || '',
+        quantity: item.quantity,
+        unit: item.unit || '',
+      }
+      if (mode.type === QUOTATION_TYPES.PRODUCT) {
+        sanitized.unit_price = round2(item.unit_price || 0)
+        sanitized.discount_percent = mode.showPerItemDiscount
+          ? Number(item.discount_percent || 0)
+          : 0
+        sanitized.total_amount = round2(
+          item.total_amount ??
+            round2(sanitized.unit_price * (Number(item.quantity) || 0))
+        )
+      }
+      return sanitized
+    })
 }
 
 /**
@@ -18,12 +87,13 @@ export function buildCustomerQuotationSummary(quotation = {}) {
   const taxType = inferQuotationTaxType(quotation)
   const hasVat = taxType !== 'vat_exempt'
   const vatRate = hasVat ? Number(quotation?.vat_rate ?? 7) : 0
+  const isExplicitProject = quotation?.type === QUOTATION_TYPES.PROJECT
 
   const subtotal = round2(quotation?.subtotal ?? 0)
-  const discountAmount = round2(quotation?.discount_amount ?? 0)
-  const afterDiscount = round2(
-    quotation?.after_discount ?? Math.max(0, subtotal - discountAmount)
-  )
+  const discountAmount = isExplicitProject ? 0 : round2(quotation?.discount_amount ?? 0)
+  const afterDiscount = isExplicitProject
+    ? round2(quotation?.after_discount ?? subtotal)
+    : round2(quotation?.after_discount ?? Math.max(0, subtotal - discountAmount))
 
   const calc = calculateTaxBreakdown({
     rawTotal: afterDiscount,

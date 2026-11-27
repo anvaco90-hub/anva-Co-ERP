@@ -1,5 +1,9 @@
 import { baht } from '../../lib/projects'
-import { buildCustomerQuotationSummary, getCustomerPrintItems } from '../../lib/quotationPrintUtils'
+import {
+  buildCustomerQuotationSummary,
+  getCustomerPrintItems,
+  getCustomerPrintMode,
+} from '../../lib/quotationPrintUtils'
 import { getCustomerApprovalDisplay } from '../../lib/salesFlowUtils'
 import { printElement } from '../../lib/printElement'
 import R2Image from '../R2Image'
@@ -32,8 +36,9 @@ export default function QuotationPrintModal({
     : '-'
 
   const currency = quotation.currency || 'THB'
+  const printMode = getCustomerPrintMode(quotation)
   const summary = buildCustomerQuotationSummary(quotation)
-  const printableItems = getCustomerPrintItems(items)
+  const printableItems = getCustomerPrintItems(items, quotation)
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
@@ -147,14 +152,23 @@ export default function QuotationPrintModal({
               </div>
             </div>
 
-            {/* ตารางรายการสินค้า (แสดงเฉพาะรายการสินค้า จำนวน และหน่วย — ซ่อนค่าแรง/บริการและราคาต้นทุน) */}
+            {/* ตารางรายการสินค้า (project: ซ่อนราคา/หน่วยและค่าแรง; product: แสดงราคาต่อหน่วยรวมกำไรแล้วและยอดรวม — ห้ามแสดงต้นทุน/สต็อก) */}
             <table className="w-full border-collapse text-xs">
               <thead>
                 <tr className="border-y-2 border-black bg-neutral-100 font-bold">
                   <th className="py-2 px-2 text-center w-12">ลำดับ</th>
                   <th className="py-2 px-3 text-left">รายการสินค้า / รายละเอียด</th>
-                  <th className="py-2 px-3 text-right w-24">จำนวน</th>
-                  <th className="py-2 px-3 text-center w-24">หน่วย</th>
+                  <th className="py-2 px-3 text-right w-20">จำนวน</th>
+                  <th className="py-2 px-3 text-center w-20">หน่วย</th>
+                  {printMode.showUnitPrice && (
+                    <th className="py-2 px-3 text-right w-28">ราคา/หน่วย</th>
+                  )}
+                  {printMode.showPerItemDiscount && (
+                    <th className="py-2 px-2 text-right w-20">ส่วนลด %</th>
+                  )}
+                  {printMode.showLineTotal && (
+                    <th className="py-2 px-3 text-right w-28">จำนวนเงิน ({currency})</th>
+                  )}
                 </tr>
               </thead>
               <tbody>
@@ -174,11 +188,34 @@ export default function QuotationPrintModal({
                         {Number(it.quantity || 0).toLocaleString('th-TH')}
                       </td>
                       <td className="py-2.5 px-3 text-center text-neutral-600">{it.unit || '-'}</td>
+                      {printMode.showUnitPrice && (
+                        <td className="py-2.5 px-3 text-right font-mono font-medium">
+                          {baht(it.unit_price || 0)}
+                        </td>
+                      )}
+                      {printMode.showPerItemDiscount && (
+                        <td className="py-2.5 px-2 text-right font-mono text-neutral-600">
+                          {Number(it.discount_percent || 0) > 0 ? `${it.discount_percent}%` : '-'}
+                        </td>
+                      )}
+                      {printMode.showLineTotal && (
+                        <td className="py-2.5 px-3 text-right font-mono font-bold text-neutral-900">
+                          {baht(it.total_amount || 0)}
+                        </td>
+                      )}
                     </tr>
                   ))
                 ) : (
                   <tr className="border-b border-neutral-200">
-                    <td colSpan={4} className="py-4 px-3 text-center text-neutral-500">
+                    <td
+                      colSpan={
+                        4 +
+                        (printMode.showUnitPrice ? 1 : 0) +
+                        (printMode.showPerItemDiscount ? 1 : 0) +
+                        (printMode.showLineTotal ? 1 : 0)
+                      }
+                      className="py-4 px-3 text-center text-neutral-500"
+                    >
                       งานบริการและติดตั้งตามรายละเอียดโครงการ
                     </td>
                   </tr>
@@ -201,14 +238,22 @@ export default function QuotationPrintModal({
               </div>
 
               <div className="sm:col-span-5 rounded border border-neutral-300 bg-neutral-50/70 p-3 space-y-1.5 text-xs">
-                {summary.discountAmount > 0 && (
+                {printMode.showLineTotal && (
+                  <div className="flex justify-between gap-2 text-neutral-700">
+                    <span>มูลค่ารวมรายการสินค้า:</span>
+                    <span className="font-mono font-semibold">{baht(summary.subtotal)} {currency}</span>
+                  </div>
+                )}
+                {printMode.showDiscountSummary && summary.discountAmount > 0 && (
                   <>
-                    <div className="flex justify-between gap-2 text-neutral-700">
-                      <span>มูลค่ารวมก่อนส่วนลด:</span>
-                      <span className="font-mono font-semibold">{baht(summary.subtotal)} {currency}</span>
-                    </div>
+                    {!printMode.showLineTotal && (
+                      <div className="flex justify-between gap-2 text-neutral-700">
+                        <span>มูลค่ารวมก่อนส่วนลด:</span>
+                        <span className="font-mono font-semibold">{baht(summary.subtotal)} {currency}</span>
+                      </div>
+                    )}
                     <div className="flex justify-between gap-2 text-red-700">
-                      <span>ส่วนลดรวม:</span>
+                      <span>ส่วนลด{quotation.discount_mode === 'whole_bill' ? 'ทั้งใบ' : 'รวม'}:</span>
                       <span className="font-mono font-semibold">- {baht(summary.discountAmount)} {currency}</span>
                     </div>
                   </>

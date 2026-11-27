@@ -8,8 +8,9 @@ import {
   buildQuotationPayloadFromBoq,
   matchBoqCustomer,
   saveQuotationWithFallback,
+  saveQuotationItemsWithFallback,
 } from '../../lib/boqToQuotation'
-import { calculateTaxBreakdown } from '../../lib/tax'
+import { QUOTATION_TYPES, calculateTaxBreakdown, generateTypedQuotationNo } from '../../lib/tax'
 import BOQPrintModal from '../../components/reports/BOQPrintModal'
 import {
   FileSpreadsheet,
@@ -237,9 +238,7 @@ export default function BOQDetail() {
       }
 
       const d = new Date()
-      const ym = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}`
-      const rand = Math.floor(1000 + Math.random() * 9000)
-      const qNo = `QT-${ym}-${rand}`
+      const qNo = generateTypedQuotationNo(QUOTATION_TYPES.PROJECT, d)
 
       const resolvedCustomerId = matchedCustomer
         ? await ensureLegacyCustomerId(matchedCustomer)
@@ -252,6 +251,7 @@ export default function BOQDetail() {
         taxType: convertTaxType,
         quotationNo: qNo,
         salesPerson: profile?.full_name || null,
+        salesPersonId: profile?.id || null,
         issueDate: d.toISOString().split('T')[0],
         customerId: resolvedCustomerId,
       })
@@ -264,16 +264,19 @@ export default function BOQDetail() {
 
       const qItemRows = itemRows.map((row) => ({
         quotation_id: qData.id,
+        item_id: row.item_id || null,
+        item_code: row.item_code || null,
         item_name: row.item_name,
         description: row.description || null,
         quantity: row.quantity,
         unit: row.unit,
+        base_cost: row.base_cost ?? 0,
         unit_price: row.unit_price,
         discount_percent: 0,
         total_amount: row.total_amount,
       }))
 
-      const { error: itemsErr } = await supabase.from('quotation_items').insert(qItemRows)
+      const { error: itemsErr } = await saveQuotationItemsWithFallback(supabase, qItemRows)
       if (itemsErr) throw itemsErr
 
       await supabase.from('boqs').update({ status: 'converted_to_quotation' }).eq('id', boq.id)

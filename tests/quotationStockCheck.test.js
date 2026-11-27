@@ -2,6 +2,7 @@ import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 import {
   isServiceOrLaborItem,
+  canCreatePrFromQuotation,
   checkQuotationStock,
   summarizeQuotationStock,
   buildShortfallPrItems,
@@ -240,5 +241,24 @@ describe('Quotation Stock Check & Shortfall PR Helpers (src/lib/quotationStockCh
     ])
     assert.equal(fullCoverage.uncoveredCount, 0)
     assert.equal(fullCoverage.coveredCount, 2)
+  })
+
+  it('locks PR creation until customer approval and always checks stock for tracked Store item_ids', () => {
+    assert.equal(canCreatePrFromQuotation({ status: 'draft' }), false)
+    assert.equal(canCreatePrFromQuotation({ status: 'sent', customer_po_no: '' }), false)
+    assert.equal(canCreatePrFromQuotation({ status: 'rejected', customer_po_no: 'PO-1' }), false)
+    assert.equal(canCreatePrFromQuotation({ status: 'approved' }), true)
+    assert.equal(canCreatePrFromQuotation({ status: 'sent', customer_po_no: 'QT-S-202611-0001' }), true)
+
+    const inventoryItems = [
+      { id: 'inv-plug', item_code: 'ITM-P01', item_name: 'ปลั๊กจุดต่อสายงานโซลาร์', qty_on_hand: 2, unit: 'จุด' },
+    ]
+    const stockRows = checkQuotationStock(
+      [{ id: 'qi-1', item_id: 'inv-plug', item_name: 'ปลั๊กจุดต่อสายงานโซลาร์', quantity: 5, unit: 'จุด' }],
+      inventoryItems
+    )
+    assert.equal(stockRows[0].status, 'partial')
+    assert.equal(stockRows[0].inStock, 2)
+    assert.equal(stockRows[0].shortfall, 3)
   })
 })

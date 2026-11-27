@@ -64,6 +64,7 @@ export function buildPurchaseItemsFromQuotation({
         )
       : 0
     const stockAvgCost = inv ? round2(Number(inv.avg_unit_cost || 0)) : 0
+    const qtBaseCost = round2(Number(qIt?.base_cost || 0))
 
     let initialPrice = ''
     let costSource = 'manual'
@@ -77,6 +78,9 @@ export function buildPurchaseItemsFromQuotation({
     } else if (stockAvgCost > 0) {
       initialPrice = String(stockAvgCost)
       costSource = 'stock'
+    } else if (qtBaseCost > 0) {
+      initialPrice = String(qtBaseCost)
+      costSource = 'qt_cost'
     } else {
       initialPrice = ''
       costSource = 'manual'
@@ -91,7 +95,7 @@ export function buildPurchaseItemsFromQuotation({
       received: 0,
       sellingPriceRef: preVatSelling,
       boqCostRef: boqMatCost,
-      stockCostRef: stockAvgCost,
+      stockCostRef: stockAvgCost || qtBaseCost,
       costSource,
     }
   })

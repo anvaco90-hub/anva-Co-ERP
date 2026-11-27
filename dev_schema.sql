@@ -1502,6 +1502,8 @@ CREATE TABLE IF NOT EXISTS "public"."quotation_items" (
     "unit_price" numeric(15,2) DEFAULT 0 NOT NULL,
     "discount_percent" numeric(5,2) DEFAULT 0,
     "total_amount" numeric(15,2) DEFAULT 0 NOT NULL,
+    "base_cost" numeric(15,2) DEFAULT 0,
+    "item_code" "text",
     CONSTRAINT "quotation_items_quantity_check" CHECK (("quantity" > (0)::numeric))
 );
 
@@ -1551,7 +1553,23 @@ CREATE TABLE IF NOT EXISTS "public"."quotations" (
     "customer_po_file_url" "text",
     "customer_signer_name" "text",
     "valid_until" "date",
-    CONSTRAINT "quotations_status_check" CHECK (("status" = ANY (ARRAY['draft'::"text", 'sent'::"text", 'approved'::"text", 'rejected'::"text", 'expired'::"text"])))
+    "tax_type" "text" DEFAULT 'vat_excluded'::"text",
+    "boq_id" "uuid",
+    "type" "text" DEFAULT 'project'::"text" NOT NULL,
+    "markup_percent" numeric(6,2) DEFAULT 0 NOT NULL,
+    "discount_mode" "text" DEFAULT 'none'::"text" NOT NULL,
+    "header_discount_type" "text" DEFAULT 'amount'::"text" NOT NULL,
+    "header_discount_value" numeric(15,2) DEFAULT 0 NOT NULL,
+    "total_cost" numeric(15,2) DEFAULT 0,
+    "issued_by" "uuid",
+    "issued_by_name" "text",
+    "issued_at" timestamp with time zone,
+    CONSTRAINT "quotations_status_check" CHECK (("status" = ANY (ARRAY['draft'::"text", 'sent'::"text", 'approved'::"text", 'rejected'::"text", 'expired'::"text"]))),
+    CONSTRAINT "quotations_type_check" CHECK (("type" = ANY (ARRAY['project'::"text", 'product'::"text"]))),
+    CONSTRAINT "quotations_markup_percent_check" CHECK (("markup_percent" >= (0)::numeric)),
+    CONSTRAINT "quotations_discount_mode_check" CHECK (("discount_mode" = ANY (ARRAY['none'::"text", 'whole_bill'::"text", 'per_item'::"text"]))),
+    CONSTRAINT "quotations_header_discount_type_check" CHECK (("header_discount_type" = ANY (ARRAY['amount'::"text", 'percent'::"text"]))),
+    CONSTRAINT "quotations_header_discount_value_check" CHECK (("header_discount_value" >= (0)::numeric))
 );
 
 
@@ -2165,6 +2183,10 @@ CREATE INDEX "purchase_requisition_items_pr_id_idx" ON "public"."purchase_requis
 
 
 
+CREATE INDEX "idx_quotations_type" ON "public"."quotations" USING "btree" ("type");
+
+
+
 CREATE INDEX "stock_issue_items_issue_id_idx" ON "public"."stock_issue_items" USING "btree" ("issue_id");
 
 
@@ -2412,6 +2434,11 @@ ALTER TABLE ONLY "public"."quotations"
 
 ALTER TABLE ONLY "public"."quotations"
     ADD CONSTRAINT "quotations_project_id_fkey" FOREIGN KEY ("project_id") REFERENCES "public"."projects"("id");
+
+
+
+ALTER TABLE ONLY "public"."quotations"
+    ADD CONSTRAINT "quotations_issued_by_fkey" FOREIGN KEY ("issued_by") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
 
 
 
