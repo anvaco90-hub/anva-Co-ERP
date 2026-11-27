@@ -15,7 +15,8 @@ import { buildQuotationPrQuerySpecs } from '../../lib/salesFlowUtils'
 import ItemsEditor from './ItemsEditor'
 import { FieldError } from '../../components/FieldError'
 import SearchableSelect from '../../components/SearchableSelect'
-import { FileText, CheckCircle2, AlertTriangle, ExternalLink } from 'lucide-react'
+import CollapsibleDetailField from '../../components/common/CollapsibleDetailField'
+import { FileText, CheckCircle2, AlertTriangle, ExternalLink, ArrowLeft, Building2, Package } from 'lucide-react'
 
 // สร้าง (/purchasing/pr/new) และแก้ไข (/purchasing/pr/:id/edit) ใบขอซื้อ
 export default function PRForm() {
@@ -397,26 +398,64 @@ export default function PRForm() {
   }))
 
   return (
-    <div className="max-w-4xl space-y-5">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold">{id ? 'แก้ไขใบขอซื้อ' : 'สร้างใบขอซื้อ (PR)'}</h2>
-        <Link to="/purchasing?tab=pr" className="text-xs text-steel-500 hover:underline">← กลับไปรายการใบขอซื้อ</Link>
+    <div className="max-w-5xl mx-auto space-y-5 pb-12">
+      {/* แถบนำทางและหัวเรื่อง */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <Link
+            to={id ? `/purchasing/pr/${id}` : '/purchasing?tab=pr'}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 px-3 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 shadow-2xs transition"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            <span>กลับรายการ PR</span>
+          </Link>
+          <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
+            {id ? 'แก้ไขใบขอซื้อ (Purchase Requisition)' : 'สร้างใบขอซื้อ (Purchase Requisition)'}
+          </h2>
+        </div>
       </div>
 
-      <div className="space-y-4 rounded-xl bg-white p-6 shadow-sm border border-steel-200">
-        {/* 1. โครงการ และ ลูกค้า (เลือกหรือพิมพ์เองได้) */}
-        <div className="rounded-xl border border-steel-200 bg-steel-50/60 p-4 space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-steel-200/80 pb-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-steel-700 flex items-center gap-1.5">
-              <span>โครงการ และ ลูกค้า / ผู้ว่าจ้าง</span>
-            </span>
-            <div className="flex items-center gap-1 bg-white p-0.5 rounded-lg border border-steel-200 text-xs">
+      {/* กรอบเอกสาร PR รูปแบบเป็นขั้นตอนชัดเจน */}
+      <div className="space-y-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 sm:p-7 shadow-sm">
+        {/* ส่วนหัวเอกสาร (Masthead) */}
+        <div className="rounded-xl bg-[#0f172a] text-white px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="space-y-0.5">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-black tracking-tight text-white">ANVA &amp; CO., LTD.</span>
+              <span className="rounded bg-sky-500/20 border border-sky-400/30 text-sky-300 px-2 py-0.5 text-[10px] font-bold">
+                ใบขอซื้อพัสดุ
+              </span>
+            </div>
+            <p className="text-xs text-slate-400">
+              บันทึกความต้องการจัดซื้อวัสดุ/อุปกรณ์โครงการ ส่งต่อฝ่ายจัดซื้อเพื่อเปรียบเทียบราคาและออกใบสั่งซื้อ (PO)
+            </p>
+          </div>
+          <div className="text-xs text-slate-400 font-mono">
+            {id ? 'Mode: Edit PR' : 'Mode: New PR'}
+          </div>
+        </div>
+
+        {/* 1. โครงการ ลูกค้า และร้านค้าแนะนำ */}
+        <section className="space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-2.5">
+            <div className="flex items-center gap-2">
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-900 dark:bg-sky-600 text-white text-xs font-bold">
+                1
+              </span>
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                <Building2 className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+                <span>โครงการ และ คู่ค้า / ผู้ว่าจ้าง</span>
+              </h3>
+            </div>
+            <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700 text-xs">
               <button
                 type="button"
                 disabled={status === 'ordered'}
                 onClick={() => setProjectMode('select')}
-                className={`px-2.5 py-1 rounded-md font-medium transition cursor-pointer ${
-                  projectMode === 'select' ? 'bg-sky-700 text-white shadow-2xs font-bold' : 'text-steel-600 hover:text-steel-900'
+                className={`px-2.5 py-1 rounded-lg font-medium transition cursor-pointer ${
+                  projectMode === 'select'
+                    ? 'bg-slate-900 dark:bg-amber-500 text-white dark:text-slate-950 shadow-2xs font-bold'
+                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
                 เลือกโครงการในระบบ
@@ -425,8 +464,10 @@ export default function PRForm() {
                 type="button"
                 disabled={status === 'ordered'}
                 onClick={() => setProjectMode('custom')}
-                className={`px-2.5 py-1 rounded-md font-medium transition cursor-pointer ${
-                  projectMode === 'custom' ? 'bg-sky-700 text-white shadow-2xs font-bold' : 'text-steel-600 hover:text-steel-900'
+                className={`px-2.5 py-1 rounded-lg font-medium transition cursor-pointer ${
+                  projectMode === 'custom'
+                    ? 'bg-slate-900 dark:bg-amber-500 text-white dark:text-slate-950 shadow-2xs font-bold'
+                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
                 พิมพ์ชื่อโครงการเอง
@@ -434,9 +475,9 @@ export default function PRForm() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <div>
-              <label className="block text-xs font-semibold text-steel-700 mb-1">
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                 โครงการ / จุดประสงค์ *
               </label>
               {projectMode === 'select' ? (
@@ -468,14 +509,14 @@ export default function PRForm() {
                   onChange={(e) => setCustomProjectName(e.target.value)}
                 />
               )}
-              {status === 'ordered' && <span className="text-[11px] text-amber-700 block mt-0.5">ออกใบสั่งซื้อแล้ว เปลี่ยนโครงการไม่ได้</span>}
-              <span className="text-[11px] text-steel-500 mt-1 block">
-                {projectMode === 'select' ? 'พิมพ์รหัสหรือชื่อเพื่อกรองทันที ไม่ต้องเลื่อนหา' : 'พิมพ์ชื่อโครงการเองได้อิสระ'}
+              {status === 'ordered' && <span className="text-[11px] text-amber-700 dark:text-amber-400 block mt-0.5">ออกใบสั่งซื้อแล้ว เปลี่ยนโครงการไม่ได้</span>}
+              <span className="text-[11px] text-slate-400 dark:text-slate-500 mt-1 block">
+                {projectMode === 'select' ? 'พิมพ์รหัสหรือชื่อเพื่อกรองทันที' : 'พิมพ์ชื่อโครงการเองได้อิสระ'}
               </span>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-steel-700 mb-1">
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                 ลูกค้า / ผู้ว่าจ้าง (Customer / Client)
               </label>
               <SearchableSelect
@@ -487,53 +528,49 @@ export default function PRForm() {
                 placeholder="พิมพ์ค้นหาชื่อลูกค้า หรือพิมพ์ชื่อลูกค้าใหม่..."
                 customPlaceholder="กด Enter เพื่อใช้ชื่อลูกค้านี้"
               />
-              <span className="text-[11px] text-steel-500 mt-1 block">
-                พิมพ์เพื่อค้นหาลูกค้าเดิม หรือพิมพ์ชื่อลูกค้าใหม่ได้อิสระ
+              <span className="text-[11px] text-slate-400 dark:text-slate-500 mt-1 block">
+                ดึงจากสมุดรายชื่อ (Contacts) หรือพิมพ์ใหม่ได้
+              </span>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                ร้านค้าที่แนะนำ (Suggested Vendor)
+              </label>
+              <SearchableSelect
+                options={vendorOptions}
+                value={suggestedVendor}
+                onChange={(val) => setSuggestedVendor(val)}
+                onCustomChange={(val) => setSuggestedVendor(val)}
+                allowCustom={true}
+                placeholder="พิมพ์ค้นหาร้านค้า หรือพิมพ์ชื่อร้านแนะนำ..."
+                customPlaceholder="กด Enter เพื่อใช้ชื่อร้านค้านี้"
+              />
+              <span className="text-[11px] text-slate-400 dark:text-slate-500 mt-1 block">
+                ช่วยแนะนำแหล่งซื้อส่งต่อให้ฝ่ายจัดซื้อ
               </span>
             </div>
           </div>
-        </div>
 
-        {/* 2. ร้านค้าแนะนำ และ หมายเหตุ */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div>
-            <label className="block text-xs font-semibold text-steel-700 mb-1">
-              ร้านค้าที่แนะนำ / แหล่งซื้อ (Suggested Store / Vendor)
-            </label>
-            <SearchableSelect
-              options={vendorOptions}
-              value={suggestedVendor}
-              onChange={(val) => setSuggestedVendor(val)}
-              onCustomChange={(val) => setSuggestedVendor(val)}
-              allowCustom={true}
-              placeholder="พิมพ์ค้นหาร้านค้า หรือพิมพ์ชื่อร้านค้าที่ต้องการแนะนำ..."
-              customPlaceholder="กด Enter เพื่อใช้ชื่อร้านค้านี้"
-            />
-            <span className="text-[11px] text-steel-500 mt-1 block">
-              พิมพ์เพื่อค้นหาร้านค้าที่มี หรือพิมพ์ชื่อร้านแนะนำใหม่ส่งต่อให้จัดซื้อ
-            </span>
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-steel-700 mb-1">
-              วัตถุประสงค์ / หมายเหตุเพิ่มเติม
-            </label>
-            <textarea
-              rows={3}
-              className="w-full rounded-lg border border-steel-300 p-2.5 text-xs text-steel-900 focus:outline-none focus:border-sky-600 focus:ring-1 focus:ring-sky-500 resize-y"
-              placeholder="เช่น วัสดุสำหรับเริ่มเทปูนสัปดาห์หน้า หรือ ขอซื้อด่วน"
+          {/* หมายเหตุพับซ่อนได้เพื่อความมินิมอล */}
+          <div className="rounded-xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 p-3">
+            <CollapsibleDetailField
               value={notes}
-              onChange={(e) => setNotes(e.target.value)}
+              onChange={setNotes}
+              addLabel="เพิ่มวัตถุประสงค์ / หมายเหตุเพิ่มเติม"
+              editLabel="วัตถุประสงค์ / หมายเหตุเพิ่มเติม"
+              placeholder="เช่น วัสดุสำหรับเริ่มเทปูนสัปดาห์หน้า หรือ ขอซื้อด่วน"
+              rows={2}
             />
           </div>
-        </div>
+        </section>
 
         {/* แจ้งเตือนหากใบเสนอราคานี้เปิด PR ไปแล้ว ป้องกันการเปิดซ้ำ */}
         {existingQtPrs.length > 0 && !id && (
-          <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-xs text-amber-950 space-y-2 shadow-2xs">
+          <div className="rounded-xl border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 p-4 text-xs text-amber-950 dark:text-amber-200 space-y-2 shadow-2xs">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2 font-bold">
-                <AlertTriangle className="h-4 w-4 text-amber-700 shrink-0" />
+                <AlertTriangle className="h-4 w-4 text-amber-700 dark:text-amber-400 shrink-0" />
                 <span>
                   ใบเสนอราคา {quotationSync?.quotation_no || salesQuotationNo} มีใบขอซื้ออยู่แล้ว {existingQtPrs.length} ใบ
                 </span>
@@ -545,7 +582,7 @@ export default function PRForm() {
                     setIncludeAlreadyRequested(true)
                     applyPriceMode(prPriceMode, quotationSync, true)
                   }}
-                  className="rounded-lg border border-amber-400 bg-white px-2.5 py-1 text-[11px] font-bold text-amber-900 hover:bg-amber-100 cursor-pointer"
+                  className="rounded-lg border border-amber-400 dark:border-amber-700 bg-white dark:bg-slate-800 px-2.5 py-1 text-[11px] font-bold text-amber-900 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-slate-700 cursor-pointer"
                 >
                   โหลดรายการที่ขอไปแล้วกลับมาทั้งหมด
                 </button>
@@ -556,14 +593,14 @@ export default function PRForm() {
                 <Link
                   key={existingPr.id}
                   to={`/purchasing/pr/${existingPr.id}`}
-                  className="inline-flex items-center gap-1 rounded-lg bg-white border border-amber-300 px-2.5 py-1 font-mono font-bold text-amber-900 hover:bg-amber-100"
+                  className="inline-flex items-center gap-1 rounded-lg bg-white dark:bg-slate-800 border border-amber-300 dark:border-amber-700 px-2.5 py-1 font-mono font-bold text-amber-900 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-slate-700"
                 >
                   <span>เปิดดู {existingPr.pr_no}</span>
                   <ExternalLink className="h-3 w-3" />
                 </Link>
               ))}
             </div>
-            <p className="text-[11px] text-amber-800">
+            <p className="text-[11px] text-amber-800 dark:text-amber-300">
               {quotationSync?.shortfallOnly && !includeAlreadyRequested
                 ? quotationSync.uncoveredCount > 0
                   ? `ระบบคัดกรองออกให้แล้ว เหลือเฉพาะ ${quotationSync.uncoveredCount} รายการที่ยังไม่เคยขอซื้อใน PR เดิม`
@@ -575,28 +612,28 @@ export default function PRForm() {
 
         {/* กล่องแสดงการซิงค์ข้อมูลและเลือกโหมดราคากับใบเสนอราคาขาย */}
         {quotationSync && (
-          <div className="rounded-xl border border-sky-300 bg-sky-50/70 p-4 space-y-2.5 text-xs shadow-2xs">
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-sky-200/80 pb-2.5">
-              <div className="font-bold text-sky-950 flex items-center gap-1.5 flex-wrap">
-                <FileText className="h-4 w-4 text-sky-700" />
-                <span>ซิงค์ข้อมูลจากใบเสนอราคาขาย: <b className="font-mono text-sky-800">{quotationSync.quotation_no}</b></span>
+          <div className="rounded-xl border border-sky-200 dark:border-sky-800 bg-sky-50/70 dark:bg-sky-950/30 p-4 space-y-2.5 text-xs shadow-2xs">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-sky-200/80 dark:border-sky-800/80 pb-2.5">
+              <div className="font-bold text-sky-950 dark:text-sky-200 flex items-center gap-1.5 flex-wrap">
+                <FileText className="h-4 w-4 text-sky-700 dark:text-sky-400" />
+                <span>ซิงค์ข้อมูลจากใบเสนอราคาขาย: <b className="font-mono text-sky-800 dark:text-sky-300">{quotationSync.quotation_no}</b></span>
                 {quotationSync.shortfallOnly && (
-                  <span className="rounded-full bg-amber-100 border border-amber-300 px-2.5 py-0.5 text-[10px] font-black text-amber-900">
+                  <span className="rounded-full bg-amber-100 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-800 px-2.5 py-0.5 text-[10px] font-black text-amber-900 dark:text-amber-300">
                     เปิด PR เฉพาะส่วนที่ขาด ({quotationSync.shortfallCount} รายการ)
                   </span>
                 )}
                 {quotationSync.isApproved === false && (
-                  <span className="rounded-full bg-rose-100 border border-rose-300 px-2.5 py-0.5 text-[10px] font-black text-rose-900">
+                  <span className="rounded-full bg-rose-100 dark:bg-rose-950/60 border border-rose-300 dark:border-rose-800 px-2.5 py-0.5 text-[10px] font-black text-rose-900 dark:text-rose-300">
                     คำเตือน: ใบเสนอราคานี้ยังไม่มีบันทึกการอนุมัติจากลูกค้า
                   </span>
                 )}
               </div>
-              <div className="flex flex-wrap items-center gap-1 bg-white p-0.5 rounded-lg border border-sky-200">
+              <div className="flex flex-wrap items-center gap-1 bg-white dark:bg-slate-800 p-0.5 rounded-lg border border-sky-200 dark:border-sky-800">
                 <button
                   type="button"
                   onClick={() => applyPriceMode('cost_baseline')}
                   className={`px-3 py-1.5 rounded-md font-bold text-xs transition cursor-pointer flex items-center gap-1 ${
-                    prPriceMode === 'cost_baseline' ? 'bg-emerald-700 text-white shadow-2xs' : 'text-emerald-800 hover:bg-emerald-50'
+                    prPriceMode === 'cost_baseline' ? 'bg-emerald-700 text-white shadow-2xs' : 'text-emerald-800 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-slate-700'
                   }`}
                   title="ดึงต้นทุนวัสดุจาก BOQ หรือราคาเฉลี่ยคลัง และเว้นช่องที่ไม่รู้ให้กรอกราคาซื้อจริง"
                 >
@@ -607,7 +644,7 @@ export default function PRForm() {
                   type="button"
                   onClick={() => applyPriceMode('net_before_vat')}
                   className={`px-3 py-1.5 rounded-md font-bold text-xs transition cursor-pointer flex items-center gap-1 ${
-                    prPriceMode === 'net_before_vat' ? 'bg-sky-700 text-white shadow-2xs' : 'text-sky-700 hover:bg-sky-50'
+                    prPriceMode === 'net_before_vat' ? 'bg-sky-700 text-white shadow-2xs' : 'text-sky-700 dark:text-sky-300 hover:bg-sky-50 dark:hover:bg-slate-700'
                   }`}
                   title="ดึงราคาเสนอขายลูกค้า (ก่อน VAT) มาใช้เป็นตัวเลขตั้งต้นอ้างอิง"
                 >
@@ -619,7 +656,7 @@ export default function PRForm() {
                     type="button"
                     onClick={() => applyPriceMode('with_vat')}
                     className={`px-3 py-1.5 rounded-md font-bold text-xs transition cursor-pointer flex items-center gap-1 ${
-                      prPriceMode === 'with_vat' ? 'bg-sky-700 text-white shadow-2xs' : 'text-sky-700 hover:bg-sky-50'
+                      prPriceMode === 'with_vat' ? 'bg-sky-700 text-white shadow-2xs' : 'text-sky-700 dark:text-sky-300 hover:bg-sky-50 dark:hover:bg-slate-700'
                     }`}
                     title="ใช้ราคารวม VAT 7% (ระบบจะทำเครื่องหมายให้ PO รู้ว่ารวม VAT แล้ว)"
                   >
@@ -629,30 +666,38 @@ export default function PRForm() {
                 )}
               </div>
             </div>
-            <div className="flex flex-wrap items-center gap-4 text-slate-600 text-xs">
-              <span>ยอดสินค้าก่อน VAT (ใน QT): <b className="font-mono text-slate-900">{baht(quotationSync.subtotalNet)}</b> บ.</span>
+            <div className="flex flex-wrap items-center gap-4 text-slate-600 dark:text-slate-300 text-xs">
+              <span>ยอดสินค้าก่อน VAT (ใน QT): <b className="font-mono text-slate-900 dark:text-white">{baht(quotationSync.subtotalNet)}</b> บ.</span>
               {quotationSync.hasVat && (
-                <span>VAT {quotationSync.vatRate}% (ใน QT): <b className="font-mono text-slate-900">+{baht(quotationSync.vatAmt)}</b> บ.</span>
+                <span>VAT {quotationSync.vatRate}% (ใน QT): <b className="font-mono text-slate-900 dark:text-white">+{baht(quotationSync.vatAmt)}</b> บ.</span>
               )}
-              <span className="text-emerald-800 font-bold">
+              <span className="text-emerald-800 dark:text-emerald-300 font-bold">
                 ยอดรวมสุทธิ (QT): <b className="font-mono">{baht(quotationSync.grandTotal)}</b> บาท
               </span>
             </div>
-            <p className="text-[11px] text-sky-900/80">
+            <p className="text-[11px] text-sky-900/80 dark:text-sky-300/80">
               * ระบบแยกราคาขายลูกค้าออกจากราคาขอซื้อจริงให้อัตโนมัติ (ดึงจาก BOQ/สต็อกก่อน หากไม่มีให้กรอกราคาประเมินซื้อจริง โดยแสดงราคาขาย QT กำกับใต้รายการให้เทียบกำไร)
             </p>
             {quotationSync.shortfallOnly && quotationSync.shortfallCount === 0 && (
-              <div className="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-[11px] font-bold text-emerald-800">
+              <div className="rounded-lg border border-emerald-300 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/50 px-3 py-2 text-[11px] font-bold text-emerald-800 dark:text-emerald-300">
                 ✓ สต็อกในคลังมีเพียงพอครบทุกรายการแล้ว ไม่มีส่วนที่ขาดสำหรับเปิด PR (สามารถกลับไปกดเบิกจากสต็อกได้ทันที)
               </div>
             )}
           </div>
         )}
 
-        {/* 3. รายการวัสดุ */}
-        <div className="text-sm font-medium pt-2 border-t border-steel-100">
-          รายการวัสดุ *
-          <div className="mt-1 font-normal">
+        {/* 2. รายการวัสดุ */}
+        <section className="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+          <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-2">
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-900 dark:bg-sky-600 text-white text-xs font-bold">
+              2
+            </span>
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+              <Package className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+              <span>รายการวัสดุขอซื้อ *</span>
+            </h3>
+          </div>
+          <div>
             <ItemsEditor
               items={items}
               onChange={(newItems) => {
@@ -664,19 +709,31 @@ export default function PRForm() {
             />
             <FieldError error={errors.items} />
           </div>
-        </div>
-      </div>
+        </section>
 
-      {error && (
-        <div className="rounded-xl bg-rose-50 border border-rose-200 p-3 text-xs sm:text-sm font-semibold text-rose-800 flex items-center gap-2">
-          <span></span>
-          <span>{error}</span>
-        </div>
-      )}
+        {error && (
+          <div className="rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 p-3 text-xs sm:text-sm font-semibold text-rose-800 dark:text-rose-200 flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-rose-600 dark:text-rose-400 shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
 
-      <div className="flex gap-2">
-        <button className="btn-primary" onClick={save} disabled={busy}>{busy ? 'กำลังบันทึก...' : 'บันทึกใบขอซื้อ'}</button>
-        <Link to={id ? `/purchasing/pr/${id}` : '/purchasing?tab=pr'} className="btn-ghost">ยกเลิก</Link>
+        <div className="flex flex-wrap items-center justify-end gap-2.5 pt-4 border-t border-slate-100 dark:border-slate-800">
+          <Link
+            to={id ? `/purchasing/pr/${id}` : '/purchasing?tab=pr'}
+            className="btn-ghost"
+          >
+            ยกเลิก
+          </Link>
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={save}
+            disabled={busy}
+          >
+            {busy ? 'กำลังบันทึก...' : 'บันทึกใบขอซื้อ'}
+          </button>
+        </div>
       </div>
     </div>
   )

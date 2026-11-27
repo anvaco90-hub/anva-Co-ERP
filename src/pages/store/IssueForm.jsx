@@ -9,6 +9,7 @@ import { ensureStockIssueAccounting } from '../../lib/storeAccounting'
 import { FieldError, fieldErrorClass } from '../../components/FieldError'
 import SearchableProjectSelect from '../../components/SearchableProjectSelect'
 import SearchableItemSelect from '../../components/SearchableItemSelect'
+import CollapsibleDetailField from '../../components/common/CollapsibleDetailField'
 import {
   Boxes,
   AlertCircle,
@@ -16,6 +17,7 @@ import {
   Building2,
   ArrowLeft,
   FileSpreadsheet,
+  Trash2,
 } from 'lucide-react'
 
 const EMPTY_LINE = { item_id: '', quantity: '' }
@@ -234,42 +236,47 @@ export default function IssueForm() {
   }
 
   return (
-    <div className="max-w-4xl space-y-6 font-sans text-slate-800 dark:text-slate-100">
+    <div className="max-w-5xl mx-auto space-y-6 pb-12 font-sans text-slate-800 dark:text-slate-100">
       {/* 1. Header Banner */}
-      <div className="rounded-2xl bg-gradient-to-r from-slate-900 via-steel-900 to-slate-800 p-6 text-white shadow-md border border-steel-700">
+      <div className="rounded-2xl bg-[#0f172a] p-5 sm:p-6 text-white shadow-sm border border-slate-800">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="rounded-md bg-hivis text-steel-950 font-black px-2.5 py-0.5 text-xs uppercase tracking-wider">
-                STOCK ISSUE
-              </span>
-              <span className="text-xs text-steel-300">
-                เบิกพัสดุออกจากคลังเพื่อไปใช้งานจริง (จำนวนเต็ม int)
-              </span>
+          <div className="flex items-start gap-3.5">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-500/15 border border-emerald-400/25 text-emerald-300 shrink-0 mt-0.5">
+              <Boxes className="h-5 w-5" />
             </div>
-            <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white">
-              เบิกของ (Material Requisition)
-            </h1>
-            <p className="mt-1 text-xs sm:text-sm text-steel-300">
-              หยิบของไปใช้งานที่โครงการ ออฟฟิศ หรือหน้างาน ระบบจะตัดยอดคงคลังทันที
-            </p>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-400/25 font-mono font-bold px-2.5 py-0.5 text-[10px] uppercase tracking-wider">
+                  STOCK ISSUE
+                </span>
+                <span className="text-xs text-slate-400">
+                  เบิกพัสดุออกจากคลังเพื่อไปใช้งานจริง (จำนวนเต็ม int)
+                </span>
+              </div>
+              <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white">
+                เบิกของ (Material Requisition)
+              </h1>
+              <p className="text-xs text-slate-400">
+                หยิบของไปใช้งานที่โครงการ ออฟฟิศ หรือหน้างาน ระบบจะตัดยอดคงคลังทันที
+              </p>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2 self-start sm:self-center">
+          <div className="flex items-center gap-2 self-start sm:self-center shrink-0">
             <button
               type="button"
               onClick={() => navigate(-1)}
-              className="rounded-xl bg-steel-800 hover:bg-steel-700 text-steel-200 border border-steel-600 px-3.5 py-2 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3.5 py-2 text-xs font-semibold transition cursor-pointer"
             >
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft className="h-3.5 w-3.5" />
               <span>ย้อนกลับ</span>
             </button>
 
             <Link
               to="/store/adjust"
-              className="rounded-xl bg-emerald-800 hover:bg-emerald-700 text-white px-3.5 py-2 text-xs font-bold transition flex items-center gap-1"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-2 text-xs font-bold transition shadow-xs"
             >
-              <span>↩️ คืนของ</span>
+              <span>คืนของเข้าสโตร์</span>
             </Link>
           </div>
         </div>
@@ -283,12 +290,12 @@ export default function IssueForm() {
       )}
 
       {/* 2. Main Form Card */}
-      <div className="rounded-2xl border border-steel-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm space-y-6">
+      <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm space-y-6">
         
         {/* Step 1: ปลายทางการเบิก */}
         <div className="space-y-3">
-          <span className="text-xs sm:text-sm font-bold text-steel-900 dark:text-slate-100 flex items-center gap-1.5">
-            <Building2 className="h-4 w-4 text-steel-700 dark:text-slate-400" />
+          <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+            <Building2 className="h-4 w-4 text-sky-600 dark:text-sky-400" />
             <span>1. เลือกปลายทางที่จะนำของไปใช้ *</span>
           </span>
 
@@ -304,19 +311,19 @@ export default function IssueForm() {
                     if (errors.projectId) setErrors((prev) => ({ ...prev, projectId: '' }))
                     if (errors.targetLocation) setErrors((prev) => ({ ...prev, targetLocation: '' }))
                   }}
-                  className={`rounded-xl p-3 text-left transition border cursor-pointer ${
+                  className={`rounded-xl p-3.5 text-left transition border cursor-pointer ${
                     isSelected
-                      ? 'border-steel-900 dark:border-amber-400 bg-steel-900 dark:bg-slate-800 text-white shadow-sm ring-2 ring-steel-300 dark:ring-amber-400/30'
-                      : 'border-steel-200 dark:border-slate-700/80 bg-white dark:bg-slate-800/40 hover:bg-steel-50 dark:hover:bg-slate-800 text-steel-700 dark:text-slate-300'
+                      ? 'border-slate-900 dark:border-amber-400 bg-slate-900 dark:bg-slate-800 text-white shadow-sm ring-2 ring-slate-900/15 dark:ring-amber-400/25'
+                      : 'border-slate-200 dark:border-slate-700/80 bg-white dark:bg-slate-800/40 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300'
                   }`}
                 >
                   <div className="text-xs font-black flex items-center justify-between">
                     <span className={isSelected ? 'text-white dark:text-amber-300' : ''}>{opt.label}</span>
-                    {isSelected && <CheckCircle2 className="h-4 w-4 text-hivis dark:text-amber-400" />}
+                    {isSelected && <CheckCircle2 className="h-4 w-4 text-emerald-400 dark:text-amber-400" />}
                   </div>
                   <div
                     className={`text-[11px] mt-1 line-clamp-2 ${
-                      isSelected ? 'text-steel-300 dark:text-slate-300' : 'text-steel-500 dark:text-slate-400'
+                      isSelected ? 'text-slate-300 dark:text-slate-300' : 'text-slate-500 dark:text-slate-400'
                     }`}
                   >
                     {opt.desc}
@@ -329,7 +336,7 @@ export default function IssueForm() {
           {/* Dynamic Input Based on Target Type */}
           {targetType === 'project' ? (
             <div className="pt-2">
-              <label className="block text-xs font-bold text-steel-700 dark:text-slate-300 mb-1">
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                 ค้นหาและเลือกโครงการปลายทาง *
               </label>
               <SearchableProjectSelect
@@ -346,29 +353,26 @@ export default function IssueForm() {
             </div>
           ) : targetType === 'office' ? (
             <div className="pt-2">
-              <label className="block text-xs font-bold text-steel-700 dark:text-slate-300 mb-1">
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                 ระบุแผนก / ส่วนงานในออฟฟิศ (ถ้ามี)
               </label>
               <input
                 type="text"
                 placeholder="เช่น แผนกบัญชี, ธุรการ, สโตร์, ส่วนกลาง"
-                className="w-full rounded-xl border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3.5 py-2 text-xs sm:text-sm text-steel-900 dark:text-slate-100 placeholder:text-steel-400 dark:placeholder:text-slate-500 focus:border-steel-900 dark:focus:border-amber-400 focus:outline-none"
+                className="input text-xs sm:text-sm"
                 value={targetLocation}
                 onChange={(e) => setTargetLocation(e.target.value)}
               />
             </div>
           ) : (
             <div className="pt-2">
-              <label className="block text-xs font-bold text-steel-700 dark:text-slate-300 mb-1">
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                 ระบุชื่อหน้างาน / สถานที่ติดตั้ง *
               </label>
               <input
                 type="text"
                 placeholder="เช่น หน้างานบ้านคุณวินิจ หาดใหญ่, งานซ่อม O&M ด่วน"
-                className={fieldErrorClass(
-                  errors.targetLocation,
-                  'w-full rounded-xl border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3.5 py-2 text-xs sm:text-sm text-steel-900 dark:text-slate-100 placeholder:text-steel-400 dark:placeholder:text-slate-500 focus:border-steel-900 dark:focus:border-amber-400 focus:outline-none'
-                )}
+                className={fieldErrorClass(errors.targetLocation, 'input text-xs sm:text-sm')}
                 value={targetLocation}
                 onChange={(e) => {
                   setTargetLocation(e.target.value)
@@ -382,13 +386,13 @@ export default function IssueForm() {
         </div>
 
         {/* Step 2: วัตถุประสงค์ / เหตุผลในการเบิก */}
-        <div className="space-y-3 pt-4 border-t border-steel-100 dark:border-slate-800">
+        <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-800">
           <div className="flex items-center justify-between">
-            <span className="text-xs sm:text-sm font-bold text-steel-900 dark:text-slate-100 flex items-center gap-1.5">
-              <FileSpreadsheet className="h-4 w-4 text-steel-700 dark:text-slate-400" />
+            <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+              <FileSpreadsheet className="h-4 w-4 text-sky-600 dark:text-sky-400" />
               <span>2. วัตถุประสงค์ / เหตุผลในการเบิก (Issue Reason) *</span>
             </span>
-            <span className="text-[11px] text-steel-500 dark:text-slate-400">
+            <span className="text-[11px] text-slate-500 dark:text-slate-400">
               ช่วยแยกประเภทค่าใช้จ่ายและบันทึกบัญชี
             </span>
           </div>
@@ -407,7 +411,6 @@ export default function IssueForm() {
                       : 'bg-white dark:bg-slate-800/60 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'
                   }`}
                 >
-                  <span className="text-base">{r.icon}</span>
                   <span className="truncate">{r.label}</span>
                 </button>
               )
@@ -416,19 +419,19 @@ export default function IssueForm() {
         </div>
 
         {/* Step 3: รายการพัสดุที่จะเบิก */}
-        <div className="space-y-3 pt-4 border-t border-steel-100 dark:border-slate-800">
+        <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-800">
           <div className="flex items-center justify-between">
-            <span className="text-xs sm:text-sm font-bold text-steel-900 dark:text-slate-100 flex items-center gap-1.5">
-              <Boxes className="h-4 w-4 text-steel-700 dark:text-slate-400" />
+            <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+              <Boxes className="h-4 w-4 text-sky-600 dark:text-sky-400" />
               <span>3. รายการพัสดุที่จะเบิก (จำนวนเต็ม int) *</span>
             </span>
-            <span className="text-xs text-steel-500 dark:text-slate-400">
+            <span className="text-xs text-slate-500 dark:text-slate-400">
               ราคาต่อหน่วยคือต้นทุนเฉลี่ยของสโตร์ (ระบบคิดให้อัตโนมัติ)
             </span>
           </div>
 
           {items.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-steel-300 dark:border-slate-700 p-8 text-center text-xs text-steel-400 dark:text-slate-400">
+            <div className="rounded-xl border border-dashed border-slate-300 dark:border-slate-700 p-8 text-center text-xs text-slate-400 dark:text-slate-400">
               ไม่มีวัสดุคงเหลือในสโตร์หลัก กรุณารับวัสดุเข้าคลังก่อน
             </div>
           ) : (
@@ -449,13 +452,13 @@ export default function IssueForm() {
                     className={`rounded-2xl border p-4 transition ${
                       itemEmpty || qtyEmpty || over
                         ? 'border-rose-300 dark:border-rose-800 bg-rose-50/20 dark:bg-rose-950/20'
-                        : 'border-steel-200 dark:border-slate-800 bg-steel-50/50 dark:bg-slate-800/60 hover:bg-white dark:hover:bg-slate-800'
+                        : 'border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 hover:bg-white dark:hover:bg-slate-800'
                     }`}
                   >
                     <div className="grid grid-cols-1 sm:grid-cols-[1fr_8rem_auto] gap-3 items-start">
                       {/* Searchable Combobox วัสดุ */}
                       <div>
-                        <label className="text-[10px] font-bold text-steel-500 dark:text-slate-400 uppercase">
+                        <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">
                           ค้นหาและเลือกวัสดุ ({i + 1})
                         </label>
                         <div className="mt-1">
@@ -473,13 +476,13 @@ export default function IssueForm() {
 
                       {/* จำนวนที่เบิก (int) */}
                       <div>
-                        <label className="text-[10px] font-bold text-steel-500 dark:text-slate-400 uppercase">
+                        <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">
                           จำนวนที่เบิก {it ? `(${it.unit})` : ''}
                         </label>
                         <input
                           className={fieldErrorClass(
                             qtyEmpty || over,
-                            'w-full mt-1 rounded-xl border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-mono font-bold text-steel-900 dark:text-slate-100 focus:border-steel-900 dark:focus:border-amber-400 focus:outline-none'
+                            'input mt-1 text-xs font-mono font-bold text-right'
                           )}
                           type="number"
                           min="1"
@@ -498,34 +501,35 @@ export default function IssueForm() {
                       </div>
 
                       {/* ปุ่มลบ */}
-                      <div className="pt-6 flex justify-end">
+                      <div className="pt-5 flex justify-end">
                         <button
                           type="button"
-                          className="rounded-lg p-2 text-steel-400 dark:text-slate-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:text-rose-600 dark:hover:text-rose-300 transition disabled:opacity-30 cursor-pointer"
+                          className="h-9 px-3 text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 dark:hover:bg-rose-900/60 rounded-xl transition cursor-pointer border border-rose-200 dark:border-rose-900 shadow-2xs flex items-center justify-center gap-1 font-bold text-xs disabled:opacity-25 disabled:cursor-not-allowed"
                           disabled={lines.length === 1}
                           onClick={() =>
                             setLines(lines.filter((_, idx) => idx !== i))
                           }
                           title="ลบแถวนี้"
                         >
-                          
+                          <Trash2 className="h-3.5 w-3.5 shrink-0" />
+                          <span>ลบ</span>
                         </button>
                       </div>
                     </div>
 
                     {/* แสดงสมการชัดเจน: คลังมี 11 เบิก 5 คงเหลือหลังเบิก 6 (เลขจำนวนเต็ม) */}
                     {it && (
-                      <div className="mt-3 pt-2.5 border-t border-steel-200/80 dark:border-slate-700/80 space-y-2">
-                        <div className="flex flex-wrap items-center justify-between text-xs text-steel-600 dark:text-slate-300 gap-2">
+                      <div className="mt-3 pt-2.5 border-t border-slate-200/80 dark:border-slate-700/80 space-y-2">
+                        <div className="flex flex-wrap items-center justify-between text-xs text-slate-600 dark:text-slate-300 gap-2">
                           <div className="flex items-center gap-1.5 font-mono text-xs flex-wrap">
-                            <span className="rounded-md bg-steel-100 dark:bg-slate-800 border border-steel-200 dark:border-slate-700 px-2 py-0.5 text-steel-700 dark:text-slate-200 font-semibold">
-                              ในคลังมี: <b className="text-steel-900 dark:text-white">{formatIntQty(currentStock)}</b> {it.unit}
+                            <span className="rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2 py-0.5 text-slate-700 dark:text-slate-200 font-semibold">
+                              ในคลังมี: <b className="text-slate-900 dark:text-white">{formatIntQty(currentStock)}</b> {it.unit}
                             </span>
-                            <span className="text-steel-400 dark:text-slate-500 font-bold">-</span>
+                            <span className="text-slate-400 dark:text-slate-500 font-bold">-</span>
                             <span className="rounded-md bg-amber-100 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 px-2 py-0.5 text-amber-900 dark:text-amber-300 font-bold">
                               เบิก: <b>{formatIntQty(reqQty)}</b> {it.unit}
                             </span>
-                            <span className="text-steel-400 dark:text-slate-500 font-bold">=</span>
+                            <span className="text-slate-400 dark:text-slate-500 font-bold">=</span>
                             <span
                               className={`rounded-md px-2.5 py-0.5 font-bold ${
                                 over
@@ -541,11 +545,11 @@ export default function IssueForm() {
 
                           {/* ต้นทุนและมูลค่า */}
                           <div className="text-right">
-                            <span className="text-steel-500 dark:text-slate-400">มูลค่าเบิก: </span>
-                            <b className="font-mono text-steel-900 dark:text-white">
+                            <span className="text-slate-500 dark:text-slate-400">มูลค่าเบิก: </span>
+                            <b className="font-mono text-slate-900 dark:text-white">
                               {baht(reqQty * Number(it.avg_unit_cost || 0))}
                             </b>{' '}
-                            <span className="text-steel-500 dark:text-slate-400">บาท</span>
+                            <span className="text-slate-500 dark:text-slate-400">บาท</span>
                           </div>
                         </div>
                       </div>
@@ -562,38 +566,34 @@ export default function IssueForm() {
             <button
               type="button"
               onClick={() => setLines([...lines, { ...EMPTY_LINE }])}
-              className="rounded-xl border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-steel-50 dark:hover:bg-slate-700 hover:border-steel-400 dark:hover:border-slate-600 text-steel-700 dark:text-slate-200 font-bold px-4 py-2 text-xs transition self-start shadow-xs flex items-center gap-1.5 cursor-pointer"
+              className="rounded-xl border border-sky-200 dark:border-sky-800 bg-sky-50 dark:bg-sky-950/40 hover:bg-sky-100 dark:hover:bg-sky-900/60 text-sky-700 dark:text-sky-300 font-bold px-4 py-2 text-xs transition self-start shadow-2xs flex items-center gap-1.5 cursor-pointer"
             >
               <span>+ เพิ่มรายการวัสดุที่จะเบิก</span>
             </button>
 
-            <div className="rounded-xl bg-steel-50 dark:bg-slate-800 border border-steel-200 dark:border-slate-700 px-4 py-2 text-right">
-              <span className="text-xs text-steel-600 dark:text-slate-400">มูลค่าเบิกจ่ายรวมทั้งสิ้น:</span>
-              <div className="font-mono font-black text-xl text-steel-900 dark:text-amber-400">
-                {baht(total)} <span className="text-xs font-normal text-steel-500 dark:text-slate-400">บาท</span>
+            <div className="rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-2 text-right">
+              <span className="text-xs text-slate-500 dark:text-slate-400">มูลค่าเบิกจ่ายรวมทั้งสิ้น:</span>
+              <div className="font-mono font-black text-xl text-slate-900 dark:text-amber-400">
+                {baht(total)} <span className="text-xs font-normal text-slate-500 dark:text-slate-400">บาท</span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* หมายเหตุ */}
-        <div className="space-y-1.5 pt-4 border-t border-steel-100 dark:border-slate-800">
-          <label className="block">
-            <span className="text-xs font-bold text-steel-700 dark:text-slate-300">
-              หมายเหตุ / รายละเอียดการเบิก (ถ้ามี)
-            </span>
-            <textarea
-              className="w-full mt-1.5 rounded-xl border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3.5 py-2 text-xs text-steel-800 dark:text-slate-100 placeholder:text-steel-400 dark:placeholder:text-slate-500 focus:border-steel-900 dark:focus:border-amber-400 focus:outline-none"
-              rows={2}
-              placeholder="เช่น เบิกสำหรับงานติดตั้งงวดที่ 1 หรือ ช่างเบิกไปใช้งานด่วน..."
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-            />
-          </label>
+        {/* หมายเหตุ (พับซ่อนได้เพื่อความมินิมอล) */}
+        <div className="rounded-xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 p-3.5">
+          <CollapsibleDetailField
+            value={notes}
+            onChange={setNotes}
+            addLabel="เพิ่มหมายเหตุ / รายละเอียดการเบิก"
+            editLabel="หมายเหตุ / รายละเอียดการเบิก"
+            placeholder="เช่น เบิกสำหรับงานติดตั้งงวดที่ 1 หรือ ช่างเบิกไปใช้งานด่วน..."
+            rows={2}
+          />
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center justify-between pt-4 border-t border-steel-100 dark:border-slate-800">
+        <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800">
           <Link
             to="/store/adjust"
             className="text-xs text-emerald-700 dark:text-emerald-400 hover:text-emerald-900 dark:hover:text-emerald-300 font-semibold flex items-center gap-1"
@@ -605,7 +605,7 @@ export default function IssueForm() {
             <button
               type="button"
               onClick={() => navigate('/store')}
-              className="rounded-xl border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-steel-50 dark:hover:bg-slate-700 px-5 py-2.5 text-xs font-bold text-steel-700 dark:text-slate-200 transition cursor-pointer"
+              className="btn-ghost"
             >
               ยกเลิก
             </button>
@@ -614,7 +614,7 @@ export default function IssueForm() {
               type="button"
               disabled={busy || items.length === 0}
               onClick={save}
-              className="rounded-xl bg-steel-900 dark:bg-amber-500 hover:bg-steel-800 dark:hover:bg-amber-400 text-hivis dark:text-slate-950 font-black px-6 py-2.5 text-xs transition shadow-sm disabled:opacity-50 flex items-center gap-2 cursor-pointer"
+              className="btn-primary flex items-center gap-2"
             >
               <CheckCircle2 className="h-4 w-4" />
               <span>{busy ? 'กำลังบันทึก...' : 'ยืนยันการเบิกของ'}</span>

@@ -848,127 +848,117 @@ export default function PurchasingHub() {
   }, [pos])
 
   return (
-    <div className="space-y-5">
-
-      {/* 1. ANVA & Co. Engineering Procurement Brand Hero Banner (สไตล์เดียวกับสโตร์) */}
-      <div className="rounded-2xl bg-gradient-to-r from-slate-900 via-steel-900 to-slate-800 p-6 sm:p-7 text-white shadow-md border border-slate-700">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-2">
-              <span className="rounded-md bg-hivis text-slate-950 font-black px-2.5 py-0.5 text-xs uppercase tracking-wider">
-                ENGINEERING PROCUREMENT
-              </span>
-              <span className="text-xs text-slate-200 font-semibold tracking-wide">
-                บริษัท อันวาแอนด์โค จำกัด (ANVA & CO., LTD.)
-              </span>
-            </div>
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight text-white drop-shadow-xs">
-              ฝ่ายจัดซื้อและพัสดุวิศวกรรม (Purchasing Hub)
-            </h1>
-            <p className="text-xs sm:text-sm text-slate-200/90 leading-relaxed max-w-2xl">
-              ระบบบริหารวงจรจัดซื้อ ออกใบขอซื้อ (PR) อนุมัติออกคำสั่งซื้อ (PO) ตรวจรับสินค้าเข้าสต็อก และควบคุมต้นทุนโครงการ
-            </p>
-          </div>
-
-          {/* Core Metrics Boxes (4 กล่องสถิติสไตล์เดียวกับสโตร์) */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 shrink-0">
-            <div
-              onClick={() => changeTab('pr')}
-              className={`rounded-xl p-3 border cursor-pointer transition text-center ${activeTab === 'pr'
-                ? 'bg-hivis text-slate-950 font-bold border-hivis shadow-md scale-105'
-                : 'bg-slate-800/90 hover:bg-slate-800 border-slate-700 text-slate-200'
-                }`}
-            >
-              <div className={`text-[11px] font-bold ${activeTab === 'pr' ? 'text-slate-900' : 'text-slate-200'}`}>ใบขอซื้อ (PR)</div>
-              <div className={`mt-0.5 text-xl font-black font-mono ${activeTab === 'pr' ? 'text-slate-950' : 'text-sky-300'}`}>{prs.length}</div>
-              <div className={`text-[10px] ${activeTab === 'pr' ? 'text-slate-800 font-bold' : 'text-slate-300 font-medium'}`}>รายการ</div>
-            </div>
-
-            <div
-              onClick={() => changeTab('po')}
-              className={`rounded-xl p-3 border cursor-pointer transition text-center ${activeTab === 'po'
-                ? 'bg-hivis text-slate-950 font-bold border-hivis shadow-md scale-105'
-                : 'bg-slate-800/90 hover:bg-slate-800 border-slate-700 text-slate-200'
-                }`}
-            >
-              <div className={`text-[11px] font-bold ${activeTab === 'po' ? 'text-slate-900' : 'text-slate-200'}`}>ใบสั่งซื้อ (PO)</div>
-              <div className={`mt-0.5 text-xl font-black font-mono ${activeTab === 'po' ? 'text-slate-950' : 'text-amber-300'}`}>{pos.length}</div>
-              <div className={`text-[10px] ${activeTab === 'po' ? 'text-slate-800 font-bold' : 'text-slate-300 font-medium'}`}>รายการ</div>
-            </div>
-
-            <div
-              onClick={() => changeTab('receipts')}
-              className={`rounded-xl p-3 border cursor-pointer transition text-center ${activeTab === 'receipts'
-                ? 'bg-hivis text-slate-950 font-bold border-hivis shadow-md scale-105'
-                : 'bg-slate-800/90 hover:bg-slate-800 border-slate-700 text-slate-200'
-                }`}
-            >
-              <div className={`text-[11px] font-bold ${activeTab === 'receipts' ? 'text-slate-900' : 'text-slate-200'}`}>รอตรวจรับ</div>
-              <div className={`mt-0.5 text-xl font-black font-mono ${activeTab === 'receipts' ? 'text-slate-950' : 'text-rose-400'}`}>{pendingReceipts.length}</div>
-              <div className={`text-[10px] ${activeTab === 'receipts' ? 'text-slate-800 font-bold' : 'text-slate-300 font-medium'}`}>ค้างรับเข้าสโตร์</div>
-            </div>
-
-            <div
-              onClick={() => changeTab('pipeline')}
-              className={`rounded-xl p-3 border cursor-pointer transition text-center ${activeTab === 'pipeline'
-                ? 'bg-hivis text-slate-950 font-bold border-hivis shadow-md scale-105'
-                : 'bg-slate-800/90 hover:bg-slate-800 border-slate-700 text-slate-200'
-                }`}
-            >
-              <div className={`text-[11px] font-bold ${activeTab === 'pipeline' ? 'text-slate-900' : 'text-slate-200'}`}>วงจรเอกสาร</div>
-              <div className={`mt-0.5 text-xl font-black font-mono ${activeTab === 'pipeline' ? 'text-slate-950' : 'text-emerald-300'}`}>{completedPos.length}</div>
-              <div className={`text-[10px] ${activeTab === 'pipeline' ? 'text-slate-800 font-bold' : 'text-slate-300 font-medium'}`}>ปิดวงจรสมบูรณ์</div>
-            </div>
-          </div>
+    <div className="space-y-4">
+      {/* 1. Clean Header & Actions (QuotationList Standard) */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+            จัดซื้อและพัสดุวิศวกรรม (Purchasing Hub)
+          </h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            บริหารวงจรจัดซื้อ ออกใบขอซื้อ (PR) อนุมัติคำสั่งซื้อ (PO) ตรวจรับเข้าคลัง (มูลค่า PO รวม{' '}
+            <b className="font-mono text-emerald-700 dark:text-emerald-400 tabular-nums">{baht(totalPoNetValue)}</b> บาท)
+          </p>
         </div>
 
-        {/* Bottom Bar: Total Value & Actions */}
-        <div className="mt-5 pt-4 border-t border-slate-700/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-slate-200">มูลค่าสั่งซื้อรวม (ที่แสดง):</span>
-            <span className="text-lg font-black font-mono text-emerald-300 tracking-wide">
-              {baht(totalPoNetValue)} บาท
-            </span>
+        {canCreate && (
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              to="/purchasing/pr/new"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition"
+            >
+              <Plus className="h-3.5 w-3.5 text-sky-600 dark:text-sky-400" />
+              <span>ออกใบขอซื้อ (PR)</span>
+            </Link>
+            <Link
+              to="/purchasing/po/new"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 dark:bg-amber-500 dark:hover:bg-amber-400 px-3.5 py-1.5 text-xs font-semibold text-white dark:text-slate-950 shadow-xs transition"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              <span>สร้างใบสั่งซื้อ (PO)</span>
+            </Link>
           </div>
-
-          <div className="flex flex-wrap items-center gap-2.5">
-            {canCreate && (
-              <>
-                <Link
-                  to="/purchasing/pr/new"
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-600 bg-slate-800/90 hover:bg-slate-700 px-3.5 py-2 text-xs font-bold text-white transition shadow-xs cursor-pointer"
-                >
-                  <Plus className="h-4 w-4 text-hivis" />
-                  <span>ออกใบขอซื้อ (PR)</span>
-                </Link>
-                <Link
-                  to="/purchasing/po/new"
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-hivis hover:brightness-110 text-slate-950 px-4 py-2 text-xs font-black shadow-md transition cursor-pointer"
-                >
-                  <Plus className="h-4 w-4 stroke-[3]" />
-                  <span>สร้างใบสั่งซื้อ (PO)</span>
-                </Link>
-              </>
-            )}
-          </div>
-        </div>
+        )}
       </div>
 
-      {/* 2. รายงานวันครบกำหนดส่งมอบ (Due Date & Delivery Report Banner) สำหรับหน้า PO */}
+      {/* 2. Interactive KPI Strip (คลิกสลับแท็บทันที) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <button
+          type="button"
+          onClick={() => changeTab('pr')}
+          className={`rounded-2xl border p-4 text-left transition-all cursor-pointer ${
+            activeTab === 'pr'
+              ? 'border-sky-600 dark:border-sky-400 bg-white dark:bg-slate-900 ring-2 ring-sky-500/20 shadow-sm'
+              : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 hover:border-sky-300 dark:hover:border-sky-700 shadow-2xs'
+          }`}
+        >
+          <div className="text-xs font-semibold text-sky-700 dark:text-sky-400">ใบขอซื้อ (PR)</div>
+          <div className="mt-1 text-2xl font-bold font-mono text-slate-900 dark:text-white tabular-nums">
+            {prs.length} <span className="text-xs font-normal text-slate-400">รายการ</span>
+          </div>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => changeTab('po')}
+          className={`rounded-2xl border p-4 text-left transition-all cursor-pointer ${
+            activeTab === 'po'
+              ? 'border-amber-500 dark:border-amber-400 bg-white dark:bg-slate-900 ring-2 ring-amber-500/20 shadow-sm'
+              : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 hover:border-amber-300 dark:hover:border-amber-700 shadow-2xs'
+          }`}
+        >
+          <div className="text-xs font-semibold text-amber-700 dark:text-amber-400">ใบสั่งซื้อ (PO)</div>
+          <div className="mt-1 text-2xl font-bold font-mono text-slate-900 dark:text-white tabular-nums">
+            {pos.length} <span className="text-xs font-normal text-slate-400">รายการ</span>
+          </div>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => changeTab('receipts')}
+          className={`rounded-2xl border p-4 text-left transition-all cursor-pointer ${
+            activeTab === 'receipts'
+              ? 'border-rose-500 dark:border-rose-400 bg-white dark:bg-slate-900 ring-2 ring-rose-500/20 shadow-sm'
+              : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 hover:border-rose-300 dark:hover:border-rose-700 shadow-2xs'
+          }`}
+        >
+          <div className="text-xs font-semibold text-rose-700 dark:text-rose-400">รอตรวจรับเข้าสโตร์</div>
+          <div className="mt-1 text-2xl font-bold font-mono text-rose-700 dark:text-rose-400 tabular-nums">
+            {pendingReceipts.length} <span className="text-xs font-normal text-slate-400">ใบ</span>
+          </div>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => changeTab('pipeline')}
+          className={`rounded-2xl border p-4 text-left transition-all cursor-pointer ${
+            activeTab === 'pipeline'
+              ? 'border-slate-800 dark:border-emerald-400 bg-white dark:bg-slate-900 ring-2 ring-slate-800/15 dark:ring-emerald-400/20 shadow-sm'
+              : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 hover:border-slate-300 dark:hover:border-slate-700 shadow-2xs'
+          }`}
+        >
+          <div className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">วงจรเอกสารครบ</div>
+          <div className="mt-1 text-2xl font-bold font-mono text-emerald-700 dark:text-emerald-400 tabular-nums">
+            {completedPos.length} <span className="text-xs font-normal text-slate-400">ปิดงาน</span>
+          </div>
+        </button>
+      </div>
+
+      {/* 3. รายงานวันครบกำหนดส่งมอบ (Due Date & Delivery Report Banner) สำหรับหน้า PO */}
       {activeTab === 'po' && (
-        <div className="rounded-2xl border border-steel-200 bg-white p-4 shadow-xs space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-steel-100 pb-2">
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-2xs space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-2">
             <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-hivis shrink-0" />
-              <h3 className="text-xs font-black text-ink uppercase tracking-wider">
-                รายงานติดตามวันครบกำหนดส่งมอบสินค้า (PO Due Date & Delivery Report)
+              <Clock className="h-4 w-4 text-sky-600 dark:text-amber-400 shrink-0" />
+              <h3 className="text-xs font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider">
+                ติดตามวันครบกำหนดส่งมอบสินค้า (PO Due Date)
               </h3>
             </div>
             {filterDueStatus !== 'all' && (
               <button
                 type="button"
                 onClick={() => setFilterDueStatus('all')}
-                className="text-xs text-rose-600 hover:underline font-semibold"
+                className="text-xs text-rose-600 dark:text-rose-400 hover:underline font-semibold cursor-pointer"
               >
                 แสดงทุกสถานะกำหนดส่ง
               </button>
@@ -981,22 +971,23 @@ export default function PurchasingHub() {
               type="button"
               onClick={() => setFilterDueStatus(filterDueStatus === 'overdue' ? 'all' : 'overdue')}
               className={`rounded-xl border p-3.5 text-left transition cursor-pointer ${filterDueStatus === 'overdue'
-                ? 'border-rose-500 bg-rose-50 ring-2 ring-rose-400'
-                : 'border-rose-200 bg-rose-50/50 hover:bg-rose-50 hover:border-rose-300'
+                ? 'border-rose-500 bg-rose-50 dark:bg-rose-950/50 ring-2 ring-rose-400/30'
+                : 'border-rose-200 dark:border-rose-900/60 bg-rose-50/40 dark:bg-rose-950/20 hover:bg-rose-50 dark:hover:bg-rose-950/40'
                 }`}
             >
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-rose-800 uppercase tracking-wider flex items-center gap-1">
-                  <span></span> เกินกำหนดส่งมอบ
+                <span className="text-[11px] font-bold text-rose-700 dark:text-rose-400 uppercase tracking-wider flex items-center gap-1">
+                  <AlertTriangle className="h-3.5 w-3.5" />
+                  <span>เกินกำหนด</span>
                 </span>
                 {overduePos.length > 0 && (
                   <span className="h-2 w-2 rounded-full bg-rose-600 animate-ping" />
                 )}
               </div>
-              <div className="mt-1 text-2xl font-black text-rose-900">
-                {overduePos.length} <span className="text-xs font-normal text-rose-700">ใบ</span>
+              <div className="mt-1 text-2xl font-bold font-mono text-rose-800 dark:text-rose-300 tabular-nums">
+                {overduePos.length} <span className="text-xs font-normal text-rose-600 dark:text-rose-400">ใบ</span>
               </div>
-              <div className="mt-0.5 text-[11px] text-rose-700">เลยกำหนด ต้องเร่งรัดผู้ขาย</div>
+              <div className="mt-0.5 text-[11px] text-rose-600 dark:text-rose-400">เลยกำหนด ต้องเร่งรัด</div>
             </button>
 
             {/* Card 2: ใกล้ครบกำหนด (Urgent / 7 วัน) */}
@@ -1004,17 +995,18 @@ export default function PurchasingHub() {
               type="button"
               onClick={() => setFilterDueStatus(filterDueStatus === 'urgent' ? 'all' : 'urgent')}
               className={`rounded-xl border p-3.5 text-left transition cursor-pointer ${filterDueStatus === 'urgent'
-                ? 'border-amber-500 bg-amber-50 ring-2 ring-amber-400'
-                : 'border-amber-200 bg-amber-50/50 hover:bg-amber-50 hover:border-amber-300'
+                ? 'border-amber-500 bg-amber-50 dark:bg-amber-950/50 ring-2 ring-amber-400/30'
+                : 'border-amber-200 dark:border-amber-900/60 bg-amber-50/40 dark:bg-amber-950/20 hover:bg-amber-50 dark:hover:bg-amber-950/40'
                 }`}
             >
-              <div className="text-[11px] font-bold text-amber-800 uppercase tracking-wider flex items-center gap-1">
-                <span>⏰</span> ใกล้ครบกำหนด
+              <div className="text-[11px] font-bold text-amber-800 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1">
+                <Clock className="h-3.5 w-3.5" />
+                <span>ใกล้ครบกำหนด</span>
               </div>
-              <div className="mt-1 text-2xl font-black text-amber-900">
-                {dueSoonPos.length} <span className="text-xs font-normal text-amber-700">ใบ</span>
+              <div className="mt-1 text-2xl font-bold font-mono text-amber-900 dark:text-amber-300 tabular-nums">
+                {dueSoonPos.length} <span className="text-xs font-normal text-amber-700 dark:text-amber-400">ใบ</span>
               </div>
-              <div className="mt-0.5 text-[11px] text-amber-700">กำหนดส่งภายใน 7 วันนี้</div>
+              <div className="mt-0.5 text-[11px] text-amber-700 dark:text-amber-400">ภายใน 7 วันนี้</div>
             </button>
 
             {/* Card 3: รอนำส่งตามกำหนด (On Track) */}
@@ -1022,17 +1014,18 @@ export default function PurchasingHub() {
               type="button"
               onClick={() => setFilterDueStatus(filterDueStatus === 'on_track' ? 'all' : 'on_track')}
               className={`rounded-xl border p-3.5 text-left transition cursor-pointer ${filterDueStatus === 'on_track'
-                ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-400'
-                : 'border-steel-200 bg-white hover:bg-blue-50/50 hover:border-blue-300'
+                ? 'border-sky-500 bg-sky-50 dark:bg-sky-950/50 ring-2 ring-sky-400/30'
+                : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800/40 hover:bg-sky-50/50 dark:hover:bg-slate-800'
                 }`}
             >
-              <div className="text-[11px] font-bold text-blue-800 uppercase tracking-wider flex items-center gap-1">
-                <span></span> รอนำส่งตามกำหนด
+              <div className="text-[11px] font-bold text-sky-700 dark:text-sky-400 uppercase tracking-wider flex items-center gap-1">
+                <Truck className="h-3.5 w-3.5" />
+                <span>ตามกำหนด</span>
               </div>
-              <div className="mt-1 text-2xl font-black text-blue-900">
-                {onTrackPos.length} <span className="text-xs font-normal text-blue-700">ใบ</span>
+              <div className="mt-1 text-2xl font-bold font-mono text-sky-800 dark:text-sky-300 tabular-nums">
+                {onTrackPos.length} <span className="text-xs font-normal text-sky-600 dark:text-sky-400">ใบ</span>
               </div>
-              <div className="mt-0.5 text-[11px] text-steel-500">อยู่ในกำหนดระยะเวลาปกติ</div>
+              <div className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">อยู่ในกำหนดปกติ</div>
             </button>
 
             {/* Card 4: ส่งมอบครบถ้วนแล้ว (Delivered) */}
@@ -1040,17 +1033,18 @@ export default function PurchasingHub() {
               type="button"
               onClick={() => setFilterDueStatus(filterDueStatus === 'completed' ? 'all' : 'completed')}
               className={`rounded-xl border p-3.5 text-left transition cursor-pointer ${filterDueStatus === 'completed'
-                ? 'border-emerald-500 bg-emerald-50 ring-2 ring-emerald-400'
-                : 'border-steel-200 bg-white hover:bg-emerald-50/50 hover:border-emerald-300'
+                ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/50 ring-2 ring-emerald-400/30'
+                : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800/40 hover:bg-emerald-50/50 dark:hover:bg-slate-800'
                 }`}
             >
-              <div className="text-[11px] font-bold text-emerald-800 uppercase tracking-wider flex items-center gap-1">
-                <span></span> ส่งมอบครบแล้ว
+              <div className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1">
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                <span>ส่งครบแล้ว</span>
               </div>
-              <div className="mt-1 text-2xl font-black text-emerald-900">
-                {completedPos.length} <span className="text-xs font-normal text-emerald-700">ใบ</span>
+              <div className="mt-1 text-2xl font-bold font-mono text-emerald-800 dark:text-emerald-300 tabular-nums">
+                {completedPos.length} <span className="text-xs font-normal text-emerald-700 dark:text-emerald-400">ใบ</span>
               </div>
-              <div className="mt-0.5 text-[11px] text-emerald-700">ตรวจรับเข้าสต็อกเสร็จสิ้น</div>
+              <div className="mt-0.5 text-[11px] text-emerald-700 dark:text-emerald-400">ตรวจรับเข้าคลังเสร็จสิ้น</div>
             </button>
           </div>
         </div>
@@ -1231,10 +1225,10 @@ export default function PurchasingHub() {
         <>
           {/* TAB 1: รายการใบสั่งซื้อทั้งหมด (PO) พร้อมระบบ 7 ฟังก์ชัน และรายงานวันครบกำหนด */}
           {activeTab === 'po' && (
-            <div className="rounded-2xl border border-steel-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs overflow-hidden">
-              <div className="p-4 border-b border-steel-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 bg-slate-50/50 dark:bg-slate-800/50">
+            <div className="rounded-2xl border border-slate- dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs overflow-hidden">
+              <div className="p-4 border-b border-slate- dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 bg-slate-50/50 dark:bg-slate-800/50">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold text-steel-900 dark:text-slate-100">
+                  <span className="text-sm font-bold text-slate- dark:text-slate-100">
                     รายการใบสั่งซื้อทั้งหมด ({filteredPos.length} รายการ)
                   </span>
                   {filterDueStatus !== 'all' && (
@@ -1243,19 +1237,19 @@ export default function PurchasingHub() {
                     </span>
                   )}
                 </div>
-                <div className="text-xs text-steel-500 dark:text-slate-400">
-                  คลิกที่ปุ่ม <span className="font-mono font-bold bg-steel-100 dark:bg-slate-800 dark:text-slate-200 px-1 py-0.5 rounded border border-steel-200 dark:border-slate-700">⋯</span> เพื่อเลือกคำสั่งพิมพ์, จ่าซอง, แชร์, สร้างซ้ำ หรือลบ
+                <div className="text-xs text-slate- dark:text-slate-400">
+                  คลิกที่ปุ่ม <span className="font-mono font-bold bg-slate- dark:bg-slate-800 dark:text-slate-200 px-1 py-0.5 rounded border border-slate- dark:border-slate-700">⋯</span> เพื่อเลือกคำสั่งพิมพ์, จ่าซอง, แชร์, สร้างซ้ำ หรือลบ
                 </div>
               </div>
 
               {filteredPos.length === 0 ? (
-                <div className="py-12 text-center text-steel-400 dark:text-slate-500">
-                  <Package className="mx-auto h-8 w-8 text-steel-300 dark:text-slate-600 mb-2" />
+                <div className="py-12 text-center text-slate- dark:text-slate-500">
+                  <Package className="mx-auto h-8 w-8 text-slate- dark:text-slate-600 mb-2" />
                   <p className="font-semibold text-xs">ไม่พบใบสั่งซื้อตามเงื่อนไขที่เลือก</p>
                   {canCreate && (
                     <Link
                       to="/purchasing/po/new"
-                      className="mt-3 inline-flex items-center gap-1 rounded-xl bg-steel-900 dark:bg-amber-500 px-3.5 py-1.5 text-xs font-bold text-hivis dark:text-slate-950 hover:bg-steel-800 dark:hover:bg-amber-400 transition"
+                      className="mt-3 inline-flex items-center gap-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 dark:bg-amber-500 dark:hover:bg-amber-400 px-3.5 py-1.5 text-xs font-bold text-white dark:text-slate-950 transition"
                     >
                       + สร้างใบสั่งซื้อใหม่
                     </Link>
@@ -1263,17 +1257,17 @@ export default function PurchasingHub() {
                 </div>
               ) : viewMode === 'cards' ? (
                 /* มุมมองการ์ด (Card View): เหมาะกับหน้าจอขนาดกะทัดรัด ไม่ต้องเลื่อนแนวนอน */
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 p-4 bg-steel-50/40 dark:bg-slate-900/40">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 p-4 bg-slate-/40 dark:bg-slate-900/40">
                   {paginatedPos.map((r) => {
                     const dueStatus = getPoDueStatus(r)
 
                     return (
                       <div
                         key={r.id}
-                        className="rounded-2xl border border-steel-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-xs hover:shadow-md transition-shadow flex flex-col justify-between gap-3 relative"
+                        className="rounded-2xl border border-slate- dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-xs hover:shadow-md transition-shadow flex flex-col justify-between gap-3 relative"
                       >
                         {/* ส่วนหัวการ์ด: เลขที่ PO + วันที่ + สถานะวงจร */}
-                        <div className="flex items-start justify-between gap-2 border-b border-steel-100 dark:border-slate-800 pb-2.5">
+                        <div className="flex items-start justify-between gap-2 border-b border-slate- dark:border-slate-800 pb-2.5">
                           <div>
                             <Link
                               to={`/purchasing/po/${r.id}`}
@@ -1282,7 +1276,7 @@ export default function PurchasingHub() {
                               <span></span>
                               <span>{r.po_no}</span>
                             </Link>
-                            <div className="text-[11px] text-steel-500 dark:text-slate-400 mt-0.5">
+                            <div className="text-[11px] text-slate- dark:text-slate-400 mt-0.5">
                               สั่งซื้อ: {formatThaiDate(r.order_date)}
                               {r.pr?.pr_no && <span className="ml-1.5 font-mono text-sky-700 dark:text-sky-400">({r.pr.pr_no})</span>}
                             </div>
@@ -1312,7 +1306,7 @@ export default function PurchasingHub() {
                                 )
                               }
                               return (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-steel-700 dark:text-slate-300 border border-steel-200 dark:border-slate-700">
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate- dark:text-slate-300 border border-slate- dark:border-slate-700">
                                   <span></span> รอรับของ
                                 </span>
                               )
@@ -1323,16 +1317,16 @@ export default function PurchasingHub() {
                         {/* ข้อมูลกลางการ์ด: ร้านค้า, โครงการ, วันครบกำหนด */}
                         <div className="space-y-1.5 text-xs">
                           <div className="flex items-start gap-1.5">
-                            <span className="text-steel-400 dark:text-slate-500 shrink-0 font-medium w-14">ร้านค้า:</span>
-                            <span className="font-bold text-steel-900 dark:text-slate-100 truncate flex-1" title={r.custom_vendor_name || r.vendors?.vendor_name}>
+                            <span className="text-slate- dark:text-slate-500 shrink-0 font-medium w-14">ร้านค้า:</span>
+                            <span className="font-bold text-slate- dark:text-slate-100 truncate flex-1" title={r.custom_vendor_name || r.vendors?.vendor_name}>
                               {r.custom_vendor_name || r.vendors?.vendor_name || '-'}
                             </span>
                           </div>
 
                           <div className="flex items-start gap-1.5">
-                            <span className="text-steel-400 dark:text-slate-500 shrink-0 font-medium w-14">โครงการ:</span>
+                            <span className="text-slate- dark:text-slate-500 shrink-0 font-medium w-14">โครงการ:</span>
                             <div className="truncate flex-1">
-                              <span className="font-semibold text-steel-800 dark:text-slate-200">
+                              <span className="font-semibold text-slate- dark:text-slate-200">
                                 {r.custom_project_name || (r.projects ? `${r.projects.project_code} ${r.projects.project_name}` : 'ของกลางบริษัท')}
                               </span>
                               {r.customer_name && (
@@ -1345,10 +1339,10 @@ export default function PurchasingHub() {
                           </div>
 
                           <div className="flex items-center gap-1.5 pt-0.5">
-                            <span className="text-steel-400 dark:text-slate-500 shrink-0 font-medium w-14">กำหนดส่ง:</span>
+                            <span className="text-slate- dark:text-slate-500 shrink-0 font-medium w-14">กำหนดส่ง:</span>
                             <div className="flex items-center gap-1 flex-wrap">
                               {r.expected_delivery_date ? (
-                                <span className="font-mono text-xs font-semibold text-steel-800 dark:text-slate-200 mr-1">
+                                <span className="font-mono text-xs font-semibold text-slate- dark:text-slate-200 mr-1">
                                   {formatThaiDate(r.expected_delivery_date)}
                                 </span>
                               ) : null}
@@ -1363,10 +1357,10 @@ export default function PurchasingHub() {
                         </div>
 
                         {/* ส่วนท้ายการ์ด: ยอดเงินสุทธิ + ปุ่มคำสั่ง */}
-                        <div className="pt-2.5 border-t border-steel-100 dark:border-slate-800 flex items-center justify-between gap-2">
+                        <div className="pt-2.5 border-t border-slate- dark:border-slate-800 flex items-center justify-between gap-2">
                           <div>
-                            <div className="text-[10px] text-steel-400 dark:text-slate-500 font-medium">ยอดรวมสุทธิ</div>
-                            <div className="font-mono font-black text-sm text-steel-900 dark:text-slate-100">
+                            <div className="text-[10px] text-slate- dark:text-slate-500 font-medium">ยอดรวมสุทธิ</div>
+                            <div className="font-mono font-black text-sm text-slate- dark:text-slate-100">
                               ฿{baht(getPoPayable(r))}
                             </div>
                           </div>
@@ -1384,10 +1378,10 @@ export default function PurchasingHub() {
 
                             <Link
                               to={`/purchasing/po/${r.id}`}
-                              className="inline-flex items-center justify-center rounded-lg border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-steel-50 dark:hover:bg-slate-700 p-1.5 text-steel-700 dark:text-slate-200 transition shadow-xs"
+                              className="inline-flex items-center justify-center rounded-lg border border-slate- dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate- dark:hover:bg-slate-700 p-1.5 text-slate- dark:text-slate-200 transition shadow-xs"
                               title="ดูรายละเอียดใบสั่งซื้อ"
                             >
-                              <Eye className="h-3.5 w-3.5 text-steel-500 dark:text-slate-400" />
+                              <Eye className="h-3.5 w-3.5 text-slate- dark:text-slate-400" />
                             </Link>
 
                             <button
@@ -1403,7 +1397,7 @@ export default function PurchasingHub() {
                             <button
                               type="button"
                               onClick={(e) => toggleDropdown(e, 'po', r)}
-                              className="inline-flex items-center justify-center rounded-lg border border-steel-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-steel-100 dark:hover:bg-slate-700 p-1.5 text-steel-600 dark:text-slate-300 transition shadow-xs cursor-pointer"
+                              className="inline-flex items-center justify-center rounded-lg border border-slate- dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate- dark:hover:bg-slate-700 p-1.5 text-slate- dark:text-slate-300 transition shadow-xs cursor-pointer"
                               title="เปิดคำสั่งเพิ่มเติม (พิมพ์, แชร์, แก้ไข, จ่ายเงิน, ยกเลิก)"
                             >
                               <MoreVertical className="h-3.5 w-3.5" />
@@ -1453,7 +1447,7 @@ export default function PurchasingHub() {
                                 >
                                   <span>{r.po_no}</span>
                                 </Link>
-                                <div className="text-[11px] text-steel-500 dark:text-slate-400 mt-0.5">
+                                <div className="text-[11px] text-slate- dark:text-slate-400 mt-0.5">
                                   {formatThaiDate(r.order_date)}
                                 </div>
                                 {r.pr?.pr_no && (
@@ -1467,10 +1461,10 @@ export default function PurchasingHub() {
                             {/* 2. ผู้ขาย / ร้านค้า (กึ่งกลางบน-ล่าง ย่อข้อความ ไม่ยาวเกิน มี title ให้อ่านได้) */}
                             {isPoColVisible('vendor') && (
                               <td className="py-3 px-3.5 align-middle border-r border-slate-200/60 dark:border-slate-800/60">
-                                <div className="font-bold text-steel-900 dark:text-slate-100 truncate max-w-[190px]" title={r.custom_vendor_name || r.vendors?.vendor_name}>
+                                <div className="font-bold text-slate- dark:text-slate-100 truncate max-w-[190px]" title={r.custom_vendor_name || r.vendors?.vendor_name}>
                                   {r.custom_vendor_name || r.vendors?.vendor_name || '-'}
                                 </div>
-                                <div className="text-[11px] text-steel-500 dark:text-slate-400 truncate max-w-[190px]" title={r.vendors?.contact_person ? `ติดต่อ: ${r.vendors.contact_person}` : ''}>
+                                <div className="text-[11px] text-slate- dark:text-slate-400 truncate max-w-[190px]" title={r.vendors?.contact_person ? `ติดต่อ: ${r.vendors.contact_person}` : ''}>
                                   {r.vendors?.contact_person ? `ติดต่อ: ${r.vendors.contact_person}` : ''}
                                   {r.vendors?.phone ? ` โทร: ${r.vendors.phone}` : ''}
                                   {!r.vendors && r.custom_vendor_name && <span className="text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 px-1 rounded text-[10px] border border-amber-200 dark:border-amber-800">ร้านค้าคีย์เอง</span>}
@@ -1482,10 +1476,10 @@ export default function PurchasingHub() {
                             {isPoColVisible('project') && (
                               <td className="py-3 px-3.5 align-middle border-r border-slate-200/60 dark:border-slate-800/60">
                                 <div className="flex flex-col gap-0.5 min-w-0">
-                                  <div className="font-bold text-steel-900 dark:text-slate-100 truncate max-w-[190px]" title={r.custom_project_name || (r.projects ? `${r.projects.project_code} ${r.projects.project_name}` : 'ของกลางบริษัท')}>
+                                  <div className="font-bold text-slate- dark:text-slate-100 truncate max-w-[190px]" title={r.custom_project_name || (r.projects ? `${r.projects.project_code} ${r.projects.project_name}` : 'ของกลางบริษัท')}>
                                     {r.custom_project_name || (r.projects ? r.projects.project_code : 'ของกลางบริษัท')}
                                   </div>
-                                  <div className="text-[11px] text-steel-600 dark:text-slate-400 truncate max-w-[190px]" title={r.projects?.project_name || (r.custom_project_name ? 'โครงการคีย์เอง' : 'สต็อกส่วนกลาง')}>
+                                  <div className="text-[11px] text-slate- dark:text-slate-400 truncate max-w-[190px]" title={r.projects?.project_name || (r.custom_project_name ? 'โครงการคีย์เอง' : 'สต็อกส่วนกลาง')}>
                                     {r.projects?.project_name || (r.custom_project_name ? 'โครงการคีย์เอง' : 'สต็อกส่วนกลาง')}
                                   </div>
                                   {r.customer_name && (
@@ -1501,7 +1495,7 @@ export default function PurchasingHub() {
                             {isPoColVisible('due_date') && (
                               <td className="py-3 px-3.5 text-center align-middle border-r border-slate-200/60 dark:border-slate-800/60 whitespace-nowrap">
                                 {r.expected_delivery_date ? (
-                                  <div className="font-mono text-xs font-bold text-steel-800 dark:text-slate-200">
+                                  <div className="font-mono text-xs font-bold text-slate- dark:text-slate-200">
                                     {formatThaiDate(r.expected_delivery_date)}
                                   </div>
                                 ) : null}
@@ -1519,10 +1513,10 @@ export default function PurchasingHub() {
                             {/* 5. ยอดรวมสุทธิ (กึ่งกลางบน-ล่าง ชิดขวาตามแบบการเงิน) */}
                             {isPoColVisible('amount') && (
                               <td className="py-3 px-3.5 align-middle text-right whitespace-nowrap border-r border-slate-200/60 dark:border-slate-800/60">
-                                <div className="font-mono font-black text-sm text-steel-900 dark:text-slate-100 tabular-nums">
+                                <div className="font-mono font-black text-sm text-slate- dark:text-slate-100 tabular-nums">
                                   ฿{baht(getPoPayable(r))}
                                 </div>
-                                <div className="text-[10px] text-steel-400 dark:text-slate-500 font-normal">บาท</div>
+                                <div className="text-[10px] text-slate- dark:text-slate-500 font-normal">บาท</div>
                               </td>
                             )}
 
@@ -1580,10 +1574,10 @@ export default function PurchasingHub() {
                                 ) : (
                                   <Link
                                     to={`/purchasing/po/${r.id}`}
-                                    className="inline-flex items-center gap-1 rounded-lg border border-steel-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-steel-50 dark:hover:bg-slate-700 px-2 py-1 text-xs font-semibold text-steel-700 dark:text-slate-200 transition shadow-xs"
+                                    className="inline-flex items-center gap-1 rounded-lg border border-slate- dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate- dark:hover:bg-slate-700 px-2 py-1 text-xs font-semibold text-slate- dark:text-slate-200 transition shadow-xs"
                                     title="ดูรายละเอียดใบสั่งซื้อ"
                                   >
-                                    <Eye className="h-3.5 w-3.5 text-steel-500 dark:text-slate-400" />
+                                    <Eye className="h-3.5 w-3.5 text-slate- dark:text-slate-400" />
                                     <span>ดู</span>
                                   </Link>
                                 )}
@@ -1594,7 +1588,7 @@ export default function PurchasingHub() {
                                   onClick={(e) => toggleDropdown(e, 'po', r)}
                                   className={`inline-flex items-center justify-center rounded-lg border p-1 text-xs transition shadow-xs cursor-pointer ${activeDropdown && activeDropdown.id === r.id && activeDropdown.type === 'po'
                                     ? 'bg-amber-100 dark:bg-amber-950/80 border-amber-400 text-amber-900 dark:text-amber-200'
-                                    : 'border-steel-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-steel-100 dark:hover:bg-slate-700 text-steel-600 dark:text-slate-300'
+                                    : 'border-slate- dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate- dark:hover:bg-slate-700 text-slate- dark:text-slate-300'
                                     }`}
                                   title="เมนูคำสั่งเพิ่มเติม (พิมพ์, จ่าซอง, แชร์, สร้างซ้ำ, แก้ไข, ลบ)"
                                 >
@@ -1612,7 +1606,7 @@ export default function PurchasingHub() {
 
               {/* แถบเปลี่ยนหน้า (PO Pagination) */}
               {filteredPos.length > 0 && (
-                <div className="border-t border-steel-100 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-2.5">
+                <div className="border-t border-slate- dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-2.5">
                   <Pagination
                     currentPage={currentPage}
                     totalItems={filteredPos.length}
@@ -1631,10 +1625,10 @@ export default function PurchasingHub() {
 
           {/* TAB 2: รายการใบขอซื้อ (PR) */}
           {activeTab === 'pr' && (
-            <div className="rounded-2xl border border-steel-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs overflow-hidden">
-              <div className="p-4 border-b border-steel-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 bg-slate-50/50 dark:bg-slate-800/50">
+            <div className="rounded-2xl border border-slate- dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs overflow-hidden">
+              <div className="p-4 border-b border-slate- dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 bg-slate-50/50 dark:bg-slate-800/50">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold text-steel-900 dark:text-slate-100">
+                  <span className="text-sm font-bold text-slate- dark:text-slate-100">
                     รายการใบขอซื้อ (PR) ทั้งหมด ({filteredPrs.length} รายการ)
                   </span>
                   {filterStatus && (
@@ -1647,10 +1641,10 @@ export default function PurchasingHub() {
                   {canCreate && (
                     <Link
                       to="/purchasing/pr/new"
-                      className="inline-flex items-center gap-1.5 rounded-xl bg-steel-900 dark:bg-amber-500 hover:bg-steel-800 dark:hover:bg-amber-400 px-3.5 py-1.5 text-xs font-bold text-hivis dark:text-slate-950 shadow-xs transition"
+                      className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 dark:bg-amber-500 dark:hover:bg-amber-400 px-3.5 py-1.5 text-xs font-bold text-white dark:text-slate-950 shadow-xs transition"
                     >
                       <Plus className="h-3.5 w-3.5" />
-                      <span> ออกใบขอซื้อ (PR)</span>
+                      <span>ออกใบขอซื้อ (PR)</span>
                     </Link>
                   )}
                 </div>
@@ -1715,10 +1709,10 @@ export default function PurchasingHub() {
                             {isPrColVisible('project') && (
                               <td className="py-3 px-3.5 align-middle border-r border-slate-200/60 dark:border-slate-800/60">
                                 <div className="flex flex-col gap-0.5 min-w-0">
-                                  <div className="font-bold text-steel-900 dark:text-slate-100 truncate max-w-[200px]" title={r.custom_project_name || (r.projects ? `${r.projects.project_code} ${r.projects.project_name}` : 'ของกลางบริษัท')}>
+                                  <div className="font-bold text-slate- dark:text-slate-100 truncate max-w-[200px]" title={r.custom_project_name || (r.projects ? `${r.projects.project_code} ${r.projects.project_name}` : 'ของกลางบริษัท')}>
                                     {r.custom_project_name || (r.projects ? r.projects.project_code : 'ของกลางบริษัท')}
                                   </div>
-                                  <div className="text-[11px] text-steel-600 dark:text-slate-400 truncate max-w-[200px]" title={r.projects?.project_name || (r.custom_project_name ? 'โครงการคีย์เอง' : 'สต็อกส่วนกลาง')}>
+                                  <div className="text-[11px] text-slate- dark:text-slate-400 truncate max-w-[200px]" title={r.projects?.project_name || (r.custom_project_name ? 'โครงการคีย์เอง' : 'สต็อกส่วนกลาง')}>
                                     {r.projects?.project_name || (r.custom_project_name ? 'โครงการคีย์เอง' : 'สต็อกส่วนกลาง')}
                                   </div>
                                   {r.customer_name && (
@@ -1740,10 +1734,10 @@ export default function PurchasingHub() {
                               <td className="py-3 px-3 align-middle text-center whitespace-nowrap border-r border-slate-200/60 dark:border-slate-800/60">
                                 <div className="inline-flex items-center gap-1 bg-slate-100 dark:bg-slate-800/80 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700/60">
                                   <Package className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
-                                  <span className="font-mono font-bold text-steel-900 dark:text-slate-100 tabular-nums">
+                                  <span className="font-mono font-bold text-slate- dark:text-slate-100 tabular-nums">
                                     {r.purchase_requisition_items?.length || 0}
                                   </span>
-                                  <span className="text-[10px] text-steel-500 dark:text-slate-400">รายการ</span>
+                                  <span className="text-[10px] text-slate- dark:text-slate-400">รายการ</span>
                                 </div>
                               </td>
                             )}
@@ -1780,7 +1774,7 @@ export default function PurchasingHub() {
                                     ))}
                                   </div>
                                 ) : (
-                                  <span className="text-xs text-steel-400 dark:text-slate-500 font-mono">-</span>
+                                  <span className="text-xs text-slate- dark:text-slate-500 font-mono">-</span>
                                 )}
                               </td>
                             )}
@@ -1800,10 +1794,10 @@ export default function PurchasingHub() {
                                   <>
                                     <Link
                                       to={`/purchasing/pr/${r.id}`}
-                                      className="inline-flex items-center gap-1 rounded-lg border border-steel-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-steel-50 dark:hover:bg-slate-700 px-2 py-1 text-xs font-semibold text-steel-700 dark:text-slate-200 transition shadow-xs"
+                                      className="inline-flex items-center gap-1 rounded-lg border border-slate- dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate- dark:hover:bg-slate-700 px-2 py-1 text-xs font-semibold text-slate- dark:text-slate-200 transition shadow-xs"
                                       title="ดูรายละเอียดใบขอซื้อ"
                                     >
-                                      <Eye className="h-3.5 w-3.5 text-steel-500 dark:text-slate-400" />
+                                      <Eye className="h-3.5 w-3.5 text-slate- dark:text-slate-400" />
                                       <span>ดู</span>
                                     </Link>
                                     {r.status !== 'cancelled' && canCreate && (
@@ -1825,7 +1819,7 @@ export default function PurchasingHub() {
                                   onClick={(e) => toggleDropdown(e, 'pr', r)}
                                   className={`inline-flex items-center justify-center rounded-lg border p-1 text-xs transition shadow-xs cursor-pointer ${activeDropdown && activeDropdown.id === r.id && activeDropdown.type === 'pr'
                                     ? 'bg-sky-100 dark:bg-sky-950/80 border-sky-400 text-sky-900 dark:text-sky-200'
-                                    : 'border-steel-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-steel-100 dark:hover:bg-slate-700 text-steel-600 dark:text-slate-300'
+                                    : 'border-slate- dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate- dark:hover:bg-slate-700 text-slate- dark:text-slate-300'
                                     }`}
                                   title="เมนูคำสั่งเพิ่มเติม"
                                 >
@@ -1843,7 +1837,7 @@ export default function PurchasingHub() {
 
               {/* แถบเปลี่ยนหน้า (PR Pagination) */}
               {filteredPrs.length > 0 && (
-                <div className="border-t border-steel-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-850 px-4 py-3">
+                <div className="border-t border-slate- dark:border-slate-800 bg-slate-50/50 dark:bg-slate-850 px-4 py-3">
                   <Pagination
                     currentPage={currentPage}
                     totalItems={filteredPrs.length}
@@ -1864,7 +1858,7 @@ export default function PurchasingHub() {
           {activeTab === 'receipts' && (
             <div className="space-y-4">
               {/* แถบสลับมุมมองระหว่าง ประวัติพัสดุที่เคยรับเข้ามา VS รอรับของเข้าสโตร์ */}
-              <div className="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3 rounded-2xl border border-steel-200 dark:border-slate-800 shadow-xs">
+              <div className="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3 rounded-2xl border border-slate- dark:border-slate-800 shadow-xs">
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
@@ -1874,12 +1868,12 @@ export default function PurchasingHub() {
                     }}
                     className={`px-4 py-2 text-xs font-bold rounded-xl transition shadow-xs flex items-center gap-2 cursor-pointer ${receiptSubTab === 'received_items'
                       ? 'bg-emerald-700 text-white shadow-sm dark:bg-emerald-600'
-                      : 'bg-steel-50 dark:bg-slate-800 text-steel-700 dark:text-slate-300 hover:bg-steel-100 dark:hover:bg-slate-700 border border-steel-200 dark:border-slate-700'
+                      : 'bg-slate- dark:bg-slate-800 text-slate- dark:text-slate-300 hover:bg-slate- dark:hover:bg-slate-700 border border-slate- dark:border-slate-700'
                       }`}
                   >
                     <span></span>
                     <span>ประวัติพัสดุที่เคยรับเข้ามา (Received Materials History)</span>
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${receiptSubTab === 'received_items' ? 'bg-white/25 text-white' : 'bg-steel-200 dark:bg-slate-700 text-steel-700 dark:text-slate-200'
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${receiptSubTab === 'received_items' ? 'bg-white/25 text-white' : 'bg-slate- dark:bg-slate-700 text-slate- dark:text-slate-200'
                       }`}>
                       {filteredReceivedMaterials.length}
                     </span>
@@ -1893,12 +1887,12 @@ export default function PurchasingHub() {
                     }}
                     className={`px-4 py-2 text-xs font-bold rounded-xl transition shadow-xs flex items-center gap-2 cursor-pointer ${receiptSubTab === 'pending'
                       ? 'bg-sky-700 text-white shadow-sm dark:bg-sky-600'
-                      : 'bg-steel-50 dark:bg-slate-800 text-steel-700 dark:text-slate-300 hover:bg-steel-100 dark:hover:bg-slate-700 border border-steel-200 dark:border-slate-700'
+                      : 'bg-slate- dark:bg-slate-800 text-slate- dark:text-slate-300 hover:bg-slate- dark:hover:bg-slate-700 border border-slate- dark:border-slate-700'
                       }`}
                   >
                     <span>⏳</span>
                     <span>รอตรวจรับเข้าสโตร์ (Pending POs)</span>
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${receiptSubTab === 'pending' ? 'bg-white/25 text-white' : 'bg-steel-200 dark:bg-slate-700 text-steel-700 dark:text-slate-200'
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${receiptSubTab === 'pending' ? 'bg-white/25 text-white' : 'bg-slate- dark:bg-slate-700 text-slate- dark:text-slate-200'
                       }`}>
                       {pendingReceipts.length}
                     </span>
@@ -1908,7 +1902,7 @@ export default function PurchasingHub() {
                 {receiptSubTab === 'received_items' && (
                   <div className="flex flex-wrap items-center gap-2">
                     {/* ปุ่มสลับโหมด: รวมรายการไม่ให้ซ้ำ VS แยกตามรอบตรวจรับ GRN */}
-                    <div className="flex items-center bg-steel-100 dark:bg-slate-800 p-0.5 rounded-xl border border-steel-200 dark:border-slate-700 text-xs">
+                    <div className="flex items-center bg-slate- dark:bg-slate-800 p-0.5 rounded-xl border border-slate- dark:border-slate-700 text-xs">
                       <button
                         type="button"
                         onClick={() => {
@@ -1917,7 +1911,7 @@ export default function PurchasingHub() {
                         }}
                         className={`px-3 py-1.5 rounded-lg font-bold transition cursor-pointer flex items-center gap-1.5 ${receiptGroupMode === 'grouped'
                           ? 'bg-white dark:bg-slate-900 text-emerald-800 dark:text-emerald-300 shadow-xs'
-                          : 'text-steel-600 dark:text-slate-400 hover:text-steel-900 dark:hover:text-white'
+                          : 'text-slate- dark:text-slate-400 hover:text-slate- dark:hover:text-white'
                           }`}
                         title="รวมรายการตามใบสั่งซื้อและวัสดุ ไม่ให้แสดงแถวซ้ำซ้อน"
                       >
@@ -1933,7 +1927,7 @@ export default function PurchasingHub() {
                         }}
                         className={`px-3 py-1.5 rounded-lg font-bold transition cursor-pointer flex items-center gap-1.5 ${receiptGroupMode === 'by_grn'
                           ? 'bg-white dark:bg-slate-900 text-emerald-800 dark:text-emerald-300 shadow-xs'
-                          : 'text-steel-600 dark:text-slate-400 hover:text-steel-900 dark:hover:text-white'
+                          : 'text-slate- dark:text-slate-400 hover:text-slate- dark:hover:text-white'
                           }`}
                         title="แสดงแยกตามรอบและเลขที่ใบตรวจรับแต่ละครั้ง (GRN)"
                       >
@@ -1942,7 +1936,7 @@ export default function PurchasingHub() {
                       </button>
                     </div>
 
-                    <div className="text-xs text-steel-600 dark:text-slate-300 flex items-center gap-2 pl-1">
+                    <div className="text-xs text-slate- dark:text-slate-300 flex items-center gap-2 pl-1">
                       <span>มูลค่ารับเข้ารวม: <b className="text-emerald-950 dark:text-emerald-400 font-mono font-black text-sm">{baht(totalReceivedValue)}</b> บาท</span>
                     </div>
 
@@ -2132,7 +2126,7 @@ export default function PurchasingHub() {
 
                   {/* แถบเปลี่ยนหน้า (Received Materials Pagination) */}
                   {filteredReceivedMaterials.length > 0 && (
-                    <div className="border-t border-steel-100 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-2.5 rounded-xl border border-steel-200 dark:border-slate-800">
+                    <div className="border-t border-slate- dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-2.5 rounded-xl border border-slate- dark:border-slate-800">
                       <Pagination
                         currentPage={currentPage}
                         totalItems={filteredReceivedMaterials.length}
@@ -2175,7 +2169,7 @@ export default function PurchasingHub() {
                       <tbody className="divide-y divide-slate-200 dark:divide-slate-800 bg-white dark:bg-slate-900">
                         {pendingReceipts.length === 0 ? (
                           <tr>
-                            <td colSpan={4} className="py-10 text-center text-steel-400 dark:text-slate-500">
+                            <td colSpan={4} className="py-10 text-center text-slate- dark:text-slate-500">
                               ไม่มีใบสั่งซื้อค้างส่งมอบ หรือไม่พบข้อมูลตามช่วงวันที่ที่เลือก
                             </td>
                           </tr>
@@ -2231,7 +2225,7 @@ export default function PurchasingHub() {
 
                                   {/* 3. กำหนดส่งมอบ */}
                                   <td className="py-3 px-4 text-center align-middle border-r border-slate-200/60 dark:border-slate-800/60 whitespace-nowrap">
-                                    <div className="font-mono text-xs font-bold text-steel-800 dark:text-slate-200">
+                                    <div className="font-mono text-xs font-bold text-slate- dark:text-slate-200">
                                       {r.expected_delivery_date ? formatThaiDate(r.expected_delivery_date) : '-'}
                                     </div>
                                     {dueStatus && (
@@ -2256,7 +2250,7 @@ export default function PurchasingHub() {
                                           <span>ตรวจรับสินค้า</span>
                                         </Link>
                                       ) : (
-                                        <span className="text-[11px] text-steel-400 dark:text-slate-500">รอสโตร์ตรวจรับ</span>
+                                        <span className="text-[11px] text-slate- dark:text-slate-500">รอสโตร์ตรวจรับ</span>
                                       )}
 
                                       <button
@@ -2348,7 +2342,7 @@ export default function PurchasingHub() {
 
                   {/* แถบเปลี่ยนหน้า (Receipts Pagination) */}
                   {pendingReceipts.length > 0 && (
-                    <div className="border-t border-steel-100 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-2.5 rounded-xl border border-steel-200 dark:border-slate-800">
+                    <div className="border-t border-slate- dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-2.5 rounded-xl border border-slate- dark:border-slate-800">
                       <Pagination
                         currentPage={currentPage}
                         totalItems={pendingReceipts.length}
@@ -2410,26 +2404,26 @@ export default function PurchasingHub() {
               </div>
 
               {/* ตารางจับคู่ PR  PO และแผนผังการผูกโยงเอกสาร */}
-              <div className="rounded-2xl border border-steel-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs space-y-4">
-                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-steel-100 dark:border-slate-800 pb-3">
+              <div className="rounded-2xl border border-slate- dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate- dark:border-slate-800 pb-3">
                   <div>
                     <h3 className="text-sm font-black text-ink dark:text-slate-100 uppercase tracking-wider flex items-center gap-2">
                       <Workflow className="h-4 w-4 text-sky-600" />
                       <span>ผังลำดับขั้นตอนการจัดซื้อ (PR → PO → GR/RI Pipeline Flow)</span>
                     </h3>
-                    <p className="text-xs text-steel-500 dark:text-slate-400 mt-0.5">
+                    <p className="text-xs text-slate- dark:text-slate-400 mt-0.5">
                       แสดงสถานะล่าสุดของเอกสารจัดซื้อทุกใบ (ทั้งจาก PR และเปิด PO ตรง) ว่ากำลังอยู่ในขั้นตอนใดของกระบวนการ
                     </p>
                   </div>
 
                   {/* Toggle Switch: ผังกระบวนการ (Flow Cards) vs ตารางรายงาน (Table) */}
-                  <div className="flex items-center rounded-xl bg-steel-100 dark:bg-slate-800 p-0.5 border border-steel-200 dark:border-slate-700">
+                  <div className="flex items-center rounded-xl bg-slate- dark:bg-slate-800 p-0.5 border border-slate- dark:border-slate-700">
                     <button
                       type="button"
                       onClick={() => setPipelineViewMode('flow')}
                       className={`px-3 py-1.5 text-xs font-bold rounded-lg transition flex items-center gap-1.5 cursor-pointer ${pipelineViewMode === 'flow'
-                        ? 'bg-white dark:bg-slate-700 text-steel-900 dark:text-amber-400 shadow-2xs'
-                        : 'text-steel-600 dark:text-slate-400 hover:text-steel-900 dark:hover:text-slate-200'
+                        ? 'bg-white dark:bg-slate-700 text-slate- dark:text-amber-400 shadow-2xs'
+                        : 'text-slate- dark:text-slate-400 hover:text-slate- dark:hover:text-slate-200'
                         }`}
                     >
                       <Layers className="h-3.5 w-3.5" />
@@ -2439,8 +2433,8 @@ export default function PurchasingHub() {
                       type="button"
                       onClick={() => setPipelineViewMode('table')}
                       className={`px-3 py-1.5 text-xs font-bold rounded-lg transition flex items-center gap-1.5 cursor-pointer ${pipelineViewMode === 'table'
-                        ? 'bg-white dark:bg-slate-700 text-steel-900 dark:text-amber-400 shadow-2xs'
-                        : 'text-steel-600 dark:text-slate-400 hover:text-steel-900 dark:hover:text-slate-200'
+                        ? 'bg-white dark:bg-slate-700 text-slate- dark:text-amber-400 shadow-2xs'
+                        : 'text-slate- dark:text-slate-400 hover:text-slate- dark:hover:text-slate-200'
                         }`}
                     >
                       <List className="h-3.5 w-3.5" />
@@ -2453,8 +2447,8 @@ export default function PurchasingHub() {
                 {pipelineViewMode === 'flow' ? (
                   <div className="space-y-3.5">
                     {filteredPipelinePrs.length === 0 ? (
-                      <div className="py-12 text-center text-steel-400 dark:text-slate-500 rounded-xl bg-steel-50/50 dark:bg-slate-800/30">
-                        <Workflow className="mx-auto h-8 w-8 text-steel-300 dark:text-slate-600 mb-2" />
+                      <div className="py-12 text-center text-slate- dark:text-slate-500 rounded-xl bg-slate-/50 dark:bg-slate-800/30">
+                        <Workflow className="mx-auto h-8 w-8 text-slate- dark:text-slate-600 mb-2" />
                         <p className="font-semibold text-xs">ไม่พบข้อมูลวงจรเอกสารตามเงื่อนไขหรือช่วงวันที่ที่ค้นหา</p>
                       </div>
                     ) : (
@@ -2473,22 +2467,22 @@ export default function PurchasingHub() {
                         return (
                           <div
                             key={entry.id}
-                            className="rounded-2xl border border-steel-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-4 sm:p-5 shadow-xs hover:shadow-md transition-shadow space-y-3 relative"
+                            className="rounded-2xl border border-slate- dark:border-slate-800 bg-white dark:bg-slate-900/90 p-4 sm:p-5 shadow-xs hover:shadow-md transition-shadow space-y-3 relative"
                           >
                             {/* Card Top: โครงการ + วันที่ขอ + ป้ายขั้นตอนปัจจุบัน */}
-                            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-steel-100 dark:border-slate-800/80 pb-2.5">
+                            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate- dark:border-slate-800/80 pb-2.5">
                               <div className="flex items-center gap-2 flex-wrap">
-                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-xs font-bold bg-steel-100 dark:bg-slate-800 text-steel-800 dark:text-slate-200 border border-steel-200 dark:border-slate-700">
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-xs font-bold bg-slate- dark:bg-slate-800 text-slate- dark:text-slate-200 border border-slate- dark:border-slate-700">
                                   <span>{projObj ? `${projObj.project_code} · ${projObj.project_name}` : customProj || 'ของกลางบริษัท / สต็อกส่วนกลาง'}</span>
                                 </span>
                                 {custName && (
-                                  <span className="text-xs text-steel-500 dark:text-slate-400">
+                                  <span className="text-xs text-slate- dark:text-slate-400">
                                     ลูกค้า: {custName}
                                   </span>
                                 )}
                               </div>
                               <div className="flex items-center gap-2 flex-wrap">
-                                <span className="text-xs text-steel-500 dark:text-slate-400 font-mono">
+                                <span className="text-xs text-slate- dark:text-slate-400 font-mono">
                                   {isDirectPo ? `สั่งซื้อ: ${formatThaiDate(primaryPo?.order_date)}` : `ขอซื้อ: ${formatThaiDate(r?.request_date)}`}
                                 </span>
                                 <span
@@ -2549,17 +2543,17 @@ export default function PurchasingHub() {
                                     </Link>
                                   </div>
 
-                                  <div className="text-xs text-steel-600 dark:text-slate-300 space-y-1">
+                                  <div className="text-xs text-slate- dark:text-slate-300 space-y-1">
                                     <div className="flex items-center justify-between text-[11px]">
-                                      <span className="text-steel-400 dark:text-slate-500">ร้านค้าแนะนำ:</span>
-                                      <span className="font-semibold text-steel-800 dark:text-slate-200">{r.suggested_vendor || '-'}</span>
+                                      <span className="text-slate- dark:text-slate-500">ร้านค้าแนะนำ:</span>
+                                      <span className="font-semibold text-slate- dark:text-slate-200">{r.suggested_vendor || '-'}</span>
                                     </div>
                                     {(() => {
                                       const qtSrc = extractPrSourceQuotation(r)
                                       if (!qtSrc.quotationNo && !qtSrc.quotationId) return null
                                       return (
                                         <div className="flex items-center justify-between text-[11px]">
-                                          <span className="text-steel-400 dark:text-slate-500">ใบเสนอราคาขาย:</span>
+                                          <span className="text-slate- dark:text-slate-500">ใบเสนอราคาขาย:</span>
                                           {qtSrc.quotationId ? (
                                             <Link
                                               to={`/quotations/${qtSrc.quotationId}`}
@@ -2576,7 +2570,7 @@ export default function PurchasingHub() {
                                       )
                                     })()}
                                     {r.notes && (
-                                      <div className="text-[11px] text-steel-500 dark:text-slate-400 line-clamp-1 italic">
+                                      <div className="text-[11px] text-slate- dark:text-slate-400 line-clamp-1 italic">
                                         "{r.notes}"
                                       </div>
                                     )}
@@ -2586,7 +2580,7 @@ export default function PurchasingHub() {
 
                               {/* ตัวเชื่อมโยง (Linkage Arrow) */}
                               <div className="md:col-span-1 flex flex-col items-center justify-center py-1">
-                                <div className="hidden md:flex flex-col items-center text-steel-400 dark:text-slate-500">
+                                <div className="hidden md:flex flex-col items-center text-slate- dark:text-slate-500">
                                   <span className="text-[10px] font-bold uppercase tracking-wider mb-0.5">
                                     {isDirectPo ? 'ตรง' : 'ออก PO'}
                                   </span>
@@ -2626,11 +2620,11 @@ export default function PurchasingHub() {
                                         </div>
 
                                         <div className="flex flex-wrap items-center justify-between gap-1 text-[11px] pt-1 border-t border-emerald-200/60 dark:border-emerald-900/40">
-                                          <span className="text-steel-600 dark:text-slate-300 font-semibold truncate max-w-[180px]">
+                                          <span className="text-slate- dark:text-slate-300 font-semibold truncate max-w-[180px]">
                                             {p.custom_vendor_name || p.vendors?.vendor_name || 'ไม่ระบุผู้ขาย'}
                                           </span>
                                           <div className="flex items-center gap-1.5">
-                                            <span className="text-steel-400 dark:text-slate-500">
+                                            <span className="text-slate- dark:text-slate-500">
                                               {formatThaiDate(p.order_date)}
                                             </span>
                                             <Link
@@ -2655,14 +2649,14 @@ export default function PurchasingHub() {
                                     )}
                                   </div>
                                 ) : (
-                                  <div className="rounded-xl border border-dashed border-steel-300 dark:border-slate-700 bg-steel-50/50 dark:bg-slate-800/40 p-4 text-center space-y-2">
-                                    <div className="text-xs text-steel-500 dark:text-slate-400 font-semibold">
-                                      ⏳ รายการนี้ยังไม่ได้สร้างใบสั่งซื้อ (PO)
+                                  <div className="rounded-xl border border-dashed border-slate- dark:border-slate-700 bg-slate-/50 dark:bg-slate-800/40 p-4 text-center space-y-2">
+                                    <div className="text-xs text-slate-500 dark:text-slate-400 font-semibold">
+                                      รายการนี้ยังไม่ได้สร้างใบสั่งซื้อ (PO)
                                     </div>
                                     {canCreate && r && (
                                       <Link
                                         to={`/purchasing/po/new?pr=${r.id}`}
-                                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-steel-900 dark:bg-amber-500 hover:bg-steel-800 text-hivis dark:text-slate-950 font-bold text-xs shadow-xs transition"
+                                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 dark:bg-amber-500 dark:hover:bg-amber-400 text-white dark:text-slate-950 font-bold text-xs shadow-2xs transition"
                                       >
                                         <Plus className="h-3.5 w-3.5" />
                                         <span>ออกใบสั่งซื้อจาก PR นี้</span>
@@ -2674,7 +2668,7 @@ export default function PurchasingHub() {
                             </div>
 
                             {/* แถบแสดง 5 ขั้นตอนปัจจุบันของรายการนี้ (1.PR -> 2.PO -> 3.รับของ -> 4.จ่าย -> 5.ปิดงาน) */}
-                            <div className="pt-2.5 border-t border-steel-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
+                            <div className="pt-2.5 border-t border-slate- dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
                               <CompactProcurementSteps flow={flow} />
                               {primaryPo && (
                                 <Link
@@ -2744,17 +2738,17 @@ export default function PurchasingHub() {
                                       <Link to={`/purchasing/pr/${r.id}`} className="font-bold text-sky-700 dark:text-sky-400 hover:underline font-mono inline-flex items-center justify-center gap-1">
                                         <span>{r.pr_no}</span>
                                       </Link>
-                                      <div className="text-[11px] text-steel-500 dark:text-slate-400 font-mono mt-0.5">
+                                      <div className="text-[11px] text-slate- dark:text-slate-400 font-mono mt-0.5">
                                         {formatThaiDate(r.request_date)}
                                       </div>
                                     </>
                                   )}
                                 </td>
                                 <td className="py-3 px-3 align-middle border-r border-slate-200/60 dark:border-slate-800/60">
-                                  <div className="font-bold text-steel-900 dark:text-slate-100 truncate max-w-[180px]" title={projObj?.project_code || customProj || 'ของกลาง'}>
+                                  <div className="font-bold text-slate- dark:text-slate-100 truncate max-w-[180px]" title={projObj?.project_code || customProj || 'ของกลาง'}>
                                     {projObj?.project_code || customProj || 'ของกลาง'}
                                   </div>
-                                  <div className="text-[11px] text-steel-500 dark:text-slate-400 truncate max-w-[180px]" title={projObj?.project_name || 'สต็อกส่วนกลางบริษัท'}>
+                                  <div className="text-[11px] text-slate- dark:text-slate-400 truncate max-w-[180px]" title={projObj?.project_name || 'สต็อกส่วนกลางบริษัท'}>
                                     {projObj?.project_name || 'สต็อกส่วนกลางบริษัท'}
                                   </div>
                                 </td>
@@ -2776,7 +2770,7 @@ export default function PurchasingHub() {
                                       ))}
                                     </div>
                                   ) : (
-                                    <span className="text-steel-400 dark:text-slate-500 text-xs italic">
+                                    <span className="text-slate- dark:text-slate-500 text-xs italic">
                                       ⏳ ยังไม่ออก PO
                                     </span>
                                   )}
@@ -2789,7 +2783,7 @@ export default function PurchasingHub() {
                                     {r && (
                                       <Link
                                         to={`/purchasing/pr/${r.id}`}
-                                        className="px-2 py-1 rounded-lg border border-steel-300 dark:border-slate-700 hover:bg-steel-50 dark:hover:bg-slate-800 text-xs font-semibold text-steel-700 dark:text-slate-200 transition"
+                                        className="px-2 py-1 rounded-lg border border-slate- dark:border-slate-700 hover:bg-slate- dark:hover:bg-slate-800 text-xs font-semibold text-slate- dark:text-slate-200 transition"
                                         title="ดูใบขอซื้อ (PR)"
                                       >
                                         PR
@@ -2817,7 +2811,7 @@ export default function PurchasingHub() {
 
                 {/* แถบเปลี่ยนหน้า (Pipeline Pagination) */}
                 {filteredPipelinePrs.length > 0 && (
-                  <div className="border-t border-steel-100 dark:border-slate-800 bg-white dark:bg-slate-900 px-2 py-2 mt-2">
+                  <div className="border-t border-slate- dark:border-slate-800 bg-white dark:bg-slate-900 px-2 py-2 mt-2">
                     <Pagination
                       currentPage={currentPage}
                       totalItems={filteredPipelinePrs.length}
@@ -2915,7 +2909,7 @@ export default function PurchasingHub() {
                     onClick={() => setActiveDropdown(null)}
                     className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
                   >
-                    <Eye className="h-3.5 w-3.5 text-steel-500 dark:text-slate-400" />
+                    <Eye className="h-3.5 w-3.5 text-slate- dark:text-slate-400" />
                     <span>ดูรายละเอียด</span>
                   </Link>
 
@@ -3034,7 +3028,7 @@ export default function PurchasingHub() {
                     onClick={() => setActiveDropdown(null)}
                     className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
                   >
-                    <Eye className="h-3.5 w-3.5 text-steel-500 dark:text-slate-400" />
+                    <Eye className="h-3.5 w-3.5 text-slate- dark:text-slate-400" />
                     <span>ดูรายละเอียด</span>
                   </Link>
 

@@ -76,22 +76,27 @@ export default function ItemsEditor({ items, onChange, priceLabel, showErrors = 
         const priceEmpty = showErrors && (it.price === '' || isNaN(Number(it.price)))
 
         return (
-          <div key={i} className={`rounded-md border p-2.5 shadow-sm transition ${
-            nameEmpty || qtyEmpty || priceEmpty ? 'border-rose-300 bg-rose-50/20' : 'border-steel-200 bg-white'
-          }`}>
+          <div
+            key={i}
+            className={`rounded-xl border p-3 transition shadow-2xs ${
+              nameEmpty || qtyEmpty || priceEmpty
+                ? 'border-rose-300 dark:border-rose-800 bg-rose-50/25 dark:bg-rose-950/20'
+                : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-700'
+            }`}
+          >
             <div className="grid grid-cols-2 gap-2 md:grid-cols-[1fr_6rem_6rem_9rem_auto] items-start">
               {/* ช่องชื่อวัสดุ */}
               <div className="col-span-2 md:col-span-1 relative">
                 <input
                   list="catalog-items-list"
-                  className={fieldErrorClass(nameEmpty, `input w-full ${matched ? 'pr-24' : ''}`)}
+                  className={fieldErrorClass(nameEmpty, `input text-xs w-full ${matched ? 'pr-24' : ''}`)}
                   placeholder="พิมพ์หรือเลือกชื่อวัสดุในระบบ..."
                   disabled={locked}
                   value={it.item_name}
                   onChange={(e) => upd(i, 'item_name', e.target.value)}
                 />
                 {matched && (
-                  <span className="absolute right-2 top-2 rounded bg-sky-100 px-2 py-0.5 text-[10px] font-mono font-bold text-sky-800 pointer-events-none">
+                  <span className="absolute right-2 top-2 rounded-md bg-sky-100 dark:bg-sky-900/60 px-2 py-0.5 text-[10px] font-mono font-bold text-sky-800 dark:text-sky-300 pointer-events-none">
                     {matched.item_code}
                   </span>
                 )}
@@ -101,7 +106,7 @@ export default function ItemsEditor({ items, onChange, priceLabel, showErrors = 
               {/* ช่องจำนวน */}
               <div>
                 <input
-                  className={fieldErrorClass(qtyEmpty, 'input w-full font-mono font-bold')}
+                  className={fieldErrorClass(qtyEmpty, 'input text-xs w-full font-mono font-bold text-right')}
                   type="number"
                   min={locked ? it.received : 1}
                   step="1"
@@ -115,7 +120,7 @@ export default function ItemsEditor({ items, onChange, priceLabel, showErrors = 
               {/* ช่องหน่วย */}
               <div>
                 <input
-                  className="input w-full"
+                  className="input text-xs w-full text-center"
                   placeholder="หน่วย"
                   disabled={locked}
                   value={it.unit}
@@ -126,7 +131,7 @@ export default function ItemsEditor({ items, onChange, priceLabel, showErrors = 
               {/* ช่องราคา */}
               <div>
                 <input
-                  className={fieldErrorClass(priceEmpty, 'input w-full')}
+                  className={fieldErrorClass(priceEmpty, 'input text-xs w-full font-mono text-right')}
                   type="number"
                   min="0"
                   step="0.01"
@@ -139,9 +144,9 @@ export default function ItemsEditor({ items, onChange, priceLabel, showErrors = 
               </div>
 
               {/* ปุ่มลบ */}
-              <div className="pt-2">
+              <div className="pt-1 flex justify-end">
                 {locked ? (
-                  <span className="text-xs text-steel-500 whitespace-nowrap">รับแล้ว {it.received}</span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">รับแล้ว {it.received}</span>
                 ) : (
                   <button
                     type="button"
@@ -159,35 +164,35 @@ export default function ItemsEditor({ items, onChange, priceLabel, showErrors = 
 
             {/* แถบแจ้งเตือนเมื่อวัสดุมีอยู่ในระบบ หรือดึงมาจากใบเสนอราคาขาย */}
             {(matched || Number(it.sellingPriceRef || 0) > 0 || it.costSource === 'manual') && (
-              <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[11px] text-steel-500">
+              <div className="mt-2 pt-1.5 border-t border-slate-100 dark:border-slate-800/80 flex flex-wrap items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
                 {matched && (
                   <>
-                    <span className="font-semibold text-emerald-700">พัสดุตรงกับรหัส {matched.item_code}</span>
+                    <span className="font-semibold text-emerald-700 dark:text-emerald-400">พัสดุตรงกับรหัส {matched.item_code}</span>
                     {matched.avg_unit_cost ? <span>· ราคาเฉลี่ยคลัง {baht(matched.avg_unit_cost)} บาท</span> : null}
                   </>
                 )}
                 {Number(it.sellingPriceRef || 0) > 0 && (
-                  <span className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-700">
+                  <span className="rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2 py-0.5 font-mono text-[10px] font-semibold text-slate-700 dark:text-slate-300">
                     ราคาขายใน QT (ก่อน VAT): ฿{baht(it.sellingPriceRef)}
                   </span>
                 )}
                 {it.costSource === 'boq' && (
-                  <span className="rounded bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700">
+                  <span className="rounded-md bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-300">
                     ต้นทุนวัสดุจาก BOQ
                   </span>
                 )}
                 {it.costSource === 'stock' && (
-                  <span className="rounded bg-sky-50 border border-sky-200 px-1.5 py-0.5 text-[10px] font-bold text-sky-700">
+                  <span className="rounded-md bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800 px-2 py-0.5 text-[10px] font-bold text-sky-700 dark:text-sky-300">
                     ต้นทุนเฉลี่ยในสโตร์
                   </span>
                 )}
                 {it.costSource === 'manual' && !it.price && (
-                  <span className="rounded bg-amber-50 border border-amber-200 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">
+                  <span className="rounded-md bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 px-2 py-0.5 text-[10px] font-bold text-amber-800 dark:text-amber-300">
                     ระบุราคาซื้อจริงจากร้านค้า (ไม่ใช้ราคาขายลูกค้า)
                   </span>
                 )}
                 {Number(it.sellingPriceRef || 0) > 0 && Number(it.price || 0) >= Number(it.sellingPriceRef || 0) && (
-                  <span className="rounded bg-rose-50 border border-rose-200 px-1.5 py-0.5 text-[10px] font-bold text-rose-700">
+                  <span className="rounded-md bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 px-2 py-0.5 text-[10px] font-bold text-rose-700 dark:text-rose-300">
                     ระวัง: ราคาซื้อ &ge; ราคาขาย QT!
                   </span>
                 )}
@@ -197,16 +202,16 @@ export default function ItemsEditor({ items, onChange, priceLabel, showErrors = 
         )
       })}
 
-      <div className="flex items-center justify-between pt-1">
+      <div className="flex items-center justify-between pt-2">
         <button
           type="button"
-          className="btn-ghost !py-1 text-xs"
+          className="inline-flex items-center gap-1.5 rounded-xl border border-sky-200 dark:border-sky-800 bg-sky-50 dark:bg-sky-950/40 px-3.5 py-2 text-xs font-bold text-sky-700 dark:text-sky-300 hover:bg-sky-100 dark:hover:bg-sky-900/60 transition cursor-pointer"
           onClick={() => onChange([...items, { ...EMPTY_ITEM }])}
         >
           + เพิ่มรายการวัสดุ
         </button>
-        <span className="text-sm">
-          มูลค่ารวม: <b className="text-ink">{baht(itemsTotal(items))}</b> บาท
+        <span className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
+          มูลค่ารวม: <b className="font-mono text-slate-900 dark:text-white">{baht(itemsTotal(items))}</b> บาท
         </span>
       </div>
     </div>

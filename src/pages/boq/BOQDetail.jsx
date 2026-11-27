@@ -37,10 +37,10 @@ import {
 } from 'lucide-react'
 
 const STATUS_MAP = {
-  draft: { label: 'ฉบับร่าง (Draft)', color: 'bg-steel-100 text-steel-700 border-steel-300' },
-  approved: { label: 'อนุมัติแล้ว (Approved)', color: 'bg-emerald-100 text-emerald-800 border-emerald-300' },
-  converted_to_quotation: { label: 'เปิดใบเสนอราคาแล้ว', color: 'bg-sky-100 text-sky-800 border-sky-300' },
-  archived: { label: 'เก็บถาวร', color: 'bg-steel-100 text-steel-500 border-steel-200' },
+  draft: { label: 'ฉบับร่าง (Draft)', color: 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700' },
+  approved: { label: 'อนุมัติแล้ว (Approved)', color: 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800' },
+  converted_to_quotation: { label: 'เปิดใบเสนอราคาแล้ว', color: 'bg-sky-50 dark:bg-sky-950/50 text-sky-800 dark:text-sky-300 border-sky-200 dark:border-sky-800' },
+  archived: { label: 'เก็บถาวร', color: 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700' },
 }
 
 export default function BOQDetail() {
@@ -385,7 +385,7 @@ export default function BOQDetail() {
 
   if (loading) {
     return (
-      <div className="py-16 text-center text-xs text-steel-400">
+      <div className="py-16 text-center text-xs text-slate-400 dark:text-slate-500">
         กำลังโหลดข้อมูล BOQ...
       </div>
     )
@@ -393,9 +393,9 @@ export default function BOQDetail() {
 
   if (!boq) {
     return (
-      <div className="rounded-2xl border border-steel-200 bg-white p-12 text-center space-y-3">
-        <p className="font-bold text-steel-900">ไม่พบเอกสาร BOQ นี้</p>
-        <Link to="/boq" className="text-xs text-sky-700 font-bold hover:underline">
+      <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-12 text-center space-y-3">
+        <p className="font-bold text-slate-900 dark:text-white">ไม่พบเอกสาร BOQ นี้</p>
+        <Link to="/boq" className="text-xs text-sky-700 dark:text-sky-400 font-bold hover:underline">
           ← กลับหน้ารายการ BOQ
         </Link>
       </div>
@@ -404,11 +404,11 @@ export default function BOQDetail() {
 
   const st = STATUS_MAP[boq.status] || {
     label: boq.status,
-    color: 'bg-steel-100 text-steel-700 border-steel-200',
+    color: 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700',
   }
 
   return (
-    <div className="space-y-6 font-sans text-slate-800 w-full">
+    <div className="space-y-6 font-sans text-slate-800 dark:text-slate-100 w-full">
       {/* 1. แบนเนอร์หัวหน้าเอกสารระดับบริหาร (Executive Corporate ERP Banner - เลย์เอาต์ 2 ชั้น สมดุลเต็มความกว้าง) */}
       <div className="rounded-2xl border border-slate-800 bg-[#0f172a] p-5 text-white shadow-sm space-y-4">
         {/* ชั้นที่ 1: ส่วนหัวเรื่อง + ป้ายกำกับ (ซ้าย) และ แถบเครื่องมือคำสั่ง Action Toolbar (ขวา) */}
@@ -568,54 +568,54 @@ export default function BOQDetail() {
       </div>
 
       {/* 2. Summary Info Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <div className="rounded-2xl border border-steel-200 bg-white p-4 shadow-2xs">
-          <span className="text-[10px] font-bold text-steel-500 uppercase">ขนาดติดตั้ง (kWp)</span>
-          <div className="mt-1 text-xl font-mono font-black text-amber-700 flex items-center gap-1">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-2xs">
+          <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">ขนาดติดตั้ง (kWp)</span>
+          <div className="mt-1 text-xl font-mono font-bold text-amber-700 dark:text-amber-400 flex items-center gap-1 tabular-nums">
             <Sun className="h-4 w-4 text-amber-500" />
             <span>{Number(boq.system_size_kwp || 0) > 0 ? `${Number(boq.system_size_kwp).toLocaleString()} kWp` : '-'}</span>
           </div>
         </div>
 
-        <div className="rounded-2xl border border-steel-200 bg-white p-4 shadow-2xs">
-          <span className="text-[10px] font-bold text-steel-500 uppercase">ต้นทุนวัสดุรวม</span>
-          <div className="mt-1 text-xl font-mono font-bold text-steel-800">
-            {baht(boq.total_material_cost || 0)} <span className="text-xs font-normal text-steel-500">บ.</span>
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-2xs">
+          <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">ต้นทุนวัสดุรวม</span>
+          <div className="mt-1 text-xl font-mono font-bold text-slate-900 dark:text-white tabular-nums">
+            {baht(boq.total_material_cost || 0)} <span className="text-xs font-normal text-slate-500 dark:text-slate-400">บ.</span>
           </div>
         </div>
 
-        <div className="rounded-2xl border border-steel-200 bg-white p-4 shadow-2xs">
-          <span className="text-[10px] font-bold text-steel-500 uppercase">ต้นทุนค่าแรงรวม</span>
-          <div className="mt-1 text-xl font-mono font-bold text-steel-800">
-            {baht(boq.total_labor_cost || 0)} <span className="text-xs font-normal text-steel-500">บ.</span>
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-2xs">
+          <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">ต้นทุนค่าแรงรวม</span>
+          <div className="mt-1 text-xl font-mono font-bold text-slate-900 dark:text-white tabular-nums">
+            {baht(boq.total_labor_cost || 0)} <span className="text-xs font-normal text-slate-500 dark:text-slate-400">บ.</span>
           </div>
         </div>
 
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50/50 p-4 shadow-2xs">
-          <span className="text-[10px] font-bold text-emerald-900 uppercase">ราคาเสนอขาย (สุทธิ)</span>
-          <div className="mt-1 text-xl font-mono font-black text-emerald-800">
-            {baht(boq.grand_total || 0)} <span className="text-xs font-normal text-emerald-700">บ.</span>
+        <div className="rounded-2xl border border-emerald-200 dark:border-emerald-900/60 bg-emerald-50/50 dark:bg-emerald-950/30 p-4 shadow-2xs">
+          <span className="text-[11px] font-semibold text-emerald-800 dark:text-emerald-300">ราคาเสนอขาย (สุทธิ)</span>
+          <div className="mt-1 text-xl font-mono font-bold text-emerald-800 dark:text-emerald-300 tabular-nums">
+            {baht(boq.grand_total || 0)} <span className="text-xs font-normal text-emerald-700 dark:text-emerald-400">บ.</span>
           </div>
         </div>
       </div>
 
       {/* 3. รายละเอียดโครงการ */}
-      <div className="rounded-2xl border border-steel-200 bg-white p-5 shadow-2xs space-y-3">
-        <h2 className="font-bold text-sm text-steel-900 flex items-center gap-2 border-b border-steel-100 pb-2">
+      <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-2xs space-y-3">
+        <h2 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-2">
           <span>ข้อมูลโครงการและงานที่ถอดแบบ</span>
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
           <div>
-            <span className="text-steel-400">ชื่องาน / รายละเอียด:</span>
-            <div className="font-bold text-steel-900 text-sm mt-0.5">{boq.title}</div>
+            <span className="text-slate-400 dark:text-slate-500">ชื่องาน / รายละเอียด:</span>
+            <div className="font-bold text-slate-900 dark:text-white text-sm mt-0.5">{boq.title}</div>
           </div>
           <div>
-            <span className="text-steel-400">ลูกค้า / เจ้าของโครงการ:</span>
-            <div className="font-semibold text-steel-800 mt-0.5">{boq.customer_name || '-'}</div>
+            <span className="text-slate-400 dark:text-slate-500">ลูกค้า / เจ้าของโครงการ:</span>
+            <div className="font-semibold text-slate-800 dark:text-slate-200 mt-0.5">{boq.customer_name || '-'}</div>
           </div>
           <div>
-            <span className="text-steel-400">โครงการในระบบ (Project):</span>
-            <div className="font-semibold text-sky-800 mt-0.5">
+            <span className="text-slate-400 dark:text-slate-500">โครงการในระบบ (Project):</span>
+            <div className="font-semibold text-sky-700 dark:text-sky-400 mt-0.5">
               {boq.projects ? `[${boq.projects.project_code}] ${boq.projects.project_name}` : 'ทั่วไป'}
             </div>
           </div>
@@ -625,15 +625,15 @@ export default function BOQDetail() {
       {/* 4. รายการพัสดุและค่าแรง: แผงเลือกหมวดหมู่และค้นหามาตรฐานเดียวกับระบบคลังสินค้า */}
       <div className="space-y-4">
         {/* 4.1 Category Filter Card (สลับเลือกดูตามหมวดหมู่งาน หรือ หมวดหมู่วัสดุและอุปกรณ์ พร้อมช่องค้นหาหมวดหมู่) */}
-        <div className="rounded-2xl border border-steel-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-xs space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-3 text-xs font-bold text-steel-700 dark:text-slate-300">
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-2xs space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-3 text-xs font-bold text-slate-700 dark:text-slate-300">
             {/* โหมดการเลือกดู: หมวดหมู่งาน vs หมวดหมู่วัสดุและอุปกรณ์ */}
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="flex items-center gap-1.5 text-steel-900 dark:text-slate-100">
-                <Layers className="h-4 w-4 text-steel-700 dark:text-amber-400" />
+              <span className="flex items-center gap-1.5 text-slate-900 dark:text-slate-100">
+                <Layers className="h-4 w-4 text-sky-600 dark:text-amber-400" />
                 <span>เลือกดูตาม:</span>
               </span>
-              <div className="inline-flex rounded-xl bg-steel-100 dark:bg-slate-800 p-1 text-xs">
+              <div className="inline-flex rounded-xl bg-slate-100 dark:bg-slate-800 p-1 text-xs border border-slate-200 dark:border-slate-700">
                 <button
                   type="button"
                   onClick={() => {
@@ -643,8 +643,8 @@ export default function BOQDetail() {
                   }}
                   className={`rounded-lg px-3 py-1.5 font-bold transition cursor-pointer ${
                     categoryMode === 'work'
-                      ? 'bg-white dark:bg-slate-900 text-steel-900 dark:text-slate-100 shadow-xs'
-                      : 'text-steel-600 dark:text-slate-400 hover:text-steel-900'
+                      ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-xs'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
                   หมวดหมู่งาน
@@ -658,8 +658,8 @@ export default function BOQDetail() {
                   }}
                   className={`rounded-lg px-3 py-1.5 font-bold transition cursor-pointer ${
                     categoryMode === 'material'
-                      ? 'bg-white dark:bg-slate-900 text-steel-900 dark:text-slate-100 shadow-xs'
-                      : 'text-steel-600 dark:text-slate-400 hover:text-steel-900'
+                      ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-xs'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
                   หมวดหมู่วัสดุและอุปกรณ์
@@ -670,19 +670,19 @@ export default function BOQDetail() {
             <div className="flex items-center gap-2 flex-wrap">
               {/* ช่องค้นหาหมวดหมู่ (Search Categories) */}
               <div className="relative min-w-[160px] sm:w-52">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-steel-400 pointer-events-none" />
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
                 <input
                   type="text"
                   value={catSearchQuery}
                   onChange={(e) => setCatSearchQuery(e.target.value)}
                   placeholder={categoryMode === 'work' ? 'ค้นหาหมวดหมู่งาน...' : 'ค้นหาหมวดหมู่วัสดุ...'}
-                  className="h-8 w-full rounded-lg border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 pl-8 pr-7 text-xs font-normal text-steel-800 dark:text-slate-200 placeholder:text-steel-400 focus:outline-none focus:border-amber-500 shadow-2xs"
+                  className="h-8 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 pl-8 pr-7 text-xs font-normal text-slate-800 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none focus:border-emerald-500 shadow-2xs"
                 />
                 {catSearchQuery && (
                   <button
                     type="button"
                     onClick={() => setCatSearchQuery('')}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-steel-400 hover:text-steel-600"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
                     title="ล้างคำค้นหาหมวดหมู่"
                   >
                     <X className="h-3 w-3" />
@@ -690,7 +690,7 @@ export default function BOQDetail() {
                 )}
               </div>
 
-              <span className="text-steel-400 dark:text-slate-400 font-normal hidden sm:inline">
+              <span className="text-slate-400 dark:text-slate-400 font-normal hidden sm:inline">
                 แสดง {filteredItems.length} จาก {items.length} รายการ
               </span>
 
@@ -698,7 +698,7 @@ export default function BOQDetail() {
               <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className="h-8 rounded-lg border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 text-xs font-bold text-steel-800 dark:text-slate-200 focus:outline-none focus:border-amber-500 cursor-pointer shadow-2xs"
+                className="h-8 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 text-xs font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500 cursor-pointer shadow-2xs"
               >
                 <option value="all">
                   {categoryMode === 'work' ? 'หมวดหมู่งานทั้งหมด' : 'หมวดหมู่วัสดุและอุปกรณ์ทั้งหมด'} ({items.length} รายการ)
@@ -717,18 +717,18 @@ export default function BOQDetail() {
             <button
               type="button"
               onClick={() => setSelectedCategory('all')}
-              className={`rounded-lg px-3 py-1.5 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+              className={`rounded-xl px-3 py-1.5 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
                 selectedCategory === 'all'
-                  ? 'bg-steel-900 dark:bg-amber-500 text-hivis dark:text-slate-950 font-black shadow-xs'
-                  : 'bg-steel-100 dark:bg-slate-800 text-steel-700 dark:text-slate-200 hover:bg-steel-200 dark:hover:bg-slate-700'
+                  ? 'bg-slate-900 dark:bg-amber-500 text-white dark:text-slate-950 font-bold shadow-xs'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700'
               }`}
             >
               <span>ทั้งหมด</span>
               <span
                 className={`rounded-full px-1.5 py-0.2 text-[10px] ${
                   selectedCategory === 'all'
-                    ? 'bg-steel-800 dark:bg-amber-600 text-hivis dark:text-slate-950'
-                    : 'bg-steel-200 dark:bg-slate-700 text-steel-800 dark:text-slate-200'
+                    ? 'bg-white/20 text-white dark:bg-slate-950/15 dark:text-slate-950'
+                    : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200'
                 }`}
               >
                 {items.length}
@@ -744,18 +744,18 @@ export default function BOQDetail() {
                   key={cat}
                   type="button"
                   onClick={() => setSelectedCategory(cat)}
-                  className={`rounded-lg px-3 py-1.5 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                  className={`rounded-xl px-3 py-1.5 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
                     isSelected
-                      ? 'bg-steel-900 dark:bg-amber-500 text-hivis dark:text-slate-950 font-black shadow-xs'
-                      : 'bg-steel-100 dark:bg-slate-800 text-steel-700 dark:text-slate-200 hover:bg-steel-200 dark:hover:bg-slate-700'
+                      ? 'bg-slate-900 dark:bg-amber-500 text-white dark:text-slate-950 font-bold shadow-xs'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700'
                   }`}
                 >
                   <span>{cat}</span>
                   <span
                     className={`rounded-full px-1.5 py-0.2 text-[10px] ${
                       isSelected
-                        ? 'bg-steel-800 dark:bg-amber-600 text-hivis dark:text-slate-950'
-                        : 'bg-steel-200 dark:bg-slate-700 text-steel-800 dark:text-slate-200'
+                        ? 'bg-white/20 text-white dark:bg-slate-950/15 dark:text-slate-950'
+                        : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200'
                     }`}
                   >
                     {count}
@@ -765,7 +765,7 @@ export default function BOQDetail() {
             })}
 
             {filteredCategories.length === 0 && catSearchQuery && (
-              <span className="text-xs text-steel-400 py-1">
+              <span className="text-xs text-slate-400 py-1">
                 ไม่พบหมวดหมู่ที่ตรงกับ "{catSearchQuery}"
               </span>
             )}
@@ -777,19 +777,19 @@ export default function BOQDetail() {
           <div className="flex flex-1 flex-wrap items-center gap-2">
             {/* ช่องค้นหา */}
             <div className="relative flex-1 min-w-[240px] max-w-md">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-steel-400 dark:text-slate-500 pointer-events-none" />
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500 pointer-events-none" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="ค้นหารายการพัสดุ, งานบริการ, สเปกสินค้า..."
-                className="w-full rounded-xl border border-steel-200 dark:border-slate-700 bg-white dark:bg-slate-800 pl-10 pr-9 py-2 text-xs font-medium text-steel-900 dark:text-slate-100 placeholder:text-steel-400 focus:border-amber-500 focus:outline-none transition shadow-2xs"
+                className="input pl-10 pr-9 text-xs"
               />
               {searchQuery && (
                 <button
                   type="button"
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 text-steel-400 hover:text-steel-700 dark:hover:text-slate-200 transition cursor-pointer"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition cursor-pointer"
                   title="ล้างคำค้นหา"
                 >
                   <X className="h-3.5 w-3.5" />
@@ -817,23 +817,23 @@ export default function BOQDetail() {
               <button
                 type="button"
                 onClick={toggleCollapseAll}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-steel-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-bold text-steel-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition cursor-pointer shadow-2xs"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition cursor-pointer shadow-2xs"
               >
                 {isAllCollapsed ? (
                   <>
-                    <ChevronDown className="h-3.5 w-3.5 text-amber-600" />
+                    <ChevronDown className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
                     <span>ขยายทุกหมวด</span>
                   </>
                 ) : (
                   <>
-                    <ChevronUp className="h-3.5 w-3.5 text-steel-500" />
+                    <ChevronUp className="h-3.5 w-3.5 text-slate-500" />
                     <span>ย่อทุกหมวด</span>
                   </>
                 )}
               </button>
             )}
 
-            <span className="text-xs text-steel-500 dark:text-slate-400 font-mono">
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">
               มาร์กอัปกำไร: <b className="text-emerald-700 dark:text-emerald-400">+{boq.markup_percent || 15}%</b>
             </span>
           </div>
@@ -1049,7 +1049,7 @@ export default function BOQDetail() {
                 type="button"
                 disabled={converting}
                 onClick={handleConvertToQuotation}
-                className="rounded-xl bg-hivis hover:bg-amber-400 text-slate-950 px-4 py-2 text-xs font-black shadow-xs transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                className="rounded-xl bg-emerald-600 hover:bg-emerald-700 dark:bg-amber-500 dark:hover:bg-amber-400 text-white dark:text-slate-950 px-4 py-2 text-xs font-bold shadow-xs transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
               >
                 <FileCheck2 className="h-4 w-4" />
                 <span>{converting ? 'กำลังแปลง...' : 'แปลงเป็นใบเสนอราคา'}</span>
@@ -1070,47 +1070,47 @@ export default function BOQDetail() {
       {/* Modal แปลง BOQ เป็นใบเสนอราคา (เลือกประเภทภาษี + ตรวจข้อมูลลูกค้า) */}
       {showConvertModal && conversionPreview && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
-          <div className="w-full max-w-lg rounded-2xl border border-steel-200 bg-white p-6 shadow-2xl space-y-4 text-xs">
-            <div className="flex items-start justify-between border-b border-steel-100 pb-3">
+          <div className="w-full max-w-lg rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 shadow-2xl space-y-4 text-xs">
+            <div className="flex items-start justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <div>
-                <h3 className="text-base font-black text-steel-900">
+                <h3 className="text-base font-black text-slate-900 dark:text-white">
                   แปลง BOQ เป็นใบเสนอราคา ({boq.boq_no})
                 </h3>
-                <p className="text-[11px] text-steel-500 mt-0.5">
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                   ตรวจสอบข้อมูลลูกค้าและเลือกรูปแบบภาษี (VAT 7%) ก่อนสร้างใบเสนอราคา
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setShowConvertModal(false)}
-                className="rounded-lg p-1 text-steel-400 hover:bg-steel-100 hover:text-steel-700"
+                className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200 cursor-pointer"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
 
-            <div className="rounded-xl border border-steel-200 bg-slate-50 p-3 space-y-1">
-              <div className="font-bold text-steel-800">
+            <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 p-3 space-y-1">
+              <div className="font-bold text-slate-800 dark:text-slate-100">
                 ลูกค้า: {conversionPreview.payload.customer_name}
               </div>
               {matchedCustomer ? (
-                <div className="text-[11px] text-emerald-700 space-y-0.5">
+                <div className="text-[11px] text-emerald-700 dark:text-emerald-400 space-y-0.5">
                   <div>
                     เชื่อมข้อมูลจากสมุดรายชื่อสำเร็จ · เลขภาษี: {matchedCustomer.tax_id || '-'} · {conversionPreview.payload.customer_branch}
                   </div>
                   {matchedCustomer.address && (
-                    <div className="text-steel-500 truncate">ที่อยู่: {matchedCustomer.address}</div>
+                    <div className="text-slate-500 dark:text-slate-400 truncate">ที่อยู่: {matchedCustomer.address}</div>
                   )}
                 </div>
               ) : (
-                <div className="text-[11px] text-amber-700">
+                <div className="text-[11px] text-amber-700 dark:text-amber-400">
                   ยังไม่พบข้อมูลเลขภาษี/ที่อยู่ในสมุดรายชื่อ (สามารถเพิ่มหรือแก้ไขต่อในใบเสนอราคาได้)
                 </div>
               )}
             </div>
 
             <div className="space-y-2">
-              <div className="font-bold text-steel-800">รูปแบบการคิดภาษีมูลค่าเพิ่ม (VAT)</div>
+              <div className="font-bold text-slate-800 dark:text-slate-200">รูปแบบการคิดภาษีมูลค่าเพิ่ม (VAT)</div>
               {[
                 {
                   value: 'vat_excluded',
@@ -1132,8 +1132,8 @@ export default function BOQDetail() {
                   key={opt.value}
                   className={`flex items-start gap-2.5 rounded-xl border p-3 cursor-pointer transition ${
                     convertTaxType === opt.value
-                      ? 'border-sky-500 bg-sky-50/70'
-                      : 'border-steel-200 hover:bg-slate-50'
+                      ? 'border-sky-500 bg-sky-50/70 dark:bg-sky-950/40 dark:border-sky-500'
+                      : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'
                   }`}
                 >
                   <input
@@ -1145,39 +1145,39 @@ export default function BOQDetail() {
                     className="mt-0.5 text-sky-600"
                   />
                   <div>
-                    <div className="font-bold text-steel-900">{opt.title}</div>
-                    <div className="text-[11px] text-steel-500">{opt.desc}</div>
+                    <div className="font-bold text-slate-900 dark:text-white">{opt.title}</div>
+                    <div className="text-[11px] text-slate-500 dark:text-slate-400">{opt.desc}</div>
                   </div>
                 </label>
               ))}
             </div>
 
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-3.5 space-y-1.5">
-              <div className="flex justify-between text-steel-700">
+            <div className="rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/30 p-3.5 space-y-1.5">
+              <div className="flex justify-between text-slate-700 dark:text-slate-300">
                 <span>รวมมูลค่ารายการ ({conversionPreview.itemRows.length} รายการ):</span>
                 <span className="font-mono font-bold">{baht(conversionPreview.payload.subtotal)} บ.</span>
               </div>
-              <div className="flex justify-between text-steel-700">
+              <div className="flex justify-between text-slate-700 dark:text-slate-300">
                 <span>
                   ภาษีมูลค่าเพิ่ม ({convertTaxType === 'vat_exempt' ? '0%' : '7%'}
                   {convertTaxType === 'vat_included' ? ' รวมในยอด' : ''}):
                 </span>
-                <span className="font-mono font-bold text-emerald-700">
+                <span className="font-mono font-bold text-emerald-700 dark:text-emerald-400">
                   {baht(conversionPreview.payload.vat_amount)} บ.
                 </span>
               </div>
-              <div className="flex justify-between border-t border-emerald-200 pt-1.5 text-sm font-black text-emerald-900">
+              <div className="flex justify-between border-t border-emerald-200 dark:border-emerald-800 pt-1.5 text-sm font-black text-emerald-900 dark:text-emerald-300">
                 <span>ยอดเสนอราคารวมสุทธิ:</span>
                 <span className="font-mono">{baht(conversionPreview.payload.grand_total)} บาท</span>
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 pt-2 border-t border-steel-100">
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
               <button
                 type="button"
                 disabled={converting}
                 onClick={() => setShowConvertModal(false)}
-                className="rounded-xl border border-steel-300 bg-white px-4 py-2 font-bold text-steel-700 hover:bg-steel-50"
+                className="btn-ghost"
               >
                 ยกเลิก
               </button>
@@ -1185,7 +1185,7 @@ export default function BOQDetail() {
                 type="button"
                 disabled={converting}
                 onClick={handleConfirmConvert}
-                className="rounded-xl bg-amber-400 hover:bg-amber-300 px-5 py-2 font-black text-slate-950 shadow-xs"
+                className="btn-primary"
               >
                 {converting ? 'กำลังสร้างใบเสนอราคา...' : 'ยืนยันสร้างใบเสนอราคา'}
               </button>

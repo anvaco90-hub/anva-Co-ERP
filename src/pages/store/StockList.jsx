@@ -161,10 +161,10 @@ export default function StockList() {
 
   if (loading || !items) {
     return (
-      <div className="flex h-64 flex-col items-center justify-center space-y-3 font-sans">
-        <div className="h-9 w-9 animate-spin rounded-full border-4 border-steel-900 border-t-hivis" />
-        <p className="text-sm font-semibold text-steel-500">
-          กำลังโหลดคลังพัสดุวิศวกรรม ANVA & CO...
+      <div className="flex h-64 flex-col items-center justify-center space-y-3">
+        <div className="h-9 w-9 animate-spin rounded-full border-4 border-slate-200 dark:border-slate-700 border-t-emerald-600 dark:border-t-amber-400" />
+        <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">
+          กำลังโหลดคลังพัสดุวิศวกรรม ANVA &amp; CO...
         </p>
       </div>
     )
@@ -198,136 +198,126 @@ export default function StockList() {
   }
 
   return (
-    <div className="space-y-6 pb-12 font-sans text-slate-800">
-      {/* ---------------------------------------------------------------------- */}
-      {/* 1. Header Banner: ANVA & Co Solar Engineering Brand Theme             */}
-      {/* ---------------------------------------------------------------------- */}
-      <div className="rounded-2xl bg-gradient-to-r from-slate-900 via-steel-900 to-slate-800 p-6 sm:p-7 text-white shadow-md border border-slate-700">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-2">
-              <span className="rounded-md bg-hivis text-slate-950 font-black px-2.5 py-0.5 text-xs uppercase tracking-wider">
-                ENGINEERING INVENTORY
-              </span>
-              <span className="text-xs text-slate-200 font-semibold tracking-wide">
-                บริษัท อันวาแอนด์โค จำกัด (ANVA & CO., LTD.)
-              </span>
-            </div>
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight text-white drop-shadow-xs">
-              คลังพัสดุและอุปกรณ์วิศวกรรม (Stock Inventory)
-            </h1>
-            <p className="text-xs sm:text-sm text-slate-200/90 leading-relaxed max-w-2xl">
-              ตรวจสอบยอดคงเหลือ จุดเตือนสั่งซื้อ และจัดการเบิกจ่ายเข้าโครงการอย่างเป็นระบบ ถูกต้องตามมาตรฐานงานติดตั้ง
-            </p>
+    <div className="space-y-4 pb-12 text-slate-800 dark:text-slate-100">
+      {/* 1. Clean Header & Actions (QuotationList Standard) */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+            คลังพัสดุและอุปกรณ์ (Stock Inventory)
+          </h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            ตรวจสอบยอดคงเหลือ จุดเตือนสั่งซื้อ และจัดการเบิกจ่ายเข้าโครงการอย่างเป็นระบบ (มูลค่ารวม{' '}
+            <b className="font-mono text-emerald-700 dark:text-emerald-400 tabular-nums">{baht(totalValue)}</b> บาท)
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowReport(true)}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition cursor-pointer"
+          >
+            <Printer className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
+            <span>พิมพ์รายงานสต็อก (PDF)</span>
+          </button>
+          <Link
+            to="/store/items"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 dark:bg-amber-500 dark:hover:bg-amber-400 px-3.5 py-1.5 text-xs font-semibold text-white dark:text-slate-950 shadow-xs transition"
+          >
+            <span>+ เพิ่มพัสดุใหม่</span>
+          </Link>
+        </div>
+      </div>
+
+      {/* 2. Interactive KPI Strip */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <button
+          type="button"
+          onClick={() => {
+            setOnlyLow(false)
+            setOnlyOut(false)
+          }}
+          className={`rounded-2xl border p-4 text-left transition-all cursor-pointer ${
+            !onlyLow && !onlyOut
+              ? 'border-slate-800 dark:border-emerald-400 bg-white dark:bg-slate-900 ring-2 ring-slate-800/15 dark:ring-emerald-400/20 shadow-sm'
+              : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 hover:border-slate-300 dark:hover:border-slate-700 shadow-2xs'
+          }`}
+        >
+          <div className="text-xs font-semibold text-slate-500 dark:text-slate-400">พัสดุทั้งหมด</div>
+          <div className="mt-1 text-2xl font-bold font-mono text-slate-900 dark:text-white tabular-nums">
+            {items.length} <span className="text-xs font-normal text-slate-400">รายการ</span>
           </div>
+        </button>
 
-          {/* Core Metrics Boxes */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 shrink-0">
-            <div className="rounded-xl bg-slate-800/90 p-3 border border-slate-700 text-center">
-              <div className="text-[11px] font-bold text-slate-200">พัสดุทั้งหมด</div>
-              <div className="mt-0.5 text-xl font-black font-mono text-white">{items.length}</div>
-              <div className="text-[10px] text-slate-300 font-medium">รายการ</div>
-            </div>
-
-            <div className="rounded-xl bg-slate-800/90 p-3 border border-slate-700 text-center">
-              <div className="text-[11px] font-bold text-slate-200">พร้อมเบิกใช้งาน</div>
-              <div className="mt-0.5 text-xl font-black font-mono text-emerald-300">
-                {readyCount}
-              </div>
-              <div className="text-[10px] text-slate-300 font-medium">รายการ</div>
-            </div>
-
-            <div
-              onClick={() => {
-                setOnlyLow(!onlyLow)
-                setOnlyOut(false)
-              }}
-              className={`rounded-xl p-3 border cursor-pointer transition text-center ${
-                onlyLow
-                  ? 'bg-hivis text-slate-950 font-bold border-hivis shadow-md scale-105'
-                  : 'bg-slate-800/90 hover:bg-slate-800 border-slate-700 text-slate-200'
-              }`}
-            >
-              <div className={`text-[11px] font-bold ${onlyLow ? 'text-slate-900' : 'text-slate-200'}`}>ใกล้หมด</div>
-              <div className={`mt-0.5 text-xl font-black font-mono ${onlyLow ? 'text-slate-950' : 'text-amber-300'}`}>
-                {lowCount}
-              </div>
-              <div className={`text-[10px] ${onlyLow ? 'text-slate-800 font-bold' : 'text-slate-300 font-medium'}`}>เตือนสั่งซื้อ</div>
-            </div>
-
-            <div
-              onClick={() => {
-                setOnlyOut(!onlyOut)
-                setOnlyLow(false)
-              }}
-              className={`rounded-xl p-3 border cursor-pointer transition text-center ${
-                onlyOut
-                  ? 'bg-rose-600 text-white font-bold border-rose-600 shadow-md scale-105'
-                  : 'bg-slate-800/90 hover:bg-slate-800 border-slate-700 text-slate-200'
-              }`}
-            >
-              <div className={`text-[11px] font-bold ${onlyOut ? 'text-white' : 'text-slate-200'}`}>หมดสต็อก</div>
-              <div className={`mt-0.5 text-xl font-black font-mono ${onlyOut ? 'text-white' : 'text-rose-400'}`}>
-                {outCount}
-              </div>
-              <div className={`text-[10px] ${onlyOut ? 'text-rose-100 font-bold' : 'text-slate-300 font-medium'}`}>ต้องออก PR</div>
-            </div>
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-2xs">
+          <div className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">พร้อมเบิกใช้งาน</div>
+          <div className="mt-1 text-2xl font-bold font-mono text-emerald-700 dark:text-emerald-400 tabular-nums">
+            {readyCount} <span className="text-xs font-normal text-slate-400">รายการ</span>
           </div>
         </div>
 
-        {/* Total Valuation Bar */}
-        <div className="mt-6 pt-4 border-t border-slate-700 flex flex-col sm:flex-row sm:items-center sm:justify-between text-xs gap-3">
-          <div className="flex items-center gap-2">
-            <span className="text-slate-200 font-semibold text-xs">มูลค่าสินค้าคงคลังรวม (ที่แสดง):</span>
-            <span className="font-mono text-lg font-black text-emerald-300 tracking-wide">
-              {baht(totalValue)} บาท
-            </span>
+        <button
+          type="button"
+          onClick={() => {
+            setOnlyLow(!onlyLow)
+            setOnlyOut(false)
+          }}
+          className={`rounded-2xl border p-4 text-left transition-all cursor-pointer ${
+            onlyLow
+              ? 'border-amber-500 dark:border-amber-400 bg-white dark:bg-slate-900 ring-2 ring-amber-500/20 shadow-sm'
+              : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 hover:border-amber-300 dark:hover:border-amber-700 shadow-2xs'
+          }`}
+        >
+          <div className="text-xs font-semibold text-amber-700 dark:text-amber-400">ใกล้หมด (เตือนสั่งซื้อ)</div>
+          <div className="mt-1 text-2xl font-bold font-mono text-amber-700 dark:text-amber-400 tabular-nums">
+            {lowCount} <span className="text-xs font-normal text-slate-400">รายการ</span>
           </div>
+        </button>
 
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setShowReport(true)}
-              className="rounded-xl bg-slate-800 hover:bg-slate-700 text-white border border-slate-600 font-bold px-3.5 py-1.5 transition flex items-center gap-1.5 shadow-xs"
-            >
-              <Printer className="h-4 w-4 text-hivis" />
-              <span>พิมพ์รายงานสต็อก (PDF)</span>
-            </button>
-            <Link
-              to="/store/items"
-              className="rounded-xl bg-hivis text-slate-950 hover:bg-emerald-400 font-black px-3.5 py-1.5 transition flex items-center gap-1.5 shadow-xs"
-            >
-              <span>+ เพิ่มพัสดุใหม่</span>
-            </Link>
+        <button
+          type="button"
+          onClick={() => {
+            setOnlyOut(!onlyOut)
+            setOnlyLow(false)
+          }}
+          className={`rounded-2xl border p-4 text-left transition-all cursor-pointer ${
+            onlyOut
+              ? 'border-rose-500 dark:border-rose-400 bg-white dark:bg-slate-900 ring-2 ring-rose-500/20 shadow-sm'
+              : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 hover:border-rose-300 dark:hover:border-rose-700 shadow-2xs'
+          }`}
+        >
+          <div className="text-xs font-semibold text-rose-700 dark:text-rose-400">หมดสต็อก (ต้องออก PR)</div>
+          <div className="mt-1 text-2xl font-bold font-mono text-rose-700 dark:text-rose-400 tabular-nums">
+            {outCount} <span className="text-xs font-normal text-slate-400">รายการ</span>
           </div>
-        </div>
+        </button>
       </div>
 
       {/* ---------------------------------------------------------------------- */}
       {/* 2. Category Filter Pills (เลือกตามหมวดหมู่ - พร้อมช่องค้นหาหมวดหมู่) */}
-      <div className="rounded-2xl border border-steel-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-xs space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-3 text-xs font-bold text-steel-700 dark:text-slate-300">
-          <span className="flex items-center gap-1.5 text-steel-900 dark:text-slate-100">
-            <Layers className="h-4 w-4 text-steel-700 dark:text-amber-400" />
+      <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-2xs space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-3 text-xs font-bold text-slate-700 dark:text-slate-300">
+          <span className="flex items-center gap-1.5 text-slate-900 dark:text-slate-100">
+            <Layers className="h-4 w-4 text-sky-600 dark:text-amber-400" />
             <span>เลือกดูตามหมวดหมู่วัสดุและอุปกรณ์</span>
           </span>
 
           <div className="flex items-center gap-2 flex-wrap">
             {/* ช่องค้นหาหมวดหมู่ (Search Categories) */}
             <div className="relative min-w-[160px] sm:w-52">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-steel-400 pointer-events-none" />
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
               <input
                 type="text"
                 value={catSearchQuery}
                 onChange={(e) => setCatSearchQuery(e.target.value)}
                 placeholder="ค้นหาหมวดหมู่..."
-                className="h-8 w-full rounded-lg border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 pl-8 pr-7 text-xs font-normal text-steel-800 dark:text-slate-200 placeholder:text-steel-400 focus:outline-none focus:border-amber-500 shadow-2xs"
+                className="h-8 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 pl-8 pr-7 text-xs font-normal text-slate-800 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none focus:border-emerald-500 shadow-2xs"
               />
               {catSearchQuery && (
                 <button
                   type="button"
                   onClick={() => setCatSearchQuery('')}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-steel-400 hover:text-steel-600"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
                   title="ล้างคำค้นหาหมวดหมู่"
                 >
                   <X className="h-3 w-3" />
@@ -335,7 +325,7 @@ export default function StockList() {
               )}
             </div>
 
-            <span className="text-steel-400 dark:text-slate-300 font-normal hidden sm:inline">
+            <span className="text-slate-400 dark:text-slate-400 font-normal hidden sm:inline">
               แสดง {shown.length} จาก {items.length} รายการ
             </span>
 
@@ -343,9 +333,9 @@ export default function StockList() {
             <select
               value={cat}
               onChange={(e) => setCat(e.target.value)}
-              className="h-8 rounded-lg border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 text-xs font-bold text-steel-800 dark:text-slate-200 focus:outline-none focus:border-amber-500 cursor-pointer shadow-2xs"
+              className="h-8 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 text-xs font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500 cursor-pointer shadow-2xs"
             >
-              <option value=""> หมวดหมู่ทั้งหมด ({items.length} รายการ)</option>
+              <option value="">หมวดหมู่ทั้งหมด ({items.length} รายการ)</option>
               {filteredCats.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name} ({items.filter((it) => it.category_id === c.id).length})
@@ -359,16 +349,16 @@ export default function StockList() {
           <button
             type="button"
             onClick={() => setCat('')}
-            className={`rounded-lg px-3 py-1.5 text-xs font-bold transition flex items-center gap-1.5 ${
+            className={`rounded-xl px-3 py-1.5 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
               cat === ''
-                ? 'bg-steel-900 dark:bg-amber-500 text-hivis dark:text-slate-950 font-black shadow-xs'
-                : 'bg-steel-100 dark:bg-slate-800 text-steel-700 dark:text-slate-200 hover:bg-steel-200 dark:hover:bg-slate-700'
+                ? 'bg-slate-900 dark:bg-amber-500 text-white dark:text-slate-950 font-bold shadow-xs'
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700'
             }`}
           >
             <span>ทั้งหมด</span>
             <span
               className={`rounded-full px-1.5 py-0.2 text-[10px] ${
-                cat === '' ? 'bg-steel-800 dark:bg-amber-600 text-hivis dark:text-slate-950' : 'bg-steel-200 dark:bg-slate-700 text-steel-800 dark:text-slate-200'
+                cat === '' ? 'bg-white/20 text-white dark:bg-slate-950/15 dark:text-slate-950' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200'
               }`}
             >
               {items.length}
@@ -384,16 +374,16 @@ export default function StockList() {
                 key={c.id}
                 type="button"
                 onClick={() => setCat(c.id)}
-                className={`rounded-lg px-3 py-1.5 text-xs font-bold transition flex items-center gap-1.5 ${
+                className={`rounded-xl px-3 py-1.5 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
                   isSelected
-                    ? 'bg-steel-900 dark:bg-amber-500 text-hivis dark:text-slate-950 font-black shadow-xs'
-                    : 'bg-steel-100 dark:bg-slate-800 text-steel-700 dark:text-slate-200 hover:bg-steel-200 dark:hover:bg-slate-700'
+                    ? 'bg-slate-900 dark:bg-amber-500 text-white dark:text-slate-950 font-bold shadow-xs'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700'
                 }`}
               >
                 <span>{c.name}</span>
                 <span
                   className={`rounded-full px-1.5 py-0.2 text-[10px] ${
-                    isSelected ? 'bg-steel-800 dark:bg-amber-600 text-hivis dark:text-slate-950' : 'bg-steel-200 dark:bg-slate-700 text-steel-800 dark:text-slate-200'
+                    isSelected ? 'bg-white/20 text-white dark:bg-slate-950/15 dark:text-slate-950' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200'
                   }`}
                 >
                   {count}
@@ -403,7 +393,7 @@ export default function StockList() {
           })}
 
           {filteredCats.length === 0 && catSearchQuery && (
-            <span className="text-xs text-steel-400 py-1">
+            <span className="text-xs text-slate-400 py-1">
               ไม่พบหมวดหมู่ที่ตรงกับ "{catSearchQuery}"
             </span>
           )}
@@ -416,21 +406,22 @@ export default function StockList() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex flex-1 flex-wrap items-center gap-2">
           <div className="relative flex-1 min-w-[220px] max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-steel-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <input
               type="text"
               placeholder="ค้นหารหัส, ชื่อวัสดุ, หน่วยนับ..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full rounded-xl border border-steel-300 dark:border-slate-700 bg-white dark:bg-slate-900 pl-9 pr-4 py-2 text-xs sm:text-sm text-steel-900 dark:text-slate-100 placeholder:text-steel-400 dark:placeholder:text-slate-500 focus:border-steel-900 dark:focus:border-amber-500 focus:outline-none shadow-xs"
+              className="input pl-9 pr-9 text-xs"
             />
             {search && (
               <button
                 type="button"
                 onClick={() => setSearch('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-steel-400 hover:text-steel-600 dark:hover:text-slate-200"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                title="ล้างคำค้นหา"
               >
-                
+                <X className="h-3.5 w-3.5" />
               </button>
             )}
           </div>
@@ -451,13 +442,13 @@ export default function StockList() {
               setOnlyLow(!onlyLow)
               setOnlyOut(false)
             }}
-            className={`rounded-xl px-3 py-1.5 text-xs font-bold transition flex items-center gap-1.5 border ${
+            className={`rounded-xl px-3 py-1.5 text-xs font-bold transition flex items-center gap-1.5 border cursor-pointer ${
               onlyLow
                 ? 'bg-amber-500 text-slate-950 font-black border-amber-600 shadow-xs'
-                : 'bg-white dark:bg-slate-900 text-steel-700 dark:text-slate-200 border-steel-300 dark:border-slate-700 hover:bg-steel-50 dark:hover:bg-slate-800'
+                : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'
             }`}
           >
-            <span></span>
+            <AlertTriangle className="h-3.5 w-3.5" />
             <span>ใกล้หมด ({lowCount})</span>
           </button>
 
@@ -467,13 +458,13 @@ export default function StockList() {
               setOnlyOut(!onlyOut)
               setOnlyLow(false)
             }}
-            className={`rounded-xl px-3 py-1.5 text-xs font-bold transition flex items-center gap-1.5 border ${
+            className={`rounded-xl px-3 py-1.5 text-xs font-bold transition flex items-center gap-1.5 border cursor-pointer ${
               onlyOut
                 ? 'bg-rose-600 text-white border-rose-700 shadow-xs'
-                : 'bg-white dark:bg-slate-900 text-steel-700 dark:text-slate-200 border-steel-300 dark:border-slate-700 hover:bg-steel-50 dark:hover:bg-slate-800'
+                : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'
             }`}
           >
-            <span></span>
+            <AlertCircle className="h-3.5 w-3.5" />
             <span>หมดสต็อก ({outCount})</span>
           </button>
 
@@ -486,21 +477,21 @@ export default function StockList() {
                 setOnlyLow(false)
                 setOnlyOut(false)
               }}
-              className="text-xs font-bold text-rose-600 dark:text-rose-400 hover:underline px-2"
+              className="text-xs font-bold text-rose-600 dark:text-rose-400 hover:underline px-2 cursor-pointer"
             >
               ล้างตัวกรอง
             </button>
           )}
 
           {/* View Mode Toggle: Grid vs Table */}
-          <div className="flex rounded-xl bg-steel-200 dark:bg-slate-800 p-1 text-xs font-bold ml-1">
+          <div className="flex rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-1 text-xs font-bold ml-1">
             <button
               type="button"
               onClick={() => setViewMode('grid')}
-              className={`rounded-lg px-2.5 py-1 transition flex items-center gap-1 ${
+              className={`rounded-lg px-2.5 py-1 transition flex items-center gap-1 cursor-pointer ${
                 viewMode === 'grid'
-                  ? 'bg-white dark:bg-slate-700 text-steel-950 dark:text-white shadow-xs font-black'
-                  : 'text-steel-600 dark:text-slate-300 hover:text-steel-900 dark:hover:text-white'
+                  ? 'bg-white dark:bg-slate-700 text-slate-950 dark:text-white shadow-xs font-bold'
+                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
               }`}
               title="มุมมองการ์ดวัสดุ"
             >
@@ -510,10 +501,10 @@ export default function StockList() {
             <button
               type="button"
               onClick={() => setViewMode('table')}
-              className={`rounded-lg px-2.5 py-1 transition flex items-center gap-1 ${
+              className={`rounded-lg px-2.5 py-1 transition flex items-center gap-1 cursor-pointer ${
                 viewMode === 'table'
-                  ? 'bg-white dark:bg-slate-700 text-steel-950 dark:text-white shadow-xs font-black'
-                  : 'text-steel-600 dark:text-slate-300 hover:text-steel-900 dark:hover:text-white'
+                  ? 'bg-white dark:bg-slate-700 text-slate-950 dark:text-white shadow-xs font-bold'
+                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
               }`}
               title="มุมมองตารางพัสดุ"
             >
@@ -528,16 +519,16 @@ export default function StockList() {
       {/* 4. Presentation: Grid vs Table (ข้อความเรียบร้อย ไม่ทับซ้อนกัน)       */}
       {/* ---------------------------------------------------------------------- */}
       {items.length === 0 ? (
-        <div className="rounded-2xl border-2 border-dashed border-steel-200 bg-white p-12 text-center space-y-4 shadow-xs">
-          <Package className="mx-auto h-14 w-14 text-steel-300" />
-          <h3 className="text-lg font-bold text-steel-800">คลังพัสดุว่างเปล่า (ไม่มีรายการพัสดุจำลองแล้ว)</h3>
-          <p className="text-xs sm:text-sm text-steel-500 max-w-md mx-auto leading-relaxed">
-            ข้อมูลจำลองทั้งหมดถูกเคลียร์ออกจากระบบเรียบร้อยแล้ว สโตร์สะอาด 100% พร้อมสำหรับการป้อนข้อมูลรายการวัสดุจริงของฝ่ายสโตร์
+        <div className="rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-12 text-center space-y-4 shadow-2xs">
+          <Package className="mx-auto h-14 w-14 text-slate-300 dark:text-slate-600" />
+          <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">คลังพัสดุว่างเปล่า</h3>
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
+            พร้อมสำหรับการป้อนข้อมูลรายการวัสดุจริงของฝ่ายสโตร์
           </p>
           <div className="pt-2">
             <Link
               to="/store/items"
-              className="inline-flex items-center gap-2 rounded-xl bg-steel-900 px-5 py-2.5 text-xs sm:text-sm font-bold text-white hover:bg-steel-800 transition shadow-sm"
+              className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 dark:bg-amber-500 dark:hover:bg-amber-400 px-5 py-2.5 text-xs sm:text-sm font-bold text-white dark:text-slate-950 transition shadow-sm"
             >
               <Package className="h-4 w-4" />
               <span>+ ไปที่หน้าจัดการวัสดุเพื่อเริ่มป้อนข้อมูลจริง</span>
@@ -545,10 +536,10 @@ export default function StockList() {
           </div>
         </div>
       ) : shown.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-steel-300 bg-white p-12 text-center space-y-3">
-          <Boxes className="mx-auto h-12 w-12 text-steel-300" />
-          <h3 className="text-base font-bold text-steel-800">ไม่พบรายการพัสดุตรงตามเงื่อนไข</h3>
-          <p className="text-xs text-steel-500">
+        <div className="rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 p-12 text-center space-y-3">
+          <Boxes className="mx-auto h-12 w-12 text-slate-300 dark:text-slate-600" />
+          <h3 className="text-base font-bold text-slate-800 dark:text-slate-100">ไม่พบรายการพัสดุตรงตามเงื่อนไข</h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
             ลองปรับเปลี่ยนคำค้นหา หรือกด "ล้างตัวกรอง" เพื่อแสดงพัสดุทั้งหมด
           </p>
           <button
@@ -559,7 +550,7 @@ export default function StockList() {
               setOnlyLow(false)
               setOnlyOut(false)
             }}
-            className="rounded-xl bg-steel-900 text-white px-4 py-2 text-xs font-bold hover:bg-steel-800 transition shadow-xs"
+            className="rounded-xl bg-slate-900 dark:bg-amber-500 text-white dark:text-slate-950 px-4 py-2 text-xs font-bold hover:bg-slate-800 dark:hover:bg-amber-400 transition shadow-xs cursor-pointer"
           >
             แสดงพัสดุทั้งหมด
           </button>
@@ -576,11 +567,11 @@ export default function StockList() {
             return (
               <div
                 key={it.id}
-                className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-steel-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs transition hover:border-steel-400 dark:hover:border-slate-700 hover:shadow-md"
+                className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs transition hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-md"
               >
                 {/* 1. Thumbnail Image & Floating Stock Status Pill (ไม่ทับซ้อนกัน) */}
                 <div
-                  className="relative aspect-video sm:aspect-square w-full overflow-hidden bg-steel-100 dark:bg-slate-800 cursor-pointer"
+                  className="relative aspect-video sm:aspect-square w-full overflow-hidden bg-slate-100 dark:bg-slate-800 cursor-pointer"
                   onClick={() => setSelectedDetailItem(it)}
                 >
                   {it.image_url ? (
@@ -591,9 +582,9 @@ export default function StockList() {
                       loading="lazy"
                     />
                   ) : (
-                    <div className="flex h-full w-full flex-col items-center justify-center gap-1 text-steel-400 dark:text-slate-500 bg-steel-50 dark:bg-slate-800/60">
-                      <Boxes className="h-10 w-10 text-steel-300 dark:text-slate-600" />
-                      <span className="text-[10px] font-semibold text-steel-400 dark:text-slate-400">ANVA & CO.</span>
+                    <div className="flex h-full w-full flex-col items-center justify-center gap-1 text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-800/60">
+                      <Boxes className="h-10 w-10 text-slate-300 dark:text-slate-600" />
+                      <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-400">ANVA &amp; CO.</span>
                     </div>
                   )}
 
@@ -620,17 +611,17 @@ export default function StockList() {
                   <div className="space-y-1">
                     {/* รหัสวัสดุ & หมวดหมู่วัสดุ อยู่ในบรรทัดเดียวกันอย่างชัดเจน */}
                     <div className="flex items-center justify-between text-[11px] gap-2">
-                      <span className="font-mono font-bold text-steel-600 dark:text-amber-400 truncate">
+                      <span className="font-mono font-bold text-sky-700 dark:text-amber-400 truncate">
                         {it.item_code}
                       </span>
-                      <span className="rounded-md bg-steel-100 dark:bg-slate-800 text-steel-700 dark:text-slate-200 px-2 py-0.5 text-[10px] font-semibold truncate max-w-[130px] border border-steel-200 dark:border-slate-700">
+                      <span className="rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 px-2 py-0.5 text-[10px] font-semibold truncate max-w-[130px] border border-slate-200 dark:border-slate-700">
                         {it.item_categories?.name || 'วัสดุทั่วไป'}
                       </span>
                     </div>
 
                     {/* ชื่อวัสดุ */}
                     <h3
-                      className="text-sm font-bold text-steel-900 dark:text-slate-100 line-clamp-2 leading-snug cursor-pointer group-hover:text-sky-700 dark:group-hover:text-amber-400 transition"
+                      className="text-sm font-bold text-slate-900 dark:text-slate-100 line-clamp-2 leading-snug cursor-pointer group-hover:text-sky-700 dark:group-hover:text-amber-400 transition"
                       onClick={() => setSelectedDetailItem(it)}
                       title={it.item_name}
                     >
@@ -638,29 +629,29 @@ export default function StockList() {
                     </h3>
                   </div>
 
-                  <div className="space-y-1.5 pt-1 border-t border-steel-100 dark:border-slate-800">
+                  <div className="space-y-1.5 pt-1 border-t border-slate-100 dark:border-slate-800">
                     {/* ราคาต่อหน่วย */}
                     <div className="flex items-baseline justify-between">
                       <div className="flex items-baseline gap-1">
-                        <span className="text-xs font-semibold text-steel-500 dark:text-slate-400">฿</span>
-                        <span className="text-base font-black font-mono text-steel-900 dark:text-white tracking-tight">
+                        <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">฿</span>
+                        <span className="text-base font-black font-mono text-slate-900 dark:text-white tracking-tight">
                           {cost > 0 ? baht(cost) : '-'}
                         </span>
-                        <span className="text-xs text-steel-400 dark:text-slate-400 font-normal">
+                        <span className="text-xs text-slate-400 dark:text-slate-400 font-normal">
                           / {it.unit || 'ชิ้น'}
                         </span>
                       </div>
 
                       {/* ยอดคงเหลือ (อยู่บรรทัดเดียวกัน) */}
                       <div className="flex items-center gap-1 font-mono text-xs">
-                        <span className="text-steel-400 dark:text-slate-400 text-[11px]">คงเหลือ:</span>
+                        <span className="text-slate-400 dark:text-slate-400 text-[11px]">คงเหลือ:</span>
                         <span
                           className={`font-bold ${
                             itemOut
                               ? 'text-rose-600 dark:text-rose-400 font-black'
                               : itemLow
                               ? 'text-amber-600 dark:text-amber-400 font-bold'
-                              : 'text-steel-900 dark:text-slate-100'
+                              : 'text-slate-900 dark:text-slate-100'
                           }`}
                         >
                           {formatIntQty(qty)} {it.unit}
@@ -669,20 +660,20 @@ export default function StockList() {
                     </div>
 
                     {/* มูลค่ารวมในคลัง (อยู่บรรทัดเดียว สบายตา) */}
-                    <div className="text-[11px] text-steel-500 dark:text-slate-400 flex items-center justify-between pt-0.5">
+                    <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between pt-0.5">
                       <span>มูลค่ารวม:</span>
-                      <span className="font-mono font-bold text-steel-800 dark:text-slate-200">{baht(valTotal)} บ.</span>
+                      <span className="font-mono font-bold text-slate-800 dark:text-slate-200">{baht(valTotal)} บ.</span>
                     </div>
                   </div>
                 </div>
 
                 {/* 3. Action Footer */}
-                <div className="p-2.5 pt-2 grid grid-cols-2 gap-2 border-t border-steel-100 dark:border-slate-800 bg-steel-50/50 dark:bg-slate-950/60">
+                <div className="p-2.5 pt-2 grid grid-cols-2 gap-2 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/60">
                   <Link
                     to={`/store/issue/new?item_id=${it.id}`}
-                    className={`flex items-center justify-center gap-1.5 rounded-xl py-1.5 text-xs font-bold transition text-center shadow-xs ${
+                    className={`flex items-center justify-center gap-1.5 rounded-xl py-1.5 text-xs font-bold transition text-center shadow-2xs ${
                       itemOut
-                        ? 'bg-steel-200 dark:bg-slate-800 text-steel-400 dark:text-slate-600 cursor-not-allowed pointer-events-none'
+                        ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed pointer-events-none'
                         : 'bg-slate-900 hover:bg-slate-800 dark:bg-amber-500 dark:hover:bg-amber-400 text-amber-400 dark:text-slate-950 dark:font-black'
                     }`}
                     title="เบิกวัสดุเข้าโครงการ"
@@ -693,10 +684,10 @@ export default function StockList() {
 
                   <Link
                     to={`/purchasing/pr/new?item_id=${it.id}`}
-                    className="flex items-center justify-center gap-1.5 rounded-xl bg-white dark:bg-slate-800 hover:bg-steel-50 dark:hover:bg-slate-700 border border-steel-300 dark:border-slate-700 py-1.5 text-xs font-bold text-steel-700 dark:text-slate-200 hover:text-steel-900 dark:hover:text-white transition shadow-xs text-center"
+                    className="flex items-center justify-center gap-1.5 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white transition shadow-2xs text-center"
                     title="เปิดใบขอซื้อ (PR) เพิ่มเติม"
                   >
-                    <ShoppingCart className="h-3.5 w-3.5 text-steel-600 dark:text-slate-300" />
+                    <ShoppingCart className="h-3.5 w-3.5 text-slate-600 dark:text-slate-300" />
                     <span>สั่ง PR</span>
                   </Link>
                 </div>
@@ -829,7 +820,7 @@ export default function StockList() {
                             to={`/store/issue/new?item_id=${i.id}`}
                             className={`rounded-lg px-2.5 py-1 text-xs font-bold transition flex items-center gap-1 ${
                               isItemOut
-                                ? 'bg-steel-100 dark:bg-slate-800 text-steel-400 dark:text-slate-600 pointer-events-none'
+                                ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600 pointer-events-none'
                                 : 'bg-slate-900 hover:bg-slate-800 dark:bg-amber-500 dark:hover:bg-amber-400 text-amber-400 dark:text-slate-950 dark:font-black'
                             }`}
                           >
@@ -839,7 +830,7 @@ export default function StockList() {
 
                           <Link
                             to={`/purchasing/pr/new?item_id=${i.id}`}
-                            className="rounded-lg bg-steel-100 dark:bg-slate-800 hover:bg-steel-200 dark:hover:bg-slate-700 text-steel-800 dark:text-slate-200 border border-steel-200 dark:border-slate-700 px-2.5 py-1 text-xs font-bold transition flex items-center gap-1"
+                            className="rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 px-2.5 py-1 text-xs font-bold transition flex items-center gap-1"
                           >
                             <ShoppingCart className="h-3 w-3" />
                             <span>สั่ง PR</span>
@@ -848,7 +839,7 @@ export default function StockList() {
                           <button
                             type="button"
                             onClick={() => setSelectedUsageItem(i)}
-                            className="rounded-lg bg-steel-100 hover:bg-steel-200 text-steel-600 p-1"
+                            className="rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 p-1 cursor-pointer"
                             title="ดูประวัติการใช้โครงการ"
                           >
                             <Eye className="h-3.5 w-3.5" />
@@ -859,12 +850,12 @@ export default function StockList() {
 
                     {/* รายละเอียดล็อตโครงการเมื่อกดเปิด */}
                     {isOpen && (
-                      <tr className="bg-steel-50/50 dark:bg-slate-950/40">
+                      <tr className="bg-slate-50/50 dark:bg-slate-950/40">
                         <td colSpan={10} className="p-4 pl-8">
-                          <div className="rounded-2xl border border-steel-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 space-y-2 shadow-xs">
-                            <div className="flex items-center justify-between text-xs font-bold text-steel-900 dark:text-slate-100">
+                          <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 space-y-2 shadow-2xs">
+                            <div className="flex items-center justify-between text-xs font-bold text-slate-900 dark:text-slate-100">
                               <span className="flex items-center gap-1.5">
-                                <Boxes className="h-4 w-4 text-steel-700 dark:text-amber-400" />
+                                <Boxes className="h-4 w-4 text-sky-600 dark:text-amber-400" />
                                 <span>ล็อตที่มาของวัสดุ (ตามโครงการ / สต็อกส่วนกลาง)</span>
                               </span>
                               <Link
@@ -877,7 +868,7 @@ export default function StockList() {
                             </div>
 
                             {origins(i.id).length === 0 ? (
-                              <p className="text-xs text-steel-400 dark:text-slate-500">
+                              <p className="text-xs text-slate-400 dark:text-slate-500">
                                 ไม่มีล็อตแยกตามโครงการ (ยอดทั้งหมดอยู่ในสต็อกหลักของบริษัท)
                               </p>
                             ) : (
@@ -885,15 +876,15 @@ export default function StockList() {
                                 {origins(i.id).map((o, idx) => (
                                   <div
                                     key={idx}
-                                    className="flex items-center justify-between rounded-xl border border-steel-200 dark:border-slate-800 bg-steel-50 dark:bg-slate-800/80 p-2 text-xs"
+                                    className="flex items-center justify-between rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/80 p-2 text-xs"
                                   >
                                     <span
-                                      className="font-medium text-steel-700 dark:text-slate-200 truncate max-w-[170px] cursor-help"
+                                      className="font-medium text-slate-700 dark:text-slate-200 truncate max-w-[170px] cursor-help"
                                       title={o.name}
                                     >
                                       {o.name}
                                     </span>
-                                    <span className="font-mono font-bold text-steel-900 dark:text-slate-100 shrink-0">
+                                    <span className="font-mono font-bold text-slate-900 dark:text-slate-100 shrink-0">
                                       {formatIntQty(o.qty)} {i.unit}
                                     </span>
                                   </div>
@@ -914,7 +905,7 @@ export default function StockList() {
 
       {/* 4.1 แถบเปลี่ยนหน้า (Pagination < 1 2 3 4 5 6 >) */}
       {shown.length > 0 && (
-        <div className="rounded-2xl border border-steel-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-5 py-3 shadow-xs">
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-5 py-3 shadow-2xs">
           <Pagination
             currentPage={currentPage}
             totalItems={shown.length}
@@ -932,11 +923,11 @@ export default function StockList() {
       {/* 5. Modal รายละเอียดวัสดุ */}
       {selectedDetailItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
-          <div className="relative w-full max-w-lg overflow-hidden rounded-3xl bg-white dark:bg-slate-900 border border-steel-200 dark:border-slate-800 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+          <div className="relative w-full max-w-lg overflow-hidden rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-steel-200 dark:border-slate-800 p-4 bg-gradient-to-r from-slate-900 to-steel-900 text-white">
+            <div className="flex items-center justify-between border-b border-slate-800 p-4 bg-[#0f172a] text-white">
               <div className="flex items-center gap-2">
-                <Package className="h-4 w-4 text-hivis" />
+                <Package className="h-4 w-4 text-emerald-400" />
                 <span className="text-sm font-bold text-white">
                   รายละเอียดวัสดุวิศวกรรม: {selectedDetailItem.item_code}
                 </span>
@@ -944,16 +935,17 @@ export default function StockList() {
               <button
                 type="button"
                 onClick={() => setSelectedDetailItem(null)}
-                className="rounded-full p-1 text-steel-400 hover:text-white transition"
+                className="rounded-full p-1 text-slate-400 hover:text-white transition cursor-pointer"
+                title="ปิด"
               >
-                
+                <X className="h-4 w-4" />
               </button>
             </div>
 
             {/* Body */}
             <div className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
               <div className="flex flex-col sm:flex-row gap-4 items-center sm:items-start">
-                <div className="relative h-28 w-28 shrink-0 overflow-hidden rounded-2xl border border-steel-200 dark:border-slate-700 bg-steel-50 dark:bg-slate-800">
+                <div className="relative h-28 w-28 shrink-0 overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
                   {selectedDetailItem.image_url ? (
                     <R2Image
                       fileKey={selectedDetailItem.image_url}
@@ -961,57 +953,57 @@ export default function StockList() {
                       className="h-full w-full object-cover"
                     />
                   ) : (
-                    <div className="flex h-full w-full items-center justify-center text-steel-400 dark:text-slate-500">
-                      <Boxes className="h-10 w-10 text-steel-300 dark:text-slate-600" />
+                    <div className="flex h-full w-full items-center justify-center text-slate-400 dark:text-slate-500">
+                      <Boxes className="h-10 w-10 text-slate-300 dark:text-slate-600" />
                     </div>
                   )}
                 </div>
 
                 <div className="space-y-1.5 text-center sm:text-left flex-1">
                   <div className="flex items-center justify-center sm:justify-start gap-2">
-                    <span className="rounded-md bg-steel-100 dark:bg-slate-800 px-2 py-0.5 text-xs font-mono font-bold text-steel-900 dark:text-amber-400 border border-steel-200 dark:border-slate-700">
+                    <span className="rounded-md bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-xs font-mono font-bold text-slate-900 dark:text-amber-400 border border-slate-200 dark:border-slate-700">
                       {selectedDetailItem.item_code}
                     </span>
-                    <span className="rounded-md bg-steel-100 dark:bg-slate-800 px-2 py-0.5 text-xs font-semibold text-steel-600 dark:text-slate-200 border border-steel-200 dark:border-slate-700">
+                    <span className="rounded-md bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-xs font-semibold text-slate-600 dark:text-slate-200 border border-slate-200 dark:border-slate-700">
                       {selectedDetailItem.item_categories?.name || 'วัสดุทั่วไป'}
                     </span>
                   </div>
-                  <h2 className="text-base font-bold text-steel-900 dark:text-slate-100 leading-snug">
+                  <h2 className="text-base font-bold text-slate-900 dark:text-slate-100 leading-snug">
                     {selectedDetailItem.item_name}
                   </h2>
                   <div className="flex items-baseline justify-center sm:justify-start gap-1 pt-1">
-                    <span className="text-xs font-semibold text-steel-500 dark:text-slate-400">ราคาเฉลี่ย:</span>
-                    <span className="text-lg font-black font-mono text-steel-900 dark:text-white">
+                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">ราคาเฉลี่ย:</span>
+                    <span className="text-lg font-black font-mono text-slate-900 dark:text-white">
                       {baht(selectedDetailItem.avg_unit_cost)}
                     </span>
-                    <span className="text-xs text-steel-400 dark:text-slate-400">บาท / {selectedDetailItem.unit}</span>
+                    <span className="text-xs text-slate-400 dark:text-slate-400">บาท / {selectedDetailItem.unit}</span>
                   </div>
                 </div>
               </div>
 
               {/* Stats Box */}
-              <div className="grid grid-cols-3 gap-2.5 rounded-2xl bg-steel-50 dark:bg-slate-800/80 p-3.5 border border-steel-100 dark:border-slate-700 text-center">
+              <div className="grid grid-cols-3 gap-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/80 p-3.5 border border-slate-100 dark:border-slate-700 text-center">
                 <div>
-                  <div className="text-[10px] text-steel-400 dark:text-slate-400">คงเหลือในคลัง</div>
-                  <div className="mt-0.5 font-mono text-lg font-black text-steel-900 dark:text-slate-100">
+                  <div className="text-[10px] text-slate-400 dark:text-slate-400">คงเหลือในคลัง</div>
+                  <div className="mt-0.5 font-mono text-lg font-black text-slate-900 dark:text-slate-100">
                     {formatIntQty(selectedDetailItem.qty_on_hand)}{' '}
-                    <span className="text-xs font-normal text-steel-500 dark:text-slate-400">
+                    <span className="text-xs font-normal text-slate-500 dark:text-slate-400">
                       {selectedDetailItem.unit}
                     </span>
                   </div>
                 </div>
                 <div>
-                  <div className="text-[10px] text-steel-400 dark:text-slate-400">จุดเตือนสั่งซื้อ</div>
-                  <div className="mt-0.5 font-mono text-lg font-bold text-steel-700 dark:text-slate-200">
+                  <div className="text-[10px] text-slate-400 dark:text-slate-400">จุดเตือนสั่งซื้อ</div>
+                  <div className="mt-0.5 font-mono text-lg font-bold text-slate-700 dark:text-slate-200">
                     {selectedDetailItem.reorder_point ? formatIntQty(selectedDetailItem.reorder_point) : 0}{' '}
-                    <span className="text-xs font-normal text-steel-400 dark:text-slate-400">
+                    <span className="text-xs font-normal text-slate-400 dark:text-slate-400">
                       {selectedDetailItem.unit}
                     </span>
                   </div>
                 </div>
                 <div>
-                  <div className="text-[10px] text-steel-400 dark:text-slate-400">มูลค่าคงคลังรวม</div>
-                  <div className="mt-0.5 font-mono text-lg font-black text-steel-900 dark:text-slate-100">
+                  <div className="text-[10px] text-slate-400 dark:text-slate-400">มูลค่าคงคลังรวม</div>
+                  <div className="mt-0.5 font-mono text-lg font-black text-slate-900 dark:text-slate-100">
                     {baht(
                       Number(selectedDetailItem.qty_on_hand || 0) *
                         Number(selectedDetailItem.avg_unit_cost || 0)
@@ -1032,14 +1024,14 @@ export default function StockList() {
 
                 <Link
                   to={`/purchasing/pr/new?item_id=${selectedDetailItem.id}`}
-                  className="flex items-center justify-center gap-1.5 rounded-2xl bg-steel-100 dark:bg-slate-800 hover:bg-steel-200 dark:hover:bg-slate-700 text-steel-800 dark:text-slate-100 border border-steel-200 dark:border-slate-700 py-2.5 text-xs font-bold transition"
+                  className="flex items-center justify-center gap-1.5 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-700 py-2.5 text-xs font-bold transition"
                 >
                   <ShoppingCart className="h-4 w-4" />
                   <span>เปิดใบขอซื้อ (PR)</span>
                 </Link>
               </div>
 
-              <div className="flex items-center justify-between pt-2 border-t border-steel-100 dark:border-slate-800 text-xs">
+              <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800 text-xs">
                 <button
                   type="button"
                   onClick={() => {
@@ -1047,7 +1039,7 @@ export default function StockList() {
                     setSelectedDetailItem(null)
                     setSelectedUsageItem(item)
                   }}
-                  className="text-sky-700 dark:text-sky-400 font-bold hover:underline flex items-center gap-1"
+                  className="text-sky-700 dark:text-sky-400 font-bold hover:underline flex items-center gap-1 cursor-pointer"
                 >
                   <Eye className="h-3.5 w-3.5" />
                   <span>ดูประวัติการเบิกใช้ในโครงการ</span>
@@ -1055,7 +1047,7 @@ export default function StockList() {
 
                 <Link
                   to="/store/items"
-                  className="text-steel-500 dark:text-slate-400 hover:text-steel-800 dark:hover:text-slate-200 font-semibold"
+                  className="text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 font-semibold"
                 >
                   แก้ไขข้อมูลพัสดุนี้ →
                 </Link>
@@ -1071,17 +1063,19 @@ export default function StockList() {
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
           onClick={() => setPreviewImg(null)}
         >
-          <div className="relative max-h-[90vh] max-w-2xl overflow-hidden rounded-2xl bg-white dark:bg-slate-900 p-2 border border-steel-200 dark:border-slate-800">
+          <div className="relative max-h-[90vh] max-w-2xl overflow-hidden rounded-2xl bg-white dark:bg-slate-900 p-2 border border-slate-200 dark:border-slate-800">
             <R2Image
               fileKey={previewImg}
               alt="Preview"
               className="max-h-[85vh] min-h-[200px] min-w-[200px] w-auto object-contain rounded-xl"
             />
             <button
+              type="button"
               onClick={() => setPreviewImg(null)}
-              className="absolute right-4 top-4 rounded-full bg-black/60 p-2 text-white hover:bg-black"
+              className="absolute right-4 top-4 rounded-full bg-black/60 p-2 text-white hover:bg-black cursor-pointer"
+              title="ปิดภาพ"
             >
-              
+              <X className="h-4 w-4" />
             </button>
           </div>
         </div>

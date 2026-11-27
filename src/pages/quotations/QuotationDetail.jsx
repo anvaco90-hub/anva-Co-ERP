@@ -40,11 +40,11 @@ import {
 } from '../../components/purchasing/ProcurementWorkflowStepper'
 
 const STATUS_MAP = {
-  draft: { label: 'ฉบับร่าง (Draft)', color: 'bg-steel-100 text-steel-700 border-steel-300' },
-  sent: { label: 'ส่งลูกค้าแล้ว (Sent)', color: 'bg-sky-100 text-sky-800 border-sky-300' },
-  approved: { label: 'ลูกค้าอนุมัติ (Approved)', color: 'bg-emerald-100 text-emerald-800 border-emerald-300' },
-  rejected: { label: 'ปฏิเสธ (Rejected)', color: 'bg-rose-100 text-rose-800 border-rose-300' },
-  expired: { label: 'หมดอายุ (Expired)', color: 'bg-amber-100 text-amber-800 border-amber-300' },
+  draft: { label: 'ฉบับร่าง (Draft)', color: 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700' },
+  sent: { label: 'ส่งลูกค้าแล้ว (Sent)', color: 'bg-sky-50 dark:bg-sky-950/50 text-sky-800 dark:text-sky-300 border-sky-200 dark:border-sky-800' },
+  approved: { label: 'ลูกค้าอนุมัติ (Approved)', color: 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800' },
+  rejected: { label: 'ปฏิเสธ (Rejected)', color: 'bg-rose-50 dark:bg-rose-950/50 text-rose-800 dark:text-rose-300 border-rose-200 dark:border-rose-800' },
+  expired: { label: 'หมดอายุ (Expired)', color: 'bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800' },
 }
 
 export default function QuotationDetail() {
@@ -287,9 +287,9 @@ export default function QuotationDetail() {
   if (loading) {
     return (
       <div className="flex min-h-[300px] items-center justify-center">
-        <div className="text-center text-steel-500">
-          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-steel-300 border-t-sky-600 mb-2" />
-          <p>กำลังโหลดข้อมูลใบเสนอราคา...</p>
+        <div className="text-center text-slate-500 dark:text-slate-400">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-slate-200 dark:border-slate-700 border-t-emerald-600 dark:border-t-amber-400 mb-2" />
+          <p className="text-xs font-semibold">กำลังโหลดข้อมูลใบเสนอราคา...</p>
         </div>
       </div>
     )
@@ -297,9 +297,9 @@ export default function QuotationDetail() {
 
   if (!quotation) {
     return (
-      <div className="rounded-xl border border-steel-200 bg-white p-12 text-center text-steel-500">
-        <p className="text-lg font-bold text-ink">ไม่พบข้อมูลใบเสนอราคา</p>
-        <Link to="/quotations" className="mt-4 inline-block text-sky-600 hover:underline">
+      <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-12 text-center text-slate-500 dark:text-slate-400">
+        <p className="text-lg font-bold text-slate-900 dark:text-white">ไม่พบข้อมูลใบเสนอราคา</p>
+        <Link to="/quotations" className="mt-4 inline-block text-xs font-bold text-sky-600 dark:text-sky-400 hover:underline">
           ← กลับไปหน้ารายการใบเสนอราคา
         </Link>
       </div>
@@ -308,7 +308,7 @@ export default function QuotationDetail() {
 
   const statusInfo = STATUS_MAP[quotation.status] || {
     label: quotation.status,
-    color: 'bg-steel-100 text-steel-700 border-steel-300',
+    color: 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700',
   }
 
   const flow = computeQuotationWorkflow({

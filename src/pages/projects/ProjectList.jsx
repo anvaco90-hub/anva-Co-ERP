@@ -144,24 +144,21 @@ export default function ProjectList() {
   const activeCount = projects.filter((p) => p.status === 'in_progress' || p.status === 'active').length;
 
   return (
-    <div className="space-y-6 pb-12 font-sans">
+    <div className="space-y-4 pb-12">
       {/* Header Bar */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="rounded-md bg-hivis px-2.5 py-0.5 text-xs font-black text-steel-900 uppercase">
-              Projects & Engineering
-            </span>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+              โครงการและงบประมาณ (Projects &amp; Budgets)
+            </h1>
             {isDemo && (
-              <span className="rounded-md bg-amber-100 text-amber-800 px-2 py-0.5 text-[11px] font-bold">
-                ข้อมูลจำลองสมจริง (Realistic Simulation)
+              <span className="rounded-full bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 px-2.5 py-0.5 text-[11px] font-bold">
+                ข้อมูลจำลอง (Demo)
               </span>
             )}
           </div>
-          <h1 className="mt-1 text-2xl font-black text-steel-900 sm:text-3xl">
-            ระบบบริหารโครงการและหมวดงบประมาณ
-          </h1>
-          <p className="text-xs sm:text-sm text-steel-500">
+          <p className="text-xs text-slate-500 dark:text-slate-400">
             ติดตามมูลค่าสัญญา, การจัดสรรงบรายหมวด (ค่าอุปกรณ์, ค่าแรง, เครื่องจักร, โสหุ้ย) และต้นทุนจริง
           </p>
         </div>
@@ -169,41 +166,47 @@ export default function ProjectList() {
         {canEditProjects(profile.role) && (
           <Link
             to="/projects/new"
-            className="flex items-center gap-2 rounded-xl bg-hivis hover:bg-amber-400 px-4 py-2.5 text-sm font-bold text-steel-900 transition shadow-sm self-start sm:self-center"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 dark:bg-amber-500 dark:hover:bg-amber-400 px-3.5 py-1.5 text-xs font-semibold text-white dark:text-slate-950 shadow-xs transition"
           >
-            <Plus className="h-4 w-4" />
-            <span> สร้างโครงการใหม่</span>
+            <Plus className="h-3.5 w-3.5" />
+            <span>สร้างโครงการใหม่</span>
           </Link>
         )}
       </div>
 
       {/* Overview Stat Cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="rounded-2xl border border-steel-200 bg-white p-5 shadow-xs">
-          <div className="text-xs font-bold text-steel-500 uppercase tracking-wider">โครงการทั้งหมด</div>
-          <div className="mt-2 text-2xl font-black text-steel-900">{projects.length} <span className="text-xs font-normal text-steel-500">โครงการ</span></div>
-          <div className="mt-1 text-xs text-steel-600">กำลังดำเนินงาน: <span className="font-bold text-emerald-700">{activeCount} โครงการ</span></div>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-2xs">
+          <div className="text-xs font-semibold text-slate-500 dark:text-slate-400">โครงการทั้งหมด</div>
+          <div className="mt-1.5 text-2xl font-bold font-mono text-slate-900 dark:text-white tabular-nums">
+            {projects.length} <span className="text-xs font-normal text-slate-500 dark:text-slate-400">โครงการ</span>
+          </div>
+          <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            กำลังดำเนินงาน: <span className="font-bold text-emerald-700 dark:text-emerald-400">{activeCount} โครงการ</span>
+          </div>
         </div>
 
-        <div className="rounded-2xl border border-steel-200 bg-white p-5 shadow-xs">
-          <div className="text-xs font-bold text-steel-500 uppercase tracking-wider">มูลค่าสัญญารวม (Contract Value)</div>
-          <div className="mt-2 text-2xl font-black text-emerald-700">{baht(totalContractAll)} <span className="text-xs font-normal text-steel-500">บาท</span></div>
-          <div className="mt-1 text-xs text-steel-600">สัญญาจ้างงานวิศวกรรมและติดตั้ง</div>
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-2xs">
+          <div className="text-xs font-semibold text-slate-500 dark:text-slate-400">มูลค่าสัญญารวม (Contract Value)</div>
+          <div className="mt-1.5 text-2xl font-bold font-mono text-emerald-700 dark:text-emerald-400 tabular-nums">
+            {baht(totalContractAll)} <span className="text-xs font-normal text-slate-500 dark:text-slate-400">บาท</span>
+          </div>
+          <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">สัญญาจ้างงานวิศวกรรมและติดตั้ง</div>
         </div>
 
-        <div className="rounded-2xl border border-steel-200 bg-white p-5 shadow-xs">
-          <div className="text-xs font-bold text-steel-500 uppercase tracking-wider">การคุมงบประมาณ & ต้นทุน</div>
-          <div className="mt-2 text-2xl font-black text-indigo-700">6 หมวดงบละเอียด</div>
-          <div className="mt-1 text-xs text-steel-600">เชื่อมโยงค่าใช้จ่ายจริงจาก PO และ EXP</div>
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-2xs">
+          <div className="text-xs font-semibold text-slate-500 dark:text-slate-400">การคุมงบประมาณ &amp; ต้นทุน</div>
+          <div className="mt-1.5 text-2xl font-bold text-sky-700 dark:text-sky-400">6 หมวดงบละเอียด</div>
+          <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">เชื่อมโยงค่าใช้จ่ายจริงจาก PO และ EXP</div>
         </div>
       </div>
 
       {/* Search Input & Standard Sort Filter */}
       <div className="flex flex-wrap items-center gap-2 max-w-2xl">
         <div className="relative flex-1 min-w-[240px]">
-          <Search className="absolute left-3.5 top-3 h-4 w-4 text-steel-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <input
-            className="w-full rounded-xl border border-steel-300 bg-white py-2 pl-10 pr-4 text-xs font-semibold text-steel-900 placeholder-steel-400 focus:border-hivis focus:outline-none focus:ring-1 focus:ring-hivis shadow-xs"
+            className="input pl-9 text-xs"
             placeholder="ค้นหารหัสโครงการ / ชื่อโครงการ / ลูกค้า..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -217,14 +220,14 @@ export default function ProjectList() {
         />
       </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-rose-600 dark:text-rose-400">{error}</p>}
 
       {loading ? (
-        <div className="rounded-2xl bg-white p-12 text-center text-steel-400 text-sm">
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-12 text-center text-slate-400 dark:text-slate-500 text-sm">
           กำลังโหลดข้อมูลโครงการ...
         </div>
       ) : shown.length === 0 ? (
-        <div className="rounded-2xl bg-white p-12 text-center text-steel-500 text-sm border border-steel-200">
+        <div className="rounded-2xl bg-white dark:bg-slate-900 p-12 text-center text-slate-500 dark:text-slate-400 text-sm border border-slate-200 dark:border-slate-800">
           ไม่พบโครงการที่ค้นหา
         </div>
       ) : (
@@ -239,45 +242,45 @@ export default function ProjectList() {
             return (
               <div
                 key={p.id}
-                className="rounded-2xl border border-steel-200 bg-white p-5 shadow-xs transition hover:border-amber-400 hover:shadow-md flex flex-col justify-between"
+                className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-2xs transition hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-md flex flex-col justify-between"
               >
                 <div>
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <span className="font-mono text-xs font-bold text-amber-700">
+                      <span className="font-mono text-xs font-bold text-amber-700 dark:text-amber-400">
                         {p.project_code}
                       </span>
-                      <h2 className="text-base font-bold text-steel-900 mt-0.5 line-clamp-1">
+                      <h2 className="text-base font-bold text-slate-900 dark:text-white mt-0.5 line-clamp-1">
                         {p.project_name}
                       </h2>
                     </div>
                     <StatusBadge status={p.status} />
                   </div>
 
-                  <div className="mt-3 text-xs text-steel-600">
-                    <span className="text-steel-400">ลูกค้า:</span>{" "}
-                    <span className="font-bold text-steel-800">{p.client_name || p.customer_name || "-"}</span>
+                  <div className="mt-3 text-xs text-slate-600 dark:text-slate-300">
+                    <span className="text-slate-400 dark:text-slate-500">ลูกค้า:</span>{" "}
+                    <span className="font-bold text-slate-800 dark:text-slate-100">{p.client_name || p.customer_name || "-"}</span>
                   </div>
 
                   {/* Financial Mini Grid */}
-                  <div className="mt-3.5 grid grid-cols-2 gap-2 rounded-xl bg-slate-50 p-3 border border-steel-100 text-xs">
+                  <div className="mt-3.5 grid grid-cols-2 gap-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 p-3 border border-slate-200/80 dark:border-slate-700/80 text-xs">
                     <div>
-                      <div className="text-[11px] text-steel-500">มูลค่าสัญญา</div>
-                      <div className="font-bold font-mono text-steel-900 text-sm">
+                      <div className="text-[11px] text-slate-500 dark:text-slate-400">มูลค่าสัญญา</div>
+                      <div className="font-bold font-mono text-slate-900 dark:text-white text-sm tabular-nums">
                         {contractAmt > 0 ? `${baht(contractAmt)} บ.` : "-"}
                       </div>
                     </div>
                     <div>
-                      <div className="text-[11px] text-steel-500">งบประมาณควบคุม</div>
-                      <div className="font-bold font-mono text-indigo-700 text-sm">{baht(budgetAmt)} บ.</div>
+                      <div className="text-[11px] text-slate-500 dark:text-slate-400">งบประมาณควบคุม</div>
+                      <div className="font-bold font-mono text-sky-700 dark:text-sky-400 text-sm tabular-nums">{baht(budgetAmt)} บ.</div>
                     </div>
-                    <div className="col-span-2 pt-1 border-t border-steel-200/60 flex items-center justify-between text-[11px]">
-                      <span className="text-steel-500">กำไรขั้นต้นคาดการณ์:</span>
-                      <span className="font-bold text-emerald-700">{baht(grossMargin)} บ. ({grossMarginPct}%)</span>
+                    <div className="col-span-2 pt-1.5 border-t border-slate-200/70 dark:border-slate-700/70 flex items-center justify-between text-[11px]">
+                      <span className="text-slate-500 dark:text-slate-400">กำไรขั้นต้นคาดการณ์:</span>
+                      <span className="font-bold font-mono text-emerald-700 dark:text-emerald-400 tabular-nums">{baht(grossMargin)} บ. ({grossMarginPct}%)</span>
                     </div>
                   </div>
 
-                  <div className="mt-3 flex items-center justify-between text-[11px] text-steel-400">
+                  <div className="mt-3 flex items-center justify-between text-[11px] text-slate-400 dark:text-slate-500">
                     <span className="flex items-center gap-1">
                       <Calendar className="h-3 w-3" />
                       <span>{formatDateOnly(p.start_date)} - {formatDateOnly(p.end_date)}</span>
@@ -288,14 +291,14 @@ export default function ProjectList() {
                   </div>
                 </div>
 
-                <div className="mt-4 pt-3 border-t border-steel-100 flex items-center justify-between">
-                  <div className="text-xs text-amber-800 font-semibold flex items-center gap-1">
-                    <Layers className="h-3.5 w-3.5" />
+                <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                  <div className="text-xs text-slate-600 dark:text-slate-400 font-semibold flex items-center gap-1.5">
+                    <Layers className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
                     <span>แจกแจง 6 หมวดงบประมาณละเอียด</span>
                   </div>
                   <Link
                     to={`/projects/${p.id}`}
-                    className="flex items-center gap-1.5 rounded-lg bg-steel-900 hover:bg-steel-800 px-3 py-1.5 text-xs font-bold text-white transition shadow-xs"
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 dark:bg-amber-500 hover:bg-slate-800 dark:hover:bg-amber-400 px-3 py-1.5 text-xs font-bold text-white dark:text-slate-950 transition shadow-2xs"
                   >
                     <span>ดูรายละเอียด</span>
                     <ArrowRight className="h-3.5 w-3.5" />
@@ -309,7 +312,7 @@ export default function ProjectList() {
 
       {/* แถบเปลี่ยนหน้า (Pagination < 1 2 3 4 5 6 >) */}
       {!loading && shown.length > 0 && (
-        <div className="rounded-2xl border border-steel-200 bg-white px-5 py-3 shadow-xs">
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-5 py-3 shadow-2xs">
           <Pagination
             currentPage={currentPage}
             totalItems={shown.length}

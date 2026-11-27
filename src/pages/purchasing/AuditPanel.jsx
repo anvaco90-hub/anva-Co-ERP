@@ -43,9 +43,9 @@ export default function AuditPanel({ docId, row }) {
               return (
                 <li key={l.id} className="border-l-2 border-hivis pl-3">
                   <div><b>{ACTION[l.action]}</b> โดย {l.user?.full_name ?? '-'} · {fmtDateTime(l.changed_at)}</div>
-                  {l.reason && <div className="text-steel-500">เหตุผล: {l.reason}</div>}
-                  {l.action === 'delete' && <div className="text-steel-500">ลบเอกสาร {l.doc_no}</div>}
-                  {lines.map((t, i) => <div key={i} className="text-steel-700">{t}</div>)}
+                  {l.reason && <div className="text-slate-500 dark:text-slate-400">เหตุผล: {l.reason}</div>}
+                  {l.action === 'delete' && <div className="text-slate-500 dark:text-slate-400">ลบเอกสาร {l.doc_no}</div>}
+                  {lines.map((t, i) => <div key={i} className="text-slate-700 dark:text-slate-300">{t}</div>)}
                 </li>
               )
             })}

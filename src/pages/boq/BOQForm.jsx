@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase'
 import { baht } from '../../lib/projects'
 import { FieldError, fieldErrorClass } from '../../components/FieldError'
 import CustomerSelectField from '../../components/CustomerSelectField'
+import CollapsibleDetailField from '../../components/common/CollapsibleDetailField'
 import { fetchUnifiedCustomers } from '../../lib/contactsSync'
 import {
   calculateKwLaborCost,
@@ -609,32 +610,36 @@ export default function BOQForm() {
   return (
     <div className="w-full space-y-6 font-sans text-slate-800 dark:text-slate-100 transition-colors">
       {/* 1. Header Banner */}
-      <div className="rounded-2xl bg-gradient-to-r from-slate-900 via-steel-900 to-slate-800 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 p-6 text-white shadow-md border border-steel-700 dark:border-slate-800">
+      <div className="rounded-2xl bg-[#0f172a] p-5 sm:p-6 text-white shadow-sm border border-slate-800">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="rounded-md bg-amber-400 text-slate-950 font-black px-2.5 py-0.5 text-xs uppercase tracking-wider">
-                BOQ ESTIMATOR
-              </span>
-              <span className="text-xs text-slate-300">
-                {isEdit ? 'แก้ไขเอกสาร BOQ' : 'สร้างรายการประเมินราคา BOQ ใหม่'}
-              </span>
+          <div className="flex items-start gap-3.5">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-500/15 border border-amber-400/25 text-amber-300 shrink-0 mt-0.5">
+              <FileSpreadsheet className="h-5 w-5" />
             </div>
-            <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white flex items-center gap-2">
-              <FileSpreadsheet className="h-6 w-6 text-amber-400" />
-              <span>{isEdit ? `แก้ไข BOQ: ${boqNo}` : 'ถอดแบบและประมาณราคา (BOQ Form)'}</span>
-            </h1>
-            <p className="mt-1 text-xs sm:text-sm text-slate-300">
-              จัดกลุ่มรายการตามหมวดหมู่งาน เพิ่มรายการในงานเดิมได้ทันที และแยกส่วนค่าแรงออกต่างหากอย่างชัดเจน
-            </p>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="rounded-full bg-amber-500/15 text-amber-300 border border-amber-400/25 font-mono font-bold px-2.5 py-0.5 text-[10px] uppercase tracking-wider">
+                  BOQ ESTIMATOR
+                </span>
+                <span className="text-xs text-slate-400">
+                  {isEdit ? 'แก้ไขเอกสาร BOQ' : 'สร้างรายการประเมินราคา BOQ ใหม่'}
+                </span>
+              </div>
+              <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white">
+                {isEdit ? `แก้ไข BOQ: ${boqNo}` : 'ถอดแบบและประมาณราคา (BOQ Form)'}
+              </h1>
+              <p className="text-xs text-slate-400">
+                จัดกลุ่มรายการตามหมวดหมู่งาน เพิ่มรายการในงานเดิมได้ทันที และแยกส่วนค่าแรงออกต่างหากอย่างชัดเจน
+              </p>
+            </div>
           </div>
 
           <button
             type="button"
             onClick={() => navigate(-1)}
-            className="rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 px-3.5 py-2 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer self-start sm:self-center"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3.5 py-2 text-xs font-semibold transition cursor-pointer self-start sm:self-center shrink-0"
           >
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft className="h-3.5 w-3.5" />
             <span>ย้อนกลับ</span>
           </button>
         </div>
@@ -1014,16 +1019,18 @@ export default function BOQForm() {
                             </div>
                           </div>
 
-                          {/* บรรทัดที่ 3: สเปกวิศวกรรมและเงื่อนไขเทคนิค */}
+                          {/* บรรทัดที่ 3: สเปกวิศวกรรมและเงื่อนไขเทคนิค (พับซ่อนได้เพื่อความมินิมอล) */}
                           <div className="pt-1.5 border-t border-slate-100 dark:border-slate-800/80">
-                            <input
-                              type="text"
-                              className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/60 px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:bg-white dark:focus:bg-slate-800 focus:outline-none"
-                              placeholder="สเปกเทคนิค / รุ่น / รายละเอียดเพิ่มเติม (เช่น แผง Tier-1 Half-cell, รางอลูมิเนียม 6005-T5)..."
+                            <CollapsibleDetailField
                               value={it.description || ''}
-                              onChange={(e) =>
-                                updateItemInCategory(cat.id, it.id, 'description', e.target.value)
+                              onChange={(val) =>
+                                updateItemInCategory(cat.id, it.id, 'description', val)
                               }
+                              addLabel="เพิ่มรายละเอียด"
+                              editLabel="สเปกเทคนิค / รุ่น"
+                              placeholder="เช่น • แผง Tier-1 Half-cell&#10;• รางอลูมิเนียม 6005-T5"
+                              hint="กด Enter ขึ้นบรรทัดใหม่ได้อิสระ"
+                              rows={2}
                             />
                           </div>
                         </div>
@@ -1188,14 +1195,17 @@ export default function BOQForm() {
                     </div>
                   </div>
 
-                  {/* รายละเอียด/ขอบเขตงานค่าแรง */}
+                  {/* รายละเอียด/ขอบเขตงานค่าแรง (พับซ่อนได้เพื่อความมินิมอล) */}
                   <div className="pt-1.5 border-t border-amber-100 dark:border-amber-900/60">
-                    <input
-                      type="text"
-                      className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none"
-                      placeholder="ขอบเขตงานค่าแรง / เงื่อนไขการติดตั้งเพิ่มเติม..."
+                    <CollapsibleDetailField
                       value={l.description || ''}
-                      onChange={(e) => updateLaborItem(l.id, 'description', e.target.value)}
+                      onChange={(val) => updateLaborItem(l.id, 'description', val)}
+                      accent="amber"
+                      addLabel="เพิ่มรายละเอียด"
+                      editLabel="ขอบเขตงานค่าแรง / เงื่อนไขติดตั้ง"
+                      placeholder="เช่น รวมเดินท่อ EMT, ทดสอบ Megger และ Commissioning..."
+                      hint="กด Enter ขึ้นบรรทัดใหม่ได้อิสระ"
+                      rows={2}
                     />
                   </div>
                 </div>
@@ -1214,18 +1224,17 @@ export default function BOQForm() {
         </div>
 
         {/* ส่วนที่ 4: สรุปต้นทุน กำไร และราคาเสนอขาย (Financial Summary) */}
-        <div className="pt-6 border-t border-slate-100 dark:border-slate-800 grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-          {/* หมายเหตุ */}
-          <div className="space-y-1.5">
-            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
-              หมายเหตุ / เงื่อนไขทั่วไปใน BOQ
-            </label>
-            <textarea
-              rows={6}
-              className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3 text-xs text-slate-800 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-slate-900 dark:focus:border-amber-500 focus:outline-none"
-              placeholder="เช่น กำหนดยืนราคา 30 วัน, ไม่รวมงานปรับปรุงโครงสร้างหลังคาเดิม, การชำระเงินแบ่ง 3 งวด..."
+        <div className="pt-6 border-t border-slate-100 dark:border-slate-800 space-y-5">
+          {/* หมายเหตุ (พับซ่อนได้เพื่อลดความรก) */}
+          <div className="rounded-xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 p-3.5">
+            <CollapsibleDetailField
               value={notes}
-              onChange={(e) => setNotes(e.target.value)}
+              onChange={setNotes}
+              addLabel="เพิ่มหมายเหตุ / เงื่อนไขทั่วไปใน BOQ"
+              editLabel="หมายเหตุ / เงื่อนไขทั่วไปใน BOQ"
+              placeholder="เช่น กำหนดยืนราคา 30 วัน, ไม่รวมงานปรับปรุงโครงสร้างหลังคาเดิม, การชำระเงินแบ่ง 3 งวด..."
+              hint="กด Enter ขึ้นบรรทัดใหม่ได้อิสระ"
+              rows={4}
             />
           </div>
 

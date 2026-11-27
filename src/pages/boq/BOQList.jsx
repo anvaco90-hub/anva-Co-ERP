@@ -19,10 +19,10 @@ import {
 } from 'lucide-react'
 
 const STATUS_MAP = {
-  draft: { label: 'ฉบับร่าง (Draft)', color: 'bg-steel-100 text-steel-700 border-steel-300' },
-  approved: { label: 'อนุมัติแล้ว (Approved)', color: 'bg-emerald-100 text-emerald-800 border-emerald-300' },
-  converted_to_quotation: { label: 'เปิดใบเสนอราคาแล้ว', color: 'bg-sky-100 text-sky-800 border-sky-300' },
-  archived: { label: 'เก็บถาวร', color: 'bg-steel-100 text-steel-500 border-steel-200' },
+  draft: { label: 'ฉบับร่าง (Draft)', color: 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700' },
+  approved: { label: 'อนุมัติแล้ว (Approved)', color: 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800' },
+  converted_to_quotation: { label: 'เปิดใบเสนอราคาแล้ว', color: 'bg-sky-50 dark:bg-sky-950/50 text-sky-700 dark:text-sky-300 border-sky-200 dark:border-sky-800' },
+  archived: { label: 'เก็บถาวร', color: 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700' },
 }
 
 export default function BOQList() {
@@ -92,89 +92,78 @@ export default function BOQList() {
   const totalKwp = boqs.reduce((s, b) => s + Number(b.system_size_kwp || 0), 0)
 
   return (
-    <div className="space-y-6 font-sans text-slate-800">
-      {/* 1. Header Banner */}
-      <div className="rounded-2xl bg-gradient-to-r from-slate-900 via-steel-900 to-slate-800 p-6 text-white shadow-md border border-steel-700">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="rounded-md bg-hivis text-steel-950 font-black px-2.5 py-0.5 text-xs uppercase tracking-wider">
-                BILL OF QUANTITIES
-              </span>
-              <span className="text-xs text-steel-300">
-                ระบบถอดแบบและประมาณราคาต้นทุนวิศวกรรม
-              </span>
-            </div>
-            <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white flex items-center gap-2">
-              <FileSpreadsheet className="h-6 w-6 text-hivis" />
-              <span>ระบบ BOQ โซล่าเซลล์ & ก่อสร้าง (BOQ Management)</span>
-            </h1>
-            <p className="mt-1 text-xs sm:text-sm text-steel-300">
-              คำนวณแยกค่าวัสดุ + ค่าแรง + มาร์กอัปกำไร พร้อมแปลงเป็นใบเสนอราคาและใบสั่งซื้อในคลิกเดียว
-            </p>
-          </div>
+    <div className="space-y-4">
+      {/* 1. Header & Actions */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+            ประมาณการโครงการ (BOQ Management)
+          </h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            คำนวณแยกค่าวัสดุ + ค่าแรง + มาร์กอัปกำไร พร้อมแปลงเป็นใบเสนอราคาและใบสั่งซื้อในคลิกเดียว
+          </p>
+        </div>
 
-          <div className="flex items-center gap-2 self-start sm:self-center">
-            <Link
-              to="/quotations"
-              className="rounded-xl bg-steel-800 hover:bg-steel-700 text-steel-200 border border-steel-600 px-3.5 py-2 text-xs font-bold transition shadow-xs flex items-center gap-1.5"
-            >
-              <span>ดูใบเสนอราคา</span>
-            </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            to="/quotations"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition"
+          >
+            <span>ดูใบเสนอราคา</span>
+          </Link>
 
-            <Link
-              to="/boq/new"
-              className="rounded-xl bg-hivis text-steel-950 hover:bg-amber-400 font-black px-4 py-2 text-xs transition shadow-xs flex items-center gap-1.5"
-            >
-              <Plus className="h-4 w-4" />
-              <span> สร้าง BOQ ใหม่</span>
-            </Link>
-          </div>
+          <Link
+            to="/boq/new"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 dark:bg-amber-500 dark:hover:bg-amber-400 px-3.5 py-1.5 text-xs font-semibold text-white dark:text-slate-950 shadow-xs transition"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            <span>สร้าง BOQ ใหม่</span>
+          </Link>
         </div>
       </div>
 
       {/* 2. Key Metrics Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="rounded-2xl border border-steel-200 bg-white p-4 shadow-2xs">
-          <div className="flex items-center justify-between text-xs text-steel-500 font-bold uppercase">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-2xs">
+          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-semibold">
             <span>จำนวน BOQ ทั้งหมด</span>
-            <Layers className="h-4 w-4 text-steel-400" />
+            <Layers className="h-4 w-4 text-slate-400 dark:text-slate-500" />
           </div>
-          <div className="mt-2 text-2xl font-black font-mono text-steel-900">
-            {boqs.length} <span className="text-xs font-normal text-steel-500">โครงการ</span>
+          <div className="mt-1.5 text-2xl font-bold font-mono text-slate-900 dark:text-white tabular-nums">
+            {boqs.length} <span className="text-xs font-normal text-slate-500 dark:text-slate-400">โครงการ</span>
           </div>
         </div>
 
-        <div className="rounded-2xl border border-steel-200 bg-white p-4 shadow-2xs">
-          <div className="flex items-center justify-between text-xs text-amber-700 font-bold uppercase">
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-2xs">
+          <div className="flex items-center justify-between text-xs text-amber-700 dark:text-amber-400 font-semibold">
             <span>กำลังผลิตติดตั้งรวม (Total kWp)</span>
             <Sun className="h-4 w-4 text-amber-500" />
           </div>
-          <div className="mt-2 text-2xl font-black font-mono text-amber-700">
-            {totalKwp.toLocaleString()} <span className="text-xs font-normal text-steel-500">kWp</span>
+          <div className="mt-1.5 text-2xl font-bold font-mono text-amber-700 dark:text-amber-400 tabular-nums">
+            {totalKwp.toLocaleString()} <span className="text-xs font-normal text-slate-500 dark:text-slate-400">kWp</span>
           </div>
         </div>
 
-        <div className="rounded-2xl border border-steel-200 bg-white p-4 shadow-2xs">
-          <div className="flex items-center justify-between text-xs text-emerald-800 font-bold uppercase">
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-2xs">
+          <div className="flex items-center justify-between text-xs text-emerald-700 dark:text-emerald-400 font-semibold">
             <span>มูลค่าเสนอขายรวมทั้งสิ้น</span>
-            <span className="text-xs"></span>
+            <FileSpreadsheet className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
           </div>
-          <div className="mt-2 text-2xl font-black font-mono text-emerald-700">
-            {baht(totalValue)} <span className="text-xs font-normal text-steel-500">บาท</span>
+          <div className="mt-1.5 text-2xl font-bold font-mono text-emerald-700 dark:text-emerald-400 tabular-nums">
+            {baht(totalValue)} <span className="text-xs font-normal text-slate-500 dark:text-slate-400">บาท</span>
           </div>
         </div>
       </div>
 
       {/* 3. Search and Filters */}
-      <div className="rounded-2xl border border-steel-200 bg-white p-4 shadow-2xs space-y-3">
+      <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-2xs space-y-3">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="relative w-full sm:w-80">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-steel-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <input
               type="text"
               placeholder="ค้นหาเลขที่ BOQ, ชื่องาน, ลูกค้า..."
-              className="w-full rounded-xl border border-steel-300 bg-steel-50/50 pl-9 pr-3.5 py-2 text-xs font-medium text-steel-900 focus:bg-white focus:border-steel-900 focus:outline-none"
+              className="input pl-9 text-xs"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -182,7 +171,7 @@ export default function BOQList() {
 
           <div className="flex items-center gap-2 self-stretch sm:self-auto">
             <select
-              className="rounded-xl border border-steel-300 bg-white px-3 py-2 text-xs font-semibold text-steel-700"
+              className="input text-xs font-semibold w-auto"
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
             >
@@ -196,15 +185,15 @@ export default function BOQList() {
 
         {/* Table List */}
         {loading ? (
-          <div className="rounded-xl border border-steel-200 overflow-hidden">
+          <div className="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
             <SkeletonTable rows={5} cols={9} />
           </div>
         ) : filtered.length === 0 ? (
-          <div className="py-12 text-center text-xs text-steel-400 border border-dashed border-steel-200 rounded-xl space-y-2">
+          <div className="py-12 text-center text-xs text-slate-400 dark:text-slate-500 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl space-y-2">
             <div>ยังไม่มีรายการ BOQ ในระบบ</div>
             <Link
               to="/boq/new"
-              className="inline-block text-xs font-bold text-sky-600 hover:underline"
+              className="inline-block text-xs font-bold text-sky-600 dark:text-sky-400 hover:underline"
             >
               + คลิกเพื่อเริ่มสร้าง BOQ โครงการแรก
             </Link>
@@ -322,7 +311,7 @@ export default function BOQList() {
 
         {/* แถบเปลี่ยนหน้า (Pagination < 1 2 3 4 5 6 >) */}
         {!loading && filtered.length > 0 && (
-          <div className="rounded-2xl border border-steel-200 bg-white px-5 py-3 shadow-xs mt-4">
+          <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-5 py-3 shadow-xs mt-4">
             <Pagination
               currentPage={currentPage}
               totalItems={filtered.length}

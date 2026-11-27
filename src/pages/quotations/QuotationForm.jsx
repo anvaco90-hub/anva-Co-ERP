@@ -28,6 +28,7 @@ import { FieldError, fieldErrorClass } from '../../components/FieldError'
 import SearchableSelect from '../../components/SearchableSelect'
 import SearchableProjectSelect from '../../components/SearchableProjectSelect'
 import SearchableItemSelect from '../../components/SearchableItemSelect'
+import CollapsibleDetailField from '../../components/common/CollapsibleDetailField'
 import {
   FileText,
   Building2,
@@ -1462,49 +1463,41 @@ export default function QuotationForm() {
                   </div>
                 </div>
 
-                {/* แถบสถานะเช็กสต็อกอัตโนมัติ (ภายในเท่านั้น — ไม่เปิด PR และไม่แสดงใน PDF) */}
-                {it.item_name?.trim() && stock && stock.status !== 'service' && (
-                  <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] bg-slate-50 dark:bg-slate-800/60 px-3 py-1.5 rounded-xl border border-slate-200/80 dark:border-slate-700/80">
-                    <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-                      <Warehouse className="h-3.5 w-3.5 text-sky-600 dark:text-sky-400" />
-                      <span>สถานะสต็อกคงเหลือ (เช็กอัตโนมัติ ณ ตอนนี้ — ยังไม่เปิด PR):</span>
-                    </span>
-                    <span
-                      className={`font-bold px-2 py-0.5 rounded-full border ${stock.status === 'enough'
-                          ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
-                          : stock.status === 'partial'
-                            ? 'bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800'
-                            : 'bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800'
-                        }`}
-                    >
-                      {stock.status === 'enough'
-                        ? `พร้อมเบิก (มี ${formatIntQty(stock.inStock)})`
-                        : stock.status === 'partial'
-                          ? `มีบางส่วน ${formatIntQty(stock.inStock)} / ขาด ${formatIntQty(stock.shortfall)}`
-                          : stock.status === 'not_in_inventory'
-                            ? `ไม่มีในคลัง (ขาด ${formatIntQty(stock.shortfall)})`
-                            : `ของหมด (ขาด ${formatIntQty(stock.shortfall)})`}
-                    </span>
-                  </div>
-                )}
-
-                {/* แถวที่ 2: Richbox / Textarea ขยายลงล่าง สำหรับสเปกและรายละเอียด */}
-                <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80">
-                  <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mb-1">
-                    <span className="flex items-center gap-1.5 font-semibold text-slate-700 dark:text-slate-300">
-                      <Info className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
-                      <span>รายละเอียดเฉพาะ / สเปกวิศวกรรม (กด Enter ขึ้นบรรทัดใหม่ได้อิสระ)</span>
-                    </span>
-                    <span className="text-[10px] text-slate-400 dark:text-slate-500">
-                      รองรับข้อความหลายบรรทัดและหัวข้อย่อย
-                    </span>
-                  </div>
-                  <textarea
-                    rows={2}
-                    className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/60 p-2.5 text-xs text-slate-800 dark:text-slate-200 placeholder:text-slate-400 focus:bg-white dark:focus:bg-slate-800 focus:border-slate-900 dark:focus:border-amber-500 focus:outline-none transition leading-relaxed font-sans"
-                    placeholder="เช่น • แผงโซล่าเซลล์ชนิด Monocrystalline Half-cell 550W Tier-1&#10;• รับประกันตัวผลิตภัณฑ์ 12 ปี และรับประกันประสิทธิภาพการผลิตไฟ 25 ปี&#10;• ได้รับมาตรฐานสากล TUV Rheinland / IEC 61215"
+                {/* แถบเครื่องมือย่อยแบบมินิมอล: กดเพิ่มรายละเอียดเฉพาะ/สเปก + ป้ายสถานะสต็อกบรรทัดเดียว */}
+                <div className="pt-1.5 border-t border-slate-100 dark:border-slate-800/80">
+                  <CollapsibleDetailField
                     value={it.description || ''}
-                    onChange={(e) => updItem(idx, 'description', e.target.value)}
+                    onChange={(val) => updItem(idx, 'description', val)}
+                    addLabel="เพิ่มรายละเอียด"
+                    editLabel="รายละเอียดเฉพาะ / สเปกวิศวกรรม"
+                    placeholder="เช่น • แผงโซล่าเซลล์ชนิด Monocrystalline Half-cell 550W Tier-1&#10;• รับประกันตัวผลิตภัณฑ์ 12 ปี และรับประกันประสิทธิภาพการผลิตไฟ 25 ปี&#10;• ได้รับมาตรฐานสากล TUV Rheinland / IEC 61215"
+                    hint="กด Enter ขึ้นบรรทัดใหม่ได้อิสระ • แสดงในใบเสนอราคาและ PDF"
+                    rows={3}
+                    rightSlot={
+                      it.item_name?.trim() && stock && stock.status !== 'service' ? (
+                        <span
+                          className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-0.5 rounded-full border ${
+                            stock.status === 'enough'
+                              ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+                              : stock.status === 'partial'
+                                ? 'bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800'
+                                : 'bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800'
+                          }`}
+                          title="สถานะสต็อกคงเหลือ (เช็กอัตโนมัติ ณ ตอนนี้ — ยังไม่เปิด PR และไม่แสดงใน PDF)"
+                        >
+                          <Warehouse className="h-3 w-3 shrink-0" />
+                          <span>
+                            {stock.status === 'enough'
+                              ? `พร้อมเบิก (มี ${formatIntQty(stock.inStock)})`
+                              : stock.status === 'partial'
+                                ? `มี ${formatIntQty(stock.inStock)} • ขาด ${formatIntQty(stock.shortfall)}`
+                                : stock.status === 'not_in_inventory'
+                                  ? `ไม่มีในคลัง • ขาด ${formatIntQty(stock.shortfall)}`
+                                  : `หมดสต็อก • ขาด ${formatIntQty(stock.shortfall)}`}
+                          </span>
+                        </span>
+                      ) : null
+                    }
                   />
                 </div>
               </div>
@@ -2008,30 +2001,29 @@ export default function QuotationForm() {
           <span className="text-xs text-slate-400 font-mono">Signatures & Files</span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-4">
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
               หมายเหตุ (แสดงให้ลูกค้าเห็นในใบเสนอราคา)
             </label>
             <textarea
-              rows={4}
-              className="input text-xs"
+              rows={3}
+              className="input text-xs leading-relaxed"
               placeholder="ระบุเงื่อนไขการส่งมอบ ชำระเงิน หรือการยืนราคา..."
               value={customerNotes}
               onChange={(e) => setCustomerNotes(e.target.value)}
             />
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-amber-800 dark:text-amber-400 mb-1.5">
-              โน้ตภายในบริษัท (บันทึกเฉพาะทีมงาน ไม่แสดงให้ลูกค้าเห็น)
-            </label>
-            <textarea
-              rows={4}
-              className="input text-xs bg-amber-50/50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/60"
-              placeholder="บันทึกต้นทุนแฝง, ข้อตกลงพิเศษกับลูกค้า, หรือข้อสังเกตของทีมขาย..."
+          <div className="rounded-xl border border-amber-200/70 dark:border-amber-900/50 bg-amber-50/30 dark:bg-amber-950/15 p-3">
+            <CollapsibleDetailField
               value={internalNotes}
-              onChange={(e) => setInternalNotes(e.target.value)}
+              onChange={setInternalNotes}
+              accent="amber"
+              addLabel="เพิ่มโน้ตภายในบริษัท (ซ่อนจากลูกค้า)"
+              editLabel="โน้ตภายในบริษัท (เฉพาะทีมงาน ไม่แสดงในเอกสารลูกค้า)"
+              placeholder="บันทึกต้นทุนแฝง, ข้อตกลงพิเศษกับลูกค้า, หรือข้อสังเกตของทีมขาย..."
+              rows={3}
             />
           </div>
         </div>

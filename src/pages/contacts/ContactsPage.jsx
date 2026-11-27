@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
 import {
   Building2, User, Search, Plus, MoreVertical, Eye, Edit3, Trash2,
-  Printer, CheckCircle2, XCircle, FileText, Package, RefreshCw, Filter, Phone, Mail, Users
+  Printer, CheckCircle2, XCircle, FileText, Package, RefreshCw, Filter, Phone, Mail, Users, X
 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { baht } from '../../lib/projects'
@@ -236,143 +236,141 @@ export default function ContactsPage() {
       {/* 1. Header & Title */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-700 text-white shadow-sm">
-              <Users className="h-5 w-5" />
-            </div>
-            <div>
-              <h1 className="text-xl sm:text-2xl font-black text-steel-900 tracking-tight">
-                ทะเบียนคู่ค้า &amp; ผู้ติดต่อ (Contacts Hub)
-              </h1>
-              <p className="text-xs text-steel-500 mt-0.5">
-                สถาปัตยกรรมรวมศูนย์ (Multi-Role) บันทึกและเรียกดูประวัติลูกค้าจากใบเสนอราคา และผู้จำหน่ายจากใบสั่งซื้อ
-              </p>
-            </div>
-          </div>
+          <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+            ทะเบียนคู่ค้า &amp; ผู้ติดต่อ (Contacts Hub)
+          </h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            สถาปัตยกรรมรวมศูนย์ (Multi-Role) บันทึกและเรียกดูประวัติลูกค้าจากใบเสนอราคา และผู้จำหน่ายจากใบสั่งซื้อ
+          </p>
         </div>
 
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={loadData}
-            className="rounded-xl border border-steel-200 bg-white p-2 text-steel-600 hover:bg-steel-50 transition shadow-2xs cursor-pointer"
+            className="inline-flex items-center justify-center rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition shadow-2xs cursor-pointer"
             title="รีเฟรชข้อมูล"
           >
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin text-sky-600' : ''}`} />
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin text-sky-600 dark:text-sky-400' : ''}`} />
           </button>
           <button
             type="button"
             onClick={() => setShowAddModal(true)}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-sky-700 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-sky-800 transition cursor-pointer"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 dark:bg-amber-500 dark:hover:bg-amber-400 px-3.5 py-1.5 text-xs font-semibold text-white dark:text-slate-950 shadow-xs transition cursor-pointer"
           >
-            <Plus className="h-4 w-4" />
-            <span>+ เพิ่มคู่ค้า / ผู้ติดต่อใหม่</span>
+            <Plus className="h-3.5 w-3.5" />
+            <span>เพิ่มคู่ค้า / ผู้ติดต่อใหม่</span>
           </button>
         </div>
       </div>
 
       {/* 2. Sleek Metric Strip */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div
+        <button
+          type="button"
           onClick={() => {
             setRoleFilter('all')
             setSearchParams({})
           }}
-          className={`rounded-2xl border p-3.5 transition cursor-pointer ${
+          className={`rounded-2xl border p-4 text-left transition-all cursor-pointer ${
             roleFilter === 'all'
-              ? 'bg-steel-900 text-white border-steel-900 shadow-md ring-2 ring-steel-700/20'
-              : 'bg-white text-steel-800 border-steel-200 hover:border-steel-300 shadow-2xs'
+              ? 'border-slate-800 dark:border-emerald-400 bg-white dark:bg-slate-900 ring-2 ring-slate-800/15 dark:ring-emerald-400/20 shadow-sm'
+              : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 hover:border-slate-300 dark:hover:border-slate-700 shadow-2xs'
           }`}
         >
-          <div className={`text-[11px] font-bold uppercase tracking-wider ${roleFilter === 'all' ? 'text-steel-300' : 'text-steel-500'}`}>
+          <div className="text-xs font-semibold text-slate-500 dark:text-slate-400">
             คู่ค้าทั้งหมด
           </div>
-          <div className="mt-1 flex items-baseline gap-1">
-            <span className="text-xl sm:text-2xl font-black">{totalCount}</span>
-            <span className={`text-xs ${roleFilter === 'all' ? 'text-steel-300' : 'text-steel-400'}`}>ราย</span>
+          <div className="mt-1.5 flex items-baseline gap-1.5">
+            <span className="text-2xl font-bold font-mono text-slate-900 dark:text-white tabular-nums">{totalCount}</span>
+            <span className="text-xs text-slate-400 dark:text-slate-500">ราย</span>
           </div>
-        </div>
+        </button>
 
-        <div
+        <button
+          type="button"
           onClick={() => {
             setRoleFilter('customer')
             setSearchParams({ role: 'customer' })
           }}
-          className={`rounded-2xl border p-3.5 transition cursor-pointer ${
+          className={`rounded-2xl border p-4 text-left transition-all cursor-pointer ${
             roleFilter === 'customer'
-              ? 'bg-sky-700 text-white border-sky-800 shadow-md ring-2 ring-sky-500/20'
-              : 'bg-white text-steel-800 border-steel-200 hover:border-sky-300 shadow-2xs'
+              ? 'border-sky-600 dark:border-sky-400 bg-white dark:bg-slate-900 ring-2 ring-sky-500/20 shadow-sm'
+              : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 hover:border-sky-300 dark:hover:border-sky-700 shadow-2xs'
           }`}
         >
-          <div className={`text-[11px] font-bold uppercase tracking-wider ${roleFilter === 'customer' ? 'text-sky-200' : 'text-sky-700'}`}>
+          <div className="text-xs font-semibold text-sky-700 dark:text-sky-400">
             ลูกค้า (Customers)
           </div>
-          <div className="mt-1 flex items-baseline gap-1">
-            <span className="text-xl sm:text-2xl font-black">{customerCount}</span>
-            <span className={`text-xs ${roleFilter === 'customer' ? 'text-sky-200' : 'text-steel-400'}`}>ราย</span>
+          <div className="mt-1.5 flex items-baseline gap-1.5">
+            <span className="text-2xl font-bold font-mono text-sky-700 dark:text-sky-400 tabular-nums">{customerCount}</span>
+            <span className="text-xs text-slate-400 dark:text-slate-500">ราย</span>
           </div>
-        </div>
+        </button>
 
-        <div
+        <button
+          type="button"
           onClick={() => {
             setRoleFilter('vendor')
             setSearchParams({ role: 'vendor' })
           }}
-          className={`rounded-2xl border p-3.5 transition cursor-pointer ${
+          className={`rounded-2xl border p-4 text-left transition-all cursor-pointer ${
             roleFilter === 'vendor'
-              ? 'bg-emerald-700 text-white border-emerald-800 shadow-md ring-2 ring-emerald-500/20'
-              : 'bg-white text-steel-800 border-steel-200 hover:border-emerald-300 shadow-2xs'
+              ? 'border-emerald-600 dark:border-emerald-400 bg-white dark:bg-slate-900 ring-2 ring-emerald-500/20 shadow-sm'
+              : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 hover:border-emerald-300 dark:hover:border-emerald-700 shadow-2xs'
           }`}
         >
-          <div className={`text-[11px] font-bold uppercase tracking-wider ${roleFilter === 'vendor' ? 'text-emerald-200' : 'text-emerald-700'}`}>
+          <div className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">
             ผู้จำหน่าย / ร้านค้า (Vendors)
           </div>
-          <div className="mt-1 flex items-baseline gap-1">
-            <span className="text-xl sm:text-2xl font-black">{vendorCount}</span>
-            <span className={`text-xs ${roleFilter === 'vendor' ? 'text-emerald-200' : 'text-steel-400'}`}>ราย</span>
+          <div className="mt-1.5 flex items-baseline gap-1.5">
+            <span className="text-2xl font-bold font-mono text-emerald-700 dark:text-emerald-400 tabular-nums">{vendorCount}</span>
+            <span className="text-xs text-slate-400 dark:text-slate-500">ราย</span>
           </div>
-        </div>
+        </button>
 
-        <div
+        <button
+          type="button"
           onClick={() => {
             setRoleFilter('both')
             setSearchParams({ role: 'both' })
           }}
-          className={`rounded-2xl border p-3.5 transition cursor-pointer ${
+          className={`rounded-2xl border p-4 text-left transition-all cursor-pointer ${
             roleFilter === 'both'
-              ? 'bg-purple-700 text-white border-purple-800 shadow-md ring-2 ring-purple-500/20'
-              : 'bg-white text-steel-800 border-steel-200 hover:border-purple-300 shadow-2xs'
+              ? 'border-purple-600 dark:border-purple-400 bg-white dark:bg-slate-900 ring-2 ring-purple-500/20 shadow-sm'
+              : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 hover:border-purple-300 dark:hover:border-purple-700 shadow-2xs'
           }`}
         >
-          <div className={`text-[11px] font-bold uppercase tracking-wider ${roleFilter === 'both' ? 'text-purple-200' : 'text-purple-700'}`}>
+          <div className="text-xs font-semibold text-purple-700 dark:text-purple-400">
             ทั้งสองบทบาท (Dual Roles)
           </div>
-          <div className="mt-1 flex items-baseline gap-1">
-            <span className="text-xl sm:text-2xl font-black">{bothCount}</span>
-            <span className={`text-xs ${roleFilter === 'both' ? 'text-purple-200' : 'text-steel-400'}`}>ราย</span>
+          <div className="mt-1.5 flex items-baseline gap-1.5">
+            <span className="text-2xl font-bold font-mono text-purple-700 dark:text-purple-400 tabular-nums">{bothCount}</span>
+            <span className="text-xs text-slate-400 dark:text-slate-500">ราย</span>
           </div>
-        </div>
+        </button>
       </div>
 
       {/* 3. Streamlined Single-Row Toolbar */}
-      <div className="rounded-2xl border border-steel-200 bg-white p-3 shadow-2xs flex flex-wrap items-center justify-between gap-3 text-xs">
+      <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 shadow-2xs flex flex-wrap items-center justify-between gap-3 text-xs">
         {/* ค้นหา */}
         <div className="relative flex-1 min-w-[240px] max-w-md">
-          <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-steel-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
           <input
             type="text"
             placeholder="ค้นหาชื่อบริษัท, รหัส, เลขผู้เสียภาษี 13 หลัก, ผู้ติดต่อ, โทร..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-xl border border-steel-200 bg-steel-50/50 pl-8 pr-3 py-1.5 text-xs text-steel-900 focus:outline-none focus:border-sky-600 focus:bg-white"
+            className="input pl-8 pr-8 py-1.5 text-xs"
           />
           {search && (
             <button
               type="button"
               onClick={() => setSearch('')}
-              className="absolute right-2.5 top-2 text-xs text-steel-400 hover:text-steel-600"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+              title="ล้างคำค้นหา"
             >
-              
+              <X className="h-3.5 w-3.5" />
             </button>
           )}
         </div>
@@ -390,20 +388,20 @@ export default function ContactsPage() {
           <select
             value={entityFilter}
             onChange={(e) => setEntityFilter(e.target.value)}
-            className="rounded-xl border border-steel-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-steel-700 focus:outline-none"
+            className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 focus:outline-none"
           >
             <option value="all">ทุกประเภทกฎหมาย</option>
             <option value="corporate">นิติบุคคล (Corporate)</option>
-            <option value="individual"> บุคคลธรรมดา (Individual)</option>
+            <option value="individual">บุคคลธรรมดา (Individual)</option>
           </select>
 
           {/* Toggle Inactive */}
-          <label className="flex items-center gap-1.5 cursor-pointer font-medium text-steel-600 bg-steel-50 px-2.5 py-1.5 rounded-xl border border-steel-200">
+          <label className="flex items-center gap-1.5 cursor-pointer font-medium text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800 px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700">
             <input
               type="checkbox"
               checked={showInactive}
               onChange={(e) => setShowInactive(e.target.checked)}
-              className="rounded text-sky-600 focus:ring-sky-500 h-3.5 w-3.5 cursor-pointer"
+              className="rounded text-emerald-600 focus:ring-emerald-500 h-3.5 w-3.5 cursor-pointer"
             />
             <span className="text-[11px]">แสดงที่ระงับ ({contacts.filter(c => c.is_active === false).length})</span>
           </label>
@@ -572,7 +570,7 @@ export default function ContactsPage() {
                         {isMenuOpen && (
                           <div
                             onClick={(e) => e.stopPropagation()}
-                            className="absolute right-0 top-full mt-1.5 z-50 min-w-[230px] rounded-2xl border border-steel-200 bg-white p-1.5 shadow-2xl text-xs space-y-1 text-left ring-1 ring-black/5 animate-in fade-in zoom-in-95 duration-100"
+                            className="absolute right-0 top-full mt-1.5 z-50 min-w-[230px] rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-1.5 shadow-2xl text-xs space-y-1 text-left ring-1 ring-black/5 animate-in fade-in zoom-in-95 duration-100"
                           >
                             <button
                               type="button"
@@ -580,9 +578,9 @@ export default function ContactsPage() {
                                 setActionMenuId(null)
                                 setSelectedContactForDetail(c)
                               }}
-                              className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-sky-50 hover:text-sky-950 text-steel-700 transition cursor-pointer font-medium whitespace-nowrap leading-normal"
+                              className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-sky-50 dark:hover:bg-sky-950/60 hover:text-sky-950 dark:hover:text-sky-200 text-slate-700 dark:text-slate-200 transition cursor-pointer font-medium whitespace-nowrap leading-normal"
                             >
-                              <Eye className="h-4 w-4 text-sky-600 shrink-0" />
+                              <Eye className="h-4 w-4 text-sky-600 dark:text-sky-400 shrink-0" />
                               <span>ดูข้อมูล &amp; ประวัติธุรกรรม</span>
                             </button>
 
@@ -592,9 +590,9 @@ export default function ContactsPage() {
                                 setActionMenuId(null)
                                 setSelectedContactForEdit(c)
                               }}
-                              className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-amber-50 hover:text-amber-950 text-steel-700 transition cursor-pointer font-medium whitespace-nowrap leading-normal"
+                              className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-amber-50 dark:hover:bg-amber-950/60 hover:text-amber-950 dark:hover:text-amber-200 text-slate-700 dark:text-slate-200 transition cursor-pointer font-medium whitespace-nowrap leading-normal"
                             >
-                              <Edit3 className="h-4 w-4 text-amber-600 shrink-0" />
+                              <Edit3 className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
                               <span>แก้ไขข้อมูลคู่ค้า</span>
                             </button>
 
@@ -604,21 +602,21 @@ export default function ContactsPage() {
                                 setActionMenuId(null)
                                 setSelectedContactForEnvelope(c)
                               }}
-                              className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-emerald-50 hover:text-emerald-950 text-steel-700 transition cursor-pointer font-medium whitespace-nowrap leading-normal"
+                              className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-emerald-50 dark:hover:bg-emerald-950/60 hover:text-emerald-950 dark:hover:text-emerald-200 text-slate-700 dark:text-slate-200 transition cursor-pointer font-medium whitespace-nowrap leading-normal"
                             >
-                              <Printer className="h-4 w-4 text-emerald-600 shrink-0" />
+                              <Printer className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                               <span>พิมพ์จ่าหน้าซองจดหมาย</span>
                             </button>
 
-                            <div className="border-t border-steel-100 my-1"></div>
+                            <div className="border-t border-slate-100 dark:border-slate-800 my-1"></div>
 
                             <button
                               type="button"
                               onClick={() => handleToggleActive(c)}
                               className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl transition cursor-pointer font-medium whitespace-nowrap leading-normal ${
                                 c.is_active !== false
-                                  ? 'hover:bg-rose-50 text-rose-700'
-                                  : 'hover:bg-emerald-50 text-emerald-700'
+                                  ? 'hover:bg-rose-50 dark:hover:bg-rose-950/60 text-rose-700 dark:text-rose-400'
+                                  : 'hover:bg-emerald-50 dark:hover:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400'
                               }`}
                             >
                               {c.is_active !== false ? (
@@ -647,7 +645,7 @@ export default function ContactsPage() {
 
       {/* แถบเปลี่ยนหน้า (Pagination < 1 2 3 4 5 6 >) */}
       {!loading && filteredContacts.length > 0 && (
-        <div className="rounded-2xl border border-steel-200 bg-white px-5 py-3 shadow-xs">
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-5 py-3 shadow-2xs">
           <Pagination
             currentPage={currentPage}
             totalItems={filteredContacts.length}

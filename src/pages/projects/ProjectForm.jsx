@@ -4,6 +4,7 @@ import { supabase } from "../../lib/supabase";
 import CustomerSelectField from "../../components/CustomerSelectField";
 import { STATUS_LABELS } from "../../lib/projects";
 import { FieldError, fieldErrorClass } from "../../components/FieldError";
+import { ArrowLeft, AlertCircle, Check } from "lucide-react";
 
 const EMPTY = {
   project_code: "",
@@ -121,122 +122,161 @@ export default function ProjectForm() {
   const valid = form.project_code.trim() && form.project_name.trim();
 
   return (
-    <div className="max-w-2xl">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">
-          {id ? "แก้ไขโครงการ" : "สร้างโครงการ"}
-        </h1>
+    <div className="max-w-4xl mx-auto space-y-5 pb-12">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <Link
+            to={id ? `/projects/${id}` : "/projects"}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 px-3 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 shadow-2xs transition"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            <span>{id ? "กลับรายละเอียดโครงการ" : "กลับรายการโครงการ"}</span>
+          </Link>
+          <h1 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
+            {id ? "แก้ไขโครงการ" : "สร้างโครงการใหม่"}
+          </h1>
+        </div>
         {id && updatedAt && (
-          <span className="text-xs text-steel-500">
+          <span className="text-xs text-slate-500 dark:text-slate-400">
             แก้ไขล่าสุด: {new Date(updatedAt).toLocaleString("th-TH")}
           </span>
         )}
       </div>
-      <div className="mt-5 grid gap-4 rounded-lg bg-white p-5 md:grid-cols-2">
-        <label className="text-sm">
-          <span className="font-semibold text-steel-800">รหัสโครงการ *</span>
-          <input
-            className={fieldErrorClass(errors.project_code, "input mt-1 w-full")}
-            placeholder="เช่น PRJ-2026-001"
-            value={form.project_code}
-            onChange={set("project_code")}
-          />
-          <FieldError error={errors.project_code} />
-        </label>
-        <label className="text-sm">
-          <span className="font-semibold text-steel-800">ชื่อโครงการ *</span>
-          <input
-            className={fieldErrorClass(errors.project_name, "input mt-1 w-full")}
-            placeholder="เช่น โครงการก่อสร้างอาคารสำนักงาน"
-            value={form.project_name}
-            onChange={set("project_name")}
-          />
-          <FieldError error={errors.project_name} />
-        </label>
-        <div className="text-sm">
-          <span className="font-semibold text-steel-800 block mb-1">ชื่อลูกค้า</span>
-          <CustomerSelectField
-            placeholder="ค้นหาจากสมุดรายชื่อ หรือพิมพ์ชื่อบริษัท/ผู้ว่าจ้าง..."
-            value={form.client_name ?? ""}
-            onChange={(val) => set("client_name")({ target: { value: val } })}
-          />
+
+      <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm space-y-5">
+        <div className="grid gap-4 md:grid-cols-2">
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+              รหัสโครงการ *
+            </label>
+            <input
+              className={fieldErrorClass(errors.project_code, "input text-xs font-mono font-bold w-full")}
+              placeholder="เช่น PRJ-2026-001"
+              value={form.project_code}
+              onChange={set("project_code")}
+            />
+            <FieldError error={errors.project_code} />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+              ชื่อโครงการ *
+            </label>
+            <input
+              className={fieldErrorClass(errors.project_name, "input text-xs w-full")}
+              placeholder="เช่น โครงการติดตั้งระบบโซลาร์เซลล์..."
+              value={form.project_name}
+              onChange={set("project_name")}
+            />
+            <FieldError error={errors.project_name} />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+              ชื่อลูกค้า
+            </label>
+            <CustomerSelectField
+              placeholder="ค้นหาจากสมุดรายชื่อ หรือพิมพ์ชื่อบริษัท/ผู้ว่าจ้าง..."
+              value={form.client_name ?? ""}
+              onChange={(val) => set("client_name")({ target: { value: val } })}
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+              งบประมาณรวม (บาท)
+            </label>
+            <input
+              className="input text-xs font-mono w-full"
+              type="number"
+              min="0"
+              step="0.01"
+              value={form.budget_total}
+              onChange={set("budget_total")}
+            />
+            {form.budget_total > 0 && (
+              <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 block">
+                {getNumberUnitLabel(form.budget_total)}
+              </span>
+            )}
+          </div>
+
+          <div className="md:col-span-2">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+              ที่อยู่หน้างาน
+            </label>
+            <textarea
+              className="input text-xs w-full leading-relaxed"
+              rows={2}
+              placeholder="ระบุที่ตั้งหน้างานหรือสถานที่ติดตั้ง..."
+              value={form.site_address ?? ""}
+              onChange={set("site_address")}
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+              วันเริ่มงาน
+            </label>
+            <input
+              className="input text-xs w-full"
+              type="date"
+              value={form.start_date}
+              onChange={set("start_date")}
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+              วันสิ้นสุด
+            </label>
+            <input
+              className="input text-xs w-full"
+              type="date"
+              value={form.end_date}
+              onChange={set("end_date")}
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+              สถานะโครงการ
+            </label>
+            <select
+              className="input text-xs w-full"
+              value={form.status}
+              onChange={set("status")}
+            >
+              {Object.entries(STATUS_LABELS).map(([k, v]) => (
+                <option key={k} value={k}>
+                  {v}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
-        <label className="text-sm">
-          <span className="font-semibold text-steel-800">งบประมาณรวม (บาท)</span>
-          <input
-            className="input mt-1 w-full"
-            type="number"
-            min="0"
-            step="0.01"
-            value={form.budget_total}
-            onChange={set("budget_total")}
-          />
-          {/* แสดงหน่วยนับเงิน เพื่อให้ผู้กรอกรู้ว่าเป็น พัน/หมื่น/แสน/ล้าน */}
-          {form.budget_total > 0 && (
-            <span className="text-xs text-steel-500 mt-1 block">
-              {getNumberUnitLabel(form.budget_total)}
-            </span>
-          )}
-        </label>
-        <label className="text-sm md:col-span-2">
-          <span className="font-semibold text-steel-800">ที่อยู่หน้างาน</span>
-          <textarea
-            className="input mt-1 w-full"
-            rows={2}
-            value={form.site_address ?? ""}
-            onChange={set("site_address")}
-          />
-        </label>
-        <label className="text-sm">
-          <span className="font-semibold text-steel-800">วันเริ่มงาน</span>
-          <input
-            className="input mt-1 w-full"
-            type="date"
-            value={form.start_date}
-            onChange={set("start_date")}
-          />
-        </label>
-        <label className="text-sm">
-          <span className="font-semibold text-steel-800">วันสิ้นสุด</span>
-          <input
-            className="input mt-1 w-full"
-            type="date"
-            value={form.end_date}
-            onChange={set("end_date")}
-          />
-        </label>
-        <label className="text-sm">
-          <span className="font-semibold text-steel-800">สถานะ</span>
-          <select
-            className="input mt-1 w-full"
-            value={form.status}
-            onChange={set("status")}
+
+        {error && (
+          <div className="rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 p-3 text-xs font-semibold text-rose-800 dark:text-rose-200 flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 text-rose-600 dark:text-rose-400 shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
+
+        <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-100 dark:border-slate-800">
+          <Link to={id ? `/projects/${id}` : "/projects"} className="btn-ghost">
+            ยกเลิก
+          </Link>
+          <button
+            type="button"
+            className="btn-primary inline-flex items-center gap-1.5"
+            onClick={save}
+            disabled={busy}
           >
-            {Object.entries(STATUS_LABELS).map(([k, v]) => (
-              <option key={k} value={k}>
-                {v}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
-      {error && (
-        <div className="mt-3 rounded-xl bg-rose-50 border border-rose-200 p-3 text-xs sm:text-sm font-semibold text-rose-800 flex items-center gap-2">
-          <span></span>
-          <span>{error}</span>
+            <Check className="h-4 w-4" />
+            <span>{busy ? "กำลังบันทึก..." : "บันทึกโครงการ"}</span>
+          </button>
         </div>
-      )}
-      <div className="mt-4 flex gap-2">
-        <button
-          className="btn-primary"
-          onClick={save}
-          disabled={busy}
-        >
-          {busy ? "กำลังบันทึก..." : "บันทึกโครงการ"}
-        </button>
-        <Link to={id ? `/projects/${id}` : "/projects"} className="btn-ghost">
-          ยกเลิก
-        </Link>
       </div>
     </div>
   );

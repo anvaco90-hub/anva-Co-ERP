@@ -20,6 +20,7 @@ import ItemsEditor from './ItemsEditor'
 import ItemProjectUsageModal from '../../components/ItemProjectUsageModal'
 import { FieldError, fieldErrorClass } from '../../components/FieldError'
 import SearchableSelect from '../../components/SearchableSelect'
+import CollapsibleDetailField from '../../components/common/CollapsibleDetailField'
 
 export const PAYMENT_TYPES = [
   { value: 'credit_30', label: 'เครดิตเทอม 30 วัน (วางบิล-จ่ายเช็ค/โอน)' },
@@ -1499,16 +1500,14 @@ export default function POForm() {
                     />
                   </div>
 
-                  <div className="sm:col-span-2">
-                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                      หมายเหตุและเงื่อนไขสำหรับร้านค้า
-                    </label>
-                    <textarea
-                      rows={2}
-                      placeholder="เช่น ส่งของช่วง 09:00 - 16:00 น., โทรแจ้งหัวหน้าช่างก่อนเข้าหน้างาน"
-                      className="input text-xs leading-relaxed"
+                  <div className="sm:col-span-2 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 p-3">
+                    <CollapsibleDetailField
                       value={notes}
-                      onChange={(e) => setNotes(e.target.value)}
+                      onChange={setNotes}
+                      addLabel="เพิ่มหมายเหตุและเงื่อนไขสำหรับร้านค้า"
+                      editLabel="หมายเหตุและเงื่อนไขสำหรับร้านค้า"
+                      placeholder="เช่น ส่งของช่วง 09:00 - 16:00 น., โทรแจ้งหัวหน้าช่างก่อนเข้าหน้างาน"
+                      rows={2}
                     />
                   </div>
                 </div>

@@ -134,9 +134,9 @@ export default function PRDetail() {
 
   if (!pr) {
     return (
-      <div className="flex h-64 flex-col items-center justify-center space-y-3 font-sans">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-steel-900 border-t-hivis" />
-        <p className="text-xs font-semibold text-steel-500">กำลังโหลดรายละเอียดใบขอซื้อ...</p>
+      <div className="flex h-64 flex-col items-center justify-center space-y-3">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 dark:border-slate-700 border-t-emerald-600 dark:border-t-amber-400" />
+        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">กำลังโหลดรายละเอียดใบขอซื้อ...</p>
       </div>
     )
   }
