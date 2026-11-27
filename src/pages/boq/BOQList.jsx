@@ -234,17 +234,18 @@ export default function BOQList() {
                   return (
                     <tr
                       key={b.id}
-                      className={`transition-colors border-b border-slate-200 dark:border-slate-800 ${
+                      onClick={() => navigate(`/boq/${b.id}`)}
+                      className={`transition-colors border-b border-slate-200 dark:border-slate-800 cursor-pointer ${
                         rowIdx % 2 === 0
                           ? 'bg-white dark:bg-slate-900'
                           : 'bg-slate-50/70 dark:bg-slate-800/40'
-                      } hover:!bg-amber-50/70 dark:hover:!bg-slate-750`}
+                      } hover:!bg-amber-50/80 dark:hover:!bg-slate-800/90`}
                     >
                       {/* 1. เลขที่ BOQ */}
                       <td className="py-3 px-3 text-center font-mono font-bold text-sky-800 dark:text-sky-400 whitespace-nowrap align-middle border-r border-slate-200/60 dark:border-slate-800/60">
-                        <Link to={`/boq/${b.id}`} className="hover:underline">
+                        <span className="hover:underline">
                           {b.boq_no}
-                        </Link>
+                        </span>
                       </td>
 
                       {/* 2. ชื่องาน / รายละเอียดโครงการ */}
@@ -301,15 +302,15 @@ export default function BOQList() {
                       </td>
 
                       {/* 9. การจัดการ */}
-                      <td className="py-3 px-3 text-center whitespace-nowrap align-middle">
-                        <Link
-                          to={`/boq/${b.id}`}
-                          className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-sky-50 dark:bg-sky-950/60 hover:bg-sky-100 dark:hover:bg-sky-900/60 text-sky-800 dark:text-sky-200 border border-sky-300 dark:border-sky-700 px-3 py-1.5 text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95"
-                          title="ดูรายละเอียดและถอดแบบ BOQ"
+                      <td className="py-3 px-3 text-center whitespace-nowrap align-middle" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/boq/${b.id}`)}
+                          className="inline-flex items-center justify-center rounded-xl bg-sky-50 dark:bg-sky-950/60 hover:bg-sky-100 dark:hover:bg-sky-900/60 text-sky-800 dark:text-sky-200 border border-sky-300 dark:border-sky-700 p-2 text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95"
+                          title="ดูรายละเอียด BOQ"
                         >
-                          <Eye className="h-3.5 w-3.5 text-sky-600 dark:text-sky-400" />
-                          <span>ดู BOQ</span>
-                        </Link>
+                          <Eye className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+                        </button>
                       </td>
                     </tr>
                   )

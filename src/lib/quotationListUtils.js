@@ -60,15 +60,32 @@ export function computeQuotationKpis(quotations = []) {
   let draftCount = 0
   let totalAmount = 0
   let signedAmount = 0
+  let projectCount = 0
+  let projectAmount = 0
+  let productCount = 0
+  let productAmount = 0
 
   for (const q of quotations || []) {
     if (!q) continue
     const amount = getQuotationAmount(q)
     const approved = isQuotationApproved(q)
+    const type = resolveQuotationType(q)
 
     if (!isCancelledStatus(q.status)) {
       totalAmount += amount
+      if (type === 'product') {
+        productAmount += amount
+      } else {
+        projectAmount += amount
+      }
     }
+
+    if (type === 'product') {
+      productCount += 1
+    } else {
+      projectCount += 1
+    }
+
     if (approved) {
       signedCount += 1
       signedAmount += amount
@@ -77,6 +94,9 @@ export function computeQuotationKpis(quotations = []) {
     if (q.status === 'draft') draftCount += 1
   }
 
+  const activeQuotations = (quotations || []).filter((q) => q && !isCancelledStatus(q.status))
+  const winRate = activeQuotations.length > 0 ? Math.round((signedCount / activeQuotations.length) * 100) : 0
+
   return {
     totalCount: (quotations || []).length,
     signedCount,
@@ -84,6 +104,11 @@ export function computeQuotationKpis(quotations = []) {
     draftCount,
     totalAmount,
     signedAmount,
+    projectCount,
+    projectAmount,
+    productCount,
+    productAmount,
+    winRate,
   }
 }
 
@@ -112,14 +137,17 @@ export function filterQuotations(
     if (filterProject && q.project_id !== filterProject) return false
 
     if (term) {
+      const isProduct = resolveQuotationType(q) === 'product'
       const haystack = [
         q.quotation_no,
         q.customer_name,
         q.sales_person,
+        q.ref_no,
         q.projects?.project_name,
         q.projects?.project_code,
         q.customer_po_no,
         q.customer_signer_name,
+        isProduct ? 'ขายสินค้า งานขาย store qt-s' : 'งานโครงการ งานจ้าง รับงาน boq qt-p',
       ]
       const matched = haystack.some((val) => String(val || '').toLowerCase().includes(term))
       if (!matched) return false

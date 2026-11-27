@@ -52,7 +52,19 @@ import {
   X,
   FileSpreadsheet,
   RefreshCw,
+  Tag,
+  TrendingUp,
+  ShoppingCart,
 } from 'lucide-react'
+
+const STANDARD_MARKUP_PRESETS = [
+  { value: '0', label: '0% เท่าทุน' },
+  { value: '10', label: '+10% ขายส่ง' },
+  { value: '15', label: '+15% มาตรฐานส่ง' },
+  { value: '20', label: '+20% ทั่วไป' },
+  { value: '25', label: '+25% โครงการย่อย' },
+  { value: '30', label: '+30% พรีเมียม' },
+]
 
 const EMPTY_ITEM = {
   item_id: '',
@@ -84,6 +96,7 @@ export default function QuotationForm() {
   const duplicateFromId = searchParams.get('duplicate_from')
   const boqIdParam = searchParams.get('boq_id')
   const typeParam = searchParams.get('type')
+  const projectIdParam = searchParams.get('project_id')
   const initialQuotationType = boqIdParam
     ? QUOTATION_TYPES.PROJECT
     : typeParam === QUOTATION_TYPES.PROJECT
@@ -250,6 +263,12 @@ export default function QuotationForm() {
 
       if (!id && boqIdParam) {
         applyBoqData(boqIdParam, bList, custList)
+      } else if (!id && projectIdParam) {
+        setProjectId(projectIdParam)
+        const found = projList.find((p) => p.id === projectIdParam)
+        if (found && found.client_name && !customerName) {
+          setCustomerName(found.client_name)
+        }
       }
     })
 
@@ -436,6 +455,10 @@ export default function QuotationForm() {
 
   // เลือกสินค้าจาก Store เข้าแถวรายการ (สำหรับประเภทขายสินค้า)
   const handleSelectCatalogItem = (index, invId) => {
+    if (invId && items.some((it, idx) => idx !== index && it.item_id === invId)) {
+      alert('วัสดุ/สินค้านี้ถูกเลือกในรายการอื่นแล้ว สามารถเลือกได้เพียงครั้งเดียว')
+      return
+    }
     const selectedInv = catalog.find((c) => c.id === invId) || null
     setItems((prev) =>
       prev.map((it, idx) => {
@@ -771,35 +794,55 @@ export default function QuotationForm() {
 
   return (
     <div className="w-full space-y-6 pb-16">
-      {/* 0. แบนเนอร์หัวหน้าเอกสาร (Executive Corporate ERP Banner) */}
-      <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-gradient-to-r from-slate-900 via-slate-800 to-steel-900 p-6 text-white shadow-md relative overflow-hidden">
+      {/* 0. แบนเนอร์หัวหน้าเอกสาร (Executive Corporate ERP Banner พร้อมระบุประเภทชัดเจน) */}
+      <div
+        className={`rounded-2xl border p-6 text-white shadow-md relative overflow-hidden ${
+          isProductMode
+            ? 'border-sky-800/60 bg-gradient-to-r from-slate-900 via-sky-950 to-slate-900'
+            : 'border-amber-800/60 bg-gradient-to-r from-slate-900 via-amber-950 to-slate-900'
+        }`}
+      >
         <div className="relative z-10 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3.5">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-500/20 border border-sky-400/30 text-sky-400 backdrop-blur-xs">
-              <ReceiptText className="h-6 w-6" />
+            <div
+              className={`flex h-12 w-12 items-center justify-center rounded-2xl border backdrop-blur-xs ${
+                isProductMode
+                  ? 'bg-sky-500/20 border-sky-400/40 text-sky-300'
+                  : 'bg-amber-500/20 border-amber-400/40 text-amber-300'
+              }`}
+            >
+              {isProductMode ? <Package className="h-6 w-6" /> : <Briefcase className="h-6 w-6" />}
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-full bg-sky-400/20 text-sky-300 border border-sky-400/30 font-bold">
+                <span className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-full bg-slate-800/80 text-slate-300 border border-slate-700 font-bold">
                   Quotation Management
                 </span>
                 <span
-                  className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${isProductMode
-                      ? 'bg-sky-500/20 text-sky-200 border-sky-400/40'
-                      : 'bg-amber-400/20 text-amber-200 border-amber-400/40'
-                    }`}
+                  className={`text-xs font-bold px-3 py-0.5 rounded-full border flex items-center gap-1.5 shadow-xs ${
+                    isProductMode
+                      ? 'bg-sky-500/30 text-sky-200 border-sky-400/50'
+                      : 'bg-amber-500/30 text-amber-200 border-amber-400/50'
+                  }`}
                 >
-                  {isProductMode ? 'ขายสินค้า (Store · QT-S)' : 'รับงาน (BOQ · QT-P)'}
+                  {isProductMode ? <Package className="h-3.5 w-3.5" /> : <Briefcase className="h-3.5 w-3.5" />}
+                  <span>{isProductMode ? 'ประเภท: งานขายสินค้า (Store · QT-S)' : 'ประเภท: งานโครงการ (BOQ · QT-P)'}</span>
                 </span>
-                <span className="text-[10px] text-slate-400 font-mono">
+                <span className="text-[10px] text-slate-400 font-mono bg-slate-800/70 px-2 py-0.5 rounded-md border border-slate-700">
                   {id ? `ID: ${id}` : 'Draft Mode'}
                 </span>
               </div>
-              <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white mt-1">
-                {id ? `แก้ไขใบเสนอราคา ${quotationNo}` : 'สร้างใบเสนอราคาใหม่ (New Quotation)'}
+              <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white mt-1.5">
+                {id
+                  ? `แก้ไขใบเสนอราคา ${quotationNo} [${isProductMode ? 'งานขายสินค้า (Store)' : 'งานโครงการ (BOQ)'}]`
+                  : isProductMode
+                  ? 'สร้างใบเสนอราคา: งานขายสินค้าจากสโตร์ (Sales Quotation · QT-S)'
+                  : 'สร้างใบเสนอราคา: งานโครงการ (Project Quotation · QT-P)'}
               </h1>
-              <p className="text-xs text-slate-300 mt-0.5">
-                จัดทำเอกสารเสนอราคาอย่างเป็นระบบ คำนวณภาษี ส่วนลด และผูกกับโปรเจกต์งานวิศวกรรม
+              <p className="text-xs text-slate-300 mt-1 leading-relaxed">
+                {isProductMode
+                  ? 'โหมดขายสินค้าตรงจากสโตร์: คิดราคาขายจากต้นทุนสินค้า + มาร์กอัปกำไรมาตรฐาน % และกำหนดส่วนลดทั้งใบหรือต่อรายการ'
+                  : 'โหมดงานโครงการ: อ้างอิงราคาเสนอขายสุทธิตามเอกสารประมาณราคา (BOQ) ผูกกับโครงการวิศวกรรม'}
               </p>
             </div>
           </div>
@@ -844,35 +887,109 @@ export default function QuotationForm() {
             <FileText className="h-4 w-4 text-sky-600 dark:text-sky-400" />
             <span>1. ข้อมูลหัวเอกสาร ประเภท และโครงการ (Header &amp; Type)</span>
           </h2>
-          {!id ? (
-            <div className="inline-flex items-center rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-1 text-xs">
-              <button
-                type="button"
-                onClick={() => handleSwitchQuotationType(QUOTATION_TYPES.PRODUCT)}
-                className={`rounded-lg px-3 py-1 font-bold transition cursor-pointer ${isProductMode
-                    ? 'bg-sky-700 text-white shadow-2xs'
-                    : 'text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700'
-                  }`}
-              >
-                ขายสินค้า (Store · QT-S)
-              </button>
-              <button
-                type="button"
-                onClick={() => handleSwitchQuotationType(QUOTATION_TYPES.PROJECT)}
-                className={`rounded-lg px-3 py-1 font-bold transition cursor-pointer ${!isProductMode
-                    ? 'bg-amber-500 text-slate-950 font-black shadow-2xs'
-                    : 'text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700'
-                  }`}
-              >
-                รับงาน (BOQ · QT-P)
-              </button>
-            </div>
-          ) : (
-            <span className="text-xs text-slate-400 font-mono">
-              Type: {isProductMode ? 'ขายสินค้า (product)' : 'รับงาน (project)'}
-            </span>
-          )}
+          <span className="text-xs text-slate-400 font-mono">
+            {isProductMode ? 'Mode: Sales (QT-S)' : 'Mode: Project (QT-P)'}
+          </span>
         </div>
+
+        {/* แถบเลือกหรือแสดงประเภทเอกสาร (Type Indicator & Switcher) */}
+        {!id ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+            {/* ตัวเลือกที่ 1: งานขายสินค้า (จาก Store) */}
+            <button
+              type="button"
+              onClick={() => handleSwitchQuotationType(QUOTATION_TYPES.PRODUCT)}
+              className={`text-left p-4 rounded-xl border-2 transition cursor-pointer flex items-start gap-3.5 ${
+                isProductMode
+                  ? 'border-sky-600 bg-sky-50/70 dark:bg-sky-950/40 text-slate-900 dark:text-slate-100 shadow-sm ring-1 ring-sky-500/30'
+                  : 'border-slate-200 dark:border-slate-700 bg-slate-50/40 dark:bg-slate-800/40 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-600'
+              }`}
+            >
+              <div
+                className={`p-2.5 rounded-xl shrink-0 ${
+                  isProductMode ? 'bg-sky-600 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400'
+                }`}
+              >
+                <Package className="h-5 w-5" />
+              </div>
+              <div className="space-y-1 flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-1.5">
+                    <span>งานขายสินค้า (จาก Store)</span>
+                    {isProductMode && <Check className="h-4 w-4 text-sky-600 dark:text-sky-400 shrink-0" />}
+                  </span>
+                  <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-sky-100 dark:bg-sky-900/60 text-sky-800 dark:text-sky-300 border border-sky-200 dark:border-sky-800 shrink-0">
+                    QT-S-...
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                  เลือกสินค้าจากคลังสโตร์ คำนวณราคา = ต้นทุน + กำไรมาร์กอัป % และให้ส่วนลดได้อิสระ
+                </p>
+              </div>
+            </button>
+
+            {/* ตัวเลือกที่ 2: งานโครงการ (จาก BOQ) */}
+            <button
+              type="button"
+              onClick={() => handleSwitchQuotationType(QUOTATION_TYPES.PROJECT)}
+              className={`text-left p-4 rounded-xl border-2 transition cursor-pointer flex items-start gap-3.5 ${
+                !isProductMode
+                  ? 'border-amber-500 bg-amber-50/70 dark:bg-amber-950/40 text-slate-900 dark:text-slate-100 shadow-sm ring-1 ring-amber-500/30'
+                  : 'border-slate-200 dark:border-slate-700 bg-slate-50/40 dark:bg-slate-800/40 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-600'
+              }`}
+            >
+              <div
+                className={`p-2.5 rounded-xl shrink-0 ${
+                  !isProductMode ? 'bg-amber-500 text-slate-950 font-black' : 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400'
+                }`}
+              >
+                <Briefcase className="h-5 w-5" />
+              </div>
+              <div className="space-y-1 flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-1.5">
+                    <span>งานโครงการ (จาก BOQ)</span>
+                    {!isProductMode && <Check className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />}
+                  </span>
+                  <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800 shrink-0">
+                    QT-P-...
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                  สร้างจากเอกสารประมาณราคา (BOQ) ดึงราคาเสนอขายสุทธิอัตโนมัติ ผูกกับโครงการก่อสร้าง/วิศวกรรม
+                </p>
+              </div>
+            </button>
+          </div>
+        ) : (
+          <div
+            className={`flex items-center gap-3 p-3.5 rounded-xl border ${
+              isProductMode
+                ? 'bg-sky-50 dark:bg-sky-950/30 border-sky-200 dark:border-sky-900/60 text-sky-900 dark:text-sky-300'
+                : 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900/60 text-amber-950 dark:text-amber-300'
+            }`}
+          >
+            <div
+              className={`p-2 rounded-lg ${
+                isProductMode ? 'bg-sky-600 text-white' : 'bg-amber-500 text-slate-950'
+              }`}
+            >
+              {isProductMode ? <Package className="h-4 w-4" /> : <Briefcase className="h-4 w-4" />}
+            </div>
+            <div className="text-xs">
+              <div className="font-bold">
+                {isProductMode
+                  ? 'เอกสารนี้เป็นประเภท: งานขายสินค้าจาก Store (QT-S)'
+                  : 'เอกสารนี้เป็นประเภท: งานโครงการ (QT-P)'}
+              </div>
+              <div className="text-[11px] opacity-80 mt-0.5">
+                {isProductMode
+                  ? 'โหมดขายสินค้าตรงจากสโตร์ - มีการคิดกำไรมาร์กอัปและส่วนลดสินค้า (ไม่สามารถเปลี่ยนประเภทเอกสารหลังสร้างแล้ว)'
+                  : 'โหมดงานโครงการ - อ้างอิงราคาขายสุทธิตามเอกสารประมาณราคา BOQ (ไม่สามารถเปลี่ยนประเภทเอกสารหลังสร้างแล้ว)'}
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div>
@@ -1225,6 +1342,7 @@ export default function QuotationForm() {
                           items={catalog}
                           value={it.item_id || ''}
                           onChange={(invId) => handleSelectCatalogItem(idx, invId)}
+                          disabledItemIds={items.filter((_, i) => i !== idx).map((x) => x.item_id).filter(Boolean)}
                           placeholder="พิมพ์รหัส หรือชื่อสินค้าจาก Store..."
                           error={nameEmpty ? 'กรุณาเลือกสินค้าจาก Store' : ''}
                         />
@@ -1423,104 +1541,350 @@ export default function QuotationForm() {
           <div className="space-y-4">
             {isProductMode ? (
               <>
-                <div className="rounded-xl border border-emerald-200 dark:border-emerald-900/60 bg-emerald-50/40 dark:bg-emerald-950/20 p-4 space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
-                      <Percent className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-                      <span>มาร์กอัปทั้งใบ (Markup %) *</span>
-                    </label>
-                    <span className="text-[11px] font-mono font-bold text-emerald-700 dark:text-emerald-400">
-                      +{baht(pricing.markupAmount)} {currency}
-                    </span>
+                {/* บล็อกที่ 1: กำไรมาร์กอัปมาตรฐาน (Standard Profit Markup Presets) */}
+                <div className="rounded-2xl border border-emerald-200 dark:border-emerald-900/60 bg-emerald-50/40 dark:bg-emerald-950/20 p-5 space-y-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-emerald-100 dark:border-emerald-900/40 pb-3">
+                    <div>
+                      <label className="text-xs font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                        <TrendingUp className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                        <span>อัตรากำไรมาร์กอัปมาตรฐาน (Standard Profit Markup %) *</span>
+                      </label>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                        คลิกเลือกอัตรากำไรมาตรฐาน หรือระบุตัวเลขเปอร์เซ็นต์ที่ต้องการ
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-[10px] text-emerald-800 dark:text-emerald-400 block font-semibold">
+                        กำไรขั้นต้นที่บวกเพิ่ม:
+                      </span>
+                      <span className="text-xs font-mono font-black text-emerald-700 dark:text-emerald-300">
+                        +{baht(pricing.markupAmount)} {currency}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.5"
-                      className={fieldErrorClass(
-                        errors.markupPercent,
-                        'input text-xs font-mono font-bold text-right w-32'
-                      )}
-                      value={markupPercent}
-                      onChange={(e) => {
-                        const raw = e.target.value
-                        if (raw === '' || Number(raw) >= 0) {
-                          setMarkupPercent(raw)
-                        } else {
-                          setMarkupPercent('0')
-                        }
-                        if (errors.markupPercent) setErrors((prev) => ({ ...prev, markupPercent: '' }))
-                      }}
-                    />
-                    <span className="text-xs font-bold text-slate-600 dark:text-slate-300">% (บวกครั้งเดียวทั้งใบ · ห้ามติดลบ)</span>
+
+                  {/* ปุ่มชิปเลือกกำไรมาตรฐาน 6 ระดับ */}
+                  <div>
+                    <div className="text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-2">
+                      เลือกอัตรากำไรมาตรฐาน:
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+                      {STANDARD_MARKUP_PRESETS.map((preset) => {
+                        const isSelected =
+                          String(Number(markupPercent || 0)) === String(Number(preset.value))
+                        return (
+                          <button
+                            key={preset.value}
+                            type="button"
+                            onClick={() => {
+                              setMarkupPercent(preset.value)
+                              if (errors.markupPercent)
+                                setErrors((prev) => ({ ...prev, markupPercent: '' }))
+                            }}
+                            className={`px-2 py-2 rounded-xl text-xs font-bold transition cursor-pointer text-center border ${
+                              isSelected
+                                ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm ring-2 ring-emerald-500/20'
+                                : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-emerald-400 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/30'
+                            }`}
+                          >
+                            <div>{preset.label}</div>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  {/* ช่องระบุตัวเลขกำหนดเอง */}
+                  <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-emerald-100 dark:border-emerald-900/40">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                        หรือระบุกำไรเอง:
+                      </span>
+                      <div className="relative inline-flex items-center">
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.5"
+                          className={fieldErrorClass(
+                            errors.markupPercent,
+                            'input text-xs font-mono font-bold text-right w-28 pr-7 bg-white dark:bg-slate-900'
+                          )}
+                          value={markupPercent}
+                          onChange={(e) => {
+                            const raw = e.target.value
+                            if (raw === '' || Number(raw) >= 0) {
+                              setMarkupPercent(raw)
+                            } else {
+                              setMarkupPercent('0')
+                            }
+                            if (errors.markupPercent)
+                              setErrors((prev) => ({ ...prev, markupPercent: '' }))
+                          }}
+                          placeholder="0"
+                        />
+                        <span className="absolute right-2.5 text-xs font-bold text-slate-500 dark:text-slate-400 pointer-events-none">
+                          %
+                        </span>
+                      </div>
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                        (คิดกำไรจากต้นทุนรวมทั้งใบ)
+                      </span>
+                    </div>
                   </div>
                   <FieldError error={errors.markupPercent} />
                 </div>
 
-                <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/40 p-4 space-y-3">
-                  <label className="block text-xs font-bold text-slate-800 dark:text-slate-100">
-                    รูปแบบส่วนลด (Discount Mode)
-                  </label>
-                  <div className="grid grid-cols-2 gap-2 text-xs">
+                {/* บล็อกที่ 2: รูปแบบส่วนลดและการเลือกหน่วยชัดเจน (Discount Mode & Unit) */}
+                <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/40 p-5 space-y-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/80 dark:border-slate-700/80 pb-3">
+                    <div>
+                      <label className="text-xs font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                        <Tag className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+                        <span>รูปแบบส่วนลดทางการค้า (Discount Mode &amp; Unit)</span>
+                      </label>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                        เลือกรูปแบบ: ไม่ให้ส่วนลด, ลดราคาทั้งใบ (เลือกบาทหรือ%), หรือลดแยกรายสินค้า
+                      </p>
+                    </div>
+                    {totalDiscount > 0 && (
+                      <span className="text-xs font-mono font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 px-2.5 py-1 rounded-lg border border-rose-200 dark:border-rose-900">
+                        ส่วนลดรวม: -{baht(totalDiscount)} {currency}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* 1. ปุ่มเลือก 3 โหมดส่วนลด */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDiscountMode('none')
+                        setHeaderDiscountValue('0')
+                      }}
+                      className={`p-3 rounded-xl border text-left transition cursor-pointer flex items-center gap-2.5 ${
+                        discountMode === 'none'
+                          ? 'border-slate-700 dark:border-slate-300 bg-slate-800 dark:bg-slate-100 text-white dark:text-slate-900 shadow-sm font-bold'
+                          : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:border-slate-300'
+                      }`}
+                    >
+                      <div
+                        className={`p-1.5 rounded-lg ${
+                          discountMode === 'none'
+                            ? 'bg-white/20 dark:bg-slate-900/20'
+                            : 'bg-slate-100 dark:bg-slate-800'
+                        }`}
+                      >
+                        <X className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold">1. ไม่ให้ส่วนลด</div>
+                        <div
+                          className={`text-[10px] ${
+                            discountMode === 'none' ? 'opacity-80' : 'text-slate-400'
+                          }`}
+                        >
+                          ขายราคาเต็มตามปกติ
+                        </div>
+                      </div>
+                    </button>
+
                     <button
                       type="button"
                       onClick={() => setDiscountMode('whole_bill')}
-                      className={`rounded-xl border px-3 py-2 font-bold transition cursor-pointer ${discountMode === 'whole_bill'
-                          ? 'border-sky-600 bg-sky-700 text-white shadow-2xs'
-                          : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-                        }`}
+                      className={`p-3 rounded-xl border text-left transition cursor-pointer flex items-center gap-2.5 ${
+                        discountMode === 'whole_bill'
+                          ? 'border-sky-600 bg-sky-700 text-white shadow-sm font-bold'
+                          : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:border-sky-300'
+                      }`}
                     >
-                      ส่วนลดทั้งใบ
+                      <div
+                        className={`p-1.5 rounded-lg ${
+                          discountMode === 'whole_bill'
+                            ? 'bg-white/20'
+                            : 'bg-sky-50 dark:bg-sky-950/60 text-sky-600'
+                        }`}
+                      >
+                        <DollarSign className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold">2. ส่วนลดทั้งใบ (ท้ายบิล)</div>
+                        <div
+                          className={`text-[10px] ${
+                            discountMode === 'whole_bill' ? 'opacity-80' : 'text-slate-400'
+                          }`}
+                        >
+                          เลือกได้ทั้ง บาท หรือ %
+                        </div>
+                      </div>
                     </button>
+
                     <button
                       type="button"
-                      onClick={() => setDiscountMode('per_item')}
-                      className={`rounded-xl border px-3 py-2 font-bold transition cursor-pointer ${discountMode === 'per_item'
-                          ? 'border-sky-600 bg-sky-700 text-white shadow-2xs'
-                          : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-                        }`}
+                      onClick={() => {
+                        setDiscountMode('per_item')
+                        setHeaderDiscountValue('0')
+                      }}
+                      className={`p-3 rounded-xl border text-left transition cursor-pointer flex items-center gap-2.5 ${
+                        discountMode === 'per_item'
+                          ? 'border-sky-600 bg-sky-700 text-white shadow-sm font-bold'
+                          : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:border-sky-300'
+                      }`}
                     >
-                      ส่วนลดต่อรายการ (% รายแถว)
+                      <div
+                        className={`p-1.5 rounded-lg ${
+                          discountMode === 'per_item'
+                            ? 'bg-white/20'
+                            : 'bg-sky-50 dark:bg-sky-950/60 text-sky-600'
+                        }`}
+                      >
+                        <Percent className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold">3. ส่วนลดต่อรายการ</div>
+                        <div
+                          className={`text-[10px] ${
+                            discountMode === 'per_item' ? 'opacity-80' : 'text-slate-400'
+                          }`}
+                        >
+                          กรอก % แยกแต่ละแถว
+                        </div>
+                      </div>
                     </button>
                   </div>
 
+                  {/* 2. เมื่อเลือก ส่วนลดทั้งใบ: แสดงตัวเลือกหน่วย (บาท vs %) ให้ชัดเจนที่สุด */}
                   {discountMode === 'whole_bill' && (
-                    <div className="flex items-center gap-2 pt-1">
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        className="input text-xs font-mono font-bold text-right flex-1"
-                        placeholder="จำนวนส่วนลด"
-                        value={headerDiscountValue}
-                        onChange={(e) => {
-                          const raw = e.target.value
-                          setHeaderDiscountValue(raw === '' || Number(raw) >= 0 ? raw : '0')
-                        }}
-                      />
-                      <div className="inline-flex rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-0.5 text-xs">
-                        <button
-                          type="button"
-                          onClick={() => setHeaderDiscountType('amount')}
-                          className={`rounded-lg px-2.5 py-1 font-bold transition cursor-pointer ${headerDiscountType === 'amount'
-                              ? 'bg-sky-700 text-white'
-                              : 'text-slate-600 dark:text-slate-300'
+                    <div className="rounded-xl border border-sky-200 dark:border-sky-800/80 bg-sky-50/50 dark:bg-sky-950/30 p-4 space-y-3.5">
+                      <div>
+                        <span className="block text-xs font-bold text-sky-950 dark:text-sky-200 mb-1.5">
+                          ระบุหน่วยส่วนลดที่ต้องการ: (เลือก บาท หรือ เปอร์เซ็นต์ %)
+                        </span>
+                        <div className="grid grid-cols-2 gap-2.5">
+                          <button
+                            type="button"
+                            onClick={() => setHeaderDiscountType('amount')}
+                            className={`p-2.5 rounded-xl border text-center transition cursor-pointer flex items-center justify-center gap-2 ${
+                              headerDiscountType === 'amount'
+                                ? 'border-sky-600 bg-white dark:bg-slate-900 text-sky-700 dark:text-sky-300 font-black shadow-xs ring-2 ring-sky-500/30'
+                                : 'border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/60 text-slate-600 dark:text-slate-400 hover:bg-white'
                             }`}
-                        >
-                          บาท
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setHeaderDiscountType('percent')}
-                          className={`rounded-lg px-2.5 py-1 font-bold transition cursor-pointer ${headerDiscountType === 'percent'
-                              ? 'bg-sky-700 text-white'
-                              : 'text-slate-600 dark:text-slate-300'
+                          >
+                            <div
+                              className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold ${
+                                headerDiscountType === 'amount'
+                                  ? 'bg-sky-600 text-white'
+                                  : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+                              }`}
+                            >
+                              ฿
+                            </div>
+                            <span className="text-xs">
+                              ลดเป็น <strong>จำนวนเงิน (บาท)</strong>
+                            </span>
+                            {headerDiscountType === 'amount' && (
+                              <Check className="h-4 w-4 text-sky-600 dark:text-sky-400 shrink-0" />
+                            )}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setHeaderDiscountType('percent')}
+                            className={`p-2.5 rounded-xl border text-center transition cursor-pointer flex items-center justify-center gap-2 ${
+                              headerDiscountType === 'percent'
+                                ? 'border-sky-600 bg-white dark:bg-slate-900 text-sky-700 dark:text-sky-300 font-black shadow-xs ring-2 ring-sky-500/30'
+                                : 'border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/60 text-slate-600 dark:text-slate-400 hover:bg-white'
                             }`}
-                        >
-                          %
-                        </button>
+                          >
+                            <div
+                              className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold ${
+                                headerDiscountType === 'percent'
+                                  ? 'bg-sky-600 text-white'
+                                  : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+                              }`}
+                            >
+                              %
+                            </div>
+                            <span className="text-xs">
+                              ลดเป็น <strong>เปอร์เซ็นต์ (%)</strong>
+                            </span>
+                            {headerDiscountType === 'percent' && (
+                              <Check className="h-4 w-4 text-sky-600 dark:text-sky-400 shrink-0" />
+                            )}
+                          </button>
+                        </div>
                       </div>
+
+                      {/* ช่องกรอกมูลค่าส่วนลด */}
+                      <div className="space-y-1.5">
+                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                          {headerDiscountType === 'amount'
+                            ? 'ระบุจำนวนเงินส่วนลดทั้งใบ (บาท):'
+                            : 'ระบุอัตราส่วนลดทั้งใบ (%):'}
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <div className="relative flex-1">
+                            <input
+                              type="number"
+                              min="0"
+                              max={headerDiscountType === 'percent' ? '100' : undefined}
+                              step={headerDiscountType === 'amount' ? '1' : '0.5'}
+                              className="input text-xs font-mono font-bold text-right pr-12 w-full bg-white dark:bg-slate-900"
+                              placeholder={
+                                headerDiscountType === 'amount'
+                                  ? 'เช่น 500 หรือ 1000'
+                                  : 'เช่น 5 หรือ 10'
+                              }
+                              value={headerDiscountValue}
+                              onChange={(e) => {
+                                const raw = e.target.value
+                                setHeaderDiscountValue(raw === '' || Number(raw) >= 0 ? raw : '0')
+                              }}
+                            />
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-500 dark:text-slate-400 pointer-events-none">
+                              {headerDiscountType === 'amount' ? 'บาท' : '%'}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="text-[11px] text-sky-800 dark:text-sky-300 font-medium pt-1">
+                          {headerDiscountType === 'amount' ? (
+                            <span>
+                              หักส่วนลดทันที:{' '}
+                              <strong className="font-mono text-sky-900 dark:text-sky-100">
+                                {baht(headerDiscountValue || 0)} บาท
+                              </strong>{' '}
+                              จากยอดรวมก่อนส่วนลด
+                            </span>
+                          ) : (
+                            <span>
+                              ลด {headerDiscountValue || 0}% คิดเป็นมูลค่าส่วนลดจริง:{' '}
+                              <strong className="font-mono text-sky-900 dark:text-sky-100">
+                                {baht(pricing.discountAmount)} บาท
+                              </strong>
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 3. เมื่อเลือก ส่วนลดแยกรายรายการ */}
+                  {discountMode === 'per_item' && (
+                    <div className="rounded-xl border border-sky-200 dark:border-sky-900/60 bg-sky-50/70 dark:bg-sky-950/40 p-3.5 text-xs text-sky-900 dark:text-sky-300 flex items-center gap-2.5">
+                      <Info className="h-4 w-4 text-sky-600 dark:text-sky-400 shrink-0" />
+                      <span>
+                        โหมดส่วนลดต่อรายการเปิดใช้งานแล้ว: คุณสามารถระบุช่อง{' '}
+                        <strong>"ส่วนลด %"</strong> ในแต่ละแถวของตารางสินค้าด้านบน (การ์ดที่ 3) ได้อย่างอิสระ
+                      </span>
+                    </div>
+                  )}
+
+                  {/* 4. เมื่อเลือก ไม่ให้ส่วนลด */}
+                  {discountMode === 'none' && (
+                    <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100/60 dark:bg-slate-800/60 p-3 text-xs text-slate-600 dark:text-slate-400 flex items-center gap-2">
+                      <Check className="h-4 w-4 text-slate-500 shrink-0" />
+                      <span>
+                        คิดราคาขายเต็มจำนวนตามต้นทุน + กำไรมาร์กอัป โดยไม่มีการหักส่วนลดในเอกสารนี้
+                      </span>
                     </div>
                   )}
                 </div>

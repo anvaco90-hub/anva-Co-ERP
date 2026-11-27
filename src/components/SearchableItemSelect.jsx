@@ -10,6 +10,7 @@ export default function SearchableItemSelect({
   placeholder = 'พิมพ์ค้นหารหัส หรือชื่อพัสดุ...',
   required = false,
   filterAvailableOnly = false,
+  disabledItemIds = [],
   onCreateNew,
 }) {
   const [query, setQuery] = useState('')
@@ -132,35 +133,54 @@ export default function SearchableItemSelect({
                 </div>
               ) : (
                 <>
-                  {filtered.slice(0, 60).map((it) => (
-                    <button
-                      key={it.id}
-                      type="button"
-                      onClick={() => {
-                        onChange(it.id)
-                        setIsOpen(false)
-                        setQuery('')
-                      }}
-                      className="w-full text-left p-2.5 hover:bg-steel-50 dark:hover:bg-slate-800 transition border-b border-steel-50 dark:border-slate-800 last:border-b-0 flex items-center justify-between group cursor-pointer"
-                    >
-                      <div className="min-w-0 pr-2">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="font-mono text-xs font-bold text-steel-700 dark:text-slate-300 bg-steel-100 dark:bg-slate-800 px-1.5 py-0.5 rounded group-hover:bg-steel-900 group-hover:text-white dark:group-hover:bg-amber-400 dark:group-hover:text-slate-950 transition">
-                            {it.item_code}
-                          </span>
-                          <span className="text-xs font-bold text-steel-900 dark:text-slate-100 truncate">
-                            {it.item_name}
-                          </span>
+                  {filtered.slice(0, 60).map((it) => {
+                    const isDisabled = disabledItemIds.includes(it.id)
+                    return (
+                      <button
+                        key={it.id}
+                        type="button"
+                        disabled={isDisabled}
+                        onClick={() => {
+                          if (isDisabled) return
+                          onChange(it.id)
+                          setIsOpen(false)
+                          setQuery('')
+                        }}
+                        className={`w-full text-left p-2.5 transition border-b border-steel-50 dark:border-slate-800 last:border-b-0 flex items-center justify-between ${
+                          isDisabled
+                            ? 'opacity-40 cursor-not-allowed bg-slate-100/60 dark:bg-slate-800/40'
+                            : 'hover:bg-steel-50 dark:hover:bg-slate-800 group cursor-pointer'
+                        }`}
+                      >
+                        <div className="min-w-0 pr-2">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className={`font-mono text-xs font-bold px-1.5 py-0.5 rounded transition ${
+                              isDisabled
+                                ? 'bg-slate-200 text-slate-500 dark:bg-slate-700 dark:text-slate-400'
+                                : 'text-steel-700 dark:text-slate-300 bg-steel-100 dark:bg-slate-800 group-hover:bg-steel-900 group-hover:text-white dark:group-hover:bg-amber-400 dark:group-hover:text-slate-950'
+                            }`}>
+                              {it.item_code}
+                            </span>
+                            <span className={`text-xs font-bold truncate ${isDisabled ? 'text-slate-400 dark:text-slate-500 line-through' : 'text-steel-900 dark:text-slate-100'}`}>
+                              {it.item_name}
+                            </span>
+                          </div>
+                          <div className="text-[11px] text-steel-500 dark:text-slate-400 font-mono mt-0.5">
+                            คงเหลือ: <b>{formatIntQty(it.qty_on_hand)}</b> {it.unit || ''}
+                          </div>
                         </div>
-                        <div className="text-[11px] text-steel-500 dark:text-slate-400 font-mono mt-0.5">
-                          คงเหลือ: <b>{formatIntQty(it.qty_on_hand)}</b> {it.unit || ''}
-                        </div>
-                      </div>
-                      <span className="text-[11px] text-emerald-700 dark:text-emerald-400 font-bold group-hover:text-emerald-900 dark:group-hover:text-emerald-300 shrink-0">
-                        เลือก ↵
-                      </span>
-                    </button>
-                  ))}
+                        {isDisabled ? (
+                          <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium shrink-0">
+                            (เลือกแล้ว)
+                          </span>
+                        ) : (
+                          <span className="text-[11px] text-emerald-700 dark:text-emerald-400 font-bold group-hover:text-emerald-900 dark:group-hover:text-emerald-300 shrink-0">
+                            เลือก ↵
+                          </span>
+                        )}
+                      </button>
+                    )
+                  })}
                   {onCreateNew && (
                     <div className="p-2 border-t border-steel-100 dark:border-slate-800 bg-steel-50/70 dark:bg-slate-800/60 flex justify-center">
                       <button

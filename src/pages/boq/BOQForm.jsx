@@ -809,8 +809,8 @@ export default function BOQForm() {
                   {/* แถบหัวหมวดหมู่งาน */}
                   <div className="p-3.5 sm:p-4 bg-sky-50/70 dark:bg-sky-950/40 border-b border-sky-200 dark:border-sky-900/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="flex items-center gap-2.5 flex-1 min-w-[280px]">
-                      <span className="flex h-8 px-2.5 items-center justify-center rounded-xl bg-sky-700 text-white font-bold text-xs shrink-0 shadow-xs">
-                        หมวดที่ {catIdx + 1}
+                      <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-sky-700 text-white font-bold text-xs shrink-0 shadow-xs">
+                        #{catIdx + 1}
                       </span>
                       <div className="flex-1">
                         <input
@@ -839,7 +839,7 @@ export default function BOQForm() {
                     <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0">
                       <div className="text-right">
                         <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-normal">
-                          รวมเฉพาะหมวดที่ {catIdx + 1}:
+                          รวมเฉพาะหมวด:
                         </span>
                         <span className="font-mono font-bold text-xs text-sky-800 dark:text-sky-300">
                           {baht(catCalc?.catTotal || 0)} บ.
@@ -1038,7 +1038,7 @@ export default function BOQForm() {
                     >
                       <Plus className="h-4 w-4 text-sky-600 dark:text-sky-400" />
                       <span>
-                        + เพิ่มรายการอื่นในหมวดที่ {catIdx + 1} ({cat.name ? cat.name.split(' ')[1] || cat.name.slice(0, 25) : 'งานนี้'}) ต่อ
+                        + เพิ่มรายการในหมวดนี้ ({cat.name ? cat.name.split(' ')[1] || cat.name.slice(0, 25) : 'งานนี้'}) ต่อ
                       </span>
                     </button>
                   </div>

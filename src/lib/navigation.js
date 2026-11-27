@@ -158,13 +158,13 @@ export function getLocationBreadcrumb(pathname = '/', search = '') {
     return { module: 'งานขายและเสนอราคา', feature: 'ใบเสนอราคา (QT)', modulePath: '/quotations' }
   }
   if (pathname.startsWith('/boq/new')) {
-    return { module: 'ประมาณราคา (BOQ)', feature: 'สร้างใบประมาณราคาใหม่', modulePath: '/boq' }
+    return { module: 'ประมาณการโครงการ (BOQ)', feature: 'สร้างใบประมาณราคาใหม่', modulePath: '/boq' }
   }
   if (pathname.startsWith('/boq/')) {
-    return { module: 'ประมาณราคา (BOQ)', feature: 'รายละเอียด BOQ', modulePath: '/boq' }
+    return { module: 'ประมาณการโครงการ (BOQ)', feature: 'รายละเอียด BOQ', modulePath: '/boq' }
   }
   if (pathname.startsWith('/boq')) {
-    return { module: 'งานขายและเสนอราคา', feature: 'ประมาณราคา (BOQ)', modulePath: '/quotations' }
+    return { module: 'งานขายและเสนอราคา', feature: 'ประมาณการโครงการ (BOQ)', modulePath: '/quotations' }
   }
 
   if (pathname.startsWith('/contacts')) {

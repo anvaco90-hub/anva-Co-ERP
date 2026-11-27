@@ -958,7 +958,7 @@ export default function BOQDetail() {
                     <tfoot className="bg-slate-50/70 dark:bg-slate-800/60 text-xs border-t border-slate-200 dark:border-slate-700">
                       <tr>
                         <td colSpan={4} className="py-2.5 px-4 text-right text-slate-500 dark:text-slate-400 font-medium border-r border-slate-200 dark:border-slate-700">
-                          รวมเฉพาะหมวดที่ {cIdx + 1} ({category}):
+                          รวมเฉพาะหมวด ({category}):
                         </td>
                         <td className="py-2.5 px-3.5 text-right font-mono text-slate-800 dark:text-slate-200 border-r border-slate-200 dark:border-slate-700 tabular-nums">
                           {baht(catMatCost)}

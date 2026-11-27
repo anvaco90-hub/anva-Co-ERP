@@ -16,7 +16,7 @@ export const NAV_ITEMS = [
     roles: ['admin', 'management', 'accounting', 'purchasing', 'store'],
     children: [
       { path: '/quotations', label: 'ใบเสนอราคา (QT)', roles: ['admin', 'management', 'accounting', 'purchasing', 'store'] },
-      { path: '/boq', label: 'ประมาณราคา (BOQ)', roles: ['admin', 'management', 'accounting', 'purchasing', 'store'] },
+      { path: '/boq', label: 'ประมาณการโครงการ (BOQ)', roles: ['admin', 'management', 'accounting', 'purchasing', 'store'] },
       { path: '/contacts?role=customer', label: 'ทะเบียนลูกค้า (Customers)', roles: ['admin', 'management', 'accounting', 'purchasing', 'store'] },
     ],
   },

@@ -38,6 +38,12 @@ import {
   Calendar,
   FileSpreadsheet,
   CheckCircle2,
+  Eye,
+  Briefcase,
+  Package,
+  X,
+  Clock,
+  AlertCircle,
 } from 'lucide-react'
 
 const STATUS_CONFIG = {
@@ -391,7 +397,7 @@ export default function QuotationList() {
             className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition"
           >
             <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-            <span>ระบบ BOQ</span>
+            <span>ประมาณการโครงการ (BOQ)</span>
           </Link>
 
           <button
@@ -405,188 +411,209 @@ export default function QuotationList() {
         </div>
       </div>
 
-      {/* 2. Interactive Metric Strip (คลิกเพื่อกรองรายการได้ทันที แทนแท็บซ้ำซ้อน) */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+      {/* 2. Interactive Metric Strip: ยอดงานแต่ละสถานะ (เน้นจำนวนงานและสถานะงานค้าง) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        {/* การ์ด 1: งานเสนอราคาทั้งหมด */}
         <button
           type="button"
-          onClick={() => toggleKpiStatus('all')}
-          className={`rounded-xl border p-3.5 text-left transition cursor-pointer ${
-            filterStatus === 'all'
-              ? 'border-slate-800 dark:border-emerald-400 bg-white dark:bg-slate-900 ring-1 ring-slate-800/15 dark:ring-emerald-400/20 shadow-xs'
-              : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 hover:border-slate-300 dark:hover:border-slate-700'
+          onClick={() => {
+            setFilterType('all')
+            setFilterStatus('all')
+            setActionMenuId(null)
+          }}
+          className={`rounded-2xl border p-4 text-left transition-all cursor-pointer relative overflow-hidden ${
+            filterType === 'all' && filterStatus === 'all'
+              ? 'border-slate-800 dark:border-emerald-400 bg-white dark:bg-slate-900 ring-2 ring-slate-800/15 dark:ring-emerald-400/20 shadow-sm'
+              : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 hover:border-slate-400 dark:hover:border-slate-700 shadow-2xs'
           }`}
         >
-          <div className="flex items-center justify-between text-[11px] font-semibold text-slate-500 dark:text-slate-400">
-            <span>ยอดเสนอราคาทั้งหมด</span>
-            <span className="text-[10px] text-slate-400 dark:text-slate-500">{stats.totalCount} ใบ</span>
-          </div>
-          <div className="mt-1 text-lg font-bold text-slate-900 dark:text-slate-100 tabular-nums">
-            {baht(stats.totalAmount)} <span className="text-xs font-medium text-slate-500 dark:text-slate-400">บาท</span>
-          </div>
-          <div className="mt-0.5 text-[10px] text-slate-400 dark:text-slate-500">คลิกเพื่อแสดงทั้งหมด</div>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => toggleKpiStatus('approved')}
-          className={`rounded-xl border p-3.5 text-left transition cursor-pointer ${
-            filterStatus === 'approved'
-              ? 'border-emerald-600 dark:border-emerald-400 bg-emerald-50/70 dark:bg-emerald-950/40 ring-1 ring-emerald-500/20 shadow-xs'
-              : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 hover:border-emerald-300 dark:hover:border-emerald-800'
-          }`}
-        >
-          <div className="flex items-center justify-between text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">
+          <div className="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400">
             <span className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-emerald-500"></span>
-              <span>ลูกค้าอนุมัติแล้ว</span>
+              <FileText className="h-4 w-4 text-slate-600 dark:text-slate-300" />
+              <span>งานเสนอราคาทั้งหมด</span>
             </span>
-            <span className="text-[10px] font-bold">{stats.signedCount} ใบ</span>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+              ทุกสถานะ
+            </span>
           </div>
-          <div className="mt-1 text-lg font-bold text-emerald-800 dark:text-emerald-300 tabular-nums">
-            {baht(stats.signedAmount)} <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">บาท</span>
+          <div className="mt-2 text-2xl font-black text-slate-900 dark:text-slate-100 tabular-nums tracking-tight flex items-baseline gap-1.5">
+            <span>{stats.totalCount}</span>
+            <span className="text-sm font-semibold text-slate-500 dark:text-slate-400">งาน</span>
           </div>
-          <div className="mt-0.5 text-[10px] text-emerald-700/80 dark:text-emerald-400/80">พร้อมส่งต่อจัดซื้อ / เช็กสต็อก</div>
+          <div className="mt-1.5 text-[11px] space-y-0.5">
+            <div className="text-slate-700 dark:text-slate-200 font-medium">
+              งานโครงการ {stats.projectCount} · งานขาย {stats.productCount} งาน
+            </div>
+            <div className="text-slate-400 dark:text-slate-500 text-[10px]">
+              รวมมูลค่า ฿{baht(stats.totalAmount)}
+            </div>
+          </div>
         </button>
 
+        {/* การ์ด 2: งานค้างร่างเตรียมราคา (Draft) */}
         <button
           type="button"
-          onClick={() => toggleKpiStatus('sent')}
-          className={`rounded-xl border p-3.5 text-left transition cursor-pointer ${
-            filterStatus === 'sent'
-              ? 'border-sky-600 dark:border-sky-400 bg-sky-50/70 dark:bg-sky-950/40 ring-1 ring-sky-500/20 shadow-xs'
-              : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 hover:border-sky-300 dark:hover:border-sky-800'
-          }`}
-        >
-          <div className="flex items-center gap-1.5 text-[11px] font-semibold text-sky-700 dark:text-sky-400">
-            <span className="h-2 w-2 rounded-full bg-sky-500"></span>
-            <span>ส่งลูกค้าพิจารณา</span>
-          </div>
-          <div className="mt-1 text-lg font-bold text-sky-900 dark:text-sky-300 tabular-nums">
-            {stats.sentCount} <span className="text-xs font-medium text-slate-500 dark:text-slate-400">ใบ</span>
-          </div>
-          <div className="mt-0.5 text-[10px] text-slate-400 dark:text-slate-500">อยู่ระหว่างรอลูกค้าตัดสินใจ</div>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => toggleKpiStatus('draft')}
-          className={`rounded-xl border p-3.5 text-left transition cursor-pointer ${
+          onClick={() => {
+            toggleKpiStatus('draft')
+            setActionMenuId(null)
+          }}
+          className={`rounded-2xl border p-4 text-left transition-all cursor-pointer relative overflow-hidden ${
             filterStatus === 'draft'
-              ? 'border-slate-700 dark:border-slate-400 bg-slate-100/80 dark:bg-slate-800 ring-1 ring-slate-500/20 shadow-xs'
-              : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 hover:border-slate-300 dark:hover:border-slate-700'
+              ? 'border-amber-600 dark:border-amber-400 bg-amber-50/60 dark:bg-amber-950/30 ring-2 ring-amber-500/20 shadow-sm'
+              : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 hover:border-amber-300 dark:hover:border-amber-700 shadow-2xs'
           }`}
         >
-          <div className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 dark:text-slate-300">
-            <span className="h-2 w-2 rounded-full bg-slate-400"></span>
-            <span>ฉบับร่าง</span>
+          <div className="flex items-center justify-between text-xs font-semibold text-amber-800 dark:text-amber-400">
+            <span className="flex items-center gap-1.5">
+              <Clock className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+              <span>งานค้าง: ร่างเตรียมราคา</span>
+            </span>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100/80 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300">
+              ฉบับร่าง
+            </span>
           </div>
-          <div className="mt-1 text-lg font-bold text-slate-800 dark:text-slate-200 tabular-nums">
-            {stats.draftCount} <span className="text-xs font-medium text-slate-500 dark:text-slate-400">ใบ</span>
+          <div className="mt-2 text-2xl font-black text-amber-900 dark:text-amber-300 tabular-nums tracking-tight flex items-baseline gap-1.5">
+            <span>{stats.draftCount}</span>
+            <span className="text-sm font-semibold text-amber-700 dark:text-amber-400">งาน</span>
           </div>
-          <div className="mt-0.5 text-[10px] text-slate-400 dark:text-slate-500">กำลังจัดเตรียมสเปกและราคา</div>
+          <div className="mt-1.5 text-[11px] space-y-0.5">
+            <div className="text-amber-800/90 dark:text-amber-400/90 font-medium">
+              กำลังจัดเตรียมสเปกและต้นทุน
+            </div>
+            <div className="text-amber-700/80 dark:text-amber-500 text-[10px]">
+              ยังไม่ส่งให้ลูกค้าพิจารณา
+            </div>
+          </div>
+        </button>
+
+        {/* การ์ด 3: งานค้างรอลูกค้าพิจารณา (Sent) */}
+        <button
+          type="button"
+          onClick={() => {
+            toggleKpiStatus('sent')
+            setActionMenuId(null)
+          }}
+          className={`rounded-2xl border p-4 text-left transition-all cursor-pointer relative overflow-hidden ${
+            filterStatus === 'sent'
+              ? 'border-sky-600 dark:border-sky-400 bg-sky-50/60 dark:bg-sky-950/30 ring-2 ring-sky-500/20 shadow-sm'
+              : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 hover:border-sky-300 dark:hover:border-sky-700 shadow-2xs'
+          }`}
+        >
+          <div className="flex items-center justify-between text-xs font-semibold text-sky-800 dark:text-sky-400">
+            <span className="flex items-center gap-1.5">
+              <AlertCircle className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+              <span>งานค้าง: ส่งรอลูกค้าพิจารณา</span>
+            </span>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-100/80 dark:bg-sky-900/40 text-sky-800 dark:text-sky-300">
+              รอลูกค้า
+            </span>
+          </div>
+          <div className="mt-2 text-2xl font-black text-sky-900 dark:text-sky-300 tabular-nums tracking-tight flex items-baseline gap-1.5">
+            <span>{stats.sentCount}</span>
+            <span className="text-sm font-semibold text-sky-700 dark:text-sky-400">งาน</span>
+          </div>
+          <div className="mt-1.5 text-[11px] space-y-0.5">
+            <div className="text-sky-800/90 dark:text-sky-400/90 font-medium">
+              ส่งใบเสนอราคาแล้ว รอตอบกลับ
+            </div>
+            <div className="text-sky-700/80 dark:text-sky-500 text-[10px]">
+              อยู่ระหว่างรอลูกค้าตัดสินใจ / ส่ง PO
+            </div>
+          </div>
+        </button>
+
+        {/* การ์ด 4: งานสำเร็จ: ลูกค้าอนุมัติแล้ว (Approved) */}
+        <button
+          type="button"
+          onClick={() => {
+            toggleKpiStatus('approved')
+            setActionMenuId(null)
+          }}
+          className={`rounded-2xl border p-4 text-left transition-all cursor-pointer relative overflow-hidden ${
+            filterStatus === 'approved'
+              ? 'border-emerald-600 dark:border-emerald-400 bg-emerald-50/70 dark:bg-emerald-950/40 ring-2 ring-emerald-500/20 shadow-sm'
+              : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 hover:border-emerald-300 dark:hover:border-emerald-700 shadow-2xs'
+          }`}
+        >
+          <div className="flex items-center justify-between text-xs font-semibold text-emerald-800 dark:text-emerald-400">
+            <span className="flex items-center gap-1.5">
+              <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+              <span>งานสำเร็จ: ลูกค้าอนุมัติแล้ว</span>
+            </span>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-300">
+              อนุมัติแล้ว
+            </span>
+          </div>
+          <div className="mt-2 text-2xl font-black text-emerald-900 dark:text-emerald-300 tabular-nums tracking-tight flex items-baseline gap-1.5">
+            <span>{stats.signedCount}</span>
+            <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">งาน</span>
+          </div>
+          <div className="mt-1.5 text-[11px] space-y-0.5">
+            <div className="text-emerald-800/90 dark:text-emerald-400/90 font-medium">
+              พร้อมเปิด PR จัดซื้อ / เบิกของสโตร์
+            </div>
+            <div className="text-emerald-700 dark:text-emerald-300 font-bold">
+              อัตราอนุมัติสำเร็จ {stats.winRate}% (มูลค่า ฿{baht(stats.signedAmount)})
+            </div>
+          </div>
         </button>
       </div>
 
-      {/* 3. Unified Clean Toolbar */}
-      <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 shadow-2xs space-y-2">
-        <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-          <div className="flex flex-wrap items-center gap-2 flex-1">
-            {/* Search Box */}
-            <div className="relative min-w-[200px] max-w-xs flex-1">
-              <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-slate-400" />
-              <input
-                type="text"
-                placeholder="ค้นหาเลขที่, ลูกค้า, โครงการ..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800 pl-8 pr-3 py-1.5 text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:border-emerald-600 dark:focus:border-emerald-400"
-              />
-            </div>
-
-            {/* Standard Sort Filter Control */}
-            <TableSortFilter
-              value={sortBy}
-              onChange={setSortBy}
-              options={QUOTATION_SORT_OPTIONS}
-            />
-
-            {/* Type Filter */}
-            <select
-              value={filterType}
-              onChange={(e) => setFilterType(e.target.value)}
-              className="rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-200 focus:outline-none focus:border-emerald-600 dark:focus:border-emerald-400"
+      {/* 3. ห้องค้นหาและตัวกรอง (Search Room & Smart Filters) */}
+      <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3.5 shadow-2xs space-y-3">
+        {/* แถบเลือกหมวดหมู่ค้นหาด่วน (Quick Category Navigation Tabs) */}
+        <div className="flex flex-wrap items-center justify-between gap-2.5 pb-2 border-b border-slate-100 dark:border-slate-800">
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 mr-1 hidden sm:inline">หมวดค้นหา:</span>
+            <button
+              type="button"
+              onClick={() => setFilterType('all')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 ${
+                filterType === 'all'
+                  ? 'bg-slate-900 text-white dark:bg-emerald-600 shadow-xs'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+              }`}
             >
-              <option value="all">ทุกประเภท (รับงาน + ขายสินค้า)</option>
-              <option value="project">รับงาน (BOQ · QT-P)</option>
-              <option value="product">ขายสินค้า (Store · QT-S)</option>
-            </select>
+              <span>ทั้งหมด</span>
+              <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${filterType === 'all' ? 'bg-white/20 text-white' : 'bg-slate-200/80 dark:bg-slate-700 text-slate-700 dark:text-slate-300'}`}>
+                {stats.totalCount}
+              </span>
+            </button>
 
-            {/* Project Filter */}
-            <select
-              value={filterProject}
-              onChange={(e) => setFilterProject(e.target.value)}
-              className="rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 py-1.5 text-xs text-slate-700 dark:text-slate-200 focus:outline-none focus:border-emerald-600 dark:focus:border-emerald-400"
+            <button
+              type="button"
+              onClick={() => setFilterType('project')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 ${
+                filterType === 'project'
+                  ? 'bg-amber-600 text-white dark:bg-amber-500 dark:text-slate-950 shadow-xs'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+              }`}
             >
-              <option value="">ทุกโครงการ</option>
-              {projects.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.project_code} {p.project_name}
-                </option>
-              ))}
-            </select>
+              <Briefcase className="h-3.5 w-3.5" />
+              <span>งานโครงการ</span>
+              <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${filterType === 'project' ? 'bg-white/20 text-white' : 'bg-slate-200/80 dark:bg-slate-700 text-slate-700 dark:text-slate-300'}`}>
+                {stats.projectCount}
+              </span>
+            </button>
 
-            {/* Status Filter */}
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 py-1.5 text-xs text-slate-700 dark:text-slate-200 focus:outline-none focus:border-emerald-600 dark:focus:border-emerald-400"
+            <button
+              type="button"
+              onClick={() => setFilterType('product')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 ${
+                filterType === 'product'
+                  ? 'bg-sky-600 text-white dark:bg-sky-500 shadow-xs'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+              }`}
             >
-              <option value="all">ทุกสถานะ</option>
-              <option value="draft">ฉบับร่าง</option>
-              <option value="sent">ส่งลูกค้าแล้ว</option>
-              <option value="approved">ลูกค้าอนุมัติแล้ว</option>
-              <option value="partial">รับชำระบางส่วน</option>
-              <option value="rejected">ปฏิเสธ / ยกเลิก</option>
-              <option value="expired">หมดอายุยืนราคา</option>
-            </select>
-
-            {/* Compact Date Preset Dropdown */}
-            <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1">
-              <Calendar className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
-              <select
-                value={datePreset}
-                onChange={(e) => handleDatePresetChange(e.target.value)}
-                className="bg-transparent text-xs text-slate-700 dark:text-slate-200 font-medium focus:outline-none cursor-pointer"
-              >
-                <option value="all">ทุกช่วงเวลา</option>
-                <option value="today">วันนี้</option>
-                <option value="this_week">สัปดาห์นี้</option>
-                <option value="this_month">เดือนนี้</option>
-                <option value="next_30">30 วันข้างหน้า</option>
-                <option value="custom">กำหนดช่วงวันเอง...</option>
-              </select>
-            </div>
-
-            {datePreset === 'custom' && (
-              <div className="flex items-center gap-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-0.5">
-                <input
-                  type="date"
-                  value={dateFrom}
-                  onChange={(e) => setDateFrom(e.target.value)}
-                  className="text-xs border-0 p-0 bg-transparent text-slate-800 dark:text-slate-100 focus:outline-none"
-                />
-                <span className="text-slate-400">–</span>
-                <input
-                  type="date"
-                  value={dateTo}
-                  onChange={(e) => setDateTo(e.target.value)}
-                  className="text-xs border-0 p-0 bg-transparent text-slate-800 dark:text-slate-100 focus:outline-none"
-                />
-              </div>
-            )}
+              <Package className="h-3.5 w-3.5" />
+              <span>งานขายสินค้า</span>
+              <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${filterType === 'product' ? 'bg-white/20 text-white' : 'bg-slate-200/80 dark:bg-slate-700 text-slate-700 dark:text-slate-300'}`}>
+                {stats.productCount}
+              </span>
+            </button>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5 text-xs">
             {hasFilter && (
               <button
                 type="button"
@@ -596,10 +623,106 @@ export default function QuotationList() {
                 ล้างตัวกรอง
               </button>
             )}
-            <span className="text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">
+            <span className="text-slate-500 dark:text-slate-400 whitespace-nowrap">
               แสดง <strong className="text-slate-800 dark:text-slate-100 tabular-nums">{filtered.length}</strong> จาก {quotations.length} รายการ
             </span>
           </div>
+        </div>
+
+        {/* แถบค้นหาและตัวกรองละเอียด (Search Input & Secondary Dropdowns) */}
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+          {/* ช่องค้นหา */}
+          <div className="relative min-w-[220px] max-w-sm flex-1">
+            <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
+            <input
+              type="text"
+              placeholder="ค้นหาเลขที่ QT, ชื่อลูกค้า, โครงการ..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-800 pl-9 pr-8 py-2 text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:border-emerald-600 dark:focus:border-emerald-400 focus:ring-1 focus:ring-emerald-600/20"
+            />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch('')}
+                className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                title="ล้างคำค้นหา"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* เรียงลำดับ */}
+          <TableSortFilter
+            value={sortBy}
+            onChange={setSortBy}
+            options={QUOTATION_SORT_OPTIONS}
+          />
+
+          {/* โครงการ */}
+          <select
+            value={filterProject}
+            onChange={(e) => setFilterProject(e.target.value)}
+            className="rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-xs text-slate-700 dark:text-slate-200 focus:outline-none focus:border-emerald-600 dark:focus:border-emerald-400"
+          >
+            <option value="">ทุกโครงการ</option>
+            {projects.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.project_code} {p.project_name}
+              </option>
+            ))}
+          </select>
+
+          {/* สถานะ */}
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-xs text-slate-700 dark:text-slate-200 focus:outline-none focus:border-emerald-600 dark:focus:border-emerald-400"
+          >
+            <option value="all">ทุกสถานะ</option>
+            <option value="draft">ฉบับร่าง</option>
+            <option value="sent">ส่งลูกค้าแล้ว</option>
+            <option value="approved">ลูกค้าอนุมัติแล้ว</option>
+            <option value="partial">รับชำระบางส่วน</option>
+            <option value="rejected">ปฏิเสธ / ยกเลิก</option>
+            <option value="expired">หมดอายุยืนราคา</option>
+          </select>
+
+          {/* ช่วงเวลา */}
+          <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-2.5 py-1.5">
+            <Calendar className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
+            <select
+              value={datePreset}
+              onChange={(e) => handleDatePresetChange(e.target.value)}
+              className="bg-transparent text-xs text-slate-700 dark:text-slate-200 font-medium focus:outline-none cursor-pointer"
+            >
+              <option value="all">ทุกช่วงเวลา</option>
+              <option value="today">วันนี้</option>
+              <option value="this_week">สัปดาห์นี้</option>
+              <option value="this_month">เดือนนี้</option>
+              <option value="next_30">30 วันข้างหน้า</option>
+              <option value="custom">กำหนดช่วงวันเอง...</option>
+            </select>
+          </div>
+
+          {datePreset === 'custom' && (
+            <div className="flex items-center gap-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-2 py-1">
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                className="text-xs border-0 p-0 bg-transparent text-slate-800 dark:text-slate-100 focus:outline-none"
+              />
+              <span className="text-slate-400">–</span>
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                className="text-xs border-0 p-0 bg-transparent text-slate-800 dark:text-slate-100 focus:outline-none"
+              />
+            </div>
+          )}
         </div>
       </div>
 
@@ -645,16 +768,19 @@ export default function QuotationList() {
                   return (
                     <tr
                       key={q.id}
-                      className={`transition-colors border-b border-slate-200 dark:border-slate-800 ${
+                      onClick={() => navigate(`/quotations/${q.id}`)}
+                      className={`group cursor-pointer transition-colors border-b border-slate-200 dark:border-slate-800 ${
                         rowIdx % 2 === 0
                           ? 'bg-white dark:bg-slate-900'
                           : 'bg-slate-50/70 dark:bg-slate-800/40'
-                      } ${isMenuOpen ? 'relative z-30' : ''} hover:bg-emerald-50/50 dark:hover:bg-slate-800/80`}
+                      } ${isMenuOpen ? 'relative z-30' : ''} hover:bg-emerald-50/70 dark:hover:bg-slate-800/90`}
+                      title="คลิกเพื่อดูรายละเอียดใบเสนอราคา"
                     >
                       {/* 1. เลขที่ QT + ประเภท + วันที่ */}
                       <td className="py-3 px-3.5 text-center align-middle whitespace-nowrap border-r border-slate-200/60 dark:border-slate-800/60">
                         <Link
                           to={`/quotations/${q.id}`}
+                          onClick={(e) => e.stopPropagation()}
                           className="font-bold text-sky-800 dark:text-sky-400 hover:underline font-mono text-xs block"
                         >
                           {q.quotation_no}
@@ -678,16 +804,33 @@ export default function QuotationList() {
 
                       {/* 2. ลูกค้า / โครงการ + สถานะส่งต่อจัดซื้อ */}
                       <td className="py-3 px-4 align-middle border-r border-slate-200/60 dark:border-slate-800/60">
-                        <div className="font-bold text-slate-900 dark:text-slate-100 truncate max-w-[260px]" title={q.customer_name}>
+                        {/* บรรทัดที่ 1: ชื่อลูกค้า */}
+                        <div className="font-bold text-slate-900 dark:text-slate-100 truncate max-w-[280px]" title={q.customer_name}>
                           {q.customer_name || '-'}
                         </div>
-                        <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-[260px] mt-0.5" title={q.projects ? `${q.projects.project_code} • ${q.projects.project_name}` : (q.ref_no || 'โครงการทั่วไป')}>
-                          {q.projects ? `${q.projects.project_code} • ${q.projects.project_name}` : (q.ref_no || 'โครงการทั่วไป')}
-                        </div>
+
+                        {/* บรรทัดที่ 2 & 3: แยกบรรทัดใหม่ รหัสโครงการ และ ชื่อโครงการ ไม่ทับซ้อนกัน */}
+                        {q.projects ? (
+                          <div className="mt-1 space-y-0.5">
+                            <div className="font-mono text-[11px] font-bold text-emerald-800 dark:text-emerald-300">
+                              {q.projects.project_code}
+                            </div>
+                            <div className="text-[11px] text-slate-600 dark:text-slate-400 truncate max-w-[280px]" title={q.projects.project_name}>
+                              {q.projects.project_name}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-[280px] mt-1" title={q.ref_no || 'โครงการทั่วไป'}>
+                            {q.ref_no ? `อ้างอิง: ${q.ref_no}` : 'โครงการทั่วไป'}
+                          </div>
+                        )}
+
+                        {/* บรรทัดที่ 4: สถานะจัดซื้อ/สโตร์ */}
                         {pSummary?.stageLabel && (
-                          <div className="mt-1">
+                          <div className="mt-1.5">
                             <Link
                               to={`/quotations/${q.id}`}
+                              onClick={(e) => e.stopPropagation()}
                               className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold hover:opacity-85 transition ${
                                 PURCHASING_BADGE_TONES[pSummary.stageTone] || PURCHASING_BADGE_TONES.slate
                               }`}
@@ -730,13 +873,18 @@ export default function QuotationList() {
 
                       {/* 6. การจัดการ */}
                       <td className="py-3 px-3.5 align-middle text-center whitespace-nowrap">
-                        <div className="flex items-center justify-center gap-1">
-                          <Link
-                            to={`/quotations/${q.id}`}
-                            className="rounded px-2 py-1 text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                        <div className="flex items-center justify-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              navigate(`/quotations/${q.id}`)
+                            }}
+                            className="inline-flex items-center justify-center p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 hover:border-emerald-300 dark:hover:border-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition shadow-2xs cursor-pointer"
+                            title="ดูรายละเอียดเอกสาร"
                           >
-                            ดูเอกสาร
-                          </Link>
+                            <Eye className="h-4 w-4" />
+                          </button>
 
                           <div className="relative inline-block text-left" onClick={(e) => e.stopPropagation()}>
                             <button
